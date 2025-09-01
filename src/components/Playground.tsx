@@ -14,6 +14,7 @@ import type { Node, Edge, Connection } from "@xyflow/react";
 import { toPng } from "html-to-image";
 
 import Toolbar from "./Toolbar";
+import { useTheme } from "../hooks/useTheme";
 
 const initialNodes: Node[] = [
   {
@@ -27,8 +28,9 @@ const initialNodes: Node[] = [
 const initialEdges: Edge[] = [];
 
 const Playground: React.FC = () => {
+  const { theme, flowColorMode } = useTheme();
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(
@@ -47,21 +49,23 @@ const Playground: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col">
+      {JSON.stringify(flowColorMode)}
       <Toolbar onSaveImage={handleSaveAsImage} />
       {/* ensure the flow area has visible height */}
       <div ref={wrapperRef} className="flex-1 relative min-h-[600px]">
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          colorMode={theme}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           fitView
           proOptions={{ hideAttribution: true }}
         >
-          <MiniMap />
+          <MiniMap nodeStrokeWidth={3} zoomable pannable />
           <Controls />
-          <Background gap={16} color="#ccc" />
+          <Background />
         </ReactFlow>
       </div>
     </div>
