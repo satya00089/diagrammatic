@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+
+/* --- Theme variables --- */
+:root {
+  /* light theme tokens */
+  --bg: #f8fafc;           /* page background */
+  --surface: #ffffff;      /* cards, panels */
+  --text: #0f172a;         /* main text */
+  --muted: #6b7280;        /* secondary text */
+  --border: #e6e9ee;       /* subtle borders */
+  --brand: #6366f1;        /* primary accent (indigo-500) */
+  --accent: #ec4899;       /* secondary accent */
+}
+
+/* dark theme tokens */
+.dark {
+  --bg: #0b1220;
+  --surface: #0f1724;
+  --text: #e6edf3;
+  --muted: #9ca3af;
+  --border: #19232e;
+  --brand: #7c3aed;
+  --accent: #f472b6;
+}
+
+/* apply defaults so non-Tailwind elements inherit colors */
+html, body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* small utilities you can reuse (optional) */
+.bg-surface { background-color: var(--surface); }
+.text-muted { color: var(--muted); }
+.border-theme { border-color: var(--border); }
+
+/* Example: prefer Tailwind classes but utilities above are convenient */

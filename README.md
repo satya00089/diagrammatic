@@ -1,97 +1,69 @@
-# Diagrammatic
+# React + TypeScript + Vite
 
-*Visualize. Design. Document.*
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Diagrammatic is a **React + Tailwind CSS** playground powered by **React Flow**.
-It provides an interactive canvas for creating and connecting nodes, switching themes, and exporting diagrams as images — ideal for **design systems, architecture flows, and visual documentation**.
+Currently, two official plugins are available:
 
----
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## ✨ Features
+## Expanding the ESLint configuration
 
-* 🎨 **Interactive node-based editor**
-* 🌙 **Dark / Light theme** toggle
-* 🖼️ **Export diagrams as PNG**
-* 🧩 **Customizable node types**
-* 📖 **Living documentation (Storybook-ready)**
-* ⚡ Built with **React + TypeScript + TailwindCSS**
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
----
+```js
+export default tseslint.config([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-## 📦 Tech Stack
+      // Remove tseslint.configs.recommended and replace with this
+      ...tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      ...tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      ...tseslint.configs.stylisticTypeChecked,
 
-* [React](https://reactjs.org/)
-* [Tailwind CSS](https://tailwindcss.com/)
-* [React Flow](https://reactflow.dev/)
-* [Framer Motion](https://www.framer.com/motion/) (animations)
-* [html-to-image](https://github.com/bubkoo/html-to-image) (export diagrams)
-
----
-
-## 🚀 Getting Started
-
-### 1️⃣ Clone the repo
-
-```bash
-git clone https://github.com/your-username/diagrammatic.git
-cd diagrammatic
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-### 2️⃣ Install dependencies
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-npm install
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-### 3️⃣ Start dev server
-
-```bash
-npm run dev
-```
-
-Visit 👉 [http://localhost:5173](http://localhost:5173)
-
----
-
-## 🖼️ Usage
-
-* **Add & connect nodes** on the canvas
-* **Export** with `Save as Image`
-* **Switch theme** between light and dark
-
----
-
-## 📖 Storybook (Optional)
-
-Run Storybook for documenting design system components:
-
-```bash
-npm run storybook
-```
-
----
-
-## 🔮 Roadmap
-
-* [ ] Sidebar with draggable shapes (rectangles, circles, text)
-* [ ] Save/load diagrams (localStorage / database)
-* [ ] Export to **SVG** and **JSON**
-* [ ] Multi-user collaboration
-* [ ] Component snippets for design systems
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome! For major changes, please open an issue first
-to discuss what you’d like to change.
-
----
-
-## 📜 License
-
-MIT © 2025 \[Your Name]
-
----
-
-Would you like me to design a **minimal SVG logo** (like a simple 3-node connection icon) that you can put in `/public` and use in the README header?
