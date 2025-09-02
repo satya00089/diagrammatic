@@ -1,69 +1,93 @@
-# React + TypeScript + Vite
+# Diagrammatic
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+*Visualize. Design. Document.*
 
-Currently, two official plugins are available:
+Diagrammatic is a **React + Tailwind CSS** playground powered by **React Flow**.
+It provides an interactive canvas for creating and connecting nodes, switching themes, and exporting diagrams as images — ideal for **design systems, architecture flows, and visual documentation**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## ✨ Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* 🎨 **Interactive node-based editor**
+* 🌙 **Dark / Light theme** toggle
+* 🖼️ **Export diagrams as PNG**
+* 🧩 **Customizable node types**
+* 📖 **Living documentation (Storybook-ready)**
+* ⚡ Built with **React + TypeScript + TailwindCSS**
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## 📦 Tech Stack
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+* [React](https://reactjs.org/)
+* [Tailwind CSS](https://tailwindcss.com/)
+* [React Flow](https://reactflow.dev/)
+* [Framer Motion](https://www.framer.com/motion/) (animations)
+* [html-to-image](https://github.com/bubkoo/html-to-image) (export diagrams)
+
+---
+
+## 🚀 Getting Started
+
+### 1️⃣ Clone the repo
+
+```bash
+git clone https://github.com/your-username/diagrammatic.git
+cd diagrammatic
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2️⃣ Install dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+### 3️⃣ Start dev server
+
+```bash
+npm run dev
+```
+
+Visit 👉 [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 🖼️ Usage
+
+* **Add & connect nodes** on the canvas
+* **Export** with `Save as Image`
+* **Switch theme** between light and dark
+
+---
+
+## 📖 Storybook (Optional)
+
+Run Storybook for documenting design system components:
+
+```bash
+npm run storybook
+```
+
+---
+
+## 🔮 Roadmap
+
+* [ ] Sidebar with draggable shapes (rectangles, circles, text)
+* [ ] Save/load diagrams (localStorage / database)
+* [ ] Export to **SVG** and **JSON**
+* [ ] Multi-user collaboration
+* [ ] Component snippets for design systems
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first
+to discuss what you’d like to change.
+
+---
+
+## 📜 License
+
+MIT © 2025 \[satya subudhi]
