@@ -90,8 +90,4 @@ to discuss what you’d like to change.
 
 ## 📜 License
 
-MIT © 2025 \[Your Name]
-
----
-
-Would you like me to design a **minimal SVG logo** (like a simple 3-node connection icon) that you can put in `/public` and use in the README header?
+MIT © 2025 \[satya subudhi]
