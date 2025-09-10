@@ -1,38 +1,71 @@
 @import "tailwindcss";
 
-
-/* --- Theme variables --- */
+/* CSS Variables for theming */
 :root {
-  /* light theme tokens */
-  --bg: #f8fafc;           /* page background */
-  --surface: #ffffff;      /* cards, panels */
-  --text: #0f172a;         /* main text */
-  --muted: #6b7280;        /* secondary text */
-  --border: #e6e9ee;       /* subtle borders */
-  --brand: #6366f1;        /* primary accent (indigo-500) */
-  --accent: #ec4899;       /* secondary accent */
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-hover: #f3f4f6;
+  --color-text: #111827;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* dark theme tokens */
 .dark {
-  --bg: #0b1220;
-  --surface: #0f1724;
-  --text: #e6edf3;
-  --muted: #9ca3af;
-  --border: #19232e;
-  --brand: #7c3aed;
-  --accent: #f472b6;
+  --color-bg: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-hover: #374151;
+  --color-text: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-border: #374151;
 }
 
-/* apply defaults so non-Tailwind elements inherit colors */
+/* Apply defaults */
 html, body {
-  background-color: var(--bg);
-  color: var(--text);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
 }
 
-/* small utilities you can reuse (optional) */
-.bg-surface { background-color: var(--surface); }
-.text-muted { color: var(--muted); }
-.border-theme { border-color: var(--border); }
+/* ReactFlow theme customization */
+.react-flow__node {
+  font-family: var(--font-family);
+}
 
-/* Example: prefer Tailwind classes but utilities above are convenient */
+.react-flow__edge {
+  stroke: var(--color-border);
+}
+
+.react-flow__controls {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.react-flow__controls button {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.react-flow__controls button:hover {
+  background: var(--color-bg-hover);
+}
+
+.react-flow__background {
+  background-color: var(--color-bg-secondary);
+}
+
+/* Utility classes */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

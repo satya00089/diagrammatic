@@ -16,9 +16,12 @@ const paletteItems: PaletteItem[] = [
       '--color-bg': '#3b82f6',
       '--color-text': '#ffffff',
       '--padding-x': '16px',
-      '--padding-y': '8px',
-      '--border-radius': '6px',
-      '--font-weight': '500'
+      '--padding-y': '10px',
+      '--border-radius': '8px',
+      '--font-weight': '600',
+      '--font-size': '14px',
+      '--border': 'none',
+      '--shadow': '0 2px 4px rgba(59, 130, 246, 0.15)'
     }
   },
   {
@@ -29,22 +32,54 @@ const paletteItems: PaletteItem[] = [
       '--color-bg': '#ffffff',
       '--color-border': '#e5e7eb',
       '--padding': '24px',
-      '--border-radius': '8px',
-      '--shadow': '0 1px 3px rgba(0, 0, 0, 0.1)'
+      '--border-radius': '12px',
+      '--shadow': '0 4px 6px rgba(0, 0, 0, 0.05)',
+      '--border-width': '1px',
+      '--min-height': '120px',
+      '--min-width': '200px'
     }
   },
   {
     id: 'input',
     componentType: 'Input',
-    label: 'Input',
+    label: 'Text Input',
     tokens: {
       '--color-bg': '#ffffff',
       '--color-border': '#d1d5db',
       '--color-text': '#374151',
-      '--padding-x': '12px',
-      '--padding-y': '8px',
-      '--border-radius': '4px',
-      '--font-size': '14px'
+      '--padding-x': '14px',
+      '--padding-y': '10px',
+      '--border-radius': '8px',
+      '--font-size': '14px',
+      '--border-width': '1px',
+      '--placeholder': 'Enter text...',
+      '--width': '240px'
+    }
+  },
+  {
+    id: 'heading',
+    componentType: 'Heading',
+    label: 'Heading',
+    tokens: {
+      '--color-text': '#111827',
+      '--font-size': '24px',
+      '--font-weight': '700',
+      '--line-height': '1.25',
+      '--margin-bottom': '8px',
+      '--text': 'Heading Text'
+    }
+  },
+  {
+    id: 'text',
+    componentType: 'Text',
+    label: 'Text Block',
+    tokens: {
+      '--color-text': '#374151',
+      '--font-size': '16px',
+      '--font-weight': '400',
+      '--line-height': '1.5',
+      '--max-width': '300px',
+      '--text': 'This is a text block that can contain multiple lines of content.'
     }
   }
 ];

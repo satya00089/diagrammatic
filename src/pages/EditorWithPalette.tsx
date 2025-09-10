@@ -10,6 +10,7 @@ import {
   type ReactFlowInstance
 } from '@xyflow/react';
 import Palette, { type PaletteItem } from '../components/Palette';
+import EditorToolbar from '../components/EditorToolbar';
 
 interface NodeData extends Record<string, unknown> {
   componentType: string;
@@ -169,11 +170,41 @@ const EditorWithPalette: React.FC = () => {
     });
   }, [nodes, edges]);
 
+  // Toolbar handlers
+  const handleClearAll = useCallback(() => {
+    if (nodes.length > 0 && confirm('Are you sure you want to clear all components?')) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedNode(null);
+    }
+  }, [nodes.length, setNodes, setEdges]);
+
+  const handleZoomIn = useCallback(() => {
+    reactFlowInstance?.zoomIn();
+  }, [reactFlowInstance]);
+
+  const handleZoomOut = useCallback(() => {
+    reactFlowInstance?.zoomOut();
+  }, [reactFlowInstance]);
+
+  const handleFitView = useCallback(() => {
+    reactFlowInstance?.fitView();
+  }, [reactFlowInstance]);
+
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <Palette />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <EditorToolbar 
+        onClearAll={handleClearAll}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onFitView={handleFitView}
+        nodeCount={nodes.length}
+      />
       
-      <div style={{ flex: 1, display: 'flex' }}>
+      <div style={{ display: 'flex', flex: 1 }}>
+        <Palette />
+        
+        <div style={{ flex: 1, display: 'flex' }}>
         <div 
           ref={reactFlowWrapper}
           style={{ flex: 1, height: '100%' }}
@@ -305,6 +336,7 @@ const EditorWithPalette: React.FC = () => {
           >
             Export JSON
           </button>
+        </div>
         </div>
       </div>
     </div>
