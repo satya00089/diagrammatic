@@ -5,6 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Diagrammatic</title>
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        try {
+          const theme = localStorage.getItem('theme') || 'light';
+          const root = document.documentElement;
+          
+          if (theme === 'dark') {
+            root.classList.add('dark');
+          } else if (theme === 'system') {
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+              root.classList.add('dark');
+            }
+          }
+        } catch (e) {
+          // ignore errors
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

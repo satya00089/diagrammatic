@@ -27,10 +27,85 @@ html, body {
   font-family: var(--font-family);
 }
 
-/* ReactFlow theme customization */
-.react-flow__node {
-  font-family: var(--font-family);
+/* ReactFlow theming using Tailwind CSS custom properties */
+.react-flow {
+  background: var(--bg);
 }
+
+/* Light theme (default) */
+.react-flow__node {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.react-flow__edge-path {
+  stroke: var(--muted) !important;
+}
+
+.react-flow__controls {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.react-flow__controls button {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.react-flow__controls button:hover {
+  background: var(--bg) !important;
+}
+
+.react-flow__minimap {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.react-flow__background {
+  background: var(--bg) !important;
+}
+
+/* Dark theme overrides */
+.dark .react-flow__node {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.dark .react-flow__edge-path {
+  stroke: var(--muted) !important;
+}
+
+.dark .react-flow__controls {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .react-flow__controls button {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.dark .react-flow__controls button:hover {
+  background: var(--bg) !important;
+}
+
+.dark .react-flow__minimap {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.dark .react-flow__background {
+  background: var(--bg) !important;
+}
+
+/* small utilities you can reuse (optional) */
+.bg-surface { background-color: var(--surface); }
+.text-muted { color: var(--muted); }
+.border-theme { border-color: var(--border); }
 
 .react-flow__edge {
   stroke: var(--color-border);
