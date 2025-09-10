@@ -28,7 +28,7 @@ const initialNodes: Node[] = [
 const initialEdges: Edge[] = [];
 
 const Playground: React.FC = () => {
-  const { theme, flowColorMode } = useTheme();
+  const { flowColorMode } = useTheme();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -49,14 +49,13 @@ const Playground: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      {JSON.stringify(flowColorMode)}
       <Toolbar onSaveImage={handleSaveAsImage} />
       {/* ensure the flow area has visible height */}
       <div ref={wrapperRef} className="flex-1 relative min-h-[600px]">
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          colorMode={theme}
+          colorMode={flowColorMode}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
