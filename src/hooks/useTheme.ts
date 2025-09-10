@@ -6,15 +6,16 @@ export type Theme = "system" | "light" | "dark";
 const isValidTheme = (v: unknown): v is Theme =>
   v === "system" || v === "light" || v === "dark";
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  const stored = localStorage.getItem("theme");
-  if (isValidTheme(stored)) return stored;
-  return "light";
-}
+
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Initialize theme state from localStorage immediately
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem("theme");
+    return isValidTheme(stored) ? stored : "light";
+  });
+  
   const [systemDark, setSystemDark] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;

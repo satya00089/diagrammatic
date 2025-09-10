@@ -28,7 +28,7 @@ const initialNodes: Node[] = [
 const initialEdges: Edge[] = [];
 
 const Playground: React.FC = () => {
-  const { flowColorMode } = useTheme();
+  useTheme(); // Just apply the theme
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -55,7 +55,6 @@ const Playground: React.FC = () => {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          colorMode={flowColorMode}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
