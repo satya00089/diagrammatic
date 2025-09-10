@@ -98,6 +98,29 @@ The project uses CSS custom properties for theming:
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines and how to submit changes.
 
+## Quick Usage Note
+
+After installation (`npm install`), start the development server with `npm run dev`.
+
+To switch from the default playground to the new editor with palette:
+
+1. Open `src/App.tsx`
+2. Change the export line:
+   ```typescript
+   // From:
+   export { default } from './components/Playground';
+   
+   // To:
+   export { default } from './pages/EditorWithPalette';
+   ```
+3. Save and refresh the browser
+
+The editor will now show with:
+- Component palette on the left (Button, Card, Input)
+- Canvas in the center for drag & drop
+- Inspector panel on the right for editing tokens
+- Export JSON button to save your diagram
+
 ## License
 
 MIT - see LICENSE file for details.
