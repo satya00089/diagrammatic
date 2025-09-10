@@ -6,26 +6,27 @@ export type Theme = "system" | "light" | "dark";
 const isValidTheme = (v: unknown): v is Theme =>
   v === "system" || v === "light" || v === "dark";
 
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  const stored = localStorage.getItem("theme");
-  if (isValidTheme(stored)) return stored;
-  return "light";
-}
+
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Initialize theme state from localStorage immediately
+    if (typeof window === "undefined") return "light";
+    const stored = localStorage.getItem("theme");
+    return isValidTheme(stored) ? stored : "light";
+  });
+  
+  const [systemDark, setSystemDark] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   useEffect(() => {
     const root = document.documentElement;
 
     const apply = (t: Theme) => {
       if (t === "system") {
-        const prefersDark =
-          typeof window !== "undefined" &&
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        root.classList.toggle("dark", !!prefersDark);
+        root.classList.toggle("dark", systemDark);
       } else {
         root.classList.toggle("dark", t === "dark");
       }
@@ -38,10 +39,26 @@ export function useTheme() {
     } catch {
       /* ignore */
     }
-  }, [theme]);
+  }, [theme, systemDark]);
 
-  // map to @xyflow/react ColorMode; v12 commonly uses "auto" for system
+  // Listen for system theme changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      setSystemDark(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  // map to @xyflow/react ColorMode
   const flowColorMode = ((): ColorMode => {
+    if (theme === "system") {
+      return systemDark ? "dark" : "light";
+    }
     return theme as ColorMode;
   })();
 
