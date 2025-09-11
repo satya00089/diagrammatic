@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import SystemDesignPlayground from "./pages/SystemDesignPlayground";
 import { type SystemDesignProblem } from "./types/systemDesign";
+import { useTheme } from "./hooks/useTheme";
 
 const App: React.FC = () => {
+  useTheme(); // initialize theme globally
+
   const [currentView, setCurrentView] = useState<"dashboard" | "playground">(
     "dashboard"
   );

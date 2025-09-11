@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import type { SystemDesignProblem } from '../types/systemDesign';
 import { systemDesignProblems } from '../data/problems';
+import ThemeSwitcher from '../components/ThemeSwitcher';
+import { useTheme } from '../hooks/useTheme';
 
 interface DashboardProps {
   onSelectProblem: (problem: SystemDesignProblem) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
+  useTheme(); // ensure theme applied when Dashboard mounts
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -35,19 +38,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-theme text-theme">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-surface shadow-sm border-b border-theme">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">System Design Learning</h1>
-              <p className="mt-2 text-gray-600">Master system design through interactive problem solving</p>
+              <h1 className="text-3xl font-bold text-theme">System Design Learning</h1>
+              <p className="mt-2 text-muted">Master system design through interactive problem solving</p>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted">
                 {filteredProblems.length} problems available
               </div>
+              <ThemeSwitcher />
             </div>
           </div>
         </div>
@@ -55,27 +59,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-surface rounded-lg shadow-sm p-6 mb-6 border border-theme">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label htmlFor="search-input" className="block text-sm font-medium text-theme mb-2">Search</label>
               <input
+                id="search-input"
                 type="text"
                 placeholder="Search problems..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)]"
               />
             </div>
 
             {/* Difficulty Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+              <label htmlFor="difficulty-select" className="block text-sm font-medium text-theme mb-2">Difficulty</label>
               <select
+                id="difficulty-select"
                 value={selectedDifficulty}
                 onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
               >
                 {difficulties.map(difficulty => (
                   <option key={difficulty} value={difficulty}>{difficulty}</option>
@@ -85,11 +91,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
 
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label htmlFor="category-select" className="block text-sm font-medium text-theme mb-2">Category</label>
               <select
+                id="category-select"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
               >
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
@@ -104,12 +111,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
           {filteredProblems.map((problem) => (
             <div
               key={problem.id}
-              className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => onSelectProblem(problem)}
+              className="bg-surface rounded-lg shadow-sm border border-theme hover:shadow-md transition-shadow"
             >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                  <h3 className="text-lg font-semibold text-theme line-clamp-2">
                     {problem.title}
                   </h3>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.difficulty)}`}>
@@ -117,11 +123,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
                   </span>
                 </div>
 
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                <p className="text-muted text-sm mb-4 line-clamp-3">
                   {problem.description}
                 </p>
 
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                <div className="flex items-center justify-between text-sm text-muted mb-4">
                   <span>{problem.category}</span>
                   <span>{problem.estimatedTime}</span>
                 </div>
@@ -130,19 +136,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
                   {problem.tags.slice(0, 3).map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded"
+                      className="px-2 py-1 bg-[var(--bg-secondary, #eef2ff)] text-[var(--brand, #6366f1)] text-xs rounded"
                     >
                       {tag}
                     </span>
                   ))}
                   {problem.tags.length > 3 && (
-                    <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded">
+                    <span className="px-2 py-1 bg-[var(--surface)] text-muted text-xs rounded">
                       +{problem.tags.length - 3} more
                     </span>
                   )}
                 </div>
 
-                <button className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSelectProblem(problem); }}
+                  aria-label={`Start ${problem.title}`}
+                  className="w-full px-4 py-2 bg-accent text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors"
+                >
                   Start Problem
                 </button>
               </div>
@@ -152,8 +163,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
 
         {filteredProblems.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">No problems found</div>
-            <div className="text-gray-500 text-sm">Try adjusting your filters</div>
+            <div className="text-muted text-lg mb-2">No problems found</div>
+            <div className="text-muted text-sm">Try adjusting your filters</div>
           </div>
         )}
       </div>
