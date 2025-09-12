@@ -1,40 +1,40 @@
-import React, { useState } from "react";
+import React from "react";
+import { HashRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import SystemDesignPlayground from "./pages/SystemDesignPlayground";
-import { type SystemDesignProblem } from "./types/systemDesign";
+import { systemDesignProblems } from "./data/problems";
+import type { SystemDesignProblem } from "./types/systemDesign";
 import { useTheme } from "./hooks/useTheme";
 
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
 
-  const [currentView, setCurrentView] = useState<"dashboard" | "playground">(
-    "dashboard"
-  );
-  const [selectedProblem, setSelectedProblem] =
-    useState<SystemDesignProblem | null>(null);
-
-  const handleSelectProblem = (problem: SystemDesignProblem) => {
-    setSelectedProblem(problem);
-    setCurrentView("playground");
-  };
-
-  const handleBackToDashboard = () => {
-    setCurrentView("dashboard");
-    setSelectedProblem(null);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {currentView === "dashboard" ? (
-        <Dashboard onSelectProblem={handleSelectProblem} />
-      ) : (
-        <SystemDesignPlayground
-          problem={selectedProblem}
-          onBack={handleBackToDashboard}
-        />
-      )}
-    </div>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<DashboardWrapper />} />
+        <Route path="/playground/:id" element={<PlaygroundWrapper />} />
+        <Route path="*" element={<DashboardWrapper />} />
+      </Routes>
+    </HashRouter>
   );
 };
+
+function DashboardWrapper() {
+  const navigate = useNavigate();
+  const handleSelectProblem = (problem: SystemDesignProblem) => {
+    navigate(`/playground/${problem.id}`);
+  };
+  return <Dashboard onSelectProblem={handleSelectProblem} />;
+}
+
+function PlaygroundWrapper() {
+  const params = useParams();
+  const id = params?.id as string | undefined;
+  const problem = id ? systemDesignProblems.find((p) => p.id === id) ?? null : null;
+  const navigate = useNavigate();
+  const handleBack = () => navigate("/");
+  return <SystemDesignPlayground problem={problem} onBack={handleBack} />;
+}
 
 export default App;

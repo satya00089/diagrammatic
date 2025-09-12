@@ -157,3 +157,30 @@ html, body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Themed scrollbar for component palette */
+.component-palette {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+.component-palette::-webkit-scrollbar {
+  width: 10px;
+}
+.component-palette::-webkit-scrollbar-track {
+  background: transparent;
+}
+.component-palette::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Dark theme override */
+.dark .component-palette {
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.dark .component-palette::-webkit-scrollbar-thumb {
+  background-color: rgba(255,255,255,0.12);
+}

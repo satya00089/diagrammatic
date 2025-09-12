@@ -1,20 +1,281 @@
-import type { CanvasComponent } from '../types/canvas';
+import type { CanvasComponent } from "../types/canvas";
 
 export const COMPONENTS: CanvasComponent[] = [
-  { id: 'database', icon: '🗄️', label: 'Database', description: 'Data storage', properties: [
-    { key: 'replication', label: 'Replication Factor', type: 'number', default: 3 },
-    { key: 'sharding', label: 'Sharding', type: 'boolean', default: true },
-  ] },
-  { id: 'loadbalancer', icon: '⚖️', label: 'Load Balancer', description: 'Traffic distribution', properties: [
-    { key: 'strategy', label: 'Strategy', type: 'select', default: 'round-robin', options: ['round-robin', 'least-connections', 'ip-hash'] },
-    { key: 'healthCheck', label: 'Health Check', type: 'boolean', default: true },
-  ] },
-  { id: 'cache', icon: '⚡', label: 'Cache', description: 'Fast data access', properties: [
-    { key: 'ttl', label: 'TTL (seconds)', type: 'number', default: 3600 },
-    { key: 'inMemory', label: 'In Memory', type: 'boolean', default: true },
-  ] },
-  { id: 'webserver', icon: '🌐', label: 'Web Server', description: 'HTTP requests', properties: [
-    { key: 'instances', label: 'Instances', type: 'number', default: 2 },
-    { key: 'gzip', label: 'Gzip', type: 'boolean', default: true },
-  ] },
+  {
+    id: "database",
+    icon: "🗄️",
+    label: "Database",
+    description: "Data storage",
+    properties: [
+      {
+        key: "engine",
+        label: "Engine",
+        type: "select",
+        default: "postgresql",
+        options: ["postgresql", "mysql", "mongodb", "cassandra"],
+      },
+      { key: "storageGB", label: "Storage (GB)", type: "number", default: 100 },
+      {
+        key: "replication",
+        label: "Replication Factor",
+        type: "number",
+        default: 3,
+      },
+      { key: "multiAZ", label: "Multi-AZ", type: "boolean", default: true },
+      {
+        key: "backups",
+        label: "Automatic Backups",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "loadbalancer",
+    icon: "⚖️",
+    label: "Load Balancer",
+    description: "Traffic distribution",
+    properties: [
+      {
+        key: "algorithm",
+        label: "Algorithm",
+        type: "select",
+        default: "round-robin",
+        options: ["round-robin", "least-connections", "ip-hash"],
+      },
+      {
+        key: "sslTermination",
+        label: "SSL Termination",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "stickiness",
+        label: "Session Stickiness",
+        type: "boolean",
+        default: false,
+      },
+      {
+        key: "healthCheck",
+        label: "Health Check",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "cache",
+    icon: "⚡",
+    label: "Cache",
+    description: "Fast data access",
+    properties: [
+      {
+        key: "engine",
+        label: "Engine",
+        type: "select",
+        default: "redis",
+        options: ["redis", "memcached"],
+      },
+      { key: "ttl", label: "TTL (seconds)", type: "number", default: 3600 },
+      { key: "inMemory", label: "In Memory", type: "boolean", default: true },
+      {
+        key: "eviction",
+        label: "Eviction Policy",
+        type: "select",
+        default: "lru",
+        options: ["lru", "ttl", "volatile-lru"],
+      },
+      {
+        key: "replication",
+        label: "Replication",
+        type: "boolean",
+        default: false,
+      },
+    ],
+  },
+  {
+    id: "webserver",
+    icon: "🌐",
+    label: "Web Server",
+    description: "HTTP requests",
+    properties: [
+      { key: "instances", label: "Instances", type: "number", default: 2 },
+      { key: "autoscale", label: "Autoscale", type: "boolean", default: true },
+      {
+        key: "instanceType",
+        label: "Instance Type",
+        type: "select",
+        default: "t3.medium",
+        options: ["t3.small", "t3.medium", "t3.large"],
+      },
+      { key: "gzip", label: "Gzip", type: "boolean", default: true },
+      {
+        key: "connectionTimeout",
+        label: "Connection Timeout (s)",
+        type: "number",
+        default: 30,
+      },
+    ],
+  },
+  {
+    id: "message-broker",
+    icon: "📨",
+    label: "Message Broker",
+    description: "Pub/Sub message broker",
+    properties: [
+      { key: "partitions", label: "Partitions", type: "number", default: 6 },
+      {
+        key: "replication",
+        label: "Replication Factor",
+        type: "number",
+        default: 3,
+      },
+      {
+        key: "durable",
+        label: "Durable (persist messages)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "retention",
+        label: "Retention (hours)",
+        type: "number",
+        default: 168,
+      },
+    ],
+  },
+  {
+    id: "auth-service",
+    icon: "🔐",
+    label: "Auth Service",
+    description: "Authentication & session management",
+    properties: [
+      { key: "oauth", label: "OAuth Enabled", type: "boolean", default: true },
+      {
+        key: "sessions",
+        label: "Session Store",
+        type: "select",
+        default: "redis",
+        options: ["redis", "database", "none"],
+      },
+      {
+        key: "tokenTTL",
+        label: "Token TTL (minutes)",
+        type: "number",
+        default: 60,
+      },
+      { key: "mfa", label: "MFA Required", type: "boolean", default: false },
+    ],
+  },
+  {
+    id: "cdn",
+    icon: "🚀",
+    label: "CDN",
+    description: "Content delivery network",
+    properties: [
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "Cloudflare",
+        options: ["Cloudflare", "Akamai", "Fastly", "AWS CloudFront"],
+      },
+      {
+        key: "ttl",
+        label: "Edge TTL (seconds)",
+        type: "number",
+        default: 3600,
+      },
+      {
+        key: "cacheInvalidation",
+        label: "Cache Invalidation (manual)",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "search",
+    icon: "🔎",
+    label: "Search",
+    description: "Search engine & indexing",
+    properties: [
+      {
+        key: "engine",
+        label: "Engine",
+        type: "select",
+        default: "elasticsearch",
+        options: ["elasticsearch", "opensearch", "meilisearch"],
+      },
+      { key: "replicas", label: "Replicas", type: "number", default: 2 },
+      {
+        key: "indexing",
+        label: "Real-time indexing",
+        type: "boolean",
+        default: true,
+      },
+      { key: "shards", label: "Shards", type: "number", default: 5 },
+    ],
+  },
+  {
+    id: "queue",
+    icon: "📮",
+    label: "Queue",
+    description: "Task queue",
+    properties: [
+      {
+        key: "visibilityTimeout",
+        label: "Visibility Timeout (seconds)",
+        type: "number",
+        default: 30,
+      },
+      { key: "maxRetries", label: "Max Retries", type: "number", default: 5 },
+      {
+        key: "durable",
+        label: "Durable (persist tasks)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "backoff",
+        label: "Backoff Strategy",
+        type: "select",
+        default: "exponential",
+        options: ["fixed", "linear", "exponential"],
+      },
+    ],
+  },
+  {
+    id: "analytics",
+    icon: "📊",
+    label: "Analytics",
+    description: "Event analytics pipeline",
+    properties: [
+      {
+        key: "retentionDays",
+        label: "Retention (days)",
+        type: "number",
+        default: 90,
+      },
+      {
+        key: "samplingRate",
+        label: "Sampling Rate (%)",
+        type: "number",
+        default: 100,
+      },
+      {
+        key: "realTime",
+        label: "Real-time processing",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "storage",
+        label: "Storage",
+        type: "select",
+        default: "s3",
+        options: ["s3", "gcs", "azure_blob"],
+      },
+    ],
+  },
 ];
