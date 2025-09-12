@@ -9,6 +9,18 @@
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Semantic variables used by components */
+  --bg: var(--color-bg);
+  --surface: var(--color-bg-secondary);
+  --bg-hover: var(--color-bg-hover);
+  --text: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --border: var(--color-border);
+
+  /* Brand / accent colors */
+  --brand: #6366f1; /* indigo-500 */
+  --accent: #ec4899; /* rose-500 */
 }
 
 .dark {
@@ -18,6 +30,18 @@
   --color-text: #f9fafb;
   --color-text-secondary: #d1d5db;
   --color-border: #374151;
+
+  /* Semantic variables for dark mode */
+  --bg: var(--color-bg);
+  --surface: var(--color-bg-secondary);
+  --bg-hover: var(--color-bg-hover);
+  --text: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --border: var(--color-border);
+
+  /* Brand / accent colors (adjusted for dark) */
+  --brand: #8b5cf6; /* slightly brighter indigo */
+  --accent: #f472b6;
 }
 
 /* Apply defaults */

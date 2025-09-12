@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import type { SystemDesignProblem } from '../types/systemDesign';
-import { systemDesignProblems } from '../data/problems';
-import ThemeSwitcher from '../components/ThemeSwitcher';
-import { useTheme } from '../hooks/useTheme';
+import React, { useState, useMemo } from "react";
+import type { SystemDesignProblem } from "../types/systemDesign";
+import { systemDesignProblems } from "../data/problems";
+import ThemeSwitcher from "../components/ThemeSwitcher";
+import { useTheme } from "../hooks/useTheme";
 
 interface DashboardProps {
   onSelectProblem: (problem: SystemDesignProblem) => void;
@@ -10,30 +10,41 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
   useTheme(); // ensure theme applied when Dashboard mounts
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const filteredProblems = useMemo(() => {
-    return systemDesignProblems.filter(problem => {
-      const matchesDifficulty = selectedDifficulty === 'All' || problem.difficulty === selectedDifficulty;
-      const matchesCategory = selectedCategory === 'All' || problem.category === selectedCategory;
-      const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           problem.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
+    return systemDesignProblems.filter((problem) => {
+      const matchesDifficulty =
+        selectedDifficulty === "All" ||
+        problem.difficulty === selectedDifficulty;
+      const matchesCategory =
+        selectedCategory === "All" || problem.category === selectedCategory;
+      const matchesSearch =
+        problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        problem.description.toLowerCase().includes(searchTerm.toLowerCase());
+
       return matchesDifficulty && matchesCategory && matchesSearch;
     });
   }, [selectedDifficulty, selectedCategory, searchTerm]);
 
-  const categories = ['All', ...Array.from(new Set(systemDesignProblems.map(p => p.category)))];
-  const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
+  const categories = [
+    "All",
+    ...Array.from(new Set(systemDesignProblems.map((p) => p.category))),
+  ];
+  const difficulties = ["All", "Easy", "Medium", "Hard"];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800';
-      case 'Hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Easy":
+        return "bg-green-100 text-green-800";
+      case "Medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "Hard":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -44,8 +55,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-theme">System Design Learning</h1>
-              <p className="mt-2 text-muted">Master system design through interactive problem solving</p>
+              <h1 className="text-3xl font-bold text-theme">
+                System Design Learning
+              </h1>
+              <p className="mt-2 text-muted">
+                Master system design through interactive problem solving
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-muted">
@@ -63,7 +78,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div>
-              <label htmlFor="search-input" className="block text-sm font-medium text-theme mb-2">Search</label>
+              <label
+                htmlFor="search-input"
+                className="block text-sm font-medium text-theme mb-2"
+              >
+                Search
+              </label>
               <input
                 id="search-input"
                 type="text"
@@ -76,30 +96,44 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
 
             {/* Difficulty Filter */}
             <div>
-              <label htmlFor="difficulty-select" className="block text-sm font-medium text-theme mb-2">Difficulty</label>
+              <label
+                htmlFor="difficulty-select"
+                className="block text-sm font-medium text-theme mb-2"
+              >
+                Difficulty
+              </label>
               <select
                 id="difficulty-select"
                 value={selectedDifficulty}
                 onChange={(e) => setSelectedDifficulty(e.target.value)}
                 className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
               >
-                {difficulties.map(difficulty => (
-                  <option key={difficulty} value={difficulty}>{difficulty}</option>
+                {difficulties.map((difficulty) => (
+                  <option key={difficulty} value={difficulty}>
+                    {difficulty}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Category Filter */}
             <div>
-              <label htmlFor="category-select" className="block text-sm font-medium text-theme mb-2">Category</label>
+              <label
+                htmlFor="category-select"
+                className="block text-sm font-medium text-theme mb-2"
+              >
+                Category
+              </label>
               <select
                 id="category-select"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
               >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
             </div>
@@ -118,7 +152,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
                   <h3 className="text-lg font-semibold text-theme line-clamp-2">
                     {problem.title}
                   </h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                  >
                     {problem.difficulty}
                   </span>
                 </div>
@@ -150,7 +186,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProblem }) => {
 
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onSelectProblem(problem); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectProblem(problem);
+                  }}
                   aria-label={`Start ${problem.title}`}
                   className="w-full px-4 py-2 bg-accent text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors"
                 >
