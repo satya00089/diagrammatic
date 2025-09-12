@@ -9,10 +9,12 @@ import ComponentPalette from '../components/ComponentPalette';
 import DiagramCanvas from '../components/DiagramCanvas';
 import InspectorPanel from '../components/InspectorPanel';
 import type { ComponentProperty } from "../types/canvas";
+import { systemDesignProblems } from "../data/problems";
+import { useNavigate, useParams } from "react-router-dom";
 
 interface SystemDesignPlaygroundProps {
-  problem: SystemDesignProblem | null;
-  onBack: () => void;
+  problem?: SystemDesignProblem | null;
+  onBack?: () => void;
 }
 
 // Minimal custom node for the canvas (icon + label, solid background + styled handles)
@@ -88,11 +90,19 @@ const MinimalNode: React.FC<unknown> = (props) => {
   );
 };
 
-const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = ({
-  problem,
-  onBack,
-}) => {
+const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme(); // ensure theme applied for this page
+  const navigate = useNavigate();
+  const params = useParams();
+  const idFromUrl = params?.id as string | undefined;
+
+  const urlProblem = React.useMemo(() => {
+    if (!idFromUrl) return null;
+    return systemDesignProblems.find((p) => p.id === idFromUrl) ?? null;
+  }, [idFromUrl]);
+
+  const problem =  urlProblem;
+  const onBack = () => navigate("/");
 
   // determine difficulty badge classes in one place to avoid nested ternary in JSX
   const difficultyBadgeClass = (() => {

@@ -1,13 +1,21 @@
-import React from 'react';
-import * as XY from '@xyflow/react';
-import type { Node, Edge, Connection } from '@xyflow/react';
+import React from "react";
+import {
+  type Node,
+  type Edge,
+  type Connection,
+  type NodeTypes,
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+} from "@xyflow/react";
 
 type DiagramCanvasProps = {
   reactFlowWrapperRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
   edges: Edge[];
-  // Node types are passed through to the library — accept unknown component shapes
-  nodeTypes: Record<string, React.ComponentType<unknown>>;
+  // Node types are passed through to the library — use NodeTypes from the react package
+  nodeTypes: NodeTypes;
   onNodesChange: (...changes: unknown[]) => void;
   onEdgesChange: (...changes: unknown[]) => void;
   onConnect: (c: Connection) => void;
@@ -26,39 +34,30 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onDragOver,
   onDrop,
 }) => {
-  // runtime shape of the module may vary; use the exports defensively
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const RF: any = (XY as any).ReactFlow || (XY as any).default || (XY as any).ReactFlowRenderer || (XY as any).Flow || null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const MiniMap: any = (XY as any).MiniMap || (XY as any).MiniMapRenderer;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Controls: any = (XY as any).Controls || (XY as any).FlowControls;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Background: any = (XY as any).Background || (XY as any).FlowBackground;
-
   return (
-    <div className="flex-1" ref={reactFlowWrapperRef}>
-      <section aria-label="diagram-canvas" className="h-full">
-        {RF
-          ? React.createElement(
-              RF,
-              {
-                nodes,
-                edges,
-                onNodesChange,
-                onEdgesChange,
-                onConnect,
-                // pass nodeTypes through — the library expects a specific NodeTypes shape
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                nodeTypes: nodeTypes as any,
-                onDragOver,
-                onDrop,
-              },
-              MiniMap ? React.createElement(MiniMap) : null,
-              Controls ? React.createElement(Controls) : null,
-              Background ? React.createElement(Background) : null
-            )
-          : null}
+    <div className="flex-1 relative bg-theme min-h-0">
+      <section
+        className="w-full h-full"
+        ref={reactFlowWrapperRef}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        aria-label="Diagram canvas drop area"
+      >
+        <ReactFlow
+          className="w-full h-full"
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          fitView
+          proOptions={{ hideAttribution: true }}
+        >
+          <MiniMap nodeStrokeWidth={3} />
+          <Controls />
+          <Background gap={16} />
+        </ReactFlow>
       </section>
     </div>
   );
