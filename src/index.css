@@ -141,12 +141,6 @@ html, body {
 .border-theme { border-color: var(--border, var(--color-border)); }
 .text-brand { color: var(--brand, #6366f1); }
 .bg-accent { background-color: var(--accent, #ec4899); }
-
-/* Re-use small utilities already used elsewhere */
-.bg-surface { background-color: var(--surface, var(--color-bg-secondary)); }
-.text-muted { color: var(--muted, var(--color-text-secondary)); }
-.border-theme { border-color: var(--border, var(--color-border)); }
-
 /* End of theme utilities */
 
 /* Utility classes */

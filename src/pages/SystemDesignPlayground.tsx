@@ -2,20 +2,13 @@ import React, { useRef, useState } from "react";
 import type { SystemDesignProblem } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  Handle,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Position,
-} from "@xyflow/react";
+import { Handle, addEdge, useNodesState, useEdgesState, Position } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 import { COMPONENTS } from "../config/components";
-import type { ComponentProperty, CanvasComponent } from "../types/canvas";
+import ComponentPalette from '../components/ComponentPalette';
+import DiagramCanvas from '../components/DiagramCanvas';
+import InspectorPanel from '../components/InspectorPanel';
+import type { ComponentProperty } from "../types/canvas";
 
 interface SystemDesignPlaygroundProps {
   problem: SystemDesignProblem | null;
@@ -23,10 +16,12 @@ interface SystemDesignPlaygroundProps {
 }
 
 // Minimal custom node for the canvas (icon + label, solid background + styled handles)
-const MinimalNode: React.FC<{
-  id: string;
-  data: { label: string; icon?: string; expanded?: boolean };
-}> = ({ id, data }) => {
+const MinimalNode: React.FC<unknown> = (props) => {
+  const { id, data } = props as {
+    id: string;
+    data: { label: string; icon?: string; expanded?: boolean };
+  };
+
   // these handlers dispatch events to the page via custom DOM events the ReactFlow wrapper can listen to
   const onDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,44 +85,6 @@ const MinimalNode: React.FC<{
         }}
       />
     </div>
-  );
-};
-
-// Palette item extracted to avoid inline nested functions inside the main component
-const PaletteItem: React.FC<{
-  comp: CanvasComponent;
-  onAdd: (id: string) => void;
-}> = ({ comp, onAdd }) => {
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer?.setData(
-      "application/reactflow",
-      JSON.stringify({ type: comp.id })
-    );
-    e.dataTransfer?.setData("text/plain", comp.id);
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onAdd(comp.id);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      draggable
-      aria-label={`Add ${comp.label} to canvas`}
-      onDragStart={handleDragStart}
-      onKeyDown={handleKeyDown}
-      className="w-full text-left p-3 bg-[var(--surface)] border border-theme rounded-lg cursor-grab select-none"
-    >
-      <div className="text-sm font-medium text-theme">
-        {comp.icon} {comp.label}
-      </div>
-      <div className="text-xs text-muted">{comp.description}</div>
-    </button>
   );
 };
 
@@ -484,186 +441,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = ({
 
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
-        {/* Left Sidebar - Component Palette */}
-        <div className="w-64 bg-surface border-r border-theme p-4">
-          <h3 className="text-lg font-semibold text-theme mb-4">
-            System Components
-          </h3>
-          <div className="space-y-2">
-            {COMPONENTS.map((c) => (
-              <PaletteItem key={c.id} comp={c} onAdd={addNodeFromPalette} />
-            ))}
-          </div>
-          <div className="mt-4 p-3 bg-[var(--brand, #eaf0ff)] border border-theme rounded-lg text-xs text-brand">
-            <div className="font-medium mb-1">💡 Coming Soon:</div>
-            <div className="text-brand">Drag & drop components to canvas</div>
-          </div>
-        </div>
-
-        {/* Center - ReactFlow Canvas */}
-        <div className="flex-1 relative bg-theme min-h-0">
-          <section
-            className="w-full h-full"
-            ref={reactFlowWrapper}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            aria-label="Diagram canvas drop area"
-          >
-            <ReactFlow
-              className="w-full h-full"
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={nodeTypes}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              fitView
-              proOptions={{ hideAttribution: true }}
-            >
-              <MiniMap nodeStrokeWidth={3} />
-              <Controls />
-              <Background gap={16} />
-            </ReactFlow>
-          </section>
-        </div>
-
-        {/* Right Sidebar - Details + Node Inspector (Tabs) */}
-        <div className="w-80 bg-surface border-l border-theme p-4 overflow-y-auto">
-          <div
-            className="flex items-center justify-start gap-2"
-            role="tablist"
-            aria-label="Sidebar tabs"
-          >
-            <button
-              role="tab"
-              className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeRightTab === "details" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
-              onClick={() => setActiveRightTab("details")}
-            >
-              <span className="text-sm">📄</span>
-              <span className="text-sm font-medium">Details</span>
-            </button>
-
-            <button
-              role="tab"
-              className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeRightTab === "inspector" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
-              onClick={() => setActiveRightTab("inspector")}
-            >
-              <span className="text-sm">⚙️</span>
-              <span className="text-sm font-medium">Properties</span>
-            </button>
-          </div>
-          {/* Muted divider under tabs */}
-          <div
-            className="w-full h-px bg-[var(--muted)]/20 mb-4"
-            aria-hidden="true"
-          />
-
-          {activeRightTab === "details" && (
-            <div>
-              <h3 className="text-lg font-semibold text-theme mb-3">
-                {problem.title}
-              </h3>
-              <p className="text-muted text-sm leading-relaxed mb-4">
-                {problem.description}
-              </p>
-
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-theme mb-2">
-                  Requirements
-                </h4>
-                <ul className="space-y-1">
-                  {problem.requirements.map((req) => (
-                    <li key={req} className="flex items-start space-x-2">
-                      <span className="text-green-500 mt-0.5 text-xs">✓</span>
-                      <span className="text-xs text-muted">{req}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-theme mb-2">
-                  Constraints
-                </h4>
-                <ul className="space-y-1">
-                  {problem.constraints.map((constraint) => (
-                    <li key={constraint} className="flex items-start space-x-2">
-                      <span className="text-yellow-500 mt-0.5 text-xs">⚠</span>
-                      <span className="text-xs text-muted">{constraint}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold text-theme mb-2">Hints</h4>
-                <div className="space-y-2">
-                  {problem.hints.map((hint) => (
-                    <div
-                      key={hint}
-                      className="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
-                    >
-                      <div className="text-xs text-muted">{hint}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-sm font-semibold text-theme mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-1">
-                  {problem.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-md"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeRightTab === "inspector" && (
-            <div>
-              <h3 className="text-lg font-semibold text-theme mb-3">
-                Component Properties
-              </h3>
-              {!inspectedNodeId && (
-                <div className="text-sm text-muted">
-                  Select a node settings (⚙️) to view properties.
-                </div>
-              )}
-              {inspectedNodeId && (
-                <div>
-                  <div className="text-sm text-theme mb-2">
-                    Node: {inspectedNodeId}
-                  </div>
-                  {/** Render properties dynamically from COMPONENTS config based on node type label */}
-                  <div className="space-y-2">{propertyElements}</div>
-                  <div className="mt-4 flex space-x-2">
-                    <button
-                      className="px-3 py-1 bg-[var(--brand)] text-white rounded"
-                      onClick={handleSave}
-                    >
-                      Save
-                    </button>
-                    <button
-                      className="px-3 py-1 dark:bg-gray-600 bg-gray-200 rounded"
-                      onClick={() => {
-                        setInspectedNodeId(null);
-                        setActiveRightTab("details");
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <ComponentPalette components={COMPONENTS} onAdd={addNodeFromPalette} />
+        <DiagramCanvas
+          reactFlowWrapperRef={reactFlowWrapper as React.RefObject<HTMLDivElement>}
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange as unknown as (...changes: unknown[]) => void}
+          onEdgesChange={onEdgesChange as unknown as (...changes: unknown[]) => void}
+          onConnect={onConnect}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        />
+        <InspectorPanel
+          problem={problem}
+          activeTab={activeRightTab}
+          setActiveTab={setActiveRightTab}
+          inspectedNodeId={inspectedNodeId}
+          setInspectedNodeId={setInspectedNodeId}
+          propertyElements={propertyElements}
+          handleSave={handleSave}
+        />
       </div>
     </div>
   );
