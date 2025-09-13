@@ -51,13 +51,16 @@ const Dashboard: React.FC = () => {
       <div className="bg-surface shadow-sm border-b border-theme">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-theme">
-                System Design Learning
-              </h1>
-              <p className="mt-2 text-muted">
-                Master system design through interactive problem solving
-              </p>
+            <div className="flex items-center space-x-4">
+              <img src="./logo.png" alt="Logo" className="h-14" />
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-theme">
+                  System Design Learning
+                </h1>
+                <p className="mt-2 text-muted">
+                  Master system design through interactive problem solving
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-muted">

@@ -1,9 +1,10 @@
 export type ComponentProperty = {
   key: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'select';
+  type: 'text' | 'textarea' | 'number' | 'boolean' | 'select';
   default?: string | number | boolean;
-  options?: string[]; // for select type
+  placeholder?: string;
+  options?: string[];
 };
 
 export type CanvasComponent = {

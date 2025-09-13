@@ -8,7 +8,7 @@ interface Props {
 
 export default function ComponentPalette({ components, onAdd }: Props) {
   return (
-    <div className="w-64 bg-surface border-r border-theme p-4 overflow-y-auto component-palette">
+    <div className="w-48 bg-surface border-r border-theme p-4 overflow-y-auto component-palette">
       <h3 className="text-lg font-semibold text-theme mb-4">System Components</h3>
       <div className="space-y-2">
         {components.map((c) => (

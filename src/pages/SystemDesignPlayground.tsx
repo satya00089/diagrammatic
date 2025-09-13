@@ -2,12 +2,18 @@ import React, { useRef, useState } from "react";
 import type { SystemDesignProblem } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import { Handle, addEdge, useNodesState, useEdgesState, Position } from "@xyflow/react";
+import {
+  Handle,
+  addEdge,
+  useNodesState,
+  useEdgesState,
+  Position,
+} from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 import { COMPONENTS } from "../config/components";
-import ComponentPalette from '../components/ComponentPalette';
-import DiagramCanvas from '../components/DiagramCanvas';
-import InspectorPanel from '../components/InspectorPanel';
+import ComponentPalette from "../components/ComponentPalette";
+import DiagramCanvas from "../components/DiagramCanvas";
+import InspectorPanel from "../components/InspectorPanel";
 import type { ComponentProperty } from "../types/canvas";
 import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
@@ -94,14 +100,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme(); // ensure theme applied for this page
   const navigate = useNavigate();
   const params = useParams();
-  const idFromUrl = params?.id as string | undefined;
+  const idFromUrl = params?.id;
 
   const urlProblem = React.useMemo(() => {
     if (!idFromUrl) return null;
     return systemDesignProblems.find((p) => p.id === idFromUrl) ?? null;
   }, [idFromUrl]);
 
-  const problem =  urlProblem;
+  const problem = urlProblem;
   const onBack = () => navigate("/");
 
   // determine difficulty badge classes in one place to avoid nested ternary in JSX
@@ -293,17 +299,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const checkedValue: boolean = Boolean(raw);
 
     return (
-      <div key={p.key} className="flex flex-col">
-        <label htmlFor={inputId} className="text-xs text-muted mb-1">
-          {p.label}
-        </label>
-        {p.type === "boolean" && (
-          <input
-            id={inputId}
-            type="checkbox"
-            checked={checkedValue}
-            onChange={(e) => setPropBoolean(p.key, e.target.checked)}
-          />
+      <div key={p.key} className="flex flex-col px-1">
+        {p.type === "boolean" ? (
+          <label
+            htmlFor={inputId}
+            className="inline-flex items-center gap-2 text-sm text-theme"
+          >
+            <input
+              id={inputId}
+              type="checkbox"
+              checked={checkedValue}
+              onChange={(e) => setPropBoolean(p.key, e.target.checked)}
+              className="w-4 h-4 cursor-pointer rounded border-theme text-theme"
+            />
+            <span className="text-sm text-theme">{p.label}</span>
+          </label>
+        ) : (
+          <label htmlFor={inputId} className="text-xs text-muted mb-1">
+            {p.label}
+          </label>
         )}
         {p.type === "number" && (
           <input
@@ -311,18 +325,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             type="number"
             value={numberValue ?? ""}
             onChange={(e) => setPropNumber(p.key, Number(e.target.value))}
-            className="border p-1 rounded"
+            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
             aria-label={p.label}
           />
         )}
-        {p.type === "string" && (
+        {p.type === "text" && (
           <input
             id={inputId}
             type="text"
             value={stringValue}
             onChange={(e) => setPropString(p.key, e.target.value)}
-            className="border p-1 rounded"
+            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
             aria-label={p.label}
+            placeholder={p.placeholder}
+          />
+        )}
+        {p.type === "textarea" && (
+          <textarea
+            id={inputId}
+            value={stringValue}
+            onChange={(e) => setPropString(p.key, e.target.value)}
+            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
+            aria-label={p.label}
+            placeholder={p.placeholder}
+            rows={4}
           />
         )}
         {p.type === "select" && (
@@ -330,7 +356,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             id={inputId}
             value={selectValue ?? ""}
             onChange={(e) => setPropSelect(p.key, e.target.value)}
-            className="border p-1 rounded"
+            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
             aria-label={p.label}
           >
             {p.options?.map((o: string) => (
@@ -426,19 +452,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             >
               ← Back to Dashboard
             </button>
-            <div>
-              <h1 className="text-lg font-semibold text-theme">
-                {problem.title}
-              </h1>
-              <div className="flex items-center space-x-2 text-sm text-muted">
-                <span
-                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
-                >
-                  {problem.difficulty}
-                </span>
-                <span className="text-muted">{problem.estimatedTime}</span>
-                <span className="text-muted">•</span>
-                <span className="text-muted">{problem.category}</span>
+            <div className="flex items-center space-x-4">
+              <img src="./logo.png" alt="Logo" className="h-12" />
+              <div className="flex-1">
+                <h1 className="text-lg font-semibold text-theme">
+                  {problem.title}
+                </h1>
+                <div className="flex items-center space-x-2 text-sm text-muted">
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
+                  >
+                    {problem.difficulty}
+                  </span>
+                  <span className="text-muted">{problem.estimatedTime}</span>
+                  <span className="text-muted">•</span>
+                  <span className="text-muted">{problem.category}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -453,12 +482,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       <div className="flex-1 flex min-h-0">
         <ComponentPalette components={COMPONENTS} onAdd={addNodeFromPalette} />
         <DiagramCanvas
-          reactFlowWrapperRef={reactFlowWrapper as React.RefObject<HTMLDivElement>}
+          reactFlowWrapperRef={
+            reactFlowWrapper as React.RefObject<HTMLDivElement>
+          }
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange as unknown as (...changes: unknown[]) => void}
-          onEdgesChange={onEdgesChange as unknown as (...changes: unknown[]) => void}
+          onNodesChange={
+            onNodesChange as unknown as (...changes: unknown[]) => void
+          }
+          onEdgesChange={
+            onEdgesChange as unknown as (...changes: unknown[]) => void
+          }
           onConnect={onConnect}
           onDragOver={onDragOver}
           onDrop={onDrop}

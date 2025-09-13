@@ -2,6 +2,61 @@ import type { CanvasComponent } from "../types/canvas";
 
 export const COMPONENTS: CanvasComponent[] = [
   {
+    id: "frontend",
+    icon: "💻",
+    label: "Frontend",
+    description: "User interface",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Frontend",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "framework",
+        label: "Framework",
+        type: "select",
+        default: "React",
+        options: ["React", "Vue", "Angular", "Svelte"],
+      },
+      { key: "instances", label: "Instances", type: "number", default: 3 },
+      {
+        key: "cdn",
+        label: "CDN Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "ssl",
+        label: "SSL Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "staticAssets",
+        label: "Static Assets (GB)",
+        type: "number",
+        default: 50,
+      },
+      {
+        key: "",
+        label: "Component Logic (Pseudo Code)",
+        type: "textarea",
+        placeholder: "submit -> validate -> call API -> show response",
+        default: "",
+      }
+    ],
+  },
+  {
     id: "database",
     icon: "🗄️",
     label: "Database",
