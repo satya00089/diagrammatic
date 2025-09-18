@@ -15,6 +15,7 @@ type InspectorPanelProps = {
   setInspectedNodeId: (id: string | null) => void;
   propertyElements: React.ReactNode;
   handleSave: () => void;
+  assessmentResult?: import('../types/systemDesign').ValidationResult | null;
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -25,8 +26,37 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   setInspectedNodeId,
   propertyElements,
   handleSave,
+  assessmentResult,
 }) => {
   if (!problem) return null;
+
+  const copyAssessment = async () => {
+    if (!assessmentResult) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(assessmentResult, null, 2));
+    } catch {
+      // fallback: create temporary textarea
+      const t = document.createElement('textarea');
+      t.value = JSON.stringify(assessmentResult, null, 2);
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('copy');
+      t.remove();
+    }
+  };
+
+  const downloadAssessment = () => {
+    if (!assessmentResult) return;
+    const blob = new Blob([JSON.stringify(assessmentResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `assessment-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <aside className="w-80 bg-surface border-l border-theme p-4 flex flex-col h-full">
@@ -65,6 +95,73 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <div className="overflow-y-auto component-palette flex-1">
         {activeTab === "details" && (
           <div>
+            {/* Assessment summary */}
+            {assessmentResult && (
+              <div className="mb-4 p-2 border rounded bg-[var(--surface)]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium text-theme">Assessment</div>
+                  <div className="text-sm font-semibold text-theme">{assessmentResult.score}%</div>
+                </div>
+                <div className="text-xs text-muted mb-2">{assessmentResult.isValid ? 'Pass' : 'Needs work'}</div>
+                <div className="space-y-1 text-xs">
+                  {assessmentResult.feedback.slice(0,3).map((f, i) => (
+                    <div key={`${f.category}-${i}`} className="text-sm text-theme">{f.message}</div>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyAssessment}
+                    className="px-2 py-1 bg-theme border border-theme rounded text-sm hover:bg-[var(--bg-hover)]"
+                  >
+                    Copy JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadAssessment}
+                    className="px-2 py-1 bg-theme border border-theme rounded text-sm hover:bg-[var(--bg-hover)]"
+                  >
+                    Download JSON
+                  </button>
+                </div>
+
+                {/* Expanded assessment details */}
+                <div className="mt-3 text-xs">
+                  <div className="font-medium text-sm mb-1">What went right</div>
+                  {assessmentResult.architectureStrengths.length > 0 ? (
+                    <ul className="list-disc list-inside text-xs mb-2">
+                      {assessmentResult.architectureStrengths.map((s, idx) => (
+                        <li key={`strength-${idx}`}>{s}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-xs text-muted mb-2">No notable strengths detected.</div>
+                  )}
+
+                  <div className="font-medium text-sm mb-1">What to improve</div>
+                  {assessmentResult.improvements.length > 0 ? (
+                    <ul className="list-disc list-inside text-xs mb-2">
+                      {assessmentResult.improvements.map((imp, idx) => (
+                        <li key={`imp-${idx}`}>{imp}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-xs text-muted mb-2">No specific improvements suggested.</div>
+                  )}
+
+                  <div className="font-medium text-sm mb-1">Feedback</div>
+                  <div className="space-y-1">
+                    {assessmentResult.feedback.map((f, idx) => (
+                      <div key={`${f.category}-${idx}-${f.type}`} className="text-xs">
+                        <div className="font-medium">{f.category.toUpperCase()}</div>
+                        <div className="text-muted">{f.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <h3 className="text-lg font-semibold text-theme mb-3">
               {problem.title}
             </h3>

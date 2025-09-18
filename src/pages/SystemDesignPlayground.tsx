@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import type { SystemDesignProblem } from "../types/systemDesign";
+import type { SystemDesignProblem, SystemDesignSolution, ValidationResult, ComponentType, ConnectionType } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import {
@@ -17,6 +17,7 @@ import InspectorPanel from "../components/InspectorPanel";
 import type { ComponentProperty } from "../types/canvas";
 import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
+import assessSolution from "../utils/assessor";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -127,6 +128,56 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const onConnect = (connection: Connection) =>
     setEdges((eds) => addEdge(connection, eds));
+
+  // --- Assessment state & runner (hooks must be top-level before any returns) ---
+  const [assessment, setAssessment] = React.useState<ValidationResult | null>(null);
+
+  const runAssessment = () => {
+    const solution: SystemDesignSolution = {
+      components: nodes.map((n) => {
+        const dataObj = (n.data ?? {}) as unknown;
+        const maybeType = (dataObj as { type?: unknown }).type;
+        let inferredType: ComponentType;
+        if (typeof maybeType === "string") inferredType = maybeType as ComponentType;
+        else if (typeof n.type === "string") inferredType = n.type as ComponentType;
+        else inferredType = "microservice";
+
+        const maybeLabel = (dataObj as { label?: unknown }).label;
+        const label = typeof maybeLabel === "string" ? maybeLabel : String(n.id);
+
+        return {
+          id: n.id,
+          type: inferredType,
+          label,
+          position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+          properties: (dataObj as Record<string, unknown>),
+        };
+      }),
+      connections: edges.map((e) => {
+        const dataObj = (e.data ?? {}) as unknown;
+        const maybeType = (dataObj as { type?: unknown }).type;
+        const inferredType: ConnectionType = typeof maybeType === "string" ? (maybeType as ConnectionType) : "api-call";
+
+        const maybeLabel = (dataObj as { label?: unknown }).label;
+        const label = typeof maybeLabel === "string" ? maybeLabel : undefined;
+
+        return {
+          id: e.id ?? `${e.source}-${e.target}`,
+          source: e.source,
+          target: e.target,
+          type: inferredType,
+          label,
+          properties: (dataObj as Record<string, unknown>),
+        };
+      }),
+      explanation: "",
+      keyPoints: [],
+    };
+
+    const res = assessSolution(solution);
+    setAssessment(res);
+    setActiveRightTab("details");
+  };
 
   // ref to the reactflow wrapper to compute drop position
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
@@ -452,28 +503,33 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             >
               ← Back to Dashboard
             </button>
-            <div className="flex items-center space-x-4">
-              <img src="./logo.png" alt="Logo" className="h-12" />
-              <div className="flex-1">
-                <h1 className="text-lg font-semibold text-theme">
-                  {problem.title}
-                </h1>
-                <div className="flex items-center space-x-2 text-sm text-muted">
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
-                  >
-                    {problem.difficulty}
-                  </span>
-                  <span className="text-muted">{problem.estimatedTime}</span>
-                  <span className="text-muted">•</span>
-                  <span className="text-muted">{problem.category}</span>
-                </div>
+            <div>
+              <h1 className="text-lg font-semibold text-theme">
+                {problem.title}
+              </h1>
+              <div className="flex items-center space-x-2 text-sm text-muted">
+                <span
+                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
+                >
+                  {problem.difficulty}
+                </span>
+                <span className="text-muted">{problem.estimatedTime}</span>
+                <span className="text-muted">•</span>
+                <span className="text-muted">{problem.category}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
             <ThemeSwitcher />
+            <button
+              type="button"
+              onClick={runAssessment}
+              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95"
+              title="Run assessment on current diagram"
+            >
+              Assess
+            </button>
           </div>
         </div>
       </div>
@@ -482,9 +538,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       <div className="flex-1 flex min-h-0">
         <ComponentPalette components={COMPONENTS} onAdd={addNodeFromPalette} />
         <DiagramCanvas
-          reactFlowWrapperRef={
-            reactFlowWrapper as React.RefObject<HTMLDivElement>
-          }
+          reactFlowWrapperRef={reactFlowWrapper as React.RefObject<HTMLDivElement>}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -506,6 +560,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           setInspectedNodeId={setInspectedNodeId}
           propertyElements={propertyElements}
           handleSave={handleSave}
+          assessmentResult={assessment}
         />
       </div>
     </div>
