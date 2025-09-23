@@ -2,8 +2,8 @@ import React from 'react';
 import type { CanvasComponent } from '../types/canvas';
 
 interface Props {
-  components: CanvasComponent[];
-  onAdd: (id: string) => void;
+  readonly components: readonly CanvasComponent[];
+  readonly onAdd: (id: string) => void;
 }
 
 export default function ComponentPalette({ components, onAdd }: Props) {

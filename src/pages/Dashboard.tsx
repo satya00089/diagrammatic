@@ -49,7 +49,7 @@ const Dashboard: React.FC = () => {
     <div className="h-screen bg-theme text-theme flex flex-col">
       {/* Header */}
       <div className="bg-surface shadow-sm border-b border-theme">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <img src="./logo.png" alt="Logo" className="h-14" />
@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-theme line-clamp-2">
+                    <h3 className="text-lg font-semibold text-[var(--brand)] line-clamp-2">
                       {problem.title}
                     </h3>
                     <span
@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
                     {problem.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-[var(--bg-secondary, #eef2ff)] text-[var(--brand, #6366f1)] text-xs rounded"
+                        className="px-2 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs capitalize font-bold rounded-full"
                       >
                         {tag}
                       </span>
