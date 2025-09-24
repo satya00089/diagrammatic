@@ -1,14 +1,14 @@
 import React, { useRef, useState } from "react";
-import type { SystemDesignProblem, SystemDesignSolution, ValidationResult, ComponentType, ConnectionType } from "../types/systemDesign";
+import type {
+  SystemDesignProblem,
+  SystemDesignSolution,
+  ValidationResult,
+  ComponentType,
+  ConnectionType,
+} from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import {
-  Handle,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Position,
-} from "@xyflow/react";
+import { addEdge, useNodesState, useEdgesState } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 import { COMPONENTS } from "../config/components";
 import ComponentPalette from "../components/ComponentPalette";
@@ -18,84 +18,12 @@ import type { ComponentProperty } from "../types/canvas";
 import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
 import assessSolution from "../utils/assessor";
+import CustomNode from "../components/Node";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
   onBack?: () => void;
 }
-
-// Minimal custom node for the canvas (icon + label, solid background + styled handles)
-const MinimalNode: React.FC<unknown> = (props) => {
-  const { id, data } = props as {
-    id: string;
-    data: { label: string; icon?: string; expanded?: boolean };
-  };
-
-  // these handlers dispatch events to the page via custom DOM events the ReactFlow wrapper can listen to
-  const onDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const ev = new CustomEvent("diagram:node-delete", { detail: { id } });
-    window.dispatchEvent(ev);
-  };
-
-  const onToggleSettings = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const ev = new CustomEvent("diagram:node-toggle", { detail: { id } });
-    window.dispatchEvent(ev);
-  };
-
-  return (
-    <div className="min-w-[140px] max-w-xs px-3 py-2 bg-surface border border-theme rounded-md text-theme text-sm shadow-sm flex items-center gap-2">
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{
-          width: 14,
-          height: 14,
-          background: "var(--brand)",
-          borderRadius: 8,
-          border: "2px solid var(--surface)",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-        }}
-      />
-
-      <div className="flex items-center gap-2 truncate flex-1">
-        <span className="text-lg leading-none">{data.icon}</span>
-        <span className="truncate">{data.label}</span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          aria-label="Settings"
-          onClick={onToggleSettings}
-          className="p-1 rounded hover:bg-[var(--bg-hover)]"
-        >
-          ⚙️
-        </button>
-        <button
-          aria-label="Delete"
-          onClick={onDelete}
-          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900"
-        >
-          🗑️
-        </button>
-      </div>
-
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{
-          width: 14,
-          height: 14,
-          background: "var(--brand)",
-          borderRadius: 8,
-          border: "2px solid var(--surface)",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.08)",
-        }}
-      />
-    </div>
-  );
-};
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme(); // ensure theme applied for this page
@@ -130,7 +58,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setEdges((eds) => addEdge(connection, eds));
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
-  const [assessment, setAssessment] = React.useState<ValidationResult | null>(null);
+  const [assessment, setAssessment] = React.useState<ValidationResult | null>(
+    null
+  );
 
   const runAssessment = () => {
     const solution: SystemDesignSolution = {
@@ -138,25 +68,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const dataObj = (n.data ?? {}) as unknown;
         const maybeType = (dataObj as { type?: unknown }).type;
         let inferredType: ComponentType;
-        if (typeof maybeType === "string") inferredType = maybeType as ComponentType;
-        else if (typeof n.type === "string") inferredType = n.type as ComponentType;
+        if (typeof maybeType === "string")
+          inferredType = maybeType as ComponentType;
+        else if (typeof n.type === "string")
+          inferredType = n.type as ComponentType;
         else inferredType = "microservice";
 
         const maybeLabel = (dataObj as { label?: unknown }).label;
-        const label = typeof maybeLabel === "string" ? maybeLabel : String(n.id);
+        const label =
+          typeof maybeLabel === "string" ? maybeLabel : String(n.id);
 
         return {
           id: n.id,
           type: inferredType,
           label,
           position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
-          properties: (dataObj as Record<string, unknown>),
+          properties: dataObj as Record<string, unknown>,
         };
       }),
       connections: edges.map((e) => {
         const dataObj = (e.data ?? {}) as unknown;
         const maybeType = (dataObj as { type?: unknown }).type;
-        const inferredType: ConnectionType = typeof maybeType === "string" ? (maybeType as ConnectionType) : "api-call";
+        const inferredType: ConnectionType =
+          typeof maybeType === "string"
+            ? (maybeType as ConnectionType)
+            : "api-call";
 
         const maybeLabel = (dataObj as { label?: unknown }).label;
         const label = typeof maybeLabel === "string" ? maybeLabel : undefined;
@@ -167,7 +103,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           target: e.target,
           type: inferredType,
           label,
-          properties: (dataObj as Record<string, unknown>),
+          properties: dataObj as Record<string, unknown>,
         };
       }),
       explanation: "",
@@ -221,7 +157,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   // register node types
-  const nodeTypes = { custom: MinimalNode };
+  const nodeTypes = { custom: CustomNode };
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -538,7 +474,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       <div className="flex-1 flex min-h-0">
         <ComponentPalette components={COMPONENTS} onAdd={addNodeFromPalette} />
         <DiagramCanvas
-          reactFlowWrapperRef={reactFlowWrapper as React.RefObject<HTMLDivElement>}
+          reactFlowWrapperRef={
+            reactFlowWrapper as React.RefObject<HTMLDivElement>
+          }
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}

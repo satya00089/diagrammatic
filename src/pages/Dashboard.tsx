@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import Fuse from "fuse.js";
+
 import { systemDesignProblems } from "../data/problems";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   useTheme(); // ensure theme applied when Dashboard mounts
@@ -12,17 +14,30 @@ const Dashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const filteredProblems = useMemo(() => {
-    return systemDesignProblems.filter((problem) => {
+    const q = searchTerm?.trim() ?? "";
+    let results = systemDesignProblems;
+
+    if (q.length > 0) {
+      const fuse = new Fuse(systemDesignProblems, {
+        keys: [
+          { name: "title", weight: 0.6 },
+          { name: "description", weight: 0.25 },
+          { name: "tags", weight: 0.15 },
+        ],
+        includeScore: true,
+        threshold: 0.45,
+      });
+
+      results = fuse.search(q).map((r) => r.item);
+    }
+
+    return results.filter((problem) => {
       const matchesDifficulty =
         selectedDifficulty === "All" ||
         problem.difficulty === selectedDifficulty;
       const matchesCategory =
         selectedCategory === "All" || problem.category === selectedCategory;
-      const matchesSearch =
-        problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        problem.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-      return matchesDifficulty && matchesCategory && matchesSearch;
+      return matchesDifficulty && matchesCategory;
     });
   }, [selectedDifficulty, selectedCategory, searchTerm]);
 

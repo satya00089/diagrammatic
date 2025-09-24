@@ -14,7 +14,6 @@ type DiagramCanvasProps = {
   reactFlowWrapperRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
   edges: Edge[];
-  // Node types are passed through to the library — use NodeTypes from the react package
   nodeTypes: NodeTypes;
   onNodesChange: (...changes: unknown[]) => void;
   onEdgesChange: (...changes: unknown[]) => void;
