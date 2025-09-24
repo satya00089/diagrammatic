@@ -31,13 +31,42 @@ const Node: React.FC<Props> = ({ id, data }) => {
   return (
     <motion.fieldset
       initial={{ y: 0, opacity: 1 }}
-      whileHover={{ y: -6, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
+      whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
       whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
       className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg px-3 py-2 flex items-center gap-3 text-theme text-sm shadow-sm cursor-grab"
     >
       <legend className="sr-only">{data.label}</legend>
       <Handle
+        id={`${id}-right-target`}
+        type="target"
+        position={Position.Right}
+        style={{
+          width: 10,
+          height: 10,
+          background: "var(--brand)",
+          borderRadius: 6,
+          border: "2px solid var(--surface)",
+          zIndex: 1000,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      />
+      <Handle
+        id={`${id}-right-source`}
+        type="source"
+        position={Position.Right}
+        style={{
+          width: 10,
+          height: 10,
+          background: "var(--brand)",
+          borderRadius: 6,
+          border: "2px solid var(--surface)",
+          zIndex: 1001,
+        }}
+      />
+      <Handle
+        id={`${id}-left-target`}
         type="target"
         position={Position.Left}
         style={{
@@ -46,6 +75,22 @@ const Node: React.FC<Props> = ({ id, data }) => {
           background: "var(--brand)",
           borderRadius: 6,
           border: "2px solid var(--surface)",
+          zIndex: 1000,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      />
+      <Handle
+        id={`${id}-left-source`}
+        type="source"
+        position={Position.Left}
+        style={{
+          width: 10,
+          height: 10,
+          background: "var(--brand)",
+          borderRadius: 6,
+          border: "2px solid var(--surface)",
+          zIndex: 1001,
         }}
       />
 
@@ -82,18 +127,6 @@ const Node: React.FC<Props> = ({ id, data }) => {
           🗑
         </button>
       </div>
-
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{
-          width: 10,
-          height: 10,
-          background: "var(--brand)",
-          borderRadius: 6,
-          border: "2px solid var(--surface)",
-        }}
-      />
     </motion.fieldset>
   );
 };

@@ -26,7 +26,7 @@ interface SystemDesignPlaygroundProps {
 }
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
-  useTheme(); // ensure theme applied for this page
+  useTheme();
   const navigate = useNavigate();
   const params = useParams();
   const idFromUrl = params?.id;
