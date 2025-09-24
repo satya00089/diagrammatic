@@ -1,6 +1,38 @@
 import React, { useState, useRef } from "react";
-import type { EdgeProps, ReactFlowState } from "@xyflow/react";
+import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
 import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
+
+// Helper function for creating curved paths for bi-directional edges
+const getSpecialPath = (
+  { sourceX, sourceY, targetX, targetY }: { sourceX: number; sourceY: number; targetX: number; targetY: number },
+  offset: number,
+) => {
+  const centerX = (sourceX + targetX) / 2;
+  const centerY = (sourceY + targetY) / 2;
+  return `M ${sourceX} ${sourceY} Q ${centerX} ${centerY + offset} ${targetX} ${targetY}`;
+};
+
+// Compute edge path and center point; extracted to reduce complexity in the main component
+const computeEdgeParams = (
+  params: { sourceX: number; sourceY: number; targetX: number; targetY: number; sourcePosition: Position; targetPosition: Position },
+  isBiDirectionEdge: boolean,
+) => {
+  const { sourceX, sourceY, targetX, targetY } = params;
+
+  if (isBiDirectionEdge) {
+    const offset = sourceX < targetX ? 25 : -25;
+    const edgePath = getSpecialPath({ sourceX, sourceY, targetX, targetY }, offset);
+    const midX = (sourceX + targetX) / 2;
+    const midY = (sourceY + targetY) / 2;
+    const centerX = midX;
+    const centerY = midY + offset / 2;
+    return { edgePath, centerX, centerY };
+  }
+
+  const [edgePath] = getBezierPath(params);
+  const [centerX, centerY] = getEdgeCenter({ sourceX, sourceY, targetX, targetY });
+  return { edgePath, centerX, centerY };
+};
 
 const CustomEdge: React.FC<EdgeProps> = (props) => {
   const { id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected, markerEnd } = props;
@@ -22,17 +54,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     return edgeExists;
   });
 
-  // Helper function for creating curved paths for bi-directional edges
-  const getSpecialPath = (
-    { sourceX, sourceY, targetX, targetY }: { sourceX: number; sourceY: number; targetX: number; targetY: number },
-    offset: number,
-  ) => {
-    const centerX = (sourceX + targetX) / 2;
-    const centerY = (sourceY + targetY) / 2;
-    return `M ${sourceX} ${sourceY} Q ${centerX} ${centerY + offset} ${targetX} ${targetY}`;
-  };
-
-  // Calculate path based on whether it's bi-directional
+  // Calculate path and center using extracted helper
   const edgePathParams = {
     sourceX,
     sourceY,
@@ -41,32 +63,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     targetY,
     targetPosition,
   };
-
-  let edgePath = '';
-  if (isBiDirectionEdge) {
-    edgePath = getSpecialPath({ sourceX, sourceY, targetX, targetY }, sourceX < targetX ? 25 : -25);
-  } else {
-    [edgePath] = getBezierPath(edgePathParams);
-  }
-
-  // Calculate center point based on path type
-  let centerX: number, centerY: number;
-  if (isBiDirectionEdge) {
-    // For curved paths, calculate the center of the curve
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2;
-    const offset = sourceX < targetX ? 25 : -25;
-    centerX = midX;
-    centerY = midY + offset / 2; // Adjust for curve
-  } else {
-    // For straight paths, use the standard center calculation
-    [centerX, centerY] = getEdgeCenter({
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-    });
-  }
+  const { edgePath, centerX, centerY } = computeEdgeParams(edgePathParams, isBiDirectionEdge);
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
