@@ -1,4 +1,5 @@
 import React from "react";
+import { PiDotsSixVerticalBold } from 'react-icons/pi';
 
 type InspectorPanelProps = {
   problem: {
@@ -28,6 +29,22 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   handleSave,
   assessmentResult,
 }) => {
+  const [width, setWidth] = React.useState(320); // px
+  const minWidth = 260;
+  const maxWidth = 560;
+  const resizingRef = React.useRef(false);
+  const panelRef = React.useRef<HTMLElement | null>(null);
+
+  const onMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!resizingRef.current) return;
+    const next = Math.min(Math.max(window.innerWidth - e.clientX, minWidth), maxWidth);
+    setWidth(next);
+  }, []);
+  const stopResize = React.useCallback(() => { resizingRef.current = false; document.body.style.userSelect = ""; }, []);
+  const onMouseDown = (e: React.MouseEvent) => { e.preventDefault(); resizingRef.current = true; document.body.style.userSelect = "none"; };
+  React.useEffect(() => { window.addEventListener("mousemove", onMouseMove); window.addEventListener("mouseup", stopResize); return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", stopResize); }; }, [onMouseMove, stopResize]);
+  React.useEffect(() => { if (panelRef.current) { panelRef.current.style.width = width + 'px'; } }, [width]);
+
   if (!problem) return null;
 
   const copyAssessment = async () => {
@@ -59,7 +76,25 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <aside className="w-80 bg-surface border-l border-theme p-4 flex flex-col h-full">
+    <aside
+      ref={panelRef}
+      className="bg-surface border-l border-theme p-4 flex flex-col h-full relative inspector-resizable"
+      data-width={width}
+    >
+      <button
+        type="button"
+        onMouseDown={onMouseDown}
+        aria-label="Resize inspector panel"
+        className="absolute left-0 top-0 h-full w-2 -ml-1 cursor-col-resize flex items-center justify-center group"
+      >
+        <span className="w-px h-full bg-transparent group-hover:bg-[var(--brand)]/40 transition-colors" />
+        <PiDotsSixVerticalBold
+          aria-hidden
+          className="absolute py-1 rounded-md bg-[var(--surface)] border border-theme text-[var(--muted)] opacity-90 group-hover:bg-[var(--brand)] group-hover:text-white shadow-sm pointer-events-none transition-colors"
+          size={24}
+        />
+      </button>
+
       <div
         className="flex items-center justify-start gap-2"
         role="tablist"
@@ -104,8 +139,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
                 <div className="text-xs text-muted mb-2">{assessmentResult.isValid ? 'Pass' : 'Needs work'}</div>
                 <div className="space-y-1 text-xs">
-                  {assessmentResult.feedback.slice(0,3).map((f, i) => (
-                    <div key={`${f.category}-${i}`} className="text-sm text-theme">{f.message}</div>
+                  {assessmentResult.feedback.slice(0,3).map((f) => (
+                    <div key={`${f.category}-${f.type}`} className="text-sm text-theme">{f.message}</div>
                   ))}
                 </div>
 
@@ -131,8 +166,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <div className="font-medium text-sm mb-1">What went right</div>
                   {assessmentResult.architectureStrengths.length > 0 ? (
                     <ul className="list-disc list-inside text-xs mb-2">
-                      {assessmentResult.architectureStrengths.map((s, idx) => (
-                        <li key={`strength-${idx}`}>{s}</li>
+                      {assessmentResult.architectureStrengths.map((s) => (
+                        <li key={`strength-${s}`}>{s}</li>
                       ))}
                     </ul>
                   ) : (
@@ -142,8 +177,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   <div className="font-medium text-sm mb-1">What to improve</div>
                   {assessmentResult.improvements.length > 0 ? (
                     <ul className="list-disc list-inside text-xs mb-2">
-                      {assessmentResult.improvements.map((imp, idx) => (
-                        <li key={`imp-${idx}`}>{imp}</li>
+                      {assessmentResult.improvements.map((imp) => (
+                        <li key={`imp-${imp}`}>{imp}</li>
                       ))}
                     </ul>
                   ) : (
@@ -152,8 +187,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                   <div className="font-medium text-sm mb-1">Feedback</div>
                   <div className="space-y-1">
-                    {assessmentResult.feedback.map((f, idx) => (
-                      <div key={`${f.category}-${idx}-${f.type}`} className="text-xs">
+                    {assessmentResult.feedback.map((f) => (
+                      <div key={`${f.category}-${f.type}`} className="text-xs">
                         <div className="font-medium">{f.category.toUpperCase()}</div>
                         <div className="text-muted">{f.message}</div>
                       </div>
@@ -272,3 +307,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 };
 
 export default InspectorPanel;
+
+/* CSS (add to global):
+.inspector-resizable { width: var(--inspector-width,320px); min-width:260px; max-width:560px; }
+*/
