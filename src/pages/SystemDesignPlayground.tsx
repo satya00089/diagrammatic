@@ -1,4 +1,6 @@
 import React, { useRef, useState } from "react";
+import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
+import { AnimatedNumberInput, AnimatedTextInput, AnimatedTextarea, AnimatedSelect } from "../components/shared/AnimatedInputFields";
 import type {
   SystemDesignProblem,
   SystemDesignSolution,
@@ -211,22 +213,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  // listen for label edits from CustomEdge and persist into edges state
+  function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
+    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } : edge);
+  }
+
+  const edgeLabelChangeHandlerRef = React.useRef<((e: Event) => void) | undefined>(undefined);
+  edgeLabelChangeHandlerRef.current = (e: Event) => {
+    const ce = e as CustomEvent;
+    const { id, label, hasLabel } = ce.detail as { id: string; label: string; hasLabel: boolean };
+    setEdges((eds) => updateEdgeLabel(eds, id, label, hasLabel));
+  };
+
   React.useEffect(() => {
-    const handler = (e: Event) => {
-      const ce = e as CustomEvent;
-      const { id, label, hasLabel } = ce.detail as { id: string; label: string; hasLabel: boolean };
-      setEdges((eds) => 
-        eds.map((edge) => 
-          edge.id === id 
-            ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } 
-            : edge
-        )
-      );
-    };
-    window.addEventListener("diagram:edge-label-change", handler as EventListener);
-    return () => window.removeEventListener("diagram:edge-label-change", handler as EventListener);
-  }, [setEdges]);
+    const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
+    window.addEventListener("diagram:edge-label-change", listener as EventListener);
+    return () => window.removeEventListener("diagram:edge-label-change", listener as EventListener);
+  }, []);
 
   // register window event listeners once (mount/unmount)
   React.useEffect(() => {
@@ -313,71 +315,49 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     return (
       <div key={p.key} className="flex flex-col px-1">
-        {p.type === "boolean" ? (
-          <label
-            htmlFor={inputId}
-            className="inline-flex items-center gap-2 text-sm text-theme"
-          >
-            <input
-              id={inputId}
-              type="checkbox"
-              checked={checkedValue}
-              onChange={(e) => setPropBoolean(p.key, e.target.checked)}
-              className="w-4 h-4 cursor-pointer rounded border-theme text-theme"
-            />
-            <span className="text-sm text-theme">{p.label}</span>
-          </label>
-        ) : (
-          <label htmlFor={inputId} className="text-xs text-muted mb-1">
-            {p.label}
-          </label>
+        {p.type === "boolean" && (
+          <AnimatedCheckbox
+            id={inputId}
+            checked={checkedValue}
+            onChange={(val) => setPropBoolean(p.key, val)}
+            label={p.label}
+          />
         )}
         {p.type === "number" && (
-          <input
+          <AnimatedNumberInput
             id={inputId}
-            type="number"
-            value={numberValue ?? ""}
-            onChange={(e) => setPropNumber(p.key, Number(e.target.value))}
-            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
-            aria-label={p.label}
+            label={p.label}
+            value={numberValue}
+            onChange={(val) => setPropNumber(p.key, val)}
           />
         )}
         {p.type === "text" && (
-          <input
+          <AnimatedTextInput
             id={inputId}
-            type="text"
+            label={p.label}
             value={stringValue}
-            onChange={(e) => setPropString(p.key, e.target.value)}
-            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
-            aria-label={p.label}
             placeholder={p.placeholder}
+            onChange={(val) => setPropString(p.key, val)}
           />
         )}
         {p.type === "textarea" && (
-          <textarea
+          <AnimatedTextarea
             id={inputId}
+            label={p.label}
             value={stringValue}
-            onChange={(e) => setPropString(p.key, e.target.value)}
-            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
-            aria-label={p.label}
             placeholder={p.placeholder}
-            rows={4}
+            onChange={(v) => setPropString(p.key, v)}
+            rows={8}
           />
         )}
         {p.type === "select" && (
-          <select
+          <AnimatedSelect
             id={inputId}
-            value={selectValue ?? ""}
-            onChange={(e) => setPropSelect(p.key, e.target.value)}
-            className="border p-1 px-2 rounded bg-[var(--surface)] text-theme"
-            aria-label={p.label}
-          >
-            {p.options?.map((o: string) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
+            label={p.label}
+            value={selectValue}
+            options={p.options || []}
+            onChange={(v) => setPropSelect(p.key, v)}
+          />
         )}
       </div>
     );
