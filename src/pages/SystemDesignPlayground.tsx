@@ -8,7 +8,7 @@ import type {
 } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import { addEdge, useNodesState, useEdgesState } from "@xyflow/react";
+import { useNodesState, useEdgesState, addEdge } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 import { COMPONENTS } from "../config/components";
 import ComponentPalette from "../components/ComponentPalette";
@@ -19,6 +19,7 @@ import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
+import CustomEdge from "../components/CustomEdge";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -54,8 +55,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
 
-  const onConnect = (connection: Connection) =>
-    setEdges((eds) => addEdge(connection, eds));
+  const onConnect = (connection: Connection) => {
+    // Use React Flow's addEdge helper with our custom edge type
+    const newEdge = {
+      ...connection,
+      type: "customEdge",
+      data: { label: "", hasLabel: false },
+    };
+    setEdges((eds) => addEdge(newEdge, eds));
+  };
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
@@ -156,8 +164,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
-  // register node types
+  // register node and edge types
   const nodeTypes = { custom: CustomNode };
+  const edgeTypes = { customEdge: CustomEdge };
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -201,6 +210,23 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return next;
     });
   };
+
+  // listen for label edits from CustomEdge and persist into edges state
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent;
+      const { id, label, hasLabel } = ce.detail as { id: string; label: string; hasLabel: boolean };
+      setEdges((eds) => 
+        eds.map((edge) => 
+          edge.id === id 
+            ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } 
+            : edge
+        )
+      );
+    };
+    window.addEventListener("diagram:edge-label-change", handler as EventListener);
+    return () => window.removeEventListener("diagram:edge-label-change", handler as EventListener);
+  }, [setEdges]);
 
   // register window event listeners once (mount/unmount)
   React.useEffect(() => {
@@ -480,6 +506,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={
             onNodesChange as unknown as (...changes: unknown[]) => void
           }

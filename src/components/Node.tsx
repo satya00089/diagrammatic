@@ -38,59 +38,29 @@ const Node: React.FC<Props> = ({ id, data }) => {
     >
       <legend className="sr-only">{data.label}</legend>
       <Handle
-        id={`${id}-right-target`}
-        type="target"
-        position={Position.Right}
-        style={{
-          width: 10,
-          height: 10,
-          background: "var(--brand)",
-          borderRadius: 6,
-          border: "2px solid var(--surface)",
-          zIndex: 1000,
-          opacity: 0,
-          pointerEvents: "none",
-        }}
-      />
-      <Handle
-        id={`${id}-right-source`}
+        id="right"
         type="source"
         position={Position.Right}
+        isConnectable={true}
         style={{
           width: 10,
           height: 10,
           background: "var(--brand)",
           borderRadius: 6,
           border: "2px solid var(--surface)",
-          zIndex: 1001,
         }}
       />
       <Handle
-        id={`${id}-left-target`}
+        id="left" 
         type="target"
         position={Position.Left}
+        isConnectable={true}
         style={{
           width: 10,
           height: 10,
           background: "var(--brand)",
           borderRadius: 6,
           border: "2px solid var(--surface)",
-          zIndex: 1000,
-          opacity: 0,
-          pointerEvents: "none",
-        }}
-      />
-      <Handle
-        id={`${id}-left-source`}
-        type="source"
-        position={Position.Left}
-        style={{
-          width: 10,
-          height: 10,
-          background: "var(--brand)",
-          borderRadius: 6,
-          border: "2px solid var(--surface)",
-          zIndex: 1001,
         }}
       />
 

@@ -4,6 +4,7 @@ import {
   type Edge,
   type Connection,
   type NodeTypes,
+  type EdgeTypes,
   ReactFlow,
   MiniMap,
   Controls,
@@ -15,6 +16,7 @@ type DiagramCanvasProps = {
   nodes: Node[];
   edges: Edge[];
   nodeTypes: NodeTypes;
+  edgeTypes?: EdgeTypes;
   onNodesChange: (...changes: unknown[]) => void;
   onEdgesChange: (...changes: unknown[]) => void;
   onConnect: (c: Connection) => void;
@@ -27,6 +29,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   nodes,
   edges,
   nodeTypes,
+  edgeTypes,
   onNodesChange,
   onEdgesChange,
   onConnect,
@@ -47,6 +50,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
