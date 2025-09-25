@@ -22,7 +22,9 @@ import {
   MdFormatListBulleted,
   MdFormatListNumbered,
   MdFormatQuote,
-  MdCode
+  MdCode,
+  MdFullscreen,
+  MdFullscreenExit
 } from 'react-icons/md'
 
 export interface AnimatedTextareaProps {
@@ -91,7 +93,7 @@ const HeadingSelect: React.FC<{
       className="rounded border px-1 py-0.5 bg-[var(--surface)] text-theme"
       disabled={disabled}
     >
-      <option value="0">Paragraph</option>
+      <option value="0">P</option>
       <option value="1">H1</option>
       <option value="2">H2</option>
       <option value="3">H3</option>
@@ -109,9 +111,15 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
   className = '',
   containerClassName,
 }) => {
-  const [, setEditorState] = useState({})
+  const [, forceUpdate] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const { focused, onFocus, onBlur } = useFocus()
-  const forceUpdate = () => setEditorState({})
+  
+  const triggerUpdate = () => forceUpdate(Date.now())
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen)
+  }
 
   const editor = useEditor({
     extensions: [
@@ -160,11 +168,11 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
     onBlur: onBlur,
     onSelectionUpdate: () => {
       // Force re-render when selection changes to update button states
-      forceUpdate()
+      triggerUpdate()
     },
     onTransaction: () => {
       // Force re-render on any transaction to keep UI in sync
-      forceUpdate()
+      triggerUpdate()
     },
   })
 
@@ -175,6 +183,28 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
     }
     editor.setEditable(!disabled)
   }, [value, disabled, editor])
+
+  // Handle ESC key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleKeyDown)
+      // Prevent body scroll when in fullscreen
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isFullscreen])
 
   if (!editor) return null
 
@@ -262,51 +292,147 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
     },
   ]
 
+  const utilityButtons = [
+    {
+      key: 'fullscreen',
+      title: isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen',
+      onClick: toggleFullscreen,
+      active: isFullscreen,
+      node: isFullscreen ? <MdFullscreenExit size={16} /> : <MdFullscreen size={16} />,
+    },
+  ]
+
   return (
-    <FieldWrapper id={id} label={label} focused={focused} containerClassName={containerClassName}>
-      <motion.div
-        className={`rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme ${className} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-        animate={{ boxShadow: focused ? '0 0 0 2px var(--brand)' : '0 0 0 1px var(--border)' }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-1 text-sm">
-          <HeadingSelect editor={editor} disabled={disabled} />
+    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[var(--bg)] flex flex-col' : ''}>
+      {isFullscreen ? (
+        // Fullscreen mode without FieldWrapper to maximize space
+        <motion.div
+          className="h-full flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme m-4"
+          animate={{ boxShadow: focused ? '0 0 0 2px var(--brand)' : '0 0 0 1px var(--border)' }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        >
+          {/* Fullscreen Toolbar */}
+          <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-2 text-sm shrink-0">
+            <div className="flex items-center gap-2 mr-4">
+              {label && <span className="font-medium text-theme">{label}</span>}
+            </div>
+            <HeadingSelect editor={editor} disabled={disabled} />
 
-          {inlineButtons.map((b) => (
-            <ToolbarButton
-              key={b.key}
-              onClick={b.onClick}
-              disabled={disabled}
-              active={b.active}
-              title={b.title}
-            >
-              {b.node}
-            </ToolbarButton>
-          ))}
+            {inlineButtons.map((b) => (
+              <ToolbarButton
+                key={b.key}
+                onClick={b.onClick}
+                disabled={disabled}
+                active={b.active}
+                title={b.title}
+              >
+                {b.node}
+              </ToolbarButton>
+            ))}
 
-          {alignmentButtons.map((b) => (
-            <ToolbarButton
-              key={b.key}
-              onClick={b.onClick}
-              disabled={disabled}
-              active={b.active}
-              title={b.title}
-            >
-              {b.node}
-            </ToolbarButton>
-          ))}
-        </div>
+            {alignmentButtons.map((b) => (
+              <ToolbarButton
+                key={b.key}
+                onClick={b.onClick}
+                disabled={disabled}
+                active={b.active}
+                title={b.title}
+              >
+                {b.node}
+              </ToolbarButton>
+            ))}
 
-        {/* Content */}
-        <div className="p-3 min-h-[8rem] prose prose-invert max-w-none">
-          <EditorContent 
-            editor={editor} 
-            className="focus:outline-none"
-          />
-        </div>
-      </motion.div>
-    </FieldWrapper>
+            {/* Separator */}
+            <div className="w-px h-6 bg-[var(--border)] mx-1" />
+
+            {utilityButtons.map((b) => (
+              <ToolbarButton
+                key={b.key}
+                onClick={b.onClick}
+                disabled={disabled}
+                active={b.active}
+                title={b.title}
+              >
+                {b.node}
+              </ToolbarButton>
+            ))}
+          </div>
+
+          {/* Fullscreen Content */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full overflow-y-auto p-4">
+              <div className="prose prose-invert max-w-none min-h-full">
+                <EditorContent 
+                  editor={editor} 
+                  className="focus:outline-none h-full"
+                />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        // Normal mode with FieldWrapper
+        <FieldWrapper id={id} label={label} focused={focused} containerClassName={containerClassName}>
+          <motion.div
+            className={`rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme ${className} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            animate={{ boxShadow: focused ? '0 0 0 2px var(--brand)' : '0 0 0 1px var(--border)' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
+            {/* Normal Toolbar */}
+            <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-1 text-sm">
+              <HeadingSelect editor={editor} disabled={disabled} />
+
+              {inlineButtons.map((b) => (
+                <ToolbarButton
+                  key={b.key}
+                  onClick={b.onClick}
+                  disabled={disabled}
+                  active={b.active}
+                  title={b.title}
+                >
+                  {b.node}
+                </ToolbarButton>
+              ))}
+
+              {alignmentButtons.map((b) => (
+                <ToolbarButton
+                  key={b.key}
+                  onClick={b.onClick}
+                  disabled={disabled}
+                  active={b.active}
+                  title={b.title}
+                >
+                  {b.node}
+                </ToolbarButton>
+              ))}
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-[var(--border)] mx-1" />
+
+              {utilityButtons.map((b) => (
+                <ToolbarButton
+                  key={b.key}
+                  onClick={b.onClick}
+                  disabled={disabled}
+                  active={b.active}
+                  title={b.title}
+                >
+                  {b.node}
+                </ToolbarButton>
+              ))}
+            </div>
+
+            {/* Normal Content */}
+            <div className="p-3 min-h-[8rem] prose prose-invert max-w-none">
+              <EditorContent 
+                editor={editor} 
+                className="focus:outline-none"
+              />
+            </div>
+          </motion.div>
+        </FieldWrapper>
+      )}
+    </div>
   )
 }
 
