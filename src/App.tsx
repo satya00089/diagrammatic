@@ -1,36 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import SystemDesignPlayground from "./pages/SystemDesignPlayground";
-import { type SystemDesignProblem } from "./types/systemDesign";
+import { useTheme } from "./hooks/useTheme";
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<"dashboard" | "playground">(
-    "dashboard"
-  );
-  const [selectedProblem, setSelectedProblem] =
-    useState<SystemDesignProblem | null>(null);
-
-  const handleSelectProblem = (problem: SystemDesignProblem) => {
-    setSelectedProblem(problem);
-    setCurrentView("playground");
-  };
-
-  const handleBackToDashboard = () => {
-    setCurrentView("dashboard");
-    setSelectedProblem(null);
-  };
+  useTheme(); // initialize theme globally
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {currentView === "dashboard" ? (
-        <Dashboard onSelectProblem={handleSelectProblem} />
-      ) : (
-        <SystemDesignPlayground
-          problem={selectedProblem}
-          onBack={handleBackToDashboard}
-        />
-      )}
-    </div>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/playground/:id" element={<SystemDesignPlayground />} />
+        <Route path="*" element={<Dashboard />} />
+      </Routes>
+    </HashRouter>
   );
 };
 

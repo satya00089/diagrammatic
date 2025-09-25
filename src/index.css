@@ -9,6 +9,20 @@
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Semantic variables used by components */
+  --bg: var(--color-bg);
+  --surface: var(--color-bg-secondary);
+  --bg-hover: var(--color-bg-hover);
+  --text: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --border: var(--color-border);
+
+  /* Brand / accent colors */
+  --brand: #6366f1;
+  /* indigo-500 */
+  --accent: #ec4899;
+  /* rose-500 */
 }
 
 .dark {
@@ -18,12 +32,26 @@
   --color-text: #f9fafb;
   --color-text-secondary: #d1d5db;
   --color-border: #374151;
+
+  /* Semantic variables for dark mode */
+  --bg: var(--color-bg);
+  --surface: var(--color-bg-secondary);
+  --bg-hover: var(--color-bg-hover);
+  --text: var(--color-text);
+  --muted: var(--color-text-secondary);
+  --border: var(--color-border);
+
+  /* Brand / accent colors (adjusted for dark) */
+  --brand: #8b5cf6;
+  /* slightly brighter indigo */
+  --accent: #f472b6;
 }
 
 /* Apply defaults */
-html, body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+html,
+body {
+  background-color: var(--bg, var(--color-bg));
+  color: var(--text, var(--color-text));
   font-family: var(--font-family);
 }
 
@@ -33,11 +61,7 @@ html, body {
 }
 
 /* Light theme (default) */
-.react-flow__node {
-  background: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
+
 
 .react-flow__edge-path {
   stroke: var(--muted) !important;
@@ -68,11 +92,7 @@ html, body {
 }
 
 /* Dark theme overrides */
-.dark .react-flow__node {
-  background: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--text) !important;
-}
+
 
 .dark .react-flow__edge-path {
   stroke: var(--muted) !important;
@@ -102,33 +122,44 @@ html, body {
   background: var(--bg) !important;
 }
 
-/* small utilities you can reuse (optional) */
-.bg-surface { background-color: var(--surface); }
-.text-muted { color: var(--muted); }
-.border-theme { border-color: var(--border); }
-
-.react-flow__edge {
-  stroke: var(--color-border);
+/* --- Theme variable fallbacks & semantic utilities --- */
+/* Prefer --bg/--surface/--text variables if present, otherwise fall back to older --color-* variables */
+html,
+body {
+  background-color: var(--bg, var(--color-bg));
+  color: var(--text, var(--color-text));
 }
 
-.react-flow__controls {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+/* Semantic utility classes that reference theme variables */
+.text-theme {
+  color: var(--text, var(--color-text));
 }
 
-.react-flow__controls button {
-  background: var(--color-bg);
-  color: var(--color-text);
-  border-bottom: 1px solid var(--color-border);
+.text-muted {
+  color: var(--muted, var(--color-text-secondary));
 }
 
-.react-flow__controls button:hover {
-  background: var(--color-bg-hover);
+.bg-theme {
+  background-color: var(--bg, var(--color-bg));
 }
 
-.react-flow__background {
-  background-color: var(--color-bg-secondary);
+.bg-surface {
+  background-color: var(--surface, var(--color-bg-secondary));
 }
+
+.border-theme {
+  border-color: var(--border, var(--color-border));
+}
+
+.text-brand {
+  color: var(--brand, #6366f1);
+}
+
+.bg-accent {
+  background-color: var(--accent, #ec4899);
+}
+
+/* End of theme utilities */
 
 /* Utility classes */
 .line-clamp-2 {
@@ -143,4 +174,73 @@ html, body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Themed scrollbar for component palette */
+.component-palette {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.component-palette::-webkit-scrollbar {
+  width: 10px;
+}
+
+.component-palette::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.component-palette::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Dark theme override */
+.dark .component-palette {
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.dark .component-palette::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Ensure selects and their options follow the theme variables (light + dark). */
+select,
+select option {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Scope additional rules to component-palette and inspector areas to minimize global impact */
+.component-palette select,
+.inspector-panel select,
+.component-palette select option,
+.inspector-panel select option {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* Option hover/selected styling to use brand color for visibility */
+.component-palette select option:hover,
+.component-palette select option:checked,
+.component-palette select option:focus,
+.inspector-panel select option:hover,
+.inspector-panel select option:checked,
+.inspector-panel select option:focus {
+  background-color: var(--brand) !important;
+  color: var(--surface) !important;
+}
+
+/* Slightly different brand tone in dark mode for contrast */
+.dark .component-palette select option:hover,
+.dark .component-palette select option:checked,
+.dark .component-palette select option:focus,
+.dark .inspector-panel select option:hover,
+.dark .inspector-panel select option:checked,
+.dark .inspector-panel select option:focus {
+  background-color: color-mix(in srgb, var(--brand) 80%, rgba(255, 255, 255, 0.06)) !important;
+  color: var(--surface) !important;
 }

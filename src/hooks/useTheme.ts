@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import type { ColorMode } from "@xyflow/react";
 
 export type Theme = "system" | "light" | "dark";
@@ -21,7 +21,7 @@ export function useTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
 
     const apply = (t: Theme) => {

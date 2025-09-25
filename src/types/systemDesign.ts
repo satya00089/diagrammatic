@@ -24,7 +24,7 @@ export interface SystemComponent {
   type: ComponentType;
   label: string;
   position: { x: number; y: number };
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
   description?: string;
 }
 
@@ -34,7 +34,7 @@ export interface SystemConnection {
   target: string;
   type: ConnectionType;
   label?: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 export type ComponentType = 
@@ -88,7 +88,7 @@ export interface ComponentTemplate {
   label: string;
   icon: string;
   description: string;
-  defaultProperties: Record<string, any>;
+  defaultProperties: Record<string, unknown>;
   category: 'frontend' | 'backend' | 'database' | 'infrastructure' | 'external';
   color: string;
 }
