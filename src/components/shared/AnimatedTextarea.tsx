@@ -9,6 +9,18 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Heading from '@tiptap/extension-heading'
 import { FieldWrapper } from './AnimatedFieldBase'
 import { useFocus } from './useFocus'
+import { 
+  MdFormatAlignLeft, 
+  MdFormatAlignCenter, 
+  MdFormatAlignRight,
+  MdFormatBold,
+  MdFormatItalic,
+  MdFormatUnderlined,
+  MdFormatListBulleted,
+  MdFormatListNumbered,
+  MdFormatQuote,
+  MdCode
+} from 'react-icons/md'
 
 export interface AnimatedTextareaProps {
   id: string
@@ -121,39 +133,43 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
         <button 
           onClick={() => editor.chain().focus().toggleBold().run()} 
           disabled={disabled}
+          title="Bold"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('bold') 
-              ? 'font-bold bg-[var(--brand)] text-white' 
+              ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          B
+          <MdFormatBold size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().toggleItalic().run()} 
           disabled={disabled}
+          title="Italic"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('italic') 
-              ? 'italic bg-[var(--brand)] text-white' 
+              ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          I
+          <MdFormatItalic size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().toggleUnderline().run()} 
           disabled={disabled}
+          title="Underline"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('underline') 
-              ? 'underline bg-[var(--brand)] text-white' 
+              ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          U
+          <MdFormatUnderlined size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().toggleStrike().run()} 
           disabled={disabled}
+          title="Strikethrough"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('strike') 
               ? 'line-through bg-[var(--brand)] text-white' 
@@ -166,82 +182,89 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
         <button 
           onClick={() => editor.chain().focus().toggleBulletList().run()} 
           disabled={disabled}
+          title="Bullet List"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('bulletList') 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          • List
+          <MdFormatListBulleted size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().toggleOrderedList().run()} 
           disabled={disabled}
+          title="Numbered List"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('orderedList') 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          1. List
+          <MdFormatListNumbered size={16} />
         </button>
 
         <button 
           onClick={() => editor.chain().focus().toggleBlockquote().run()} 
           disabled={disabled}
+          title="Quote"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('blockquote') 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          ❝
+          <MdFormatQuote size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().toggleCodeBlock().run()} 
           disabled={disabled}
+          title="Code Block"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive('codeBlock') 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {'</>'}
+          <MdCode size={16} />
         </button>
 
         {/* Alignment */}
         <button 
           onClick={() => editor.chain().focus().setTextAlign('left').run()} 
           disabled={disabled}
+          title="Align Left"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive({ textAlign: 'left' }) 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          ⬅
+          <MdFormatAlignLeft size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().setTextAlign('center').run()} 
           disabled={disabled}
+          title="Align Center"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive({ textAlign: 'center' }) 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          ⬍
+          <MdFormatAlignCenter size={16} />
         </button>
         <button 
           onClick={() => editor.chain().focus().setTextAlign('right').run()} 
           disabled={disabled}
+          title="Align Right"
           className={`px-2 py-1 rounded transition-colors ${
             editor.isActive({ textAlign: 'right' }) 
               ? 'bg-[var(--brand)] text-white' 
               : 'hover:bg-[var(--bg-hover)] text-theme'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          ➡
+          <MdFormatAlignRight size={16} />
         </button>
       </div>
 
