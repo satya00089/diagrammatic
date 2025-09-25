@@ -347,7 +347,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             value={stringValue}
             placeholder={p.placeholder}
             onChange={(v) => setPropString(p.key, v)}
-            rows={8}
           />
         )}
         {p.type === "select" && (

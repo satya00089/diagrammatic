@@ -165,6 +165,7 @@ body {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -172,6 +173,7 @@ body {
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -243,4 +245,110 @@ select option {
 .dark .inspector-panel select option:focus {
   background-color: color-mix(in srgb, var(--brand) 80%, rgba(255, 255, 255, 0.06)) !important;
   color: var(--surface) !important;
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none !important;
+  padding: 0.5rem;
+  color: var(--text);
+  background-color: transparent;
+  line-height: 1.6;
+  font-size: 0.875rem;
+}
+
+.ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
+  color: var(--text);
+  font-weight: 600;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.ProseMirror h1 { font-size: 1.5rem; }
+.ProseMirror h2 { font-size: 1.25rem; }
+.ProseMirror h3 { font-size: 1.125rem; }
+
+.ProseMirror ul, .ProseMirror ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 4px solid var(--brand);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.ProseMirror code {
+  background-color: var(--bg-hover);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+.ProseMirror pre {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.ProseMirror pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.ProseMirror strong {
+  font-weight: 600;
+}
+
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror s {
+  text-decoration: line-through;
+}
+
+/* Placeholder styles */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Dark mode adjustments */
+.dark .ProseMirror blockquote {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.dark .ProseMirror code {
+  background-color: var(--bg-hover);
+}
+
+.dark .ProseMirror pre {
+  background-color: var(--surface);
 }
