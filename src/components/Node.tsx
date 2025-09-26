@@ -1,9 +1,9 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete } from "react-icons/md";
+import { MdSettings, MdDelete, MdCopyAll } from "react-icons/md";
 
-type NodeData = {
+export type NodeData = {
   label: string;
   icon?: string;
   subtitle?: string;
@@ -12,9 +12,10 @@ type NodeData = {
 type Props = {
   id: string;
   data: NodeData;
+  onCopy?: (id: string, data: NodeData) => void;
 };
 
-const Node: React.FC<Props> = ({ id, data }) => {
+const Node: React.FC<Props> = ({ id, data, onCopy }) => {
   const onDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.dispatchEvent(
@@ -27,6 +28,11 @@ const Node: React.FC<Props> = ({ id, data }) => {
     window.dispatchEvent(
       new CustomEvent("diagram:node-toggle", { detail: { id } })
     );
+  };
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCopy?.(id, data);
   };
 
   return (
@@ -49,6 +55,15 @@ const Node: React.FC<Props> = ({ id, data }) => {
           title="Settings"
         >
           <MdSettings className="w-2 h-2" />
+        </button>
+        <button
+          type="button"
+          aria-label="Copy Node"
+          onClick={handleCopy}
+          className="p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
+          title="Copy Node"
+        >
+          <MdCopyAll className="w-2 h-2" />
         </button>
         <button
           type="button"

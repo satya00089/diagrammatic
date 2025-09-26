@@ -21,12 +21,32 @@ import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
+import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
   onBack?: () => void;
 }
+
+// Create a wrapper component for CustomNode with onCopy prop
+const NodeWithCopy = React.memo((props: { id: string; data: unknown; onCopy: (id: string, data: NodeData) => void }) => {
+  const nodeData = props.data as NodeData;
+  return (
+    <CustomNode 
+      id={props.id} 
+      data={nodeData} 
+      onCopy={props.onCopy} 
+    />
+  );
+});
+
+// Factory function to create node component with copy handler
+const createNodeWithCopyHandler = (onCopy: (id: string, data: NodeData) => void) => {
+  return (props: { id: string; data: unknown }) => (
+    <NodeWithCopy {...props} onCopy={onCopy} />
+  );
+};
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme();
@@ -165,10 +185,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     setNodes((nds) => [...nds, newNode]);
   };
-
-  // register node and edge types
-  const nodeTypes = { custom: CustomNode };
-  const edgeTypes = { customEdge: CustomEdge };
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -420,6 +436,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     setNodes((nds) => [...nds, newNode]);
   }
+
+  // handle copying a node
+  const handleNodeCopy = (id: string, data: NodeData) => {
+    const originalNode = nodes.find(n => n.id === id);
+    if (!originalNode) return;
+
+    // Create a new node with copied data but new position and ID
+    const newNodeId = `${id}-copy-${Date.now()}`;
+    const newNode: Node = {
+      ...originalNode,
+      id: newNodeId,
+      position: {
+        x: originalNode.position.x + 50, // Offset the copy position
+        y: originalNode.position.y + 50,
+      },
+      data: { ...data },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+  };
+
+  // register node and edge types
+  const nodeTypes = { 
+    custom: createNodeWithCopyHandler(handleNodeCopy)
+  };
+  const edgeTypes = { customEdge: CustomEdge };
 
   // persist nodeProps back into node data
   const handleSave = () => {
