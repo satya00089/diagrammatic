@@ -108,12 +108,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const label =
           typeof maybeLabel === "string" ? maybeLabel : String(n.id);
 
+        // Capture all node properties including custom ones
+        const allProperties = (dataObj && typeof dataObj === 'object') 
+          ? { ...dataObj } as Record<string, unknown>
+          : {} as Record<string, unknown>;
+        
+        // Remove system properties from the properties object
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { label: _label, icon: _icon, subtitle: _subtitle, ...customProperties } = allProperties;
+
         return {
           id: n.id,
           type: inferredType,
           label,
           position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
-          properties: dataObj as Record<string, unknown>,
+          properties: {
+            ...customProperties,
+            // Include standard node data for reference
+            nodeData: {
+              label,
+              icon: (dataObj as { icon?: unknown }).icon,
+              subtitle: (dataObj as { subtitle?: unknown }).subtitle,
+            }
+          },
         };
       }),
       connections: edges.map((e) => {
@@ -229,6 +246,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
+
+
   function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
     return eds.map((edge) => edge.id === id ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } : edge);
   }
@@ -279,21 +298,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [inspectedNodeId, nodes]);
 
   // --- Helpers to reduce nested function depth in JSX ---
-  const setPropBoolean = (key: string, value: boolean) => {
+  const updateNodeProperty = (key: string, value: string | number | boolean) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
+    // Auto-save property changes to node data
+    if (inspectedNodeId) {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === inspectedNodeId
+            ? { ...n, data: { ...n.data, [key]: value } }
+            : n
+        )
+      );
+    }
   };
 
-  const setPropNumber = (key: string, value: number) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
-
-  const setPropString = (key: string, value: string) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
-
-  const setPropSelect = (key: string, value: string) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
+  const setPropBoolean = (key: string, value: boolean) => updateNodeProperty(key, value);
+  const setPropNumber = (key: string, value: number) => updateNodeProperty(key, value);
+  const setPropString = (key: string, value: string) => updateNodeProperty(key, value);
+  const setPropSelect = (key: string, value: string) => updateNodeProperty(key, value);
 
   const renderProperty = (p: ComponentProperty) => {
     const inputId = `${inspectedNodeId}-${p.key}`;
@@ -463,7 +485,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
   const edgeTypes = { customEdge: CustomEdge };
 
-  // persist nodeProps back into node data
+  // persist nodeProps back into node data (manual save - now mainly for debugging)
   const handleSave = () => {
     setNodes((nds) =>
       nds.map((n) =>
@@ -472,6 +494,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           : n
       )
     );
+    
+    // Log current node data for debugging
+    if (inspectedNodeId) {
+      const node = nodes.find(n => n.id === inspectedNodeId);
+      console.log('Node properties saved:', {
+        id: inspectedNodeId,
+        data: node?.data,
+        nodeProps
+      });
+    }
   };
 
   return (
