@@ -92,7 +92,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     null
   );
 
-  const runAssessment = () => {
+  const [isAssessing, setIsAssessing] = useState(false);
+
+  const runAssessment = async () => {
+    if (isAssessing) return;
+    
+    setIsAssessing(true);
+    setAssessment(null);
     const solution: SystemDesignSolution = {
       components: nodes.map((n) => {
         const dataObj = (n.data ?? {}) as unknown;
@@ -157,9 +163,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       keyPoints: [],
     };
 
-    const res = assessSolution(solution);
-    setAssessment(res);
-    setActiveRightTab("details");
+    try {
+      console.log('Running AI assessment with solution:', solution);
+      
+      // Call AI assessor (now returns Promise) with problem context
+      const res = await assessSolution(solution, problem);
+      setAssessment(res);
+      setActiveRightTab("details");
+      
+    } catch (error) {
+      console.error('Assessment failed:', error);
+      setAssessment({
+        isValid: false,
+        score: 0,
+        feedback: [{
+          type: 'error',
+          message: 'Assessment failed. Please check your connection and try again.',
+          category: 'maintainability'
+        }],
+        suggestions: [],
+        missingComponents: [],
+        architectureStrengths: [],
+        improvements: []
+      });
+    } finally {
+      setIsAssessing(false);
+    }
   };
 
   // ref to the reactflow wrapper to compute drop position
@@ -541,10 +570,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             <button
               type="button"
               onClick={runAssessment}
-              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95"
+              disabled={isAssessing}
+              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Run assessment on current diagram"
             >
-              Assess
+              {isAssessing ? 'Assessing...' : 'Assess'}
             </button>
           </div>
         </div>

@@ -1,19 +1,15 @@
 import type {
   SystemDesignSolution,
+  SystemDesignProblem,
   ValidationResult,
   ValidationFeedback,
-  SystemComponent,
 } from "../types/systemDesign";
 
-function hasComponent(components: SystemComponent[], type: SystemComponent["type"], labelIncludes?: string) {
-  return components.some((c) => c.type === type || (labelIncludes && c.label?.toLowerCase().includes(labelIncludes.toLowerCase())));
-}
-
-function clamp(n: number) {
-  return Math.max(0, Math.min(100, Math.round(n)));
-}
-
-export function assessSolution(solution?: SystemDesignSolution | null): ValidationResult {
+// AI-powered assessor that calls your FastAPI service
+export async function assessSolution(
+  solution?: SystemDesignSolution | null,
+  problem?: SystemDesignProblem | null
+): Promise<ValidationResult> {
   if (!solution) {
     return {
       isValid: false,
@@ -25,127 +21,149 @@ export function assessSolution(solution?: SystemDesignSolution | null): Validati
           category: "maintainability",
         },
       ],
-      suggestions: ["Provide a SystemDesignSolution object with components, connections and an explanation."],
+      suggestions: ["Please add components to your design for assessment."],
       missingComponents: [],
       architectureStrengths: [],
       improvements: [],
     };
   }
 
-  const comps = solution.components ?? [];
+  const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL;
+  
+  if (!apiUrl) {
+    throw new Error('VITE_ASSESSMENT_API_URL not configured. Please add it to your .env file.');
+  }
 
-  // Small helpers to keep this function simple (low cognitive complexity)
-  function computeScores() {
-    let scalability = 50;
-    if (hasComponent(comps, "load-balancer")) scalability += 20;
-    if (hasComponent(comps, "cache")) scalability += 15;
-    if (hasComponent(comps, "cdn")) scalability += 10;
-    if (hasComponent(comps, "message-broker") || hasComponent(comps, "queue")) scalability += 10;
-    if (hasComponent(comps, "database")) scalability += 5;
+  try {
+    // Transform solution to match your FastAPI request format
+    const requestPayload = {
+      components: solution.components.map(comp => ({
+        id: comp.id || `comp-${Date.now()}`,
+        type: comp.type,
+        label: comp.label,
+        properties: comp.properties || {},
+        position: comp.position
+      })),
+      connections: solution.connections?.map(conn => ({
+        id: conn.id || `conn-${Date.now()}`,
+        source: conn.source,
+        target: conn.target,
+        label: conn.label,
+        type: conn.type
+      })) || [],
+      explanation: solution.explanation,
+      keyPoints: solution.keyPoints,
+      // Include problem context for better AI assessment
+      problem: problem ? {
+        title: problem.title,
+        description: problem.description,
+        requirements: Array.isArray(problem.requirements) 
+          ? problem.requirements.join('.\n') 
+          : problem.requirements,
+        constraints: Array.isArray(problem.constraints)
+          ? problem.constraints.join('.\n')
+          : problem.constraints,
+        difficulty: problem.difficulty,
+        category: problem.category,
+        estimatedTime: problem.estimatedTime
+      } : null
+    };
 
-    let reliability = 40;
-    if (hasComponent(comps, "load-balancer")) reliability += 10;
-    if (hasComponent(comps, "message-broker") || hasComponent(comps, "queue")) reliability += 15;
-    if (hasComponent(comps, "monitoring") || hasComponent(comps, "analytics")) reliability += 20;
-    if (hasComponent(comps, "database")) reliability += 5;
+    console.log('Calling assessment API:', `${apiUrl}/api/v1/assess`);
+    console.log('Request payload:', requestPayload);
 
-    let security = 30;
-    if (hasComponent(comps, "api-gateway") || hasComponent(comps, "external-api")) security += 10;
-    if (comps.some((c) => /auth|oauth|identity/i.test(c.label || ""))) security += 25;
-    if (hasComponent(comps, "database")) security += 5;
+    const response = await fetch(`${apiUrl}/api/v1/assess`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestPayload),
+    });
 
-    let deliverability = 50;
-    if ((solution?.explanation ?? "").length > 50) deliverability += 15;
-    if ((solution?.keyPoints ?? []).length > 0) deliverability += 10;
-    if (comps.length >= 3) deliverability += 10;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Assessment API failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
 
+    const result = await response.json();
+    console.log('Assessment API response:', result);
+
+    // Transform FastAPI response to match frontend ValidationResult interface
+    return transformApiResponse(result);
+    
+  } catch (error) {
+    console.error('AI Assessment failed:', error);
+    
+    // Return error result instead of fallback
     return {
-      scalability: clamp(scalability),
-      reliability: clamp(reliability),
-      security: clamp(security),
-      deliverability: clamp(deliverability),
+      isValid: false,
+      score: 0,
+      feedback: [
+        {
+          type: "error",
+          message: `Assessment service unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          category: "maintainability",
+        },
+      ],
+      suggestions: ["Please ensure the assessment service is running and try again."],
+      missingComponents: [],
+      architectureStrengths: [],
+      improvements: [],
     };
   }
-
-  function buildStrengths(): string[] {
-    const s: string[] = [];
-    if (hasComponent(comps, "load-balancer")) s.push("Load balancer for distributing traffic");
-    if (hasComponent(comps, "cache")) s.push("Caching layer to reduce load on origin systems");
-    if (hasComponent(comps, "cdn")) s.push("CDN for global content delivery");
-    if (hasComponent(comps, "message-broker") || hasComponent(comps, "queue")) s.push("Asynchronous messaging for decoupling and resilience");
-    if (hasComponent(comps, "monitoring") || hasComponent(comps, "analytics")) s.push("Monitoring/observability included");
-    if (solution?.explanation && solution.explanation.length > 0) s.push("Contains an explanation describing major trade-offs and decisions.");
-    return s;
-  }
-
-  function buildMissing(): string[] {
-    const m: string[] = [];
-    if (!hasComponent(comps, "load-balancer")) m.push("load-balancer");
-    if (!hasComponent(comps, "cache")) m.push("cache");
-    if (!hasComponent(comps, "monitoring")) m.push("monitoring");
-    return m;
-  }
-
-  function buildSuggestions(): string[] {
-    const sug: string[] = [];
-    if (!hasComponent(comps, "load-balancer")) sug.push("Add a load balancer to distribute incoming traffic and improve availability.");
-    if (!hasComponent(comps, "cache")) sug.push("Introduce a caching layer (Redis/Memcached) to reduce latency and backend load.");
-    if (!hasComponent(comps, "monitoring")) sug.push("Add monitoring and alerting (Prometheus, Grafana) to detect and respond to incidents.");
-    if (!comps.some((c) => /auth|oauth|identity/i.test(c.label || ""))) sug.push("Include an authentication/authorization component (Auth service or API gateway) to secure endpoints.");
-    return sug;
-  }
-
-  function buildFeedback(scores: { scalability: number; reliability: number; security: number; deliverability: number; }): ValidationFeedback[] {
-    const fb: ValidationFeedback[] = [];
-
-    const criterion = (value: number, category: ValidationFeedback["category"], goodMsg: string, badMsg: string): ValidationFeedback => {
-      let type: "success" | "warning" | "error";
-      if (value >= 70) {
-        type = "success";
-      } else if (value >= 40) {
-        type = "warning";
-      } else {
-        type = "error";
-      }
-
-      return {
-        type,
-        message: `${category.charAt(0).toUpperCase() + category.slice(1)} score: ${value}/100. ${value >= 70 ? goodMsg : badMsg}`,
-        category,
-      };
-    };
-
-    fb.push(criterion(scores.scalability, "scalability", "Good horizontal scaling patterns detected.", "Consider adding load balancing, caching, or message-based sharding to improve scalability."));
-    fb.push(criterion(scores.reliability, "reliability", "Redundancy and observability look solid.", "Add monitoring, retries, and redundancy for critical components."));
-    fb.push(criterion(scores.security, "security", "Authentication and edge controls are present.", "Consider adding auth, API gateway, encryption and secure data stores."));
-    fb.push(criterion(scores.deliverability, "maintainability", "Solution is well-documented and feasible.", "Add concrete deployment steps, diagrams, and runbook details to improve deliverability."));
-
-    return fb;
-  }
-
-  const scores = computeScores();
-  const overall = clamp((scores.scalability + scores.reliability + scores.security + scores.deliverability) / 4);
-
-  const strengths = buildStrengths();
-  const missingComponents = buildMissing();
-  const suggestions = buildSuggestions();
-  const feedback = buildFeedback(scores);
-
-  const improvements: string[] = [];
-  if (missingComponents.length > 0) improvements.push(`Consider adding: ${missingComponents.join(", ")}`);
-  if (suggestions.length > 0) improvements.push(...suggestions.slice(0, 5));
-
-  const result: ValidationResult = {
-    isValid: overall >= 50,
-    score: overall,
-    feedback,
-    suggestions,
-    missingComponents,
-    architectureStrengths: strengths,
-    improvements,
-  };
-
-  return result;
 }
 
+// Transform FastAPI response to frontend ValidationResult format
+function transformApiResponse(apiResult: unknown): ValidationResult {
+  const result = apiResult as {
+    is_valid?: boolean;
+    overall_score?: number;
+    feedback?: Array<{
+      type: string;
+      message: string;
+      category: string;
+    }>;
+    suggestions?: string[];
+    missing_components?: string[];
+    strengths?: string[];
+    improvements?: string[];
+  };
+
+  const feedback: ValidationFeedback[] = (result.feedback || []).map((fb) => ({
+    type: fb.type as ValidationFeedback['type'],
+    message: fb.message,
+    category: fb.category as ValidationFeedback['category']
+  }));
+
+  return {
+    isValid: result.is_valid || false,
+    score: result.overall_score || 0,
+    feedback,
+    suggestions: result.suggestions || [],
+    missingComponents: result.missing_components || [],
+    architectureStrengths: result.strengths || [],
+    improvements: result.improvements || []
+  };
+}
+
+// Utility function to test API connectivity
+export async function testAssessmentAPI(): Promise<boolean> {
+  const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL;
+  
+  if (!apiUrl) {
+    console.warn('VITE_ASSESSMENT_API_URL not configured');
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${apiUrl}/health`);
+    return response.ok;
+  } catch (error) {
+    console.error('Assessment API health check failed:', error);
+    return false;
+  }
+}
+
+// Backward compatibility - default export with problem parameter
 export default assessSolution;
