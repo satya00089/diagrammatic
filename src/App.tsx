@@ -8,7 +8,9 @@ const App: React.FC = () => {
   useTheme(); // initialize theme globally
 
   return (
-    <HashRouter>
+    <HashRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/playground/:id" element={<SystemDesignPlayground />} />
