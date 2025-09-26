@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import { AnimatedNumberInput, AnimatedTextInput, AnimatedTextarea, AnimatedSelect } from "../components/shared/AnimatedInputFields";
 import type {
@@ -17,7 +17,6 @@ import ComponentPalette from "../components/ComponentPalette";
 import DiagramCanvas from "../components/DiagramCanvas";
 import InspectorPanel from "../components/InspectorPanel";
 import type { ComponentProperty } from "../types/canvas";
-import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
@@ -54,12 +53,43 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const params = useParams();
   const idFromUrl = params?.id;
 
-  const urlProblem = React.useMemo(() => {
-    if (!idFromUrl) return null;
-    return systemDesignProblems.find((p) => p.id === idFromUrl) ?? null;
+  // State for problem data
+  const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch problem from API
+  useEffect(() => {
+    if (!idFromUrl) {
+      setLoading(false);
+      setError("No problem ID provided");
+      return;
+    }
+
+    const fetchProblem = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/v1/problem/${idFromUrl}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch problem: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setProblem(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching the problem');
+        console.error('Error fetching problem:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProblem();
   }, [idFromUrl]);
 
-  const problem = urlProblem;
   const onBack = () => navigate("/");
 
   // determine difficulty badge classes in one place to avoid nested ternary in JSX
@@ -451,16 +481,66 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }
 
+  // Handle loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-theme flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Loading problem...
+          </h2>
+          <div className="text-muted">
+            Please wait while we fetch the problem details
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-theme flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Error Loading Problem
+          </h2>
+          <div className="text-muted mb-4">
+            {error}
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onBack}
+              className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-surface border border-theme text-theme rounded-md hover:bg-[var(--bg-hover)]"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where no problem is found
   if (!problem) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-theme flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            No problem selected
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Problem not found
           </h2>
+          <div className="text-muted mb-4">
+            The requested problem could not be found.
+          </div>
           <button
             onClick={onBack}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
           >
             Back to Dashboard
           </button>
