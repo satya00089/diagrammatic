@@ -470,10 +470,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       ...originalNode,
       id: newNodeId,
       position: {
-        x: originalNode.position.x + 50, // Offset the copy position
-        y: originalNode.position.y + 50,
+        x: originalNode.position.x + 200, // Larger offset to prevent overlap
+        y: originalNode.position.y + 100,
       },
       data: { ...data },
+      selected: false, // Ensure the copied node is not selected
     };
 
     setNodes((nds) => [...nds, newNode]);
