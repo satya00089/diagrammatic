@@ -63,6 +63,20 @@ export const COMPONENTS: CanvasComponent[] = [
     description: "Data storage",
     properties: [
       {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Database",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
         key: "engine",
         label: "Engine",
         type: "select",
@@ -91,6 +105,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Load Balancer",
     description: "Traffic distribution",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Load Balancer",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       {
         key: "algorithm",
         label: "Algorithm",
@@ -125,6 +153,20 @@ export const COMPONENTS: CanvasComponent[] = [
     description: "Fast data access",
     properties: [
       {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Cache",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
         key: "engine",
         label: "Engine",
         type: "select",
@@ -154,6 +196,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Web Server",
     description: "HTTP requests",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Web Server",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       { key: "instances", label: "Instances", type: "number", default: 2 },
       { key: "autoscale", label: "Autoscale", type: "boolean", default: true },
       {
@@ -178,6 +234,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Message Broker",
     description: "Pub/Sub message broker",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Message Broker",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       { key: "partitions", label: "Partitions", type: "number", default: 6 },
       {
         key: "replication",
@@ -205,6 +275,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Auth Service",
     description: "Authentication & session management",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Auth Service",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       { key: "oauth", label: "OAuth Enabled", type: "boolean", default: true },
       {
         key: "sessions",
@@ -228,6 +312,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "CDN",
     description: "Content delivery network",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "CDN",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       {
         key: "provider",
         label: "Provider",
@@ -256,6 +354,20 @@ export const COMPONENTS: CanvasComponent[] = [
     description: "Search engine & indexing",
     properties: [
       {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Search",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
         key: "engine",
         label: "Engine",
         type: "select",
@@ -278,6 +390,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Queue",
     description: "Task queue",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Queue",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       {
         key: "visibilityTimeout",
         label: "Visibility Timeout (seconds)",
@@ -306,6 +432,20 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Analytics",
     description: "Event analytics pipeline",
     properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Analytics",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
       {
         key: "retentionDays",
         label: "Retention (days)",

@@ -307,7 +307,3 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 };
 
 export default InspectorPanel;
-
-/* CSS (add to global):
-.inspector-resizable { width: var(--inspector-width,320px); min-width:260px; max-width:560px; }
-*/

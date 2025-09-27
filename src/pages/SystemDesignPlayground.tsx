@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import { AnimatedNumberInput, AnimatedTextInput, AnimatedTextarea, AnimatedSelect } from "../components/shared/AnimatedInputFields";
 import type {
@@ -17,10 +17,10 @@ import ComponentPalette from "../components/ComponentPalette";
 import DiagramCanvas from "../components/DiagramCanvas";
 import InspectorPanel from "../components/InspectorPanel";
 import type { ComponentProperty } from "../types/canvas";
-import { systemDesignProblems } from "../data/problems";
 import { useNavigate, useParams } from "react-router-dom";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
+import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
 
 interface SystemDesignPlaygroundProps {
@@ -28,18 +28,68 @@ interface SystemDesignPlaygroundProps {
   onBack?: () => void;
 }
 
+// Create a wrapper component for CustomNode with onCopy prop
+const NodeWithCopy = React.memo((props: { id: string; data: unknown; onCopy: (id: string, data: NodeData) => void }) => {
+  const nodeData = props.data as NodeData;
+  return (
+    <CustomNode 
+      id={props.id} 
+      data={nodeData} 
+      onCopy={props.onCopy} 
+    />
+  );
+});
+
+// Factory function to create node component with copy handler
+const createNodeWithCopyHandler = (onCopy: (id: string, data: NodeData) => void) => {
+  return (props: { id: string; data: unknown }) => (
+    <NodeWithCopy {...props} onCopy={onCopy} />
+  );
+};
+
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme();
   const navigate = useNavigate();
   const params = useParams();
   const idFromUrl = params?.id;
 
-  const urlProblem = React.useMemo(() => {
-    if (!idFromUrl) return null;
-    return systemDesignProblems.find((p) => p.id === idFromUrl) ?? null;
+  // State for problem data
+  const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch problem from API
+  useEffect(() => {
+    if (!idFromUrl) {
+      setLoading(false);
+      setError("No problem ID provided");
+      return;
+    }
+
+    const fetchProblem = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/v1/problem/${idFromUrl}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch problem: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setProblem(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching the problem');
+        console.error('Error fetching problem:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProblem();
   }, [idFromUrl]);
 
-  const problem = urlProblem;
   const onBack = () => navigate("/");
 
   // determine difficulty badge classes in one place to avoid nested ternary in JSX
@@ -72,7 +122,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     null
   );
 
-  const runAssessment = () => {
+  const [isAssessing, setIsAssessing] = useState(false);
+
+  const runAssessment = async () => {
+    if (isAssessing) return;
+    
+    setIsAssessing(true);
+    setAssessment(null);
     const solution: SystemDesignSolution = {
       components: nodes.map((n) => {
         const dataObj = (n.data ?? {}) as unknown;
@@ -88,12 +144,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const label =
           typeof maybeLabel === "string" ? maybeLabel : String(n.id);
 
+        // Capture all node properties including custom ones
+        const allProperties = (dataObj && typeof dataObj === 'object') 
+          ? { ...dataObj } as Record<string, unknown>
+          : {} as Record<string, unknown>;
+        
+        // Remove system properties from the properties object
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { label: _label, icon: _icon, subtitle: _subtitle, ...customProperties } = allProperties;
+
         return {
           id: n.id,
           type: inferredType,
           label,
           position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
-          properties: dataObj as Record<string, unknown>,
+          properties: {
+            ...customProperties,
+            // Include standard node data for reference
+            nodeData: {
+              label,
+              icon: (dataObj as { icon?: unknown }).icon,
+              subtitle: (dataObj as { subtitle?: unknown }).subtitle,
+            }
+          },
         };
       }),
       connections: edges.map((e) => {
@@ -120,9 +193,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       keyPoints: [],
     };
 
-    const res = assessSolution(solution);
-    setAssessment(res);
-    setActiveRightTab("details");
+    try {
+      console.log('Running AI assessment with solution:', solution);
+      
+      // Call AI assessor (now returns Promise) with problem context
+      const res = await assessSolution(solution, problem);
+      setAssessment(res);
+      setActiveRightTab("details");
+      
+    } catch (error) {
+      console.error('Assessment failed:', error);
+      setAssessment({
+        isValid: false,
+        score: 0,
+        feedback: [{
+          type: 'error',
+          message: 'Assessment failed. Please check your connection and try again.',
+          category: 'maintainability'
+        }],
+        suggestions: [],
+        missingComponents: [],
+        architectureStrengths: [],
+        improvements: []
+      });
+    } finally {
+      setIsAssessing(false);
+    }
   };
 
   // ref to the reactflow wrapper to compute drop position
@@ -166,10 +262,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
-  // register node and edge types
-  const nodeTypes = { custom: CustomNode };
-  const edgeTypes = { customEdge: CustomEdge };
-
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
   type NodeProps = Record<string, string | number | boolean | undefined>;
@@ -212,6 +304,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return next;
     });
   };
+
+
 
   function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
     return eds.map((edge) => edge.id === id ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } : edge);
@@ -263,21 +357,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [inspectedNodeId, nodes]);
 
   // --- Helpers to reduce nested function depth in JSX ---
-  const setPropBoolean = (key: string, value: boolean) => {
+  const updateNodeProperty = (key: string, value: string | number | boolean) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
+    // Auto-save property changes to node data
+    if (inspectedNodeId) {
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === inspectedNodeId
+            ? { ...n, data: { ...n.data, [key]: value } }
+            : n
+        )
+      );
+    }
   };
 
-  const setPropNumber = (key: string, value: number) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
-
-  const setPropString = (key: string, value: string) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
-
-  const setPropSelect = (key: string, value: string) => {
-    setNodeProps((s) => ({ ...s, [key]: value }));
-  };
+  const setPropBoolean = (key: string, value: boolean) => updateNodeProperty(key, value);
+  const setPropNumber = (key: string, value: number) => updateNodeProperty(key, value);
+  const setPropString = (key: string, value: string) => updateNodeProperty(key, value);
+  const setPropSelect = (key: string, value: string) => updateNodeProperty(key, value);
 
   const renderProperty = (p: ComponentProperty) => {
     const inputId = `${inspectedNodeId}-${p.key}`;
@@ -347,7 +444,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             value={stringValue}
             placeholder={p.placeholder}
             onChange={(v) => setPropString(p.key, v)}
-            rows={8}
           />
         )}
         {p.type === "select" && (
@@ -385,16 +481,66 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }
 
+  // Handle loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-theme flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Loading problem...
+          </h2>
+          <div className="text-muted">
+            Please wait while we fetch the problem details
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-theme flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Error Loading Problem
+          </h2>
+          <div className="text-muted mb-4">
+            {error}
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onBack}
+              className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-surface border border-theme text-theme rounded-md hover:bg-[var(--bg-hover)]"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where no problem is found
   if (!problem) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-theme flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            No problem selected
+          <h2 className="text-2xl font-bold text-theme mb-4">
+            Problem not found
           </h2>
+          <div className="text-muted mb-4">
+            The requested problem could not be found.
+          </div>
           <button
             onClick={onBack}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
           >
             Back to Dashboard
           </button>
@@ -422,7 +568,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes((nds) => [...nds, newNode]);
   }
 
-  // persist nodeProps back into node data
+  // handle copying a node
+  const handleNodeCopy = (id: string, data: NodeData) => {
+    const originalNode = nodes.find(n => n.id === id);
+    if (!originalNode) return;
+
+    // Create a new node with copied data but new position and ID
+    const newNodeId = `${id}-copy-${Date.now()}`;
+    const newNode: Node = {
+      ...originalNode,
+      id: newNodeId,
+      position: {
+        x: originalNode.position.x + 200, // Larger offset to prevent overlap
+        y: originalNode.position.y + 100,
+      },
+      data: { ...data },
+      selected: false, // Ensure the copied node is not selected
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+  };
+
+  // register node and edge types
+  const nodeTypes = { 
+    custom: createNodeWithCopyHandler(handleNodeCopy)
+  };
+  const edgeTypes = { customEdge: CustomEdge };
+
+  // persist nodeProps back into node data (manual save - now mainly for debugging)
   const handleSave = () => {
     setNodes((nds) =>
       nds.map((n) =>
@@ -431,6 +604,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           : n
       )
     );
+    
+    // Log current node data for debugging
+    if (inspectedNodeId) {
+      const node = nodes.find(n => n.id === inspectedNodeId);
+      console.log('Node properties saved:', {
+        id: inspectedNodeId,
+        data: node?.data,
+        nodeProps
+      });
+    }
   };
 
   return (
@@ -467,10 +650,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             <button
               type="button"
               onClick={runAssessment}
-              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95"
+              disabled={isAssessing}
+              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Run assessment on current diagram"
             >
-              Assess
+              {isAssessing ? 'Assessing...' : 'Assess'}
             </button>
           </div>
         </div>
