@@ -96,12 +96,12 @@ const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img src="./logo.png" alt="Logo" className="h-14" />
+              <img src="./logo.png" alt="Logo" className="h-16" />
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-theme">
-                  System Design Learning
+                <h1 className="text-2xl font-bold text-theme">
+                  System Design Playground
                 </h1>
-                <p className="mt-2 text-muted">
+                <p className="mt-1 text-muted">
                   Master system design through interactive problem solving
                 </p>
               </div>
@@ -139,7 +139,7 @@ const Dashboard: React.FC = () => {
                 {error}
               </div>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => globalThis.location.reload()}
                 className="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
               >
                 Retry
