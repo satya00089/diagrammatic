@@ -308,7 +308,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
 
   function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
-    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } : edge);
+    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...edge.data, label, hasLabel }, label } : edge);
   }
 
   const edgeLabelChangeHandlerRef = React.useRef<((e: Event) => void) | undefined>(undefined);
@@ -320,8 +320,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   React.useEffect(() => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
-    window.addEventListener("diagram:edge-label-change", listener as EventListener);
-    return () => window.removeEventListener("diagram:edge-label-change", listener as EventListener);
+    globalThis.addEventListener("diagram:edge-label-change", listener as EventListener);
+    return () => globalThis.removeEventListener("diagram:edge-label-change", listener as EventListener);
   }, []);
 
   // register window event listeners once (mount/unmount)
@@ -330,20 +330,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
-    window.addEventListener(
+    globalThis.addEventListener(
       "diagram:node-delete",
       deleteListener as EventListener
     );
-    window.addEventListener(
+    globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener
     );
     return () => {
-      window.removeEventListener(
+      globalThis.removeEventListener(
         "diagram:node-delete",
         deleteListener as EventListener
       );
-      window.removeEventListener(
+      globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener
       );
@@ -393,19 +393,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     let stringValue: string;
     if (typeof raw === "string") {
       stringValue = raw;
-    } else if (p.default != null) {
-      stringValue = String(p.default);
-    } else {
+    } else if (p.default === null || p.default === undefined) {
       stringValue = "";
+    } else {
+      stringValue = String(p.default);
     }
 
     let selectValue: string | undefined;
     if (typeof raw === "string") {
       selectValue = raw;
-    } else if (p.default != null) {
-      selectValue = String(p.default);
-    } else {
+    } else if (p.default === null || p.default === undefined) {
       selectValue = undefined;
+    } else {
+      selectValue = String(p.default);
     }
 
     const checkedValue: boolean = Boolean(raw);
@@ -463,21 +463,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   let propertyElements: React.ReactNode = null;
   if (inspectedNodeId) {
     const node = nodes.find((n) => n.id === inspectedNodeId);
-    if (!node) {
-      propertyElements = (
-        <div className="text-sm text-muted">Node not found</div>
-      );
-    } else {
+    if (node) {
       const comp = COMPONENTS.find((c) => c.label === node.data.label);
-      if (!comp?.properties) {
-        propertyElements = (
-          <div className="text-sm text-muted">No properties defined</div>
-        );
-      } else {
+      if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
           renderProperty(p)
         );
+      } else {
+        propertyElements = (
+          <div className="text-sm text-muted">No properties defined</div>
+        );
       }
+    } else { 
+      propertyElements = (
+        <div className="text-sm text-muted">Node not found</div>
+      );
     }
   }
 
@@ -516,7 +516,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               Back to Dashboard
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => globalThis.location.reload()}
               className="px-4 py-2 bg-surface border border-theme text-theme rounded-md hover:bg-[var(--bg-hover)]"
             >
               Retry
@@ -619,29 +619,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   return (
     <div className="h-screen flex flex-col bg-theme">
       {/* Header */}
-      <div className="bg-surface shadow-sm border-b border-theme px-4 py-3">
+      <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+              className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
             >
               ← Back to Dashboard
             </button>
-            <div>
+            <div className="flex items-center space-x-3">
               <h1 className="text-lg font-semibold text-theme">
                 {problem.title}
               </h1>
-              <div className="flex items-center space-x-2 text-sm text-muted">
-                <span
-                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
-                >
-                  {problem.difficulty}
-                </span>
-                <span className="text-muted">{problem.estimatedTime}</span>
-                <span className="text-muted">•</span>
-                <span className="text-muted">{problem.category}</span>
-              </div>
+              <span className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}>
+                {problem.difficulty}
+              </span>
+              <span className="text-sm text-muted">{problem.estimated_time}</span>
+              <span className="text-sm text-muted">•</span>
+              <span className="text-sm text-muted">{problem.category}</span>
             </div>
           </div>
 
@@ -651,10 +647,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               type="button"
               onClick={runAssessment}
               disabled={isAssessing}
-              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Run assessment on current diagram"
+              className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title="Run assessment on current design"
             >
-              {isAssessing ? 'Assessing...' : 'Assess'}
+              {isAssessing ? 'Assessing...' : 'Run Assessment'}
             </button>
           </div>
         </div>

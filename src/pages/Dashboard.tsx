@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
 
                       <div className="flex items-center justify-between text-sm text-muted mb-4">
                         <span>{problem.category}</span>
-                        <span>{problem.estimatedTime}</span>
+                        <span>{problem.estimated_time}</span>
                       </div>
 
                       <div className="flex flex-wrap gap-1 mb-4">
