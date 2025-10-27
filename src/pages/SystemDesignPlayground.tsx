@@ -308,7 +308,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
 
   function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
-    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...(edge.data ?? {}), label, hasLabel }, label } : edge);
+    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...edge.data, label, hasLabel }, label } : edge);
   }
 
   const edgeLabelChangeHandlerRef = React.useRef<((e: Event) => void) | undefined>(undefined);
@@ -320,8 +320,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   React.useEffect(() => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
-    window.addEventListener("diagram:edge-label-change", listener as EventListener);
-    return () => window.removeEventListener("diagram:edge-label-change", listener as EventListener);
+    globalThis.addEventListener("diagram:edge-label-change", listener as EventListener);
+    return () => globalThis.removeEventListener("diagram:edge-label-change", listener as EventListener);
   }, []);
 
   // register window event listeners once (mount/unmount)
@@ -330,20 +330,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
-    window.addEventListener(
+    globalThis.addEventListener(
       "diagram:node-delete",
       deleteListener as EventListener
     );
-    window.addEventListener(
+    globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener
     );
     return () => {
-      window.removeEventListener(
+      globalThis.removeEventListener(
         "diagram:node-delete",
         deleteListener as EventListener
       );
-      window.removeEventListener(
+      globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener
       );
@@ -393,19 +393,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     let stringValue: string;
     if (typeof raw === "string") {
       stringValue = raw;
-    } else if (p.default != null) {
-      stringValue = String(p.default);
-    } else {
+    } else if (p.default === null || p.default === undefined) {
       stringValue = "";
+    } else {
+      stringValue = String(p.default);
     }
 
     let selectValue: string | undefined;
     if (typeof raw === "string") {
       selectValue = raw;
-    } else if (p.default != null) {
-      selectValue = String(p.default);
-    } else {
+    } else if (p.default === null || p.default === undefined) {
       selectValue = undefined;
+    } else {
+      selectValue = String(p.default);
     }
 
     const checkedValue: boolean = Boolean(raw);
@@ -463,21 +463,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   let propertyElements: React.ReactNode = null;
   if (inspectedNodeId) {
     const node = nodes.find((n) => n.id === inspectedNodeId);
-    if (!node) {
-      propertyElements = (
-        <div className="text-sm text-muted">Node not found</div>
-      );
-    } else {
+    if (node) {
       const comp = COMPONENTS.find((c) => c.label === node.data.label);
-      if (!comp?.properties) {
-        propertyElements = (
-          <div className="text-sm text-muted">No properties defined</div>
-        );
-      } else {
+      if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
           renderProperty(p)
         );
+      } else {
+        propertyElements = (
+          <div className="text-sm text-muted">No properties defined</div>
+        );
       }
+    } else { 
+      propertyElements = (
+        <div className="text-sm text-muted">Node not found</div>
+      );
     }
   }
 
@@ -516,7 +516,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               Back to Dashboard
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => globalThis.location.reload()}
               className="px-4 py-2 bg-surface border border-theme text-theme rounded-md hover:bg-[var(--bg-hover)]"
             >
               Retry

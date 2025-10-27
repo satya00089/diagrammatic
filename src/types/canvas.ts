@@ -12,5 +12,6 @@ export type CanvasComponent = {
   icon?: string;
   label: string;
   description?: string;
+  group?: string;
   properties?: ComponentProperty[];
 };

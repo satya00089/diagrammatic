@@ -1,18 +1,20 @@
 import type { CanvasComponent } from "../types/canvas";
 
 export const COMPONENTS: CanvasComponent[] = [
+  // Frontend group
   {
-    id: "frontend",
+    id: "web-app",
+    group: "Frontend",
     icon: "💻",
-    label: "Frontend",
-    description: "User interface",
+    label: "Web App",
+    description: "Browser-based client",
     properties: [
       {
         key: "componentName",
         label: "Component Name",
         type: "text",
+        default: "Web App",
         placeholder: "Enter component name",
-        default: "Frontend",
       },
       {
         key: "description",
@@ -48,16 +50,109 @@ export const COMPONENTS: CanvasComponent[] = [
         default: 50,
       },
       {
-        key: "",
+        key: "logic",
         label: "Component Logic (Pseudo Code)",
         type: "textarea",
         placeholder: "submit -> validate -> call API -> show response",
         default: "",
-      }
+      },
     ],
   },
   {
+    id: "mobile-app",
+    group: "Frontend",
+    icon: "📱",
+    label: "Mobile App",
+    description: "iOS/Android client",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        default: "Mobile App",
+        placeholder: "Enter component name",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+        placeholder: "A brief description",
+      },
+      {
+        key: "stack",
+        label: "Tech Stack",
+        type: "select",
+        default: "React Native",
+        options: ["React Native", "Flutter", "Swift/Kotlin"],
+      },
+      {
+        key: "pushNotifications",
+        label: "Push Notifications",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "offlineSupport",
+        label: "Offline Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "sessions",
+        label: "Active Sessions (k)",
+        type: "number",
+        default: 10,
+      },
+    ],
+  },
+  {
+    id: "desktop-app",
+    group: "Frontend",
+    icon: "🖥️",
+    label: "Desktop App",
+    description: "Native / Electron client",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        default: "Desktop App",
+        placeholder: "Enter component name",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+        placeholder: "A brief description",
+      },
+      {
+        key: "runtime",
+        label: "Runtime",
+        type: "select",
+        default: "Electron",
+        options: ["Electron", "Tauri", "Native"],
+      },
+      {
+        key: "autoUpdate",
+        label: "Auto Update",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "bundledSizeMB",
+        label: "Bundle Size (MB)",
+        type: "number",
+        default: 120,
+      },
+    ],
+  },
+
+  // Data Layer group
+  {
     id: "database",
+    group: "Data Layer",
     icon: "🗄️",
     label: "Database",
     description: "Data storage",
@@ -101,6 +196,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "loadbalancer",
+    group: "Networking",
     icon: "⚖️",
     label: "Load Balancer",
     description: "Traffic distribution",
@@ -148,6 +244,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "cache",
+    group: "Data Layer",
     icon: "⚡",
     label: "Cache",
     description: "Fast data access",
@@ -192,6 +289,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "webserver",
+    group: "Compute",
     icon: "🌐",
     label: "Web Server",
     description: "HTTP requests",
@@ -230,6 +328,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "message-broker",
+    group: "Messaging",
     icon: "📨",
     label: "Message Broker",
     description: "Pub/Sub message broker",
@@ -271,6 +370,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "auth-service",
+    group: "Services",
     icon: "🔐",
     label: "Auth Service",
     description: "Authentication & session management",
@@ -308,6 +408,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "cdn",
+    group: "Delivery",
     icon: "🚀",
     label: "CDN",
     description: "Content delivery network",
@@ -349,6 +450,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "search",
+    group: "Services",
     icon: "🔎",
     label: "Search",
     description: "Search engine & indexing",
@@ -386,6 +488,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "queue",
+    group: "Messaging",
     icon: "📮",
     label: "Queue",
     description: "Task queue",
@@ -428,6 +531,7 @@ export const COMPONENTS: CanvasComponent[] = [
   },
   {
     id: "analytics",
+    group: "Data Layer",
     icon: "📊",
     label: "Analytics",
     description: "Event analytics pipeline",
