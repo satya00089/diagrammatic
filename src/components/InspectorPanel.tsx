@@ -31,7 +31,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 }) => {
   const [width, setWidth] = React.useState(320); // px
   const minWidth = 260;
-  const maxWidth = 560;
+  const maxWidth = 640;
   const resizingRef = React.useRef(false);
   const panelRef = React.useRef<HTMLElement | null>(null);
 
@@ -42,7 +42,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   }, []);
   const stopResize = React.useCallback(() => { resizingRef.current = false; document.body.style.userSelect = ""; }, []);
   const onMouseDown = (e: React.MouseEvent) => { e.preventDefault(); resizingRef.current = true; document.body.style.userSelect = "none"; };
-  React.useEffect(() => { window.addEventListener("mousemove", onMouseMove); window.addEventListener("mouseup", stopResize); return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", stopResize); }; }, [onMouseMove, stopResize]);
+  React.useEffect(() => { globalThis.addEventListener("mousemove", onMouseMove); window.addEventListener("mouseup", stopResize); return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", stopResize); }; }, [onMouseMove, stopResize]);
   React.useEffect(() => { if (panelRef.current) { panelRef.current.style.width = width + 'px'; } }, [width]);
 
   if (!problem) return null;
