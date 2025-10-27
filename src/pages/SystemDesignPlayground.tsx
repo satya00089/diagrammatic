@@ -22,6 +22,7 @@ import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
+import CustomPropertyInput, { type CustomProperty } from "../components/CustomPropertyInput";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -266,6 +267,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
   type NodeProps = Record<string, string | number | boolean | undefined>;
   const [nodeProps, setNodeProps] = useState<NodeProps>({});
+  // Custom properties state - stores custom properties per node
+  const [customProperties, setCustomProperties] = useState<Record<string, CustomProperty[]>>({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
     "details"
@@ -376,6 +379,103 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const setPropString = (key: string, value: string) => updateNodeProperty(key, value);
   const setPropSelect = (key: string, value: string) => updateNodeProperty(key, value);
 
+  // --- Custom Property Handlers ---
+  const handleAddCustomProperty = () => {
+    if (!inspectedNodeId) return;
+    
+    const newProperty: CustomProperty = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+      key: `customProperty${(customProperties[inspectedNodeId]?.length || 0) + 1}`,
+      label: `Custom Property ${(customProperties[inspectedNodeId]?.length || 0) + 1}`,
+      type: 'text',
+      value: '',
+    };
+
+    setCustomProperties((prev) => {
+      const updated = {
+        ...prev,
+        [inspectedNodeId]: [...(prev[inspectedNodeId] || []), newProperty],
+      };
+
+      // Save to node data
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === inspectedNodeId
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  _customProperties: updated[inspectedNodeId],
+                },
+              }
+            : n
+        )
+      );
+
+      return updated;
+    });
+  };
+
+  const handleUpdateCustomProperty = (id: string, updates: Partial<CustomProperty>) => {
+    if (!inspectedNodeId) return;
+
+    setCustomProperties((prev) => {
+      const nodeCustomProps = prev[inspectedNodeId] || [];
+      const updated = nodeCustomProps.map((prop) =>
+        prop.id === id ? { ...prop, ...updates } : prop
+      );
+
+      // Save to node data
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === inspectedNodeId
+            ? { ...n, data: { ...n.data, _customProperties: updated } }
+            : n
+        )
+      );
+
+      return {
+        ...prev,
+        [inspectedNodeId]: updated,
+      };
+    });
+  };
+
+  const handleDeleteCustomProperty = (id: string) => {
+    if (!inspectedNodeId) return;
+
+    setCustomProperties((prev) => {
+      const nodeCustomProps = prev[inspectedNodeId] || [];
+      const filtered = nodeCustomProps.filter((prop) => prop.id !== id);
+
+      // Save to node data
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === inspectedNodeId
+            ? { ...n, data: { ...n.data, _customProperties: filtered } }
+            : n
+        )
+      );
+
+      return {
+        ...prev,
+        [inspectedNodeId]: filtered,
+      };
+    });
+  };
+
+  // Load custom properties when inspecting a node
+  React.useEffect(() => {
+    if (!inspectedNodeId) return;
+    const node = nodes.find((n) => n.id === inspectedNodeId);
+    if (node?.data?._customProperties) {
+      setCustomProperties((prev) => ({
+        ...prev,
+        [inspectedNodeId]: node.data._customProperties as CustomProperty[],
+      }));
+    }
+  }, [inspectedNodeId, nodes]);
+
   const renderProperty = (p: ComponentProperty) => {
     const inputId = `${inspectedNodeId}-${p.key}`;
     const raw = nodeProps[p.key];
@@ -477,6 +577,28 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     } else { 
       propertyElements = (
         <div className="text-sm text-muted">Node not found</div>
+      );
+    }
+  }
+
+  // Render custom property elements
+  let customPropertyElements: React.ReactNode = null;
+  if (inspectedNodeId) {
+    const nodeCustomProps = customProperties[inspectedNodeId] || [];
+    if (nodeCustomProps.length > 0) {
+      customPropertyElements = nodeCustomProps.map((prop) => (
+        <CustomPropertyInput
+          key={prop.id}
+          property={prop}
+          onUpdate={handleUpdateCustomProperty}
+          onDelete={handleDeleteCustomProperty}
+        />
+      ));
+    } else {
+      customPropertyElements = (
+        <div className="text-xs text-muted text-center py-3">
+          No custom properties added yet
+        </div>
       );
     }
   }
@@ -684,6 +806,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           inspectedNodeId={inspectedNodeId}
           setInspectedNodeId={setInspectedNodeId}
           propertyElements={propertyElements}
+          customPropertyElements={customPropertyElements}
+          onAddCustomProperty={handleAddCustomProperty}
           handleSave={handleSave}
           assessmentResult={assessment}
         />

@@ -1,5 +1,6 @@
 import React from "react";
 import { PiDotsSixVerticalBold } from 'react-icons/pi';
+import { MdAdd } from 'react-icons/md';
 
 type InspectorPanelProps = {
   problem: {
@@ -15,6 +16,8 @@ type InspectorPanelProps = {
   inspectedNodeId: string | null;
   setInspectedNodeId: (id: string | null) => void;
   propertyElements: React.ReactNode;
+  customPropertyElements: React.ReactNode;
+  onAddCustomProperty: () => void;
   handleSave: () => void;
   assessmentResult?: import('../types/systemDesign').ValidationResult | null;
 };
@@ -26,6 +29,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   inspectedNodeId,
   setInspectedNodeId,
   propertyElements,
+  customPropertyElements,
+  onAddCustomProperty,
   handleSave,
   assessmentResult,
 }) => {
@@ -274,21 +279,53 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             )}
             {inspectedNodeId && (
               <div>
-                <div className="text-sm text-theme mb-2">
+                <div className="text-sm text-theme mb-3">
                   Node: {inspectedNodeId}
                 </div>
-                <div className="space-y-2">{propertyElements}</div>
-                <div className="mt-4 flex space-x-2">
+
+                {/* Standard Properties */}
+                {propertyElements && (
+                  <div className="mb-6">
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+                      Standard Properties
+                    </div>
+                    <div className="space-y-2">{propertyElements}</div>
+                  </div>
+                )}
+
+                {/* Custom Properties Section */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                      Custom Properties
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onAddCustomProperty}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-md transition-colors border border-[var(--brand)]/30 hover:border-[var(--brand)] cursor-pointer"
+                      title="Add custom property"
+                    >
+                      <MdAdd size={14} />
+                      <span>Add</span>
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {customPropertyElements}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-6 flex space-x-2 pt-4 border-t border-theme">
                   <button
                     type="button"
-                    className="px-3 py-1 bg-[var(--brand)] text-white rounded"
+                    className="flex-1 px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:bg-[var(--brand)]/90 transition-colors font-medium text-sm cursor-pointer"
                     onClick={handleSave}
                   >
-                    Save
+                    Save Changes
                   </button>
                   <button
                     type="button"
-                    className="px-3 py-1 bg-theme rounded"
+                    className="px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm cursor-pointer"
                     onClick={() => {
                       setInspectedNodeId(null);
                       setActiveTab("details");
