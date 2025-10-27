@@ -628,20 +628,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             >
               ← Back to Dashboard
             </button>
-            <div>
+            <div className="flex items-center space-x-3">
               <h1 className="text-lg font-semibold text-theme">
                 {problem.title}
               </h1>
-              <div className="flex items-center space-x-2 text-sm text-muted">
-                <span
-                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
-                >
-                  {problem.difficulty}
-                </span>
-                <span className="text-muted">{problem.estimatedTime}</span>
-                <span className="text-muted">•</span>
-                <span className="text-muted">{problem.category}</span>
-              </div>
+              <span className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}>
+                {problem.difficulty}
+              </span>
+              <span className="text-sm text-muted">{problem.estimated_time}</span>
+              <span className="text-sm text-muted">•</span>
+              <span className="text-sm text-muted">{problem.category}</span>
             </div>
           </div>
 

@@ -65,7 +65,7 @@ export async function assessSolution(
           : problem.constraints,
         difficulty: problem.difficulty,
         category: problem.category,
-        estimatedTime: problem.estimatedTime
+        estimatedTime: problem.estimated_time
       } : null
     };
 

@@ -1,7 +1,15 @@
 import type { CanvasComponent } from "../types/canvas";
 
+/**
+ * COMPREHENSIVE SYSTEM DESIGN COMPONENTS LIBRARY
+ * Organized by architectural layers for scalable distributed systems
+ * Last reviewed: Solution Architect Review
+ */
+
 export const COMPONENTS: CanvasComponent[] = [
-  // Frontend group
+  // ========================================
+  // FRONTEND LAYER
+  // ========================================
   {
     id: "web-app",
     group: "Frontend",
@@ -155,7 +163,7 @@ export const COMPONENTS: CanvasComponent[] = [
     group: "Data Layer",
     icon: "🗄️",
     label: "Database",
-    description: "Data storage",
+    description: "Relational/NoSQL data storage",
     properties: [
       {
         key: "componentName",
@@ -172,23 +180,115 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "",
       },
       {
+        key: "type",
+        label: "Database Type",
+        type: "select",
+        default: "RDBMS",
+        options: ["RDBMS", "NoSQL", "NewSQL", "Time-Series", "Graph"],
+      },
+      {
         key: "engine",
         label: "Engine",
         type: "select",
         default: "postgresql",
-        options: ["postgresql", "mysql", "mongodb", "cassandra"],
+        options: ["postgresql", "mysql", "mongodb", "cassandra", "dynamodb", "cockroachdb"],
       },
-      { key: "storageGB", label: "Storage (GB)", type: "number", default: 100 },
+      {
+        key: "workload",
+        label: "Workload Type",
+        type: "select",
+        default: "OLTP",
+        options: ["OLTP", "OLAP", "Hybrid"],
+      },
+      { 
+        key: "storageGB", 
+        label: "Storage (GB)", 
+        type: "number", 
+        default: 100 
+      },
+      {
+        key: "sharding",
+        label: "Sharding Strategy",
+        type: "select",
+        default: "None",
+        options: ["None", "Hash-based", "Range-based", "Geographic"],
+      },
+      {
+        key: "shards",
+        label: "Number of Shards",
+        type: "number",
+        default: 1,
+      },
       {
         key: "replication",
         label: "Replication Factor",
         type: "number",
         default: 3,
       },
-      { key: "multiAZ", label: "Multi-AZ", type: "boolean", default: true },
+      {
+        key: "replicationMode",
+        label: "Replication Mode",
+        type: "select",
+        default: "Async",
+        options: ["Sync", "Async", "Semi-Sync"],
+      },
+      { 
+        key: "multiAZ", 
+        label: "Multi-AZ", 
+        type: "boolean", 
+        default: true 
+      },
+      {
+        key: "crossRegion",
+        label: "Cross-Region Replication",
+        type: "boolean",
+        default: false,
+      },
       {
         key: "backups",
         label: "Automatic Backups",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "pitr",
+        label: "Point-in-Time Recovery",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "encryption",
+        label: "Encryption at Rest",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "connectionPooling",
+        label: "Connection Pooling",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "queryCache",
+        label: "Query Cache Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "wal",
+        label: "Write-Ahead Logging",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "rbac",
+        label: "RBAC Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "auditLog",
+        label: "Audit Trail",
         type: "boolean",
         default: true,
       },
@@ -199,7 +299,7 @@ export const COMPONENTS: CanvasComponent[] = [
     group: "Networking",
     icon: "⚖️",
     label: "Load Balancer",
-    description: "Traffic distribution",
+    description: "Traffic distribution & high availability",
     properties: [
       {
         key: "componentName",
@@ -216,15 +316,22 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "",
       },
       {
+        key: "type",
+        label: "Type",
+        type: "select",
+        default: "Layer 7 (Application)",
+        options: ["Layer 4 (Network)", "Layer 7 (Application)", "Global"],
+      },
+      {
         key: "algorithm",
         label: "Algorithm",
         type: "select",
         default: "round-robin",
-        options: ["round-robin", "least-connections", "ip-hash"],
+        options: ["round-robin", "least-connections", "ip-hash", "weighted-round-robin", "least-response-time"],
       },
       {
         key: "sslTermination",
-        label: "SSL Termination",
+        label: "SSL/TLS Termination",
         type: "boolean",
         default: true,
       },
@@ -240,6 +347,42 @@ export const COMPONENTS: CanvasComponent[] = [
         type: "boolean",
         default: true,
       },
+      {
+        key: "healthCheckInterval",
+        label: "Health Check Interval (s)",
+        type: "number",
+        default: 30,
+      },
+      {
+        key: "multiAZ",
+        label: "Multi-AZ",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "accessLogs",
+        label: "Access Logs",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "connectionDraining",
+        label: "Connection Draining",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "ddosProtection",
+        label: "DDoS Protection",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "waf",
+        label: "WAF Enabled",
+        type: "boolean",
+        default: false,
+      },
     ],
   },
   {
@@ -247,7 +390,7 @@ export const COMPONENTS: CanvasComponent[] = [
     group: "Data Layer",
     icon: "⚡",
     label: "Cache",
-    description: "Fast data access",
+    description: "In-memory fast data access",
     properties: [
       {
         key: "componentName",
@@ -268,22 +411,63 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Engine",
         type: "select",
         default: "redis",
-        options: ["redis", "memcached"],
+        options: ["redis", "memcached", "hazelcast", "aerospike"],
       },
-      { key: "ttl", label: "TTL (seconds)", type: "number", default: 3600 },
-      { key: "inMemory", label: "In Memory", type: "boolean", default: true },
+      {
+        key: "cacheStrategy",
+        label: "Cache Strategy",
+        type: "select",
+        default: "write-through",
+        options: ["write-through", "write-around", "write-back", "cache-aside"],
+      },
+      { 
+        key: "ttl", 
+        label: "TTL (seconds)", 
+        type: "number", 
+        default: 3600 
+      },
+      { 
+        key: "inMemory", 
+        label: "In Memory", 
+        type: "boolean", 
+        default: true 
+      },
       {
         key: "eviction",
         label: "Eviction Policy",
         type: "select",
         default: "lru",
-        options: ["lru", "ttl", "volatile-lru"],
+        options: ["lru", "lfu", "fifo", "mru", "random", "ttl-based", "volatile-lru"],
       },
       {
         key: "replication",
         label: "Replication",
         type: "boolean",
+        default: true,
+      },
+      {
+        key: "clusterMode",
+        label: "Cluster Mode",
+        type: "boolean",
         default: false,
+      },
+      {
+        key: "persistence",
+        label: "Persistence (AOF/RDB)",
+        type: "boolean",
+        default: false,
+      },
+      {
+        key: "encryption",
+        label: "Encryption in Transit",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "maxMemoryGB",
+        label: "Max Memory (GB)",
+        type: "number",
+        default: 16,
       },
     ],
   },
@@ -574,6 +758,1672 @@ export const COMPONENTS: CanvasComponent[] = [
         type: "select",
         default: "s3",
         options: ["s3", "gcs", "azure_blob"],
+      },
+    ],
+  },
+
+  // DNS Resolution & Network Entry group
+  {
+    id: "root-nameserver",
+    group: "DNS & Network",
+    icon: "🌍",
+    label: "Root Nameserver",
+    description: "Top-level DNS resolver",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Root Nameserver",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "ttl",
+        label: "TTL (seconds)",
+        type: "number",
+        default: 172800,
+      },
+      {
+        key: "dnssec",
+        label: "DNSSEC Enabled",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "tld-nameserver",
+    group: "DNS & Network",
+    icon: "🔗",
+    label: "TLD Nameserver",
+    description: "Top-level domain nameserver",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "TLD Nameserver",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "tld",
+        label: "TLD",
+        type: "select",
+        default: ".com",
+        options: [".com", ".org", ".net", ".io", ".dev"],
+      },
+      {
+        key: "ttl",
+        label: "TTL (seconds)",
+        type: "number",
+        default: 86400,
+      },
+    ],
+  },
+  {
+    id: "authoritative-nameserver",
+    group: "DNS & Network",
+    icon: "📡",
+    label: "Authoritative Nameserver",
+    description: "Domain-specific DNS server",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Authoritative Nameserver",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "records",
+        label: "DNS Records",
+        type: "number",
+        default: 100,
+      },
+      {
+        key: "ttl",
+        label: "TTL (seconds)",
+        type: "number",
+        default: 3600,
+      },
+      {
+        key: "anycast",
+        label: "Anycast Enabled",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "isp",
+    group: "DNS & Network",
+    icon: "🌐",
+    label: "ISP",
+    description: "Internet Service Provider",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "ISP",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "dnsCache",
+        label: "DNS Cache Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "bandwidth",
+        label: "Bandwidth (Gbps)",
+        type: "number",
+        default: 10,
+      },
+    ],
+  },
+
+  // API Gateway
+  {
+    id: "api-gateway",
+    group: "Networking",
+    icon: "🚪",
+    label: "API Gateway",
+    description: "Central API entry point",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "API Gateway",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "inputValidation",
+        label: "Input Validation",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "authentication",
+        label: "Authentication",
+        type: "select",
+        default: "OAuth 2.0",
+        options: ["OAuth 2.0", "JWT", "API Key", "Basic Auth"],
+      },
+      {
+        key: "rateLimiting",
+        label: "Rate Limiting",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "requestsPerSecond",
+        label: "Max Requests/Second",
+        type: "number",
+        default: 1000,
+      },
+      {
+        key: "tlsTermination",
+        label: "TLS Termination",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "deduplication",
+        label: "Request Deduplication",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "throttling",
+        label: "Throttling Enabled",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Message Dispatcher
+  {
+    id: "message-dispatcher",
+    group: "Messaging",
+    icon: "📤",
+    label: "Message Dispatcher",
+    description: "Message routing & distribution",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Message Dispatcher",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "topics",
+        label: "Topics",
+        type: "number",
+        default: 10,
+      },
+      {
+        key: "loadBalancing",
+        label: "Load Balancing",
+        type: "select",
+        default: "round-robin",
+        options: ["round-robin", "least-load", "hash-based"],
+      },
+      {
+        key: "partitioning",
+        label: "Partitioning Enabled",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Distributed Services
+  {
+    id: "id-generator",
+    group: "Services",
+    icon: "🔢",
+    label: "ID Generator",
+    description: "Distributed unique ID generation",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "ID Generator",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "algorithm",
+        label: "Algorithm",
+        type: "select",
+        default: "Snowflake",
+        options: ["Snowflake", "UUID", "ULID", "Auto-Increment"],
+      },
+      {
+        key: "shardId",
+        label: "Shard ID",
+        type: "number",
+        default: 1,
+      },
+      {
+        key: "distributed",
+        label: "Distributed",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "distributed-lock",
+    group: "Services",
+    icon: "🔒",
+    label: "Distributed Lock",
+    description: "Resource locking & coordination",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Distributed Lock",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "backend",
+        label: "Backend",
+        type: "select",
+        default: "Redis",
+        options: ["Redis", "Etcd", "Zookeeper", "Chubby"],
+      },
+      {
+        key: "ttl",
+        label: "Lock TTL (seconds)",
+        type: "number",
+        default: 30,
+      },
+      {
+        key: "fairness",
+        label: "Fair Locking",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Storage
+  {
+    id: "cold-storage",
+    group: "Data Layer",
+    icon: "❄️",
+    label: "Cold Storage",
+    description: "Archive & backup storage",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Cold Storage",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "AWS Glacier",
+        options: ["AWS Glacier", "Azure Archive", "GCP Coldline"],
+      },
+      {
+        key: "retentionDays",
+        label: "Retention (days)",
+        type: "number",
+        default: 2555,
+      },
+      {
+        key: "encryption",
+        label: "Encryption at Rest",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "object-storage",
+    group: "Data Layer",
+    icon: "🗃️",
+    label: "Object Storage",
+    description: "S3-compatible object store",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Object Storage",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "S3",
+        options: ["S3", "Azure Blob", "GCS", "MinIO"],
+      },
+      {
+        key: "versioning",
+        label: "Versioning",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "checksumValidation",
+        label: "Checksum Validation",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "storageGB",
+        label: "Storage (GB)",
+        type: "number",
+        default: 1000,
+      },
+    ],
+  },
+
+  // Processing Workers
+  {
+    id: "processing-worker",
+    group: "Compute",
+    icon: "⚙️",
+    label: "Processing Worker",
+    description: "Background job processor",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Processing Worker",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "tasks",
+        label: "Task Types",
+        type: "select",
+        default: "Media Encoding",
+        options: ["Media Encoding", "Thumbnail Generation", "Data Processing", "ML Inference"],
+      },
+      {
+        key: "concurrency",
+        label: "Concurrent Jobs",
+        type: "number",
+        default: 10,
+      },
+      {
+        key: "autoscale",
+        label: "Auto-scale",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Common Services
+  {
+    id: "notification-service",
+    group: "Services",
+    icon: "🔔",
+    label: "Notification Service",
+    description: "Push notifications & alerts",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Notification Service",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "channels",
+        label: "Channels",
+        type: "select",
+        default: "Push + Email",
+        options: ["Push", "Email", "SMS", "Push + Email", "All"],
+      },
+      {
+        key: "fanout",
+        label: "Fan-out Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "batching",
+        label: "Batch Notifications",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "recommendation-service",
+    group: "Services",
+    icon: "🎯",
+    label: "Recommendation",
+    description: "ML-based recommendations",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Recommendation",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "algorithm",
+        label: "Algorithm",
+        type: "select",
+        default: "Collaborative Filtering",
+        options: ["Collaborative Filtering", "Content-based", "Hybrid"],
+      },
+      {
+        key: "realTime",
+        label: "Real-time",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "cacheResults",
+        label: "Cache Results",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "payment-service",
+    group: "Services",
+    icon: "💳",
+    label: "Payment Service",
+    description: "Payment processing & gateway",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Payment Service",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "gateway",
+        label: "Gateway",
+        type: "select",
+        default: "Stripe",
+        options: ["Stripe", "PayPal", "Braintree", "Square"],
+      },
+      {
+        key: "pciDss",
+        label: "PCI DSS Compliant",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "tokenization",
+        label: "Card Tokenization",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "retry",
+        label: "Auto-retry Failed",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "log-processing",
+    group: "Services",
+    icon: "📝",
+    label: "Log Processing",
+    description: "Log aggregation & analysis",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Log Processing",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "pipeline",
+        label: "Pipeline",
+        type: "select",
+        default: "ELK Stack",
+        options: ["ELK Stack", "Splunk", "Datadog", "CloudWatch"],
+      },
+      {
+        key: "retentionDays",
+        label: "Retention (days)",
+        type: "number",
+        default: 30,
+      },
+      {
+        key: "indexing",
+        label: "Real-time Indexing",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "pubsub",
+    group: "Messaging",
+    icon: "📡",
+    label: "Pub/Sub",
+    description: "Publish-subscribe messaging",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Pub/Sub",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "topics",
+        label: "Topics",
+        type: "number",
+        default: 20,
+      },
+      {
+        key: "fanout",
+        label: "Fan-out Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "ordering",
+        label: "Message Ordering",
+        type: "boolean",
+        default: false,
+      },
+      {
+        key: "durable",
+        label: "Durable Messages",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Frontend Server
+  {
+    id: "frontend-server",
+    group: "Compute",
+    icon: "🖥️",
+    label: "Frontend Server",
+    description: "Client-facing server",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Frontend Server",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "inMemoryConnections",
+        label: "In-Memory Connections",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "activeConnections",
+        label: "Active Connections",
+        type: "number",
+        default: 10000,
+      },
+      {
+        key: "websockets",
+        label: "WebSocket Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "instances",
+        label: "Instances",
+        type: "number",
+        default: 3,
+      },
+    ],
+  },
+
+  // Backend Server
+  {
+    id: "backend-server",
+    group: "Compute",
+    icon: "⚡",
+    label: "Backend Server",
+    description: "Application logic & microservices",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Backend Server",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "architecture",
+        label: "Architecture",
+        type: "select",
+        default: "Microservices",
+        options: ["Monolith", "Microservices", "Serverless"],
+      },
+      {
+        key: "instances",
+        label: "Instances",
+        type: "number",
+        default: 5,
+      },
+      {
+        key: "caching",
+        label: "Caching Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "retry",
+        label: "Retry Logic",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "bulkOps",
+        label: "Bulk Operations",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Edge Server
+  {
+    id: "edge-server",
+    group: "Delivery",
+    icon: "🌍",
+    label: "Edge Server",
+    description: "Edge computing & caching",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Edge Server",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "scope",
+        label: "Scope",
+        type: "select",
+        default: "Regional",
+        options: ["Global", "Regional", "Local"],
+      },
+      {
+        key: "streaming",
+        label: "Streaming Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "abr",
+        label: "ABR (Adaptive Bitrate)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "staticCache",
+        label: "Static Cache",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // ========================================
+  // MISSING CRITICAL COMPONENTS
+  // ========================================
+
+  // Service Mesh
+  {
+    id: "service-mesh",
+    group: "Networking",
+    icon: "🕸️",
+    label: "Service Mesh",
+    description: "Microservices communication layer",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Service Mesh",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "Istio",
+        options: ["Istio", "Linkerd", "Consul", "AWS App Mesh"],
+      },
+      {
+        key: "mtls",
+        label: "Mutual TLS",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "tracing",
+        label: "Distributed Tracing",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "circuitBreaker",
+        label: "Circuit Breaker",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "retryPolicy",
+        label: "Retry Policy",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "trafficSplitting",
+        label: "Traffic Splitting",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Container Orchestration
+  {
+    id: "container-orchestrator",
+    group: "Compute",
+    icon: "🐳",
+    label: "Container Orchestrator",
+    description: "Container management & orchestration",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "K8s Cluster",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "platform",
+        label: "Platform",
+        type: "select",
+        default: "Kubernetes",
+        options: ["Kubernetes", "ECS", "Docker Swarm", "Nomad"],
+      },
+      {
+        key: "nodes",
+        label: "Worker Nodes",
+        type: "number",
+        default: 3,
+      },
+      {
+        key: "autoscaling",
+        label: "Auto-scaling (HPA)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "ingress",
+        label: "Ingress Controller",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "monitoring",
+        label: "Monitoring (Prometheus)",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Serverless Function
+  {
+    id: "serverless-function",
+    group: "Compute",
+    icon: "λ",
+    label: "Serverless Function",
+    description: "Event-driven compute",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Lambda Function",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "runtime",
+        label: "Runtime",
+        type: "select",
+        default: "Node.js",
+        options: ["Node.js", "Python", "Java", "Go", ".NET", "Ruby"],
+      },
+      {
+        key: "memoryMB",
+        label: "Memory (MB)",
+        type: "number",
+        default: 512,
+      },
+      {
+        key: "timeout",
+        label: "Timeout (seconds)",
+        type: "number",
+        default: 30,
+      },
+      {
+        key: "concurrency",
+        label: "Concurrent Executions",
+        type: "number",
+        default: 100,
+      },
+      {
+        key: "coldStart",
+        label: "Cold Start Optimization",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Reverse Proxy
+  {
+    id: "reverse-proxy",
+    group: "Networking",
+    icon: "🔀",
+    label: "Reverse Proxy",
+    description: "Request routing & caching",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Reverse Proxy",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "server",
+        label: "Server",
+        type: "select",
+        default: "Nginx",
+        options: ["Nginx", "HAProxy", "Envoy", "Traefik"],
+      },
+      {
+        key: "caching",
+        label: "Response Caching",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "compression",
+        label: "Compression (gzip/brotli)",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "ssl",
+        label: "SSL/TLS",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "rateLimiting",
+        label: "Rate Limiting",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Stream Processing
+  {
+    id: "stream-processor",
+    group: "Data Layer",
+    icon: "🌊",
+    label: "Stream Processor",
+    description: "Real-time data processing",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Stream Processor",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "engine",
+        label: "Engine",
+        type: "select",
+        default: "Kafka Streams",
+        options: ["Kafka Streams", "Apache Flink", "Spark Streaming", "AWS Kinesis"],
+      },
+      {
+        key: "throughput",
+        label: "Throughput (events/sec)",
+        type: "number",
+        default: 10000,
+      },
+      {
+        key: "windowing",
+        label: "Windowing Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "stateful",
+        label: "Stateful Processing",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Data Warehouse
+  {
+    id: "data-warehouse",
+    group: "Data Layer",
+    icon: "🏭",
+    label: "Data Warehouse",
+    description: "OLAP & analytics storage",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Data Warehouse",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "platform",
+        label: "Platform",
+        type: "select",
+        default: "Snowflake",
+        options: ["Snowflake", "Redshift", "BigQuery", "Synapse"],
+      },
+      {
+        key: "storageTB",
+        label: "Storage (TB)",
+        type: "number",
+        default: 10,
+      },
+      {
+        key: "compression",
+        label: "Column Compression",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "partitioning",
+        label: "Data Partitioning",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Monitoring & Observability
+  {
+    id: "monitoring",
+    group: "Observability",
+    icon: "📈",
+    label: "Monitoring",
+    description: "Metrics & alerting",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Monitoring",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "stack",
+        label: "Stack",
+        type: "select",
+        default: "Prometheus + Grafana",
+        options: ["Prometheus + Grafana", "Datadog", "New Relic", "CloudWatch"],
+      },
+      {
+        key: "metrics",
+        label: "Metrics Collection",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "alerts",
+        label: "Alerting",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "retention",
+        label: "Retention (days)",
+        type: "number",
+        default: 30,
+      },
+    ],
+  },
+
+  // Distributed Tracing
+  {
+    id: "tracing",
+    group: "Observability",
+    icon: "🔍",
+    label: "Distributed Tracing",
+    description: "Request flow tracking",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Tracing",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "platform",
+        label: "Platform",
+        type: "select",
+        default: "Jaeger",
+        options: ["Jaeger", "Zipkin", "AWS X-Ray", "Datadog APM"],
+      },
+      {
+        key: "sampling",
+        label: "Sampling Rate (%)",
+        type: "number",
+        default: 10,
+      },
+      {
+        key: "retention",
+        label: "Retention (days)",
+        type: "number",
+        default: 7,
+      },
+    ],
+  },
+
+  // Rate Limiter
+  {
+    id: "rate-limiter",
+    group: "Services",
+    icon: "🚦",
+    label: "Rate Limiter",
+    description: "Request throttling service",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Rate Limiter",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "algorithm",
+        label: "Algorithm",
+        type: "select",
+        default: "Token Bucket",
+        options: ["Token Bucket", "Leaky Bucket", "Fixed Window", "Sliding Window"],
+      },
+      {
+        key: "requestsPerMinute",
+        label: "Requests/Minute",
+        type: "number",
+        default: 1000,
+      },
+      {
+        key: "distributed",
+        label: "Distributed",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "backend",
+        label: "Backend",
+        type: "select",
+        default: "Redis",
+        options: ["Redis", "In-Memory", "Database"],
+      },
+    ],
+  },
+
+  // Circuit Breaker
+  {
+    id: "circuit-breaker",
+    group: "Services",
+    icon: "⚡",
+    label: "Circuit Breaker",
+    description: "Fault tolerance & resilience",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Circuit Breaker",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "failureThreshold",
+        label: "Failure Threshold (%)",
+        type: "number",
+        default: 50,
+      },
+      {
+        key: "timeout",
+        label: "Timeout (ms)",
+        type: "number",
+        default: 5000,
+      },
+      {
+        key: "fallback",
+        label: "Fallback Strategy",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // File Storage
+  {
+    id: "file-storage",
+    group: "Data Layer",
+    icon: "📂",
+    label: "File Storage",
+    description: "Shared file system",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "File Storage",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        default: "NFS",
+        options: ["NFS", "EFS", "Azure Files", "GCP Filestore"],
+      },
+      {
+        key: "storageTB",
+        label: "Storage (TB)",
+        type: "number",
+        default: 1,
+      },
+      {
+        key: "throughput",
+        label: "Throughput (MB/s)",
+        type: "number",
+        default: 100,
+      },
+    ],
+  },
+
+  // VPN Gateway
+  {
+    id: "vpn-gateway",
+    group: "Networking",
+    icon: "🔐",
+    label: "VPN Gateway",
+    description: "Secure network connection",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "VPN Gateway",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "protocol",
+        label: "Protocol",
+        type: "select",
+        default: "IPSec",
+        options: ["IPSec", "OpenVPN", "WireGuard"],
+      },
+      {
+        key: "encryption",
+        label: "Encryption",
+        type: "select",
+        default: "AES-256",
+        options: ["AES-128", "AES-256", "ChaCha20"],
+      },
+      {
+        key: "tunnels",
+        label: "Active Tunnels",
+        type: "number",
+        default: 2,
+      },
+    ],
+  },
+
+  // Firewall
+  {
+    id: "firewall",
+    group: "Security",
+    icon: "🛡️",
+    label: "Firewall",
+    description: "Network security & filtering",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Firewall",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        default: "WAF",
+        options: ["Network Firewall", "WAF", "Next-Gen Firewall"],
+      },
+      {
+        key: "rules",
+        label: "Active Rules",
+        type: "number",
+        default: 50,
+      },
+      {
+        key: "ips",
+        label: "IPS Enabled",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "logging",
+        label: "Traffic Logging",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Secrets Manager
+  {
+    id: "secrets-manager",
+    group: "Security",
+    icon: "🔑",
+    label: "Secrets Manager",
+    description: "Credentials & secrets storage",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Secrets Manager",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "HashiCorp Vault",
+        options: ["HashiCorp Vault", "AWS Secrets Manager", "Azure Key Vault"],
+      },
+      {
+        key: "rotation",
+        label: "Auto Rotation",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "encryption",
+        label: "Encryption at Rest",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "audit",
+        label: "Audit Logging",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Email Service
+  {
+    id: "email-service",
+    group: "Services",
+    icon: "📧",
+    label: "Email Service",
+    description: "Transactional email delivery",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Email Service",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "SendGrid",
+        options: ["SendGrid", "AWS SES", "Mailgun", "Postmark"],
+      },
+      {
+        key: "templates",
+        label: "Template Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "tracking",
+        label: "Open/Click Tracking",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "bounceHandling",
+        label: "Bounce Handling",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // SMS Service
+  {
+    id: "sms-service",
+    group: "Services",
+    icon: "💬",
+    label: "SMS Service",
+    description: "SMS notifications & OTP",
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "SMS Service",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A brief description of the component",
+        default: "",
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "Twilio",
+        options: ["Twilio", "AWS SNS", "Vonage", "MessageBird"],
+      },
+      {
+        key: "otp",
+        label: "OTP Support",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "deliveryReports",
+        label: "Delivery Reports",
+        type: "boolean",
+        default: true,
       },
     ],
   },

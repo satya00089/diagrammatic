@@ -4,7 +4,7 @@ export interface SystemDesignProblem {
   description: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   category: string;
-  estimatedTime: string;
+  estimated_time: string;
   requirements: string[];
   constraints: string[];
   hints: string[];
