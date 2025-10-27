@@ -619,12 +619,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   return (
     <div className="h-screen flex flex-col bg-theme">
       {/* Header */}
-      <div className="bg-surface shadow-sm border-b border-theme px-4 py-3">
+      <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+              className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
             >
               ← Back to Dashboard
             </button>
@@ -647,10 +647,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               type="button"
               onClick={runAssessment}
               disabled={isAssessing}
-              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Run assessment on current diagram"
+              className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title="Run assessment on current design"
             >
-              {isAssessing ? 'Assessing...' : 'Assess'}
+              {isAssessing ? 'Assessing...' : 'Run Assessment'}
             </button>
           </div>
         </div>
