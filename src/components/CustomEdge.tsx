@@ -4,7 +4,12 @@ import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
 
 // Helper function for creating curved paths for bi-directional edges
 const getSpecialPath = (
-  { sourceX, sourceY, targetX, targetY }: { sourceX: number; sourceY: number; targetX: number; targetY: number },
+  {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  }: { sourceX: number; sourceY: number; targetX: number; targetY: number },
   offset: number,
 ) => {
   const centerX = (sourceX + targetX) / 2;
@@ -14,14 +19,24 @@ const getSpecialPath = (
 
 // Compute edge path and center point; extracted to reduce complexity in the main component
 const computeEdgeParams = (
-  params: { sourceX: number; sourceY: number; targetX: number; targetY: number; sourcePosition: Position; targetPosition: Position },
+  params: {
+    sourceX: number;
+    sourceY: number;
+    targetX: number;
+    targetY: number;
+    sourcePosition: Position;
+    targetPosition: Position;
+  },
   isBiDirectionEdge: boolean,
 ) => {
   const { sourceX, sourceY, targetX, targetY } = params;
 
   if (isBiDirectionEdge) {
     const offset = sourceX < targetX ? 25 : -25;
-    const edgePath = getSpecialPath({ sourceX, sourceY, targetX, targetY }, offset);
+    const edgePath = getSpecialPath(
+      { sourceX, sourceY, targetX, targetY },
+      offset,
+    );
     const midX = (sourceX + targetX) / 2;
     const midY = (sourceY + targetY) / 2;
     const centerX = midX;
@@ -30,15 +45,37 @@ const computeEdgeParams = (
   }
 
   const [edgePath] = getBezierPath(params);
-  const [centerX, centerY] = getEdgeCenter({ sourceX, sourceY, targetX, targetY });
+  const [centerX, centerY] = getEdgeCenter({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
   return { edgePath, centerX, centerY };
 };
 
 const CustomEdge: React.FC<EdgeProps> = (props) => {
-  const { id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected, markerEnd } = props;
+  const {
+    id,
+    source,
+    target,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    data,
+    selected,
+    markerEnd,
+  } = props;
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState<string>((data as { label?: string })?.label ?? "");
-  const [hasLabel, setHasLabel] = useState<boolean>((data as { hasLabel?: boolean })?.hasLabel ?? false);
+  const [value, setValue] = useState<string>(
+    (data as { label?: string })?.label ?? "",
+  );
+  const [hasLabel, setHasLabel] = useState<boolean>(
+    (data as { hasLabel?: boolean })?.hasLabel ?? false,
+  );
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Detect if there's a bi-directional connection
@@ -46,10 +83,13 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     const edgeExists = s.edges.some(
       (e) =>
         e.id !== id && // exclude current edge
-        ((e.source === target && e.target === source))
+        e.source === target &&
+        e.target === source,
     );
     if (edgeExists) {
-      console.log(`Bi-directional edge detected: ${id} (${source} -> ${target})`);
+      console.log(
+        `Bi-directional edge detected: ${id} (${source} -> ${target})`,
+      );
     }
     return edgeExists;
   });
@@ -63,7 +103,10 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     targetY,
     targetPosition,
   };
-  const { edgePath, centerX, centerY } = computeEdgeParams(edgePathParams, isBiDirectionEdge);
+  const { edgePath, centerX, centerY } = computeEdgeParams(
+    edgePathParams,
+    isBiDirectionEdge,
+  );
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -84,9 +127,9 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     setValue("");
     // broadcast update
     window.dispatchEvent(
-      new CustomEvent("diagram:edge-label-change", { 
-        detail: { id, label: "", hasLabel: false } 
-      })
+      new CustomEvent("diagram:edge-label-change", {
+        detail: { id, label: "", hasLabel: false },
+      }),
     );
   };
 
@@ -94,9 +137,13 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     setEditing(false);
     // broadcast update — playground listens and updates edge state
     window.dispatchEvent(
-      new CustomEvent("diagram:edge-label-change", { 
-        detail: { id, label: value, hasLabel: hasLabel || value.trim().length > 0 } 
-      })
+      new CustomEvent("diagram:edge-label-change", {
+        detail: {
+          id,
+          label: value,
+          hasLabel: hasLabel || value.trim().length > 0,
+        },
+      }),
     );
   };
 
@@ -127,69 +174,69 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
       />
 
       {/* Label area */}
-      <foreignObject 
-        x={centerX - 75} 
-        y={centerY - 12} 
-        width={150} 
+      <foreignObject
+        x={centerX - 75}
+        y={centerY - 12}
+        width={150}
         height={24}
         className="overflow-visible"
       >
         <div className="flex items-center justify-center w-full h-full pointer-events-auto">
-            {hasLabel ? (
-              <div className="flex items-center gap-1">
-                {editing ? (
-                  <input
-                    ref={inputRef}
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    onBlur={commit}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commit();
-                      if (e.key === "Escape") { 
-                        setEditing(false); 
-                        setValue((data as { label?: string })?.label ?? ""); 
-                      }
-                    }}
-                    className="text-xs border rounded px-2 py-1 bg-[var(--surface)] text-theme w-24 text-center focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
-                    placeholder="Label..."
-                  />
-                ) : (
-                  <>
+          {hasLabel ? (
+            <div className="flex items-center gap-1">
+              {editing ? (
+                <input
+                  ref={inputRef}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  onBlur={commit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commit();
+                    if (e.key === "Escape") {
+                      setEditing(false);
+                      setValue((data as { label?: string })?.label ?? "");
+                    }
+                  }}
+                  className="text-xs border rounded px-2 py-1 bg-[var(--surface)] text-theme w-24 text-center focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
+                  placeholder="Label..."
+                />
+              ) : (
+                <>
+                  <button
+                    onDoubleClick={onLabelDoubleClick}
+                    className={`text-xs px-2 py-1 rounded cursor-text bg-[var(--surface)] text-theme border text-center min-w-[60px] hover:bg-[var(--bg-hover)] ${
+                      selected ? "ring-1 ring-[var(--brand)]" : "border-theme"
+                    }`}
+                    title="Double-click to edit"
+                    type="button"
+                  >
+                    {value || "Label"}
+                  </button>
+                  {selected && (
                     <button
-                      onDoubleClick={onLabelDoubleClick}
-                      className={`text-xs px-2 py-1 rounded cursor-text bg-[var(--surface)] text-theme border text-center min-w-[60px] hover:bg-[var(--bg-hover)] ${
-                        selected ? "ring-1 ring-[var(--brand)]" : "border-theme"
-                      }`}
-                      title="Double-click to edit"
-                      type="button"
+                      onClick={onRemoveLabel}
+                      className="text-xs px-1 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200"
+                      title="Remove label"
                     >
-                      {value || "Label"}
+                      ✕
                     </button>
-                    {selected && (
-                      <button
-                        onClick={onRemoveLabel}
-                        className="text-xs px-1 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200"
-                        title="Remove label"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : (
-              selected && (
-                <button
-                  onClick={onAddLabel}
-                  className="text-xs px-2 py-1 rounded bg-[var(--surface)] border border-dashed border-[var(--brand)] text-[var(--brand)] hover:bg-[var(--bg-hover)]"
-                  title="Add label"
-                >
-                  + Label
-                </button>
-              )
-            )}
-          </div>
-        </foreignObject>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            selected && (
+              <button
+                onClick={onAddLabel}
+                className="text-xs px-2 py-1 rounded bg-[var(--surface)] border border-dashed border-[var(--brand)] text-[var(--brand)] hover:bg-[var(--bg-hover)]"
+                title="Add label"
+              >
+                + Label
+              </button>
+            )
+          )}
+        </div>
+      </foreignObject>
     </g>
   );
 };

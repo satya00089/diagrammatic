@@ -191,7 +191,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Engine",
         type: "select",
         default: "postgresql",
-        options: ["postgresql", "mysql", "mongodb", "cassandra", "dynamodb", "cockroachdb"],
+        options: [
+          "postgresql",
+          "mysql",
+          "mongodb",
+          "cassandra",
+          "dynamodb",
+          "cockroachdb",
+        ],
       },
       {
         key: "workload",
@@ -200,11 +207,11 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "OLTP",
         options: ["OLTP", "OLAP", "Hybrid"],
       },
-      { 
-        key: "storageGB", 
-        label: "Storage (GB)", 
-        type: "number", 
-        default: 100 
+      {
+        key: "storageGB",
+        label: "Storage (GB)",
+        type: "number",
+        default: 100,
       },
       {
         key: "sharding",
@@ -232,11 +239,11 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "Async",
         options: ["Sync", "Async", "Semi-Sync"],
       },
-      { 
-        key: "multiAZ", 
-        label: "Multi-AZ", 
-        type: "boolean", 
-        default: true 
+      {
+        key: "multiAZ",
+        label: "Multi-AZ",
+        type: "boolean",
+        default: true,
       },
       {
         key: "crossRegion",
@@ -327,7 +334,13 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Algorithm",
         type: "select",
         default: "round-robin",
-        options: ["round-robin", "least-connections", "ip-hash", "weighted-round-robin", "least-response-time"],
+        options: [
+          "round-robin",
+          "least-connections",
+          "ip-hash",
+          "weighted-round-robin",
+          "least-response-time",
+        ],
       },
       {
         key: "sslTermination",
@@ -420,24 +433,32 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "write-through",
         options: ["write-through", "write-around", "write-back", "cache-aside"],
       },
-      { 
-        key: "ttl", 
-        label: "TTL (seconds)", 
-        type: "number", 
-        default: 3600 
+      {
+        key: "ttl",
+        label: "TTL (seconds)",
+        type: "number",
+        default: 3600,
       },
-      { 
-        key: "inMemory", 
-        label: "In Memory", 
-        type: "boolean", 
-        default: true 
+      {
+        key: "inMemory",
+        label: "In Memory",
+        type: "boolean",
+        default: true,
       },
       {
         key: "eviction",
         label: "Eviction Policy",
         type: "select",
         default: "lru",
-        options: ["lru", "lfu", "fifo", "mru", "random", "ttl-based", "volatile-lru"],
+        options: [
+          "lru",
+          "lfu",
+          "fifo",
+          "mru",
+          "random",
+          "ttl-based",
+          "volatile-lru",
+        ],
       },
       {
         key: "replication",
@@ -1228,7 +1249,12 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Task Types",
         type: "select",
         default: "Media Encoding",
-        options: ["Media Encoding", "Thumbnail Generation", "Data Processing", "ML Inference"],
+        options: [
+          "Media Encoding",
+          "Thumbnail Generation",
+          "Data Processing",
+          "ML Inference",
+        ],
       },
       {
         key: "concurrency",
@@ -1884,7 +1910,12 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Engine",
         type: "select",
         default: "Kafka Streams",
-        options: ["Kafka Streams", "Apache Flink", "Spark Streaming", "AWS Kinesis"],
+        options: [
+          "Kafka Streams",
+          "Apache Flink",
+          "Spark Streaming",
+          "AWS Kinesis",
+        ],
       },
       {
         key: "throughput",
@@ -2078,7 +2109,12 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Algorithm",
         type: "select",
         default: "Token Bucket",
-        options: ["Token Bucket", "Leaky Bucket", "Fixed Window", "Sliding Window"],
+        options: [
+          "Token Bucket",
+          "Leaky Bucket",
+          "Fixed Window",
+          "Sliding Window",
+        ],
       },
       {
         key: "requestsPerMinute",

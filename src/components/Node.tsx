@@ -21,26 +21,33 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
   // Use componentName if available, otherwise fall back to label
   const displayLabel = data.componentName || data.label;
 
-  const onDelete = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.dispatchEvent(
-      new CustomEvent("diagram:node-delete", { detail: { id } })
-    );
-  }, [id]);
+  const onDelete = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-delete", { detail: { id } }),
+      );
+    },
+    [id],
+  );
 
-  const onToggle = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.dispatchEvent(
-      new CustomEvent("diagram:node-toggle", { detail: { id } })
-    );
-  }, [id]);
+  const onToggle = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-toggle", { detail: { id } }),
+      );
+    },
+    [id],
+  );
 
-  const handleCopy = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onCopy?.(id, data);
-  }, [id, data, onCopy]);
-
-
+  const handleCopy = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onCopy?.(id, data);
+    },
+    [id, data, onCopy],
+  );
 
   return (
     <motion.fieldset
@@ -51,7 +58,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
       className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative"
     >
       <legend className="sr-only">{displayLabel}</legend>
-      
+
       {/* Action buttons - positioned at top-right */}
       <div className="absolute -top-5 right-1 flex items-center z-10 bg-[var(--surface)]/80 border border-theme rounded-full shadow-sm">
         <motion.button
@@ -106,7 +113,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
         }}
       />
       <Handle
-        id="left" 
+        id="left"
         type="target"
         position={Position.Left}
         isConnectable={true}
@@ -126,9 +133,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
         </div>
 
         <div className="min-w-0 w-full text-center">
-          <div className="truncate font-medium text-sm">
-            {displayLabel}
-          </div>
+          <div className="truncate font-medium text-sm">{displayLabel}</div>
           {data.subtitle && (
             <div className="text-xs text-muted truncate">{data.subtitle}</div>
           )}
@@ -138,6 +143,6 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
   );
 });
 
-Node.displayName = 'Node';
+Node.displayName = "Node";
 
 export default Node;

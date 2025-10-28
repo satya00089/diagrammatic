@@ -2,7 +2,7 @@ export interface SystemDesignProblem {
   id: string;
   title: string;
   description: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: "Easy" | "Medium" | "Hard";
   category: string;
   estimated_time: string;
   requirements: string[];
@@ -37,34 +37,34 @@ export interface SystemConnection {
   properties?: Record<string, unknown>;
 }
 
-export type ComponentType = 
-  | 'client'
-  | 'load-balancer'
-  | 'web-server'
-  | 'application-server'
-  | 'database'
-  | 'cache'
-  | 'queue'
-  | 'cdn'
-  | 'api-gateway'
-  | 'microservice'
-  | 'message-broker'
-  | 'search-engine'
-  | 'file-storage'
-  | 'notification-service'
-  | 'monitoring'
-  | 'analytics'
-  | 'external-api';
+export type ComponentType =
+  | "client"
+  | "load-balancer"
+  | "web-server"
+  | "application-server"
+  | "database"
+  | "cache"
+  | "queue"
+  | "cdn"
+  | "api-gateway"
+  | "microservice"
+  | "message-broker"
+  | "search-engine"
+  | "file-storage"
+  | "notification-service"
+  | "monitoring"
+  | "analytics"
+  | "external-api";
 
-export type ConnectionType = 
-  | 'http'
-  | 'tcp'
-  | 'websocket'
-  | 'message-queue'
-  | 'database-connection'
-  | 'api-call'
-  | 'data-flow'
-  | 'event-stream';
+export type ConnectionType =
+  | "http"
+  | "tcp"
+  | "websocket"
+  | "message-queue"
+  | "database-connection"
+  | "api-call"
+  | "data-flow"
+  | "event-stream";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -77,10 +77,16 @@ export interface ValidationResult {
 }
 
 export interface ValidationFeedback {
-  type: 'error' | 'warning' | 'success' | 'info';
+  type: "error" | "warning" | "success" | "info";
   message: string;
   component?: string;
-  category: 'scalability' | 'reliability' | 'performance' | 'security' | 'cost' | 'maintainability';
+  category:
+    | "scalability"
+    | "reliability"
+    | "performance"
+    | "security"
+    | "cost"
+    | "maintainability";
 }
 
 export interface ComponentTemplate {
@@ -89,6 +95,6 @@ export interface ComponentTemplate {
   icon: string;
   description: string;
   defaultProperties: Record<string, unknown>;
-  category: 'frontend' | 'backend' | 'database' | 'infrastructure' | 'external';
+  category: "frontend" | "backend" | "database" | "infrastructure" | "external";
   color: string;
 }
