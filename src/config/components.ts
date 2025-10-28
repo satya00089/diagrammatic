@@ -2511,4 +2511,60 @@ export const COMPONENTS: CanvasComponent[] = [
       },
     ],
   },
+
+  // ========================================
+  // CUSTOM COMPONENT
+  // ========================================
+  {
+    id: "custom-component",
+    group: "Custom",
+    icon: "📦",
+    label: "Custom Component",
+    description: "Create your own custom component",
+    tags: ["custom", "generic", "user-defined", "flexible", "other"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Component Name",
+        type: "text",
+        placeholder: "Enter component name",
+        default: "Custom Component",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this component does",
+        default: "",
+      },
+      {
+        key: "componentType",
+        label: "Component Type",
+        type: "text",
+        placeholder: "e.g., Service, Database, Cache, etc.",
+        default: "",
+      },
+      {
+        key: "technology",
+        label: "Technology/Tool",
+        type: "text",
+        placeholder: "e.g., Redis, Kafka, Custom API, etc.",
+        default: "",
+      },
+      {
+        key: "purpose",
+        label: "Purpose",
+        type: "textarea",
+        placeholder: "What problem does this solve?",
+        default: "",
+      },
+      {
+        key: "notes",
+        label: "Additional Notes",
+        type: "textarea",
+        placeholder: "Any additional details or configuration",
+        default: "",
+      },
+    ],
+  },
 ];
