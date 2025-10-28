@@ -8,7 +8,7 @@ const ThemeSwitcher: React.FC = () => {
   return (
     <button
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+      className="p-2 rounded-full bg-[var(--bg)] text-[var(--text)] cursor-pointer"
     >
       {theme === "light" ? <FiMoon size={18} /> : <FiSun size={18} />}
     </button>
