@@ -1,9 +1,10 @@
 import React from "react";
-import { PiDotsSixVerticalBold } from "react-icons/pi";
+import { PiDotsSixVerticalBold, PiCaretDownBold } from "react-icons/pi";
 import { MdAdd } from "react-icons/md";
 
 type InspectorPanelProps = {
   problem: {
+    id?: string;
     title: string;
     description: string;
     requirements: string[];
@@ -39,6 +40,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const maxWidth = 640;
   const resizingRef = React.useRef(false);
   const panelRef = React.useRef<HTMLElement | null>(null);
+  const [showHints, setShowHints] = React.useState(false);
 
   const onMouseMove = React.useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return;
@@ -71,7 +73,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
   }, [width]);
 
-  if (!problem) return null;
+  // Hide panel for free design mode when no node is selected
+  const isFreeDesignMode = problem?.id === "free";
+  const shouldHidePanel = isFreeDesignMode && !inspectedNodeId;
+
+  // Auto-switch to inspector tab when node is selected in free design mode
+  React.useEffect(() => {
+    if (isFreeDesignMode && inspectedNodeId && activeTab === "details") {
+      setActiveTab("inspector");
+    }
+  }, [isFreeDesignMode, inspectedNodeId, activeTab, setActiveTab]);
+
+  if (!problem || shouldHidePanel) return null;
 
   const copyAssessment = async () => {
     if (!assessmentResult) return;
@@ -130,15 +143,17 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         role="tablist"
         aria-label="Sidebar tabs"
       >
-        <button
-          type="button"
-          role="tab"
-          className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "details" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
-          onClick={() => setActiveTab("details")}
-        >
-          <span className="text-sm">📄</span>
-          <span className="text-sm font-medium">Details</span>
-        </button>
+        {!isFreeDesignMode && (
+          <button
+            type="button"
+            role="tab"
+            className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "details" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+            onClick={() => setActiveTab("details")}
+          >
+            <span className="text-sm">📄</span>
+            <span className="text-sm font-medium">Details</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -284,17 +299,32 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </div>
 
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-theme mb-2">Hints</h4>
-              <div className="space-y-2">
-                {problem.hints.map((hint) => (
-                  <div
-                    key={hint}
-                    className="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
-                  >
-                    <div className="text-xs text-muted">{hint}</div>
-                  </div>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowHints(!showHints)}
+                className="w-full flex items-center justify-between mb-2 cursor-pointer hover:bg-[var(--bg-hover)] p-2 rounded-md transition-colors"
+                aria-controls="hints-content"
+              >
+                <h4 className="text-sm font-semibold text-theme">💡 Hints</h4>
+                <PiCaretDownBold
+                  size={14}
+                  className={`text-muted transition-transform duration-150 ${
+                    showHints ? "rotate-0" : "-rotate-90"
+                  }`}
+                />
+              </button>
+              {showHints && (
+                <div id="hints-content" className="space-y-2">
+                  {problem.hints.map((hint) => (
+                    <div
+                      key={hint}
+                      className="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
+                    >
+                      <div className="text-xs text-white">{hint}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
