@@ -29,9 +29,10 @@ export default function ComponentPalette({ components, onAdd }: Props) {
   const fuse = React.useMemo(() => {
     return new Fuse(Array.from(components), {
       keys: [
-        { name: "label", weight: 0.5 },
-        { name: "description", weight: 0.3 },
-        { name: "group", weight: 0.2 },
+        { name: "label", weight: 0.4 },
+        { name: "tags", weight: 0.25 },
+        { name: "description", weight: 0.2 },
+        { name: "group", weight: 0.15 },
       ],
       threshold: 0.3,
       includeScore: true,

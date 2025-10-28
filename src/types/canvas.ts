@@ -13,5 +13,6 @@ export type CanvasComponent = {
   label: string;
   description?: string;
   group?: string;
+  tags?: string[];
   properties?: ComponentProperty[];
 };
