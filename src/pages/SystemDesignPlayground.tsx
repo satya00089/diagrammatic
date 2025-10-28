@@ -68,12 +68,42 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch problem from API
+  // Fetch problem from API or localStorage
   useEffect(() => {
     if (!idFromUrl) {
       setLoading(false);
       setError("No problem ID provided");
       return;
+    }
+
+    // Handle "free" mode - no problem, just canvas
+    if (idFromUrl === "free") {
+      setProblem({
+        id: "free",
+        title: "Free Design Canvas",
+        description: "Create your own system design from scratch",
+        difficulty: "Medium",
+        category: "Custom",
+        estimated_time: "Unlimited",
+        requirements: [],
+        constraints: [],
+        hints: [],
+        tags: ["custom", "free-design"],
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Check if it's a custom problem from localStorage
+    if (idFromUrl.startsWith("custom-")) {
+      const customProblemData = localStorage.getItem(
+        `custom-problem-${idFromUrl}`,
+      );
+      if (customProblemData) {
+        setProblem(JSON.parse(customProblemData));
+        setLoading(false);
+        return;
+      }
     }
 
     const fetchProblem = async () => {
@@ -818,15 +848,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
           <div className="flex items-center space-x-2">
             <ThemeSwitcher />
-            <button
-              type="button"
-              onClick={runAssessment}
-              disabled={isAssessing}
-              className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              title="Run assessment on current design"
-            >
-              {isAssessing ? "Assessing..." : "Run Assessment"}
-            </button>
+            {problem?.id !== "free" && (
+              <button
+                type="button"
+                onClick={runAssessment}
+                disabled={isAssessing}
+                className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                title="Run assessment on current design"
+              >
+                {isAssessing ? "Assessing..." : "Run Assessment"}
+              </button>
+            )}
           </div>
         </div>
       </div>

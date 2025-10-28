@@ -99,24 +99,27 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-theme text-theme flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
       {/* Header */}
-      <div className="bg-surface shadow-sm border-b border-theme">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <img src="./logo.png" alt="Logo" className="h-16" />
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-theme">
-                  System Design Playground
-                </h1>
-                <p className="mt-1 text-muted">
-                  Master system design through interactive problem solving
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-muted">
+      <header className='fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300'>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="flex items-center space-x-3 group cursor-pointer"
+            >
+              <img
+                src="./logo.png"
+                alt="Logo"
+                className="h-10 transition-transform group-hover:scale-110 duration-300"
+              />
+              <span className="text-xl font-bold text-white">
+                Diagrammatic
+              </span>
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:block text-sm text-white/90">
                 {loading
                   ? "Loading..."
                   : `${filteredProblems.length} problems available`}
@@ -125,15 +128,26 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Filters */}
-      <div className="overflow-y-auto component-palette">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+      {/* Main Content */}
+      <div className="pt-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              System Design Problems
+            </h1>
+            <p className="text-muted text-lg max-w-2xl mx-auto">
+              Master system design through interactive problem solving
+            </p>
+          </div>
+
           {/* Loading State */}
           {loading && (
-            <div className="text-center py-12">
-              <div className="text-muted text-lg mb-2">Loading problems...</div>
+            <div className="text-center py-20">
+              <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
+              <div className="text-theme text-xl mb-2">Loading problems...</div>
               <div className="text-muted text-sm">
                 Please wait while we fetch the latest problems
               </div>
@@ -142,32 +156,36 @@ const Dashboard: React.FC = () => {
 
           {/* Error State */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="text-red-800 text-lg font-medium mb-2">
-                Error Loading Problems
+            <div className="elevated-card-bg backdrop-blur-md rounded-2xl p-8 mb-6 border-2 border-red-500/20 shadow-lg max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="text-6xl mb-4">⚠️</div>
+                <div className="text-theme text-xl font-semibold mb-2">
+                  Error Loading Problems
+                </div>
+                <div className="text-muted text-sm mb-6">{error}</div>
+                <button
+                  type="button"
+                  onClick={() => globalThis.location.reload()}
+                  className="px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer"
+                >
+                  Retry
+                </button>
               </div>
-              <div className="text-red-700 text-sm">{error}</div>
-              <button
-                onClick={() => globalThis.location.reload()}
-                className="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
-              >
-                Retry
-              </button>
             </div>
           )}
 
           {/* Filters - Only show when not loading and no error */}
           {!loading && !error && (
             <>
-              <div className="bg-surface rounded-lg shadow-sm p-6 mb-6 border border-theme">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Search */}
                   <div>
                     <label
                       htmlFor="search-input"
-                      className="block text-sm font-medium text-theme mb-2"
+                      className="block text-sm font-semibold text-theme mb-2"
                     >
-                      Search
+                      🔍 Search
                     </label>
                     <input
                       id="search-input"
@@ -175,7 +193,7 @@ const Dashboard: React.FC = () => {
                       placeholder="Search problems..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)]"
+                      className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
                     />
                   </div>
 
@@ -183,15 +201,15 @@ const Dashboard: React.FC = () => {
                   <div>
                     <label
                       htmlFor="difficulty-select"
-                      className="block text-sm font-medium text-theme mb-2"
+                      className="block text-sm font-semibold text-theme mb-2"
                     >
-                      Difficulty
+                      📊 Difficulty
                     </label>
                     <select
                       id="difficulty-select"
                       value={selectedDifficulty}
                       onChange={(e) => setSelectedDifficulty(e.target.value)}
-                      className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
+                      className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                     >
                       {difficulties.map((difficulty) => (
                         <option key={difficulty} value={difficulty}>
@@ -205,15 +223,15 @@ const Dashboard: React.FC = () => {
                   <div>
                     <label
                       htmlFor="category-select"
-                      className="block text-sm font-medium text-theme mb-2"
+                      className="block text-sm font-semibold text-theme mb-2"
                     >
-                      Category
+                      🏷️ Category
                     </label>
                     <select
                       id="category-select"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-theme rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--brand)] bg-[var(--surface)] text-theme text-[var(--text)] appearance-none"
+                      className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                     >
                       {categories.map((category) => (
                         <option key={category} value={category}>
@@ -226,44 +244,53 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Problems Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProblems.map((problem) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+                {filteredProblems.map((problem, index) => (
                   <div
                     key={problem.id}
-                    className="bg-surface rounded-lg shadow-sm border border-theme hover:shadow-md transition-shadow"
+                    className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
+                      index === 0 ? 'delay-0' : index === 1 ? 'delay-100' : index === 2 ? 'delay-200' : ''
+                    }`}
                   >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-[var(--brand)] line-clamp-2">
+                    {/* Gradient glow effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+                    
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1">
                           {problem.title}
                         </h3>
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                          className={`px-3 py-1 text-xs font-semibold rounded-full ml-2 ${getDifficultyColor(problem.difficulty)}`}
                         >
                           {problem.difficulty}
                         </span>
                       </div>
 
-                      <p className="text-muted text-sm mb-4 line-clamp-2">
+                      <p className="text-muted text-sm mb-4 line-clamp-3 leading-relaxed">
                         {problem.description}
                       </p>
 
-                      <div className="flex items-center justify-between text-sm text-muted mb-4">
-                        <span>{problem.category}</span>
-                        <span>{problem.estimated_time}</span>
+                      <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
+                        <span className="flex items-center gap-1">
+                          <span>🏷️</span> {problem.category}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span>⏱️</span> {problem.estimated_time}
+                        </span>
                       </div>
 
-                      <div className="flex flex-wrap gap-1 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-6">
                         {problem.tags.slice(0, 3).map((tag) => (
                           <span
                             key={tag}
-                            className="px-2 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs capitalize font-bold rounded-full"
+                            className="px-3 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
                           >
                             {tag}
                           </span>
                         ))}
                         {problem.tags.length > 3 && (
-                          <span className="px-2 py-1 bg-[var(--surface)] text-muted text-xs rounded">
+                          <span className="px-3 py-1 bg-[var(--theme)]/5 text-muted text-xs font-medium rounded-full">
                             +{problem.tags.length - 3} more
                           </span>
                         )}
@@ -276,9 +303,9 @@ const Dashboard: React.FC = () => {
                           navigate(`/playground/${problem.id}`);
                         }}
                         aria-label={`Start ${problem.title}`}
-                        className="w-full px-4 py-2 bg-accent text-white text-sm font-medium rounded-md hover:brightness-90 transition-colors cursor-pointer"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group-hover:shadow-xl"
                       >
-                        Start Problem
+                        Start Problem →
                       </button>
                     </div>
                   </div>
@@ -286,12 +313,13 @@ const Dashboard: React.FC = () => {
               </div>
 
               {filteredProblems.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <div className="text-muted text-lg mb-2">
+                <div className="text-center py-20">
+                  <div className="text-7xl mb-6">🔍</div>
+                  <div className="text-theme text-2xl font-bold mb-2">
                     No problems found
                   </div>
-                  <div className="text-muted text-sm">
-                    Try adjusting your filters
+                  <div className="text-muted text-lg">
+                    Try adjusting your filters or search terms
                   </div>
                 </div>
               )}

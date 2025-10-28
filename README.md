@@ -130,16 +130,37 @@ npm run build
 
 ## 🖼️ Usage
 
-### Practice Mode
+### Three Modes of Operation
 
-1. Navigate to **System Design Playground**
-2. Choose a problem from the dropdown (e.g., "Design YouTube", "Design Instagram")
-3. View problem details: difficulty, time estimate, and category
+#### 1. Practice Mode
+1. Navigate to **Browse Problems** from the home page
+2. Choose a problem from the list (e.g., "Design YouTube", "Design Instagram")
+3. View problem details: difficulty, requirements, constraints, and hints
 4. Drag components from the **Component Palette** onto the canvas
-5. Connect components by dragging from one node's edge to another
+5. Connect components to show data flow and relationships
 6. Configure component properties in the **Inspector Panel**
-7. Click **Assess** to get feedback on your design
-8. Use **Hints** if you need guidance
+7. Add custom properties if standard ones aren't enough
+8. Click **Assess** to get AI-powered feedback on your design
+9. Use **Hints** if you need guidance
+
+#### 2. Free Design Mode
+1. Click **Get Started Free** or **Free Design Canvas** from the home page
+2. Start with a blank canvas - no constraints, no requirements
+3. Drag and drop components to design your system
+4. Perfect for planning your next project or experimenting with ideas
+5. Export your diagram when done
+
+#### 3. Custom Problem Mode
+1. Click **Custom Problems** from the home page
+2. Fill in your problem details:
+   - Title and description
+   - Difficulty level
+   - Requirements and constraints
+   - Helpful hints (optional)
+   - Tags for categorization
+3. Click **Create & Start Designing**
+4. Design the solution on the interactive canvas
+5. Great for educators, interviewers, or team exercises
 
 ### Component Palette
 
