@@ -1,5 +1,5 @@
-import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import React from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 export interface AnimatedCheckboxProps {
   id: string;
@@ -22,12 +22,12 @@ export const AnimatedCheckbox: React.FC<AnimatedCheckboxProps> = ({
   onChange,
   label,
   disabled = false,
-  className = '',
+  className = "",
 }) => {
   return (
     <label
       htmlFor={id}
-      className={`inline-flex items-center gap-2 text-sm cursor-pointer select-none ${disabled ? 'opacity-60 cursor-not-allowed' : ''} ${className}`}
+      className={`inline-flex items-center gap-2 text-sm cursor-pointer select-none ${disabled ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
     >
       <span className="relative inline-flex items-center justify-center">
         <input
@@ -45,7 +45,7 @@ export const AnimatedCheckbox: React.FC<AnimatedCheckboxProps> = ({
               initial={{ scale: 0, opacity: 0, rotate: -45 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               exit={{ scale: 0.4, opacity: 0, rotate: 45 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="pointer-events-none absolute w-3 h-3 flex items-center justify-center text-[10px] font-semibold text-white bg-[var(--brand)] rounded-sm shadow-sm"
             >
               ✓

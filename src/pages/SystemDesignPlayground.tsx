@@ -1,6 +1,11 @@
 import React, { useRef, useState, useEffect } from "react";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
-import { AnimatedNumberInput, AnimatedTextInput, AnimatedTextarea, AnimatedSelect } from "../components/shared/AnimatedInputFields";
+import {
+  AnimatedNumberInput,
+  AnimatedTextInput,
+  AnimatedTextarea,
+  AnimatedSelect,
+} from "../components/shared/AnimatedInputFields";
 import type {
   SystemDesignProblem,
   SystemDesignSolution,
@@ -22,7 +27,9 @@ import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
-import CustomPropertyInput, { type CustomProperty } from "../components/CustomPropertyInput";
+import CustomPropertyInput, {
+  type CustomProperty,
+} from "../components/CustomPropertyInput";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -30,19 +37,21 @@ interface SystemDesignPlaygroundProps {
 }
 
 // Create a wrapper component for CustomNode with onCopy prop
-const NodeWithCopy = React.memo((props: { id: string; data: unknown; onCopy: (id: string, data: NodeData) => void }) => {
-  const nodeData = props.data as NodeData;
-  return (
-    <CustomNode 
-      id={props.id} 
-      data={nodeData} 
-      onCopy={props.onCopy} 
-    />
-  );
-});
+const NodeWithCopy = React.memo(
+  (props: {
+    id: string;
+    data: unknown;
+    onCopy: (id: string, data: NodeData) => void;
+  }) => {
+    const nodeData = props.data as NodeData;
+    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} />;
+  },
+);
 
 // Factory function to create node component with copy handler
-const createNodeWithCopyHandler = (onCopy: (id: string, data: NodeData) => void) => {
+const createNodeWithCopyHandler = (
+  onCopy: (id: string, data: NodeData) => void,
+) => {
   return (props: { id: string; data: unknown }) => (
     <NodeWithCopy {...props} onCopy={onCopy} />
   );
@@ -71,18 +80,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       try {
         setLoading(true);
         setError(null);
-        const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL || 'http://localhost:8000';
+        const apiUrl =
+          import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
         const response = await fetch(`${apiUrl}/api/v1/problem/${idFromUrl}`);
-        
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch problem: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch problem: ${response.status} ${response.statusText}`,
+          );
         }
-        
+
         const data = await response.json();
         setProblem(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching the problem');
-        console.error('Error fetching problem:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching the problem",
+        );
+        console.error("Error fetching problem:", err);
       } finally {
         setLoading(false);
       }
@@ -120,14 +136,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
-    null
+    null,
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
 
   const runAssessment = async () => {
     if (isAssessing) return;
-    
+
     setIsAssessing(true);
     setAssessment(null);
     const solution: SystemDesignSolution = {
@@ -146,12 +162,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           typeof maybeLabel === "string" ? maybeLabel : String(n.id);
 
         // Capture all node properties including custom ones
-        const allProperties = (dataObj && typeof dataObj === 'object') 
-          ? { ...dataObj } as Record<string, unknown>
-          : {} as Record<string, unknown>;
-        
+        const allProperties =
+          dataObj && typeof dataObj === "object"
+            ? ({ ...dataObj } as Record<string, unknown>)
+            : ({} as Record<string, unknown>);
+
         // Remove system properties from the properties object
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
         const { label: _label, icon: _icon, subtitle: _subtitle, ...customProperties } = allProperties;
 
         return {
@@ -166,7 +183,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               label,
               icon: (dataObj as { icon?: unknown }).icon,
               subtitle: (dataObj as { subtitle?: unknown }).subtitle,
-            }
+            },
           },
         };
       }),
@@ -195,27 +212,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     try {
-      console.log('Running AI assessment with solution:', solution);
-      
+      console.log("Running AI assessment with solution:", solution);
+
       // Call AI assessor (now returns Promise) with problem context
       const res = await assessSolution(solution, problem);
       setAssessment(res);
       setActiveRightTab("details");
-      
     } catch (error) {
-      console.error('Assessment failed:', error);
+      console.error("Assessment failed:", error);
       setAssessment({
         isValid: false,
         score: 0,
-        feedback: [{
-          type: 'error',
-          message: 'Assessment failed. Please check your connection and try again.',
-          category: 'maintainability'
-        }],
+        feedback: [
+          {
+            type: "error",
+            message:
+              "Assessment failed. Please check your connection and try again.",
+            category: "maintainability",
+          },
+        ],
         suggestions: [],
         missingComponents: [],
         architectureStrengths: [],
-        improvements: []
+        improvements: [],
       });
     } finally {
       setIsAssessing(false);
@@ -268,10 +287,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   type NodeProps = Record<string, string | number | boolean | undefined>;
   const [nodeProps, setNodeProps] = useState<NodeProps>({});
   // Custom properties state - stores custom properties per node
-  const [customProperties, setCustomProperties] = useState<Record<string, CustomProperty[]>>({});
+  const [customProperties, setCustomProperties] = useState<
+    Record<string, CustomProperty[]>
+  >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
-    "details"
+    "details",
   );
 
   // ref to hold latest inspectedNodeId for event handlers to read without adding deps
@@ -282,7 +303,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handlers moved outside the effect to reduce nesting depth. Use refs to keep stable references.
   const handleDiagramNodeDeleteRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeDeleteRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -295,7 +316,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleDiagramNodeToggleRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeToggleRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -308,23 +329,43 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-
-
-  function updateEdgeLabel(eds: Edge[], id: string, label: string, hasLabel: boolean) {
-    return eds.map((edge) => edge.id === id ? { ...edge, data: { ...edge.data, label, hasLabel }, label } : edge);
+  function updateEdgeLabel(
+    eds: Edge[],
+    id: string,
+    label: string,
+    hasLabel: boolean,
+  ) {
+    return eds.map((edge) =>
+      edge.id === id
+        ? { ...edge, data: { ...edge.data, label, hasLabel }, label }
+        : edge,
+    );
   }
 
-  const edgeLabelChangeHandlerRef = React.useRef<((e: Event) => void) | undefined>(undefined);
+  const edgeLabelChangeHandlerRef = React.useRef<
+    ((e: Event) => void) | undefined
+  >(undefined);
   edgeLabelChangeHandlerRef.current = (e: Event) => {
     const ce = e as CustomEvent;
-    const { id, label, hasLabel } = ce.detail as { id: string; label: string; hasLabel: boolean };
+    const { id, label, hasLabel } = ce.detail as {
+      id: string;
+      label: string;
+      hasLabel: boolean;
+    };
     setEdges((eds) => updateEdgeLabel(eds, id, label, hasLabel));
   };
 
   React.useEffect(() => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
-    globalThis.addEventListener("diagram:edge-label-change", listener as EventListener);
-    return () => globalThis.removeEventListener("diagram:edge-label-change", listener as EventListener);
+    globalThis.addEventListener(
+      "diagram:edge-label-change",
+      listener as EventListener,
+    );
+    return () =>
+      globalThis.removeEventListener(
+        "diagram:edge-label-change",
+        listener as EventListener,
+      );
   }, []);
 
   // register window event listeners once (mount/unmount)
@@ -335,20 +376,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeToggleRef.current?.(e);
     globalThis.addEventListener(
       "diagram:node-delete",
-      deleteListener as EventListener
+      deleteListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-toggle",
-      toggleListener as EventListener
+      toggleListener as EventListener,
     );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
-        deleteListener as EventListener
+        deleteListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-toggle",
-        toggleListener as EventListener
+        toggleListener as EventListener,
       );
     };
   }, []);
@@ -360,7 +401,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [inspectedNodeId, nodes]);
 
   // --- Helpers to reduce nested function depth in JSX ---
-  const updateNodeProperty = (key: string, value: string | number | boolean) => {
+  const updateNodeProperty = (
+    key: string,
+    value: string | number | boolean,
+  ) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
     if (inspectedNodeId) {
@@ -368,27 +412,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, [key]: value } }
-            : n
-        )
+            : n,
+        ),
       );
     }
   };
 
-  const setPropBoolean = (key: string, value: boolean) => updateNodeProperty(key, value);
-  const setPropNumber = (key: string, value: number) => updateNodeProperty(key, value);
-  const setPropString = (key: string, value: string) => updateNodeProperty(key, value);
-  const setPropSelect = (key: string, value: string) => updateNodeProperty(key, value);
+  const setPropBoolean = (key: string, value: boolean) =>
+    updateNodeProperty(key, value);
+  const setPropNumber = (key: string, value: number) =>
+    updateNodeProperty(key, value);
+  const setPropString = (key: string, value: string) =>
+    updateNodeProperty(key, value);
+  const setPropSelect = (key: string, value: string) =>
+    updateNodeProperty(key, value);
 
   // --- Custom Property Handlers ---
   const handleAddCustomProperty = () => {
     if (!inspectedNodeId) return;
-    
+
     const newProperty: CustomProperty = {
       id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       key: `customProperty${(customProperties[inspectedNodeId]?.length || 0) + 1}`,
       label: `Custom Property ${(customProperties[inspectedNodeId]?.length || 0) + 1}`,
-      type: 'text',
-      value: '',
+      type: "text",
+      value: "",
     };
 
     setCustomProperties((prev) => {
@@ -408,21 +456,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   _customProperties: updated[inspectedNodeId],
                 },
               }
-            : n
-        )
+            : n,
+        ),
       );
 
       return updated;
     });
   };
 
-  const handleUpdateCustomProperty = (id: string, updates: Partial<CustomProperty>) => {
+  const handleUpdateCustomProperty = (
+    id: string,
+    updates: Partial<CustomProperty>,
+  ) => {
     if (!inspectedNodeId) return;
 
     setCustomProperties((prev) => {
       const nodeCustomProps = prev[inspectedNodeId] || [];
       const updated = nodeCustomProps.map((prop) =>
-        prop.id === id ? { ...prop, ...updates } : prop
+        prop.id === id ? { ...prop, ...updates } : prop,
       );
 
       // Save to node data
@@ -430,8 +481,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: updated } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -453,8 +504,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: filtered } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -567,14 +618,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const comp = COMPONENTS.find((c) => c.label === node.data.label);
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
-          renderProperty(p)
+          renderProperty(p),
         );
       } else {
         propertyElements = (
           <div className="text-sm text-muted">No properties defined</div>
         );
       }
-    } else { 
+    } else {
       propertyElements = (
         <div className="text-sm text-muted">Node not found</div>
       );
@@ -627,9 +678,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           <h2 className="text-2xl font-bold text-theme mb-4">
             Error Loading Problem
           </h2>
-          <div className="text-muted mb-4">
-            {error}
-          </div>
+          <div className="text-muted mb-4">{error}</div>
           <div className="flex gap-3 justify-center">
             <button
               onClick={onBack}
@@ -692,7 +741,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handle copying a node
   const handleNodeCopy = (id: string, data: NodeData) => {
-    const originalNode = nodes.find(n => n.id === id);
+    const originalNode = nodes.find((n) => n.id === id);
     if (!originalNode) return;
 
     // Create a new node with copied data but new position and ID
@@ -712,8 +761,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   // register node and edge types
-  const nodeTypes = { 
-    custom: createNodeWithCopyHandler(handleNodeCopy)
+  const nodeTypes = {
+    custom: createNodeWithCopyHandler(handleNodeCopy),
   };
   const edgeTypes = { customEdge: CustomEdge };
 
@@ -723,17 +772,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       nds.map((n) =>
         n.id === inspectedNodeId
           ? { ...n, data: { ...n.data, ...nodeProps } }
-          : n
-      )
+          : n,
+      ),
     );
-    
+
     // Log current node data for debugging
     if (inspectedNodeId) {
-      const node = nodes.find(n => n.id === inspectedNodeId);
-      console.log('Node properties saved:', {
+      const node = nodes.find((n) => n.id === inspectedNodeId);
+      console.log("Node properties saved:", {
         id: inspectedNodeId,
         data: node?.data,
-        nodeProps
+        nodeProps,
       });
     }
   };
@@ -754,10 +803,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               <h1 className="text-lg font-semibold text-theme">
                 {problem.title}
               </h1>
-              <span className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}>
+              <span
+                className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
+              >
                 {problem.difficulty}
               </span>
-              <span className="text-sm text-muted">{problem.estimated_time}</span>
+              <span className="text-sm text-muted">
+                {problem.estimated_time}
+              </span>
               <span className="text-sm text-muted">•</span>
               <span className="text-sm text-muted">{problem.category}</span>
             </div>
@@ -772,7 +825,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               title="Run assessment on current design"
             >
-              {isAssessing ? 'Assessing...' : 'Run Assessment'}
+              {isAssessing ? "Assessing..." : "Run Assessment"}
             </button>
           </div>
         </div>

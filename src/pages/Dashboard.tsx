@@ -22,18 +22,25 @@ const Dashboard: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL || 'http://localhost:8000';
+        const apiUrl =
+          import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
         const response = await fetch(`${apiUrl}/api/v1/all-problems`);
-        
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch problems: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch problems: ${response.status} ${response.statusText}`,
+          );
         }
-        
+
         const data = await response.json();
         setProblems(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching problems');
-        console.error('Error fetching problems:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An error occurred while fetching problems",
+        );
+        console.error("Error fetching problems:", err);
       } finally {
         setLoading(false);
       }
@@ -72,7 +79,9 @@ const Dashboard: React.FC = () => {
 
   const categories = [
     "All",
-    ...Array.from(new Set(problems.map((p: SystemDesignProblem) => p.category))),
+    ...Array.from(
+      new Set(problems.map((p: SystemDesignProblem) => p.category)),
+    ),
   ];
   const difficulties = ["All", "Easy", "Medium", "Hard"];
 
@@ -108,7 +117,9 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-muted">
-                {loading ? "Loading..." : `${filteredProblems.length} problems available`}
+                {loading
+                  ? "Loading..."
+                  : `${filteredProblems.length} problems available`}
               </div>
               <ThemeSwitcher />
             </div>
@@ -135,9 +146,7 @@ const Dashboard: React.FC = () => {
               <div className="text-red-800 text-lg font-medium mb-2">
                 Error Loading Problems
               </div>
-              <div className="text-red-700 text-sm">
-                {error}
-              </div>
+              <div className="text-red-700 text-sm">{error}</div>
               <button
                 onClick={() => globalThis.location.reload()}
                 className="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
@@ -278,7 +287,9 @@ const Dashboard: React.FC = () => {
 
               {filteredProblems.length === 0 && !loading && (
                 <div className="text-center py-12">
-                  <div className="text-muted text-lg mb-2">No problems found</div>
+                  <div className="text-muted text-lg mb-2">
+                    No problems found
+                  </div>
                   <div className="text-muted text-sm">
                     Try adjusting your filters
                   </div>

@@ -4,23 +4,28 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="./logo.png" />
     <link rel="apple-touch-icon" href="./logo.png" />
-    <meta name="description" content="Diagrammatic — interactive system design playground for learning and prototyping scalable architectures." />
+    <meta
+      name="description"
+      content="Diagrammatic — interactive system design playground for learning and prototyping scalable architectures."
+    />
     <meta name="theme-color" content="#6366f1" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Diagrammatic — System Design Playground</title>
     <script>
       // Apply theme immediately to prevent flash
-      (function() {
+      (function () {
         try {
-          const theme = localStorage.getItem('theme') || 'light';
+          const theme = localStorage.getItem("theme") || "light";
           const root = document.documentElement;
-          
-          if (theme === 'dark') {
-            root.classList.add('dark');
-          } else if (theme === 'system') {
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+          if (theme === "dark") {
+            root.classList.add("dark");
+          } else if (theme === "system") {
+            const prefersDark =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches;
             if (prefersDark) {
-              root.classList.add('dark');
+              root.classList.add("dark");
             }
           }
         } catch (e) {

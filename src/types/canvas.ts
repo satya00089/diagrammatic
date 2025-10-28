@@ -1,7 +1,7 @@
 export type ComponentProperty = {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'boolean' | 'select';
+  type: "text" | "textarea" | "number" | "boolean" | "select";
   default?: string | number | boolean;
   placeholder?: string;
   options?: string[];
@@ -13,5 +13,6 @@ export type CanvasComponent = {
   label: string;
   description?: string;
   group?: string;
+  tags?: string[];
   properties?: ComponentProperty[];
 };

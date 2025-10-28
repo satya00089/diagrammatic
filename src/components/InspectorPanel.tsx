@@ -1,6 +1,6 @@
 import React from "react";
-import { PiDotsSixVerticalBold } from 'react-icons/pi';
-import { MdAdd } from 'react-icons/md';
+import { PiDotsSixVerticalBold } from "react-icons/pi";
+import { MdAdd } from "react-icons/md";
 
 type InspectorPanelProps = {
   problem: {
@@ -19,7 +19,7 @@ type InspectorPanelProps = {
   customPropertyElements: React.ReactNode;
   onAddCustomProperty: () => void;
   handleSave: () => void;
-  assessmentResult?: import('../types/systemDesign').ValidationResult | null;
+  assessmentResult?: import("../types/systemDesign").ValidationResult | null;
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -42,36 +42,61 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   const onMouseMove = React.useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return;
-    const next = Math.min(Math.max(window.innerWidth - e.clientX, minWidth), maxWidth);
+    const next = Math.min(
+      Math.max(window.innerWidth - e.clientX, minWidth),
+      maxWidth,
+    );
     setWidth(next);
   }, []);
-  const stopResize = React.useCallback(() => { resizingRef.current = false; document.body.style.userSelect = ""; }, []);
-  const onMouseDown = (e: React.MouseEvent) => { e.preventDefault(); resizingRef.current = true; document.body.style.userSelect = "none"; };
-  React.useEffect(() => { globalThis.addEventListener("mousemove", onMouseMove); window.addEventListener("mouseup", stopResize); return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", stopResize); }; }, [onMouseMove, stopResize]);
-  React.useEffect(() => { if (panelRef.current) { panelRef.current.style.width = width + 'px'; } }, [width]);
+  const stopResize = React.useCallback(() => {
+    resizingRef.current = false;
+    document.body.style.userSelect = "";
+  }, []);
+  const onMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    resizingRef.current = true;
+    document.body.style.userSelect = "none";
+  };
+  React.useEffect(() => {
+    globalThis.addEventListener("mousemove", onMouseMove);
+    globalThis.addEventListener("mouseup", stopResize);
+    return () => {
+      globalThis.removeEventListener("mousemove", onMouseMove);
+      globalThis.removeEventListener("mouseup", stopResize);
+    };
+  }, [onMouseMove, stopResize]);
+  React.useEffect(() => {
+    if (panelRef.current) {
+      panelRef.current.style.width = width + "px";
+    }
+  }, [width]);
 
   if (!problem) return null;
 
   const copyAssessment = async () => {
     if (!assessmentResult) return;
     try {
-      await navigator.clipboard.writeText(JSON.stringify(assessmentResult, null, 2));
+      await navigator.clipboard.writeText(
+        JSON.stringify(assessmentResult, null, 2),
+      );
     } catch {
       // fallback: create temporary textarea
-      const t = document.createElement('textarea');
+      const t = document.createElement("textarea");
       t.value = JSON.stringify(assessmentResult, null, 2);
       document.body.appendChild(t);
       t.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       t.remove();
     }
   };
 
   const downloadAssessment = () => {
     if (!assessmentResult) return;
-    const blob = new Blob([JSON.stringify(assessmentResult, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(assessmentResult, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `assessment-${Date.now()}.json`;
     document.body.appendChild(a);
@@ -139,13 +164,24 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             {assessmentResult && (
               <div className="mb-4 p-2 border rounded bg-[var(--surface)]">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium text-theme">Assessment</div>
-                  <div className="text-sm font-semibold text-theme">{assessmentResult.score}%</div>
+                  <div className="text-sm font-medium text-theme">
+                    Assessment
+                  </div>
+                  <div className="text-sm font-semibold text-theme">
+                    {assessmentResult.score}%
+                  </div>
                 </div>
-                <div className="text-xs text-muted mb-2">{assessmentResult.isValid ? 'Pass' : 'Needs work'}</div>
+                <div className="text-xs text-muted mb-2">
+                  {assessmentResult.isValid ? "Pass" : "Needs work"}
+                </div>
                 <div className="space-y-1 text-xs">
-                  {assessmentResult.feedback.slice(0,3).map((f) => (
-                    <div key={`${f.category}-${f.type}`} className="text-sm text-theme">{f.message}</div>
+                  {assessmentResult.feedback.slice(0, 3).map((f) => (
+                    <div
+                      key={`${f.category}-${f.type}`}
+                      className="text-sm text-theme"
+                    >
+                      {f.message}
+                    </div>
                   ))}
                 </div>
 
@@ -168,7 +204,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                 {/* Expanded assessment details */}
                 <div className="mt-3 text-xs">
-                  <div className="font-medium text-sm mb-1">What went right</div>
+                  <div className="font-medium text-sm mb-1">
+                    What went right
+                  </div>
                   {assessmentResult.architectureStrengths.length > 0 ? (
                     <ul className="list-disc list-inside text-xs mb-2">
                       {assessmentResult.architectureStrengths.map((s) => (
@@ -176,10 +214,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       ))}
                     </ul>
                   ) : (
-                    <div className="text-xs text-muted mb-2">No notable strengths detected.</div>
+                    <div className="text-xs text-muted mb-2">
+                      No notable strengths detected.
+                    </div>
                   )}
 
-                  <div className="font-medium text-sm mb-1">What to improve</div>
+                  <div className="font-medium text-sm mb-1">
+                    What to improve
+                  </div>
                   {assessmentResult.improvements.length > 0 ? (
                     <ul className="list-disc list-inside text-xs mb-2">
                       {assessmentResult.improvements.map((imp) => (
@@ -187,14 +229,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       ))}
                     </ul>
                   ) : (
-                    <div className="text-xs text-muted mb-2">No specific improvements suggested.</div>
+                    <div className="text-xs text-muted mb-2">
+                      No specific improvements suggested.
+                    </div>
                   )}
 
                   <div className="font-medium text-sm mb-1">Feedback</div>
                   <div className="space-y-1">
                     {assessmentResult.feedback.map((f) => (
                       <div key={`${f.category}-${f.type}`} className="text-xs">
-                        <div className="font-medium">{f.category.toUpperCase()}</div>
+                        <div className="font-medium">
+                          {f.category.toUpperCase()}
+                        </div>
                         <div className="text-muted">{f.message}</div>
                       </div>
                     ))}
@@ -309,9 +355,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       <span>Add</span>
                     </button>
                   </div>
-                  <div className="space-y-2">
-                    {customPropertyElements}
-                  </div>
+                  <div className="space-y-2">{customPropertyElements}</div>
                 </div>
 
                 {/* Action Buttons */}

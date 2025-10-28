@@ -22,6 +22,7 @@ Thank you for your interest in contributing to Diagrammatic! This document provi
 ## Development Workflow
 
 1. **Create a feature branch** from `develop`:
+
    ```bash
    git checkout develop
    git pull origin develop
@@ -31,6 +32,7 @@ Thank you for your interest in contributing to Diagrammatic! This document provi
 2. **Make your changes** following the project conventions
 
 3. **Test your changes**:
+
    ```bash
    npm run lint        # Check code style
    npm run test        # Run tests if available
@@ -52,7 +54,7 @@ Thank you for your interest in contributing to Diagrammatic! This document provi
 - **Keep PRs focused** - one feature/fix per PR
 - **Follow conventional commit format**:
   - `feat:` for new features
-  - `fix:` for bug fixes  
+  - `fix:` for bug fixes
   - `docs:` for documentation
   - `chore:` for maintenance tasks
 

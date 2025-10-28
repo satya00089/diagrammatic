@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { MdDelete, MdExpandMore, MdExpandLess } from 'react-icons/md';
-import AnimatedTextInput from './shared/AnimatedTextInput';
-import AnimatedNumberInput from './shared/AnimatedNumberInput';
-import AnimatedCheckbox from './shared/AnimatedCheckbox';
-import AnimatedSelect from './shared/AnimatedSelect';
-import AnimatedTextarea from './shared/AnimatedTextarea';
+import React, { useState } from "react";
+import { MdDelete, MdExpandMore, MdExpandLess } from "react-icons/md";
+import AnimatedTextInput from "./shared/AnimatedTextInput";
+import AnimatedNumberInput from "./shared/AnimatedNumberInput";
+import AnimatedCheckbox from "./shared/AnimatedCheckbox";
+import AnimatedSelect from "./shared/AnimatedSelect";
+import AnimatedTextarea from "./shared/AnimatedTextarea";
 
 export type CustomProperty = {
   id: string;
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'boolean';
+  type: "text" | "textarea" | "number" | "boolean";
   value: string | number | boolean;
 };
 
@@ -33,15 +33,18 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
     onUpdate(property.id, { value });
   };
 
-  const handleConfigChange = (field: keyof CustomProperty, value: string | number | boolean) => {
+  const handleConfigChange = (
+    field: keyof CustomProperty,
+    value: string | number | boolean,
+  ) => {
     onUpdate(property.id, { [field]: value });
   };
 
   const typeOptions = [
-    { value: 'text', label: 'Text' },
-    { value: 'textarea', label: 'Text Area' },
-    { value: 'number', label: 'Number' },
-    { value: 'boolean', label: 'Checkbox' },
+    { value: "text", label: "Text" },
+    { value: "textarea", label: "Text Area" },
+    { value: "number", label: "Number" },
+    { value: "boolean", label: "Checkbox" },
   ];
 
   return (
@@ -55,7 +58,7 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
         >
           {isExpanded ? <MdExpandLess size={18} /> : <MdExpandMore size={18} />}
           <span className="text-sm font-medium text-theme truncate">
-            {property.label || 'Unnamed Property'}
+            {property.label || "Unnamed Property"}
           </span>
         </button>
         <button
@@ -76,14 +79,14 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
               id={`${property.id}-key`}
               label="Key"
               value={property.key}
-              onChange={(val: string) => handleConfigChange('key', val)}
+              onChange={(val: string) => handleConfigChange("key", val)}
               placeholder="e.g., customField"
             />
             <AnimatedTextInput
               id={`${property.id}-label`}
               label="Label"
               value={property.label}
-              onChange={(val: string) => handleConfigChange('label', val)}
+              onChange={(val: string) => handleConfigChange("label", val)}
               placeholder="e.g., Custom Field"
             />
           </div>
@@ -92,16 +95,16 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
             id={`${property.id}-type`}
             label="Type"
             value={property.type}
-            options={typeOptions.map(opt => opt.value)}
+            options={typeOptions.map((opt) => opt.value)}
             onChange={(val: string) => {
-              handleConfigChange('type', val);
+              handleConfigChange("type", val);
               // Reset value when type changes
-              if (val === 'boolean') {
-                handleConfigChange('value', false);
-              } else if (val === 'number') {
-                handleConfigChange('value', 0);
+              if (val === "boolean") {
+                handleConfigChange("value", false);
+              } else if (val === "number") {
+                handleConfigChange("value", 0);
               } else {
-                handleConfigChange('value', '');
+                handleConfigChange("value", "");
               }
             }}
           />
@@ -111,9 +114,9 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
             <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
               Current Value
             </div>
-            
+
             {/* Value Input based on type */}
-            {property.type === 'text' && (
+            {property.type === "text" && (
               <AnimatedTextInput
                 id={`${property.id}-value`}
                 label=""
@@ -122,8 +125,8 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
                 placeholder="Enter value"
               />
             )}
-            
-            {property.type === 'textarea' && (
+
+            {property.type === "textarea" && (
               <AnimatedTextarea
                 id={`${property.id}-value`}
                 label=""
@@ -132,8 +135,8 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
                 placeholder="Enter value"
               />
             )}
-            
-            {property.type === 'number' && (
+
+            {property.type === "number" && (
               <AnimatedNumberInput
                 id={`${property.id}-value`}
                 label=""
@@ -141,8 +144,8 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
                 onChange={(val: number) => handleValueChange(val)}
               />
             )}
-            
-            {property.type === 'boolean' && (
+
+            {property.type === "boolean" && (
               <div className="pt-1">
                 <AnimatedCheckbox
                   id={`${property.id}-value`}

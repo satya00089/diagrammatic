@@ -8,7 +8,7 @@ import type {
 // AI-powered assessor that calls your FastAPI service
 export async function assessSolution(
   solution?: SystemDesignSolution | null,
-  problem?: SystemDesignProblem | null
+  problem?: SystemDesignProblem | null,
 ): Promise<ValidationResult> {
   if (!solution) {
     return {
@@ -29,72 +29,78 @@ export async function assessSolution(
   }
 
   const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL;
-  
+
   if (!apiUrl) {
-    throw new Error('VITE_ASSESSMENT_API_URL not configured. Please add it to your .env file.');
+    throw new Error(
+      "VITE_ASSESSMENT_API_URL not configured. Please add it to your .env file.",
+    );
   }
 
   try {
     // Transform solution to match your FastAPI request format
     const requestPayload = {
-      components: solution.components.map(comp => ({
+      components: solution.components.map((comp) => ({
         id: comp.id || `comp-${Date.now()}`,
         type: comp.type,
         label: comp.label,
         properties: comp.properties || {},
-        position: comp.position
+        position: comp.position,
       })),
-      connections: solution.connections?.map(conn => ({
-        id: conn.id || `conn-${Date.now()}`,
-        source: conn.source,
-        target: conn.target,
-        label: conn.label,
-        type: conn.type
-      })) || [],
+      connections:
+        solution.connections?.map((conn) => ({
+          id: conn.id || `conn-${Date.now()}`,
+          source: conn.source,
+          target: conn.target,
+          label: conn.label,
+          type: conn.type,
+        })) || [],
       explanation: solution.explanation,
       keyPoints: solution.keyPoints,
       // Include problem context for better AI assessment
-      problem: problem ? {
-        title: problem.title,
-        description: problem.description,
-        requirements: Array.isArray(problem.requirements) 
-          ? problem.requirements.join('.\n') 
-          : problem.requirements,
-        constraints: Array.isArray(problem.constraints)
-          ? problem.constraints.join('.\n')
-          : problem.constraints,
-        difficulty: problem.difficulty,
-        category: problem.category,
-        estimatedTime: problem.estimated_time
-      } : null
+      problem: problem
+        ? {
+            title: problem.title,
+            description: problem.description,
+            requirements: Array.isArray(problem.requirements)
+              ? problem.requirements.join(".\n")
+              : problem.requirements,
+            constraints: Array.isArray(problem.constraints)
+              ? problem.constraints.join(".\n")
+              : problem.constraints,
+            difficulty: problem.difficulty,
+            category: problem.category,
+            estimatedTime: problem.estimated_time,
+          }
+        : null,
     };
 
-    console.log('Calling assessment API:', `${apiUrl}/api/v1/assess`);
-    console.log('Request payload:', requestPayload);
+    console.log("Calling assessment API:", `${apiUrl}/api/v1/assess`);
+    console.log("Request payload:", requestPayload);
 
     const response = await fetch(`${apiUrl}/api/v1/assess`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify(requestPayload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Assessment API failed: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Assessment API failed: ${response.status} ${response.statusText} - ${errorText}`,
+      );
     }
 
     const result = await response.json();
-    console.log('Assessment API response:', result);
+    console.log("Assessment API response:", result);
 
     // Transform FastAPI response to match frontend ValidationResult interface
     return transformApiResponse(result);
-    
   } catch (error) {
-    console.error('AI Assessment failed:', error);
-    
+    console.error("AI Assessment failed:", error);
+
     // Return error result instead of fallback
     return {
       isValid: false,
@@ -102,11 +108,13 @@ export async function assessSolution(
       feedback: [
         {
           type: "error",
-          message: `Assessment service unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          message: `Assessment service unavailable: ${error instanceof Error ? error.message : "Unknown error"}`,
           category: "maintainability",
         },
       ],
-      suggestions: ["Please ensure the assessment service is running and try again."],
+      suggestions: [
+        "Please ensure the assessment service is running and try again.",
+      ],
       missingComponents: [],
       architectureStrengths: [],
       improvements: [],
@@ -131,9 +139,9 @@ function transformApiResponse(apiResult: unknown): ValidationResult {
   };
 
   const feedback: ValidationFeedback[] = (result.feedback || []).map((fb) => ({
-    type: fb.type as ValidationFeedback['type'],
+    type: fb.type as ValidationFeedback["type"],
     message: fb.message,
-    category: fb.category as ValidationFeedback['category']
+    category: fb.category as ValidationFeedback["category"],
   }));
 
   return {
@@ -143,16 +151,16 @@ function transformApiResponse(apiResult: unknown): ValidationResult {
     suggestions: result.suggestions || [],
     missingComponents: result.missing_components || [],
     architectureStrengths: result.strengths || [],
-    improvements: result.improvements || []
+    improvements: result.improvements || [],
   };
 }
 
 // Utility function to test API connectivity
 export async function testAssessmentAPI(): Promise<boolean> {
   const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL;
-  
+
   if (!apiUrl) {
-    console.warn('VITE_ASSESSMENT_API_URL not configured');
+    console.warn("VITE_ASSESSMENT_API_URL not configured");
     return false;
   }
 
@@ -160,7 +168,7 @@ export async function testAssessmentAPI(): Promise<boolean> {
     const response = await fetch(`${apiUrl}/health`);
     return response.ok;
   } catch (error) {
-    console.error('Assessment API health check failed:', error);
+    console.error("Assessment API health check failed:", error);
     return false;
   }
 }

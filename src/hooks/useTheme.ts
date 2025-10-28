@@ -6,8 +6,6 @@ export type Theme = "system" | "light" | "dark";
 const isValidTheme = (v: unknown): v is Theme =>
   v === "system" || v === "light" || v === "dark";
 
-
-
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
     // Initialize theme state from localStorage immediately
@@ -15,10 +13,13 @@ export function useTheme() {
     const stored = localStorage.getItem("theme");
     return isValidTheme(stored) ? stored : "light";
   });
-  
+
   const [systemDark, setSystemDark] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return (
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+    );
   });
 
   useLayoutEffect(() => {
@@ -44,7 +45,7 @@ export function useTheme() {
   // Listen for system theme changes
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemDark(e.matches);

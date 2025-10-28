@@ -8,7 +8,8 @@
   --color-text: #111827;
   --color-text-secondary: #6b7280;
   --color-border: #e5e7eb;
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Semantic variables used by components */
   --bg: var(--color-bg);
@@ -62,7 +63,6 @@ body {
 
 /* Light theme (default) */
 
-
 .react-flow__edge-path {
   stroke: var(--muted) !important;
 }
@@ -92,7 +92,6 @@ body {
 }
 
 /* Dark theme overrides */
-
 
 .dark .react-flow__edge-path {
   stroke: var(--muted) !important;
@@ -235,7 +234,11 @@ select option {
 .dark .inspector-panel select option:hover,
 .dark .inspector-panel select option:checked,
 .dark .inspector-panel select option:focus {
-  background-color: color-mix(in srgb, var(--brand) 80%, rgba(255, 255, 255, 0.06)) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--brand) 80%,
+    rgba(255, 255, 255, 0.06)
+  ) !important;
   color: var(--surface) !important;
 }
 
@@ -261,17 +264,29 @@ select option {
   margin-bottom: 0;
 }
 
-.ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6 {
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
   color: var(--text);
   font-weight: 600;
   margin: 1rem 0 0.5rem 0;
 }
 
-.ProseMirror h1 { font-size: 1.5rem; }
-.ProseMirror h2 { font-size: 1.25rem; }
-.ProseMirror h3 { font-size: 1.125rem; }
+.ProseMirror h1 {
+  font-size: 1.5rem;
+}
+.ProseMirror h2 {
+  font-size: 1.25rem;
+}
+.ProseMirror h3 {
+  font-size: 1.125rem;
+}
 
-.ProseMirror ul, .ProseMirror ol {
+.ProseMirror ul,
+.ProseMirror ol {
   margin: 0.5rem 0;
   padding-left: 1.5rem;
 }
@@ -294,11 +309,13 @@ select option {
 }
 
 /* Nested list styles */
-.ProseMirror ul ul, .ProseMirror ol ul {
+.ProseMirror ul ul,
+.ProseMirror ol ul {
   list-style-type: circle;
 }
 
-.ProseMirror ol ol, .ProseMirror ul ol {
+.ProseMirror ol ol,
+.ProseMirror ul ol {
   list-style-type: lower-alpha;
 }
 
@@ -314,7 +331,7 @@ select option {
   background-color: var(--bg-hover);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.875em;
 }
 
