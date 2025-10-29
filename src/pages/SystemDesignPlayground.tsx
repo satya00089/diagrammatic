@@ -15,7 +15,13 @@ import type {
 } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import { useNodesState, useEdgesState, addEdge } from "@xyflow/react";
+import { 
+  useNodesState, 
+  useEdgesState, 
+  addEdge, 
+  useReactFlow,
+  ReactFlowProvider 
+} from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 import { COMPONENTS } from "../config/components";
 import ComponentPalette from "../components/ComponentPalette";
@@ -45,12 +51,12 @@ const NodeWithCopy = React.memo(
   }) => {
     const nodeData = props.data as NodeData;
     return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} />;
-  },
+  }
 );
 
 // Factory function to create node component with copy handler
 const createNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData) => void,
+  onCopy: (id: string, data: NodeData) => void
 ) => {
   return (props: { id: string; data: unknown }) => (
     <NodeWithCopy {...props} onCopy={onCopy} />
@@ -62,6 +68,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const navigate = useNavigate();
   const params = useParams();
   const idFromUrl = params?.id;
+  const { screenToFlowPosition } = useReactFlow();
 
   // State for problem data
   const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
@@ -97,7 +104,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Check if it's a custom problem from localStorage
     if (idFromUrl.startsWith("custom-")) {
       const customProblemData = localStorage.getItem(
-        `custom-problem-${idFromUrl}`,
+        `custom-problem-${idFromUrl}`
       );
       if (customProblemData) {
         setProblem(JSON.parse(customProblemData));
@@ -116,7 +123,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch problem: ${response.status} ${response.statusText}`,
+            `Failed to fetch problem: ${response.status} ${response.statusText}`
           );
         }
 
@@ -126,7 +133,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching the problem",
+            : "An error occurred while fetching the problem"
         );
         console.error("Error fetching problem:", err);
       } finally {
@@ -166,7 +173,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
-    null,
+    null
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
@@ -281,7 +288,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
     const data =
       event.dataTransfer?.getData("application/reactflow") ||
       event.dataTransfer?.getData("text/plain");
@@ -295,9 +301,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // not json, keep data as-is
     }
 
-    const x = event.clientX - (reactFlowBounds?.left ?? 0);
-    const y = event.clientY - (reactFlowBounds?.top ?? 0);
-    const position = { x, y };
+    // Use screenToFlowPosition to properly convert screen coordinates to flow coordinates
+    // This accounts for zoom and pan transformations
+    const position = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
 
     const id = `${type}-${Date.now()}`;
     const comp = COMPONENTS.find((c) => c.id === type);
@@ -322,7 +331,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
-    "details",
+    "details"
   );
 
   // ref to hold latest inspectedNodeId for event handlers to read without adding deps
@@ -333,7 +342,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handlers moved outside the effect to reduce nesting depth. Use refs to keep stable references.
   const handleDiagramNodeDeleteRef = useRef<((e: Event) => void) | undefined>(
-    undefined,
+    undefined
   );
   handleDiagramNodeDeleteRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -346,7 +355,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleDiagramNodeToggleRef = useRef<((e: Event) => void) | undefined>(
-    undefined,
+    undefined
   );
   handleDiagramNodeToggleRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -363,12 +372,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     eds: Edge[],
     id: string,
     label: string,
-    hasLabel: boolean,
+    hasLabel: boolean
   ) {
     return eds.map((edge) =>
       edge.id === id
         ? { ...edge, data: { ...edge.data, label, hasLabel }, label }
-        : edge,
+        : edge
     );
   }
 
@@ -389,12 +398,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
     globalThis.addEventListener(
       "diagram:edge-label-change",
-      listener as EventListener,
+      listener as EventListener
     );
     return () =>
       globalThis.removeEventListener(
         "diagram:edge-label-change",
-        listener as EventListener,
+        listener as EventListener
       );
   }, []);
 
@@ -406,20 +415,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeToggleRef.current?.(e);
     globalThis.addEventListener(
       "diagram:node-delete",
-      deleteListener as EventListener,
+      deleteListener as EventListener
     );
     globalThis.addEventListener(
       "diagram:node-toggle",
-      toggleListener as EventListener,
+      toggleListener as EventListener
     );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
-        deleteListener as EventListener,
+        deleteListener as EventListener
       );
       globalThis.removeEventListener(
         "diagram:node-toggle",
-        toggleListener as EventListener,
+        toggleListener as EventListener
       );
     };
   }, []);
@@ -433,7 +442,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // --- Helpers to reduce nested function depth in JSX ---
   const updateNodeProperty = (
     key: string,
-    value: string | number | boolean,
+    value: string | number | boolean
   ) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
@@ -442,8 +451,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, [key]: value } }
-            : n,
-        ),
+            : n
+        )
       );
     }
   };
@@ -486,8 +495,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   _customProperties: updated[inspectedNodeId],
                 },
               }
-            : n,
-        ),
+            : n
+        )
       );
 
       return updated;
@@ -496,14 +505,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const handleUpdateCustomProperty = (
     id: string,
-    updates: Partial<CustomProperty>,
+    updates: Partial<CustomProperty>
   ) => {
     if (!inspectedNodeId) return;
 
     setCustomProperties((prev) => {
       const nodeCustomProps = prev[inspectedNodeId] || [];
       const updated = nodeCustomProps.map((prop) =>
-        prop.id === id ? { ...prop, ...updates } : prop,
+        prop.id === id ? { ...prop, ...updates } : prop
       );
 
       // Save to node data
@@ -511,8 +520,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: updated } }
-            : n,
-        ),
+            : n
+        )
       );
 
       return {
@@ -534,8 +543,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: filtered } }
-            : n,
-        ),
+            : n
+        )
       );
 
       return {
@@ -648,7 +657,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const comp = COMPONENTS.find((c) => c.label === node.data.label);
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
-          renderProperty(p),
+          renderProperty(p)
         );
       } else {
         propertyElements = (
@@ -752,11 +761,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   function addNodeFromPalette(id: string) {
     const comp = COMPONENTS.find((c) => c.id === id);
-    // place newly added node roughly in the center of the canvas wrapper
+    // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
-    const x = (bounds?.width ?? 400) / 2;
-    const y = (bounds?.height ?? 300) / 2;
-    const position = { x, y };
+    if (!bounds) return;
+    
+    // Convert the center of the viewport to flow coordinates
+    const position = screenToFlowPosition({
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    });
 
     const nodeId = `${id}-${Date.now()}`;
     const newNode: Node = {
@@ -802,8 +815,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       nds.map((n) =>
         n.id === inspectedNodeId
           ? { ...n, data: { ...n.data, ...nodeProps } }
-          : n,
-      ),
+          : n
+      )
     );
 
     // Log current node data for debugging
@@ -901,4 +914,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   );
 };
 
-export default SystemDesignPlayground;
+// Wrap with ReactFlowProvider to enable useReactFlow hook
+const SystemDesignPlaygroundWithProvider = () => (
+  <ReactFlowProvider>
+    <SystemDesignPlayground />
+  </ReactFlowProvider>
+);
+
+export default SystemDesignPlaygroundWithProvider;
