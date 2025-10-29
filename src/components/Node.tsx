@@ -100,29 +100,62 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
       </div>
 
       <Handle
+        id="top"
+        type="source"
+        position={Position.Top}
+        isConnectable={true}
+        style={{
+          width: '100%',
+          height: '8px',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
+        }}
+      />
+      
+      <Handle
         id="right"
         type="source"
         position={Position.Right}
         isConnectable={true}
         style={{
-          width: 10,
-          height: 10,
-          background: "var(--brand)",
-          borderRadius: 6,
-          border: "2px solid var(--surface)",
+          width: '8px',
+          height: '100%',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
         }}
       />
+      
+      <Handle
+        id="bottom"
+        type="source"
+        position={Position.Bottom}
+        isConnectable={true}
+        style={{
+          width: '100%',
+          height: '8px',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
+        }}
+      />
+      
       <Handle
         id="left"
-        type="target"
+        type="source"
         position={Position.Left}
         isConnectable={true}
         style={{
-          width: 10,
-          height: 10,
-          background: "var(--brand)",
-          borderRadius: 6,
-          border: "2px solid var(--surface)",
+          width: '8px',
+          height: '100%',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
         }}
       />
 

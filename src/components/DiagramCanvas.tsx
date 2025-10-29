@@ -9,6 +9,7 @@ import {
   MiniMap,
   Controls,
   Background,
+  ConnectionMode,
 } from "@xyflow/react";
 
 type DiagramCanvasProps = {
@@ -54,6 +55,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          connectionMode={ConnectionMode.Loose}
           fitView
           proOptions={{ hideAttribution: true }}
         >
