@@ -388,6 +388,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
     "details"
   );
+  // Clear canvas confirmation state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // ref to hold latest inspectedNodeId for event handlers to read without adding deps
   const inspectedNodeIdRef = useRef<string | null>(null);
@@ -858,6 +860,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
+  // Clear all nodes and edges from canvas
+  const handleClearCanvas = () => {
+    if (nodes.length === 0 && edges.length === 0) {
+      return; // Nothing to clear
+    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCanvas = () => {
+    setNodes([]);
+    setEdges([]);
+    setInspectedNodeId(null);
+    setAssessment(null);
+    setShowClearConfirm(false);
+  };
+
+  const cancelClearCanvas = () => {
+    setShowClearConfirm(false);
+  };
+
   // register node and edge types
   const nodeTypes = {
     custom: createNodeWithCopyHandler(handleNodeCopy),
@@ -978,6 +1000,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               </button>
             </div>
 
+            {/* Clear Canvas button */}
+            <button
+              type="button"
+              onClick={handleClearCanvas}
+              disabled={nodes.length === 0 && edges.length === 0}
+              className="p-2 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer border-r border-theme/10 pr-2 mr-2"
+              title="Clear Canvas"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
             <ThemeSwitcher />
             {problem?.id !== "free" && (
               <button
@@ -1028,6 +1074,56 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           assessmentResult={assessment}
         />
       </div>
+
+      {/* Clear Canvas Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-theme/10">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-red-600 dark:text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-theme">Clear Canvas?</h3>
+                <p className="text-sm text-muted">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-muted mb-6">
+              Are you sure you want to clear all components and connections from the canvas? 
+              You will lose all your current work.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={cancelClearCanvas}
+                className="flex-1 px-4 py-2 bg-theme/5 hover:bg-theme/10 text-theme font-medium rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmClearCanvas}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </>
   );
