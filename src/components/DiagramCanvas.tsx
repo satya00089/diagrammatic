@@ -23,6 +23,7 @@ type DiagramCanvasProps = {
   onConnect: (c: Connection) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
+  onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
 };
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
@@ -36,6 +37,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onConnect,
   onDragOver,
   onDrop,
+  onNodeDragStop,
 }) => {
   return (
     <div className="flex-1 relative bg-theme min-h-0">
@@ -55,6 +57,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStop={onNodeDragStop}
           connectionMode={ConnectionMode.Loose}
           fitView
           proOptions={{ hideAttribution: true }}

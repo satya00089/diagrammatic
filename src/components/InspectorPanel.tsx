@@ -21,6 +21,8 @@ type InspectorPanelProps = {
   onAddCustomProperty: () => void;
   handleSave: () => void;
   assessmentResult?: import("../types/systemDesign").ValidationResult | null;
+  onDetachFromGroup?: () => void;
+  isNodeInGroup?: boolean;
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -34,6 +36,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onAddCustomProperty,
   handleSave,
   assessmentResult,
+  onDetachFromGroup,
+  isNodeInGroup,
 }) => {
   const [width, setWidth] = React.useState(320); // px
   const minWidth = 260;
@@ -389,24 +393,40 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-6 flex space-x-2 pt-4 border-t border-theme">
-                  <button
-                    type="button"
-                    className="flex-1 px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:bg-[var(--brand)]/90 transition-colors font-medium text-sm cursor-pointer"
-                    onClick={handleSave}
-                  >
-                    Save Changes
-                  </button>
-                  <button
-                    type="button"
-                    className="px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm cursor-pointer"
-                    onClick={() => {
-                      setInspectedNodeId(null);
-                      setActiveTab("details");
-                    }}
-                  >
-                    Close
-                  </button>
+                <div className="mt-6 flex flex-col gap-2 pt-4 border-t border-theme">
+                  {/* Detach from Group Button - Only show if node is in a group */}
+                  {isNodeInGroup && onDetachFromGroup && (
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
+                      onClick={onDetachFromGroup}
+                      title="Remove this node from its parent group"
+                    >
+                      <span>🔓</span>
+                      <span>Detach from Group</span>
+                    </button>
+                  )}
+                  
+                  {/* Save and Close Buttons */}
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      className="flex-1 px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:bg-[var(--brand)]/90 transition-colors font-medium text-sm cursor-pointer"
+                      onClick={handleSave}
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm cursor-pointer"
+                      onClick={() => {
+                        setInspectedNodeId(null);
+                        setActiveTab("details");
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

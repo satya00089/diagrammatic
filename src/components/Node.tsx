@@ -2,6 +2,7 @@ import React from "react";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
 import { MdSettings, MdDelete, MdCopyAll } from "react-icons/md";
+import { FiUnlock } from "react-icons/fi";
 
 export type NodeData = {
   label: string;
@@ -15,9 +16,10 @@ type Props = {
   id: string;
   data: NodeData;
   onCopy?: (id: string, data: NodeData) => void;
+  isInGroup?: boolean;
 };
 
-const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
+const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   // Use componentName if available, otherwise fall back to label
   const displayLabel = data.componentName || data.label;
 
@@ -49,6 +51,16 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
     [id, data, onCopy],
   );
 
+  const handleDetach = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-detach", { detail: { id } }),
+      );
+    },
+    [id],
+  );
+
   return (
     <motion.fieldset
       initial={{ y: 0, opacity: 1 }}
@@ -73,6 +85,20 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy }) => {
         >
           <MdSettings className="w-2 h-2" />
         </motion.button>
+        {isInGroup && (
+          <motion.button
+            type="button"
+            aria-label="Detach from Group"
+            onClick={handleDetach}
+            className="p-1 text-orange-500 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
+            title="Detach from Group"
+            whileHover={{ scale: 1.1, y: -1 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          >
+            <FiUnlock className="w-2 h-2" />
+          </motion.button>
+        )}
         <motion.button
           type="button"
           aria-label="Copy Node"

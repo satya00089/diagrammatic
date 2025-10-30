@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import {
   AnimatedNumberInput,
@@ -15,14 +15,19 @@ import type {
 } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
-import { 
-  useNodesState, 
-  useEdgesState, 
-  addEdge, 
+import { useUndoRedo } from "../hooks/useUndoRedo";
+import {
+  useNodesState,
+  useEdgesState,
+  addEdge,
   useReactFlow,
-  ReactFlowProvider 
+  ReactFlowProvider,
+  getNodesBounds,
+  getViewportForBounds,
 } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
+import { toPng, toJpeg, toSvg } from "html-to-image";
+import dagre from "dagre";
 import { COMPONENTS } from "../config/components";
 import ComponentPalette from "../components/ComponentPalette";
 import DiagramCanvas from "../components/DiagramCanvas";
@@ -34,6 +39,7 @@ import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
+import GroupNode from "../components/GroupNode";
 import CustomPropertyInput, {
   type CustomProperty,
 } from "../components/CustomPropertyInput";
@@ -49,19 +55,22 @@ const NodeWithCopy = React.memo(
     id: string;
     data: unknown;
     onCopy: (id: string, data: NodeData) => void;
+    isInGroup?: boolean;
   }) => {
     const nodeData = props.data as NodeData;
-    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} />;
+    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} isInGroup={props.isInGroup} />;
   }
 );
 
-// Factory function to create node component with copy handler
+// Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData) => void
+  onCopy: (id: string, data: NodeData) => void,
+  nodes: Node[]
 ) => {
-  return (props: { id: string; data: unknown }) => (
-    <NodeWithCopy {...props} onCopy={onCopy} />
-  );
+  return (props: { id: string; data: unknown }) => {
+    const isInGroup = nodes.find((n) => n.id === props.id)?.parentId !== undefined;
+    return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
+  };
 };
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
@@ -158,9 +167,104 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
   })();
 
-  // start with empty canvas state — the user will drag & drop components
-  const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
+  // Undo/Redo state management
+  interface CanvasState {
+    nodes: Node[];
+    edges: Edge[];
+  }
+
+  const {
+    state: canvasState,
+    setState: setCanvasState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<CanvasState>({
+    nodes: [],
+    edges: [],
+  });
+
+  // Use React Flow's state hooks but sync with undo/redo
+  const [nodes, setNodes, onNodesChange] = useNodesState(canvasState.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(canvasState.edges);
+  const { getNodes, fitView } = useReactFlow();
+
+  // State for download menu
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  // State for layout menu
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+
+  // Sync canvas state to undo/redo history when nodes or edges change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCanvasState({ nodes, edges });
+    }, 300); // Debounce to avoid too many history entries during dragging
+
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges, setCanvasState]);
+
+  // Apply undo/redo state to React Flow
+  useEffect(() => {
+    setNodes(canvasState.nodes);
+    setEdges(canvasState.edges);
+  }, [canvasState, setNodes, setEdges]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Z or Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for redo
+      if (
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "z") ||
+        (e.ctrlKey && e.key === "y")
+      ) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => globalThis.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
+  // Close download menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showDownloadMenu) {
+        const target = e.target as HTMLElement;
+        if (!target.closest(".relative")) {
+          setShowDownloadMenu(false);
+        }
+      }
+    };
+
+    if (showDownloadMenu) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [showDownloadMenu]);
+
+  // Close layout menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showLayoutMenu) {
+        const target = e.target as HTMLElement;
+        if (!target.closest(".relative")) {
+          setShowLayoutMenu(false);
+        }
+      }
+    };
+
+    if (showLayoutMenu) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [showLayoutMenu]);
 
   const onConnect = (connection: Connection) => {
     // Use React Flow's addEdge helper with our custom edge type
@@ -311,16 +415,129 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const id = `${type}-${Date.now()}`;
     const comp = COMPONENTS.find((c) => c.id === type);
+    
+    // Check if it's a group/cluster component
+    const isGroupComponent = comp?.group === "Grouping";
+    
     const newNode: Node = {
       id,
       position,
-      type: "custom",
+      type: isGroupComponent ? "group" : "custom",
+      // For group nodes, use different styling
+      style: isGroupComponent ? {
+        width: 400,
+        height: 300,
+        zIndex: -1, // Groups should be behind regular nodes
+      } : undefined,
       // include icon so the custom node can render it
-      data: { label: comp?.label ?? type, icon: comp?.icon },
+      data: { 
+        label: comp?.label ?? type,
+        componentId: comp?.id, // Store the original component ID
+        icon: comp?.icon,
+        subtitle: comp?.description,
+        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
+        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+      },
     };
 
     setNodes((nds) => [...nds, newNode]);
   };
+
+  // Handle node drag stop to assign parent-child relationships with groups
+  const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
+    // Only allow attaching nodes to groups, NOT detaching
+    // Detachment can only be done via the explicit detach buttons
+    
+    // Skip if node already has a parent - they can only detach via buttons
+    if (node.parentId) return;
+    
+    // Find if the node is being dragged over a group node
+    const groupNodes = nodes.filter(n => n.type === 'group');
+    
+    // Check if node is inside any group
+    let newParentId: string | undefined = undefined;
+    
+    for (const groupNode of groupNodes) {
+      if (groupNode.id === node.id) continue; // Skip if dragging the group itself
+      
+      const groupX = groupNode.position.x;
+      const groupY = groupNode.position.y;
+      const groupWidth = (groupNode.style?.width as number) || 400;
+      const groupHeight = (groupNode.style?.height as number) || 300;
+      
+      // Get absolute position of the node
+      const nodeAbsX = node.position.x;
+      const nodeAbsY = node.position.y;
+      
+      // Check if node is within group bounds (with some padding for better UX)
+      const padding = 10;
+      if (
+        nodeAbsX > groupX + padding &&
+        nodeAbsX < groupX + groupWidth - padding &&
+        nodeAbsY > groupY + padding &&
+        nodeAbsY < groupY + groupHeight - padding
+      ) {
+        newParentId = groupNode.id;
+        break;
+      }
+    }
+    
+    // Only attach if we found a new parent
+    if (newParentId) {
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === node.id) {
+            // Calculate position relative to the new parent
+            const newParent = nds.find(gn => gn.id === newParentId);
+            const newPosition = newParent
+              ? {
+                  x: node.position.x - newParent.position.x,
+                  y: node.position.y - newParent.position.y,
+                }
+              : node.position;
+            
+            return {
+              ...n,
+              position: newPosition,
+              parentId: newParentId,
+              extent: 'parent' as const,
+            };
+          }
+          return n;
+        })
+      );
+    }
+  };
+
+  // Handle detaching a node from its parent group
+  const handleDetachFromGroup = useCallback(() => {
+    const nodeId = inspectedNodeIdRef.current;
+    if (!nodeId) return;
+    
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId && n.parentId) {
+          // Calculate absolute position before detaching
+          const parent = nds.find(p => p.id === n.parentId);
+          let absX = n.position.x;
+          let absY = n.position.y;
+          
+          if (parent) {
+            absX += parent.position.x;
+            absY += parent.position.y;
+          }
+          
+          return {
+            ...n,
+            position: { x: absX, y: absY },
+            parentId: undefined,
+            extent: undefined,
+          };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -334,6 +551,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
     "details"
   );
+  // Clear canvas confirmation state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // ref to hold latest inspectedNodeId for event handlers to read without adding deps
   const inspectedNodeIdRef = useRef<string | null>(null);
@@ -414,6 +633,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
+    const detachListener = (e: Event) => {
+      const evt = e as CustomEvent<{ id: string }>;
+      // Detach the node from its parent group
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.id && n.parentId) {
+            // Calculate absolute position before detaching
+            const parent = nds.find((p) => p.id === n.parentId);
+            let absX = n.position.x;
+            let absY = n.position.y;
+
+            if (parent) {
+              absX += parent.position.x;
+              absY += parent.position.y;
+            }
+
+            return {
+              ...n,
+              position: { x: absX, y: absY },
+              parentId: undefined,
+              extent: undefined,
+            };
+          }
+          return n;
+        })
+      );
+    };
+
     globalThis.addEventListener(
       "diagram:node-delete",
       deleteListener as EventListener
@@ -421,6 +668,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener
+    );
+    globalThis.addEventListener(
+      "diagram:node-detach",
+      detachListener as EventListener
     );
     return () => {
       globalThis.removeEventListener(
@@ -430,6 +681,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener
+      );
+      globalThis.removeEventListener(
+        "diagram:node-detach",
+        detachListener as EventListener
       );
     };
   }, []);
@@ -655,7 +910,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   if (inspectedNodeId) {
     const node = nodes.find((n) => n.id === inspectedNodeId);
     if (node) {
-      const comp = COMPONENTS.find((c) => c.label === node.data.label);
+      // Find the component definition using componentId or label
+      const comp = node.data.componentId 
+        ? COMPONENTS.find((c) => c.id === node.data.componentId)
+        : COMPONENTS.find((c) => c.label === node.data.label);
+      
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
           renderProperty(p)
@@ -765,7 +1024,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
-    
+
     // Convert the center of the viewport to flow coordinates
     const position = screenToFlowPosition({
       x: bounds.left + bounds.width / 2,
@@ -773,11 +1032,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
 
     const nodeId = `${id}-${Date.now()}`;
+    
+    // Check if it's a group/cluster component
+    const isGroupComponent = comp?.group === "Grouping";
+    
     const newNode: Node = {
       id: nodeId,
       position,
-      type: "custom",
-      data: { label: comp?.label ?? id, icon: comp?.icon },
+      type: isGroupComponent ? "group" : "custom",
+      style: isGroupComponent ? {
+        width: 400,
+        height: 300,
+        zIndex: -1,
+      } : undefined,
+      data: { 
+        label: comp?.label ?? id,
+        componentId: comp?.id, // Store the original component ID
+        icon: comp?.icon,
+        subtitle: comp?.description,
+        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
+        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+      },
     };
 
     setNodes((nds) => [...nds, newNode]);
@@ -804,9 +1079,189 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes((nds) => [...nds, newNode]);
   };
 
+  // Clear all nodes and edges from canvas
+  const handleClearCanvas = () => {
+    if (nodes.length === 0 && edges.length === 0) {
+      return; // Nothing to clear
+    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearCanvas = () => {
+    setNodes([]);
+    setEdges([]);
+    setInspectedNodeId(null);
+    setAssessment(null);
+    setShowClearConfirm(false);
+  };
+
+  const cancelClearCanvas = () => {
+    setShowClearConfirm(false);
+  };
+
+  // Download canvas as image
+  const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
+    const nodesBounds = getNodesBounds(getNodes());
+    const viewport = getViewportForBounds(nodesBounds, 1024, 768, 0.5, 2, 0.2);
+
+    const viewportElement = document.querySelector(
+      ".react-flow__viewport"
+    ) as HTMLElement;
+
+    if (!viewportElement) {
+      console.error("Viewport element not found");
+      return;
+    }
+
+    let downloadFunc;
+    let fileExtension;
+
+    if (format === "svg") {
+      downloadFunc = toSvg;
+      fileExtension = "svg";
+    } else if (format === "jpeg") {
+      downloadFunc = toJpeg;
+      fileExtension = "jpg";
+    } else {
+      downloadFunc = toPng;
+      fileExtension = "png";
+    }
+
+    downloadFunc(viewportElement, {
+      backgroundColor: format === "png" ? "transparent" : "#ffffff",
+      width: 1024,
+      height: 768,
+      style: {
+        width: `${1024}px`,
+        height: `${768}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+    })
+      .then((dataUrl) => {
+        const a = document.createElement("a");
+        a.setAttribute(
+          "download",
+          `system-design-${Date.now()}.${fileExtension}`
+        );
+        a.setAttribute("href", dataUrl);
+        a.click();
+      })
+      .catch((error) => {
+        console.error("Error generating image:", error);
+      });
+  };
+
+  // Auto-layout nodes using Dagre with proper group handling
+  const onLayout = (direction: "TB" | "LR" = "TB") => {
+    // Separate groups and regular nodes
+    const groupNodes = nodes.filter((node) => node.type === "group");
+    const regularNodes = nodes.filter((node) => node.type !== "group" && !node.parentId);
+
+    // First, layout groups with larger spacing
+    const groupGraph = new dagre.graphlib.Graph();
+    groupGraph.setDefaultEdgeLabel(() => ({}));
+    groupGraph.setGraph({ 
+      rankdir: direction, 
+      nodesep: 150, // More space between groups
+      ranksep: 200, // More vertical space
+      marginx: 50,
+      marginy: 50
+    });
+
+    const groupWidth = 350;
+    const groupHeight = 250;
+
+    groupNodes.forEach((node) => {
+      groupGraph.setNode(node.id, { width: groupWidth, height: groupHeight });
+    });
+
+    // Add edges between groups (if any)
+    edges.filter(edge => 
+      groupNodes.some(g => g.id === edge.source) && 
+      groupNodes.some(g => g.id === edge.target)
+    ).forEach((edge) => {
+      groupGraph.setEdge(edge.source, edge.target);
+    });
+
+    if (groupNodes.length > 0) {
+      dagre.layout(groupGraph);
+    }
+
+    // Layout regular nodes (non-grouped)
+    const regularGraph = new dagre.graphlib.Graph();
+    regularGraph.setDefaultEdgeLabel(() => ({}));
+    regularGraph.setGraph({ 
+      rankdir: direction,
+      nodesep: 80,
+      ranksep: 100
+    });
+
+    const nodeWidth = 200;
+    const nodeHeight = 80;
+
+    regularNodes.forEach((node) => {
+      regularGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    });
+
+    // Add edges between regular nodes
+    edges.filter(edge => 
+      regularNodes.some(n => n.id === edge.source) && 
+      regularNodes.some(n => n.id === edge.target)
+    ).forEach((edge) => {
+      regularGraph.setEdge(edge.source, edge.target);
+    });
+
+    if (regularNodes.length > 0) {
+      dagre.layout(regularGraph);
+    }
+
+    // Apply positions
+    const layoutedNodes = nodes.map((node) => {
+      if (node.type === "group") {
+        // Position group nodes
+        const nodeWithPosition = groupGraph.node(node.id);
+        if (nodeWithPosition) {
+          return {
+            ...node,
+            position: {
+              x: nodeWithPosition.x - groupWidth / 2,
+              y: nodeWithPosition.y - groupHeight / 2,
+            },
+          };
+        }
+      } else if (!node.parentId) {
+        // Position regular nodes
+        const nodeWithPosition = regularGraph.node(node.id);
+        if (nodeWithPosition) {
+          // Offset regular nodes to avoid group area
+          const offsetX = groupNodes.length > 0 ? groupWidth + 100 : 0;
+          return {
+            ...node,
+            position: {
+              x: nodeWithPosition.x - nodeWidth / 2 + offsetX,
+              y: nodeWithPosition.y - nodeHeight / 2,
+            },
+          };
+        }
+      } else {
+        // Keep child nodes in their relative positions within groups
+        return node;
+      }
+      return node;
+    });
+
+    setNodes(layoutedNodes);
+
+    // Fit view after layout with some padding
+    globalThis.requestAnimationFrame(() => {
+      fitView({ padding: 0.2, duration: 400 });
+    });
+  };
+
   // register node and edge types
   const nodeTypes = {
-    custom: createNodeWithCopyHandler(handleNodeCopy),
+    custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
+    group: GroupNode,
   };
   const edgeTypes = { customEdge: CustomEdge };
 
@@ -831,102 +1286,354 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   };
 
-  const pageTitle = idFromUrl === 'free' 
-    ? 'Free Design Canvas | Diagrammatic'
-    : `${problem?.title || 'System Design Challenge'} | Diagrammatic`;
-  
-  const pageDescription = idFromUrl === 'free'
-    ? 'Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 45+ components.'
-    : `Solve the ${problem?.title || 'system design'} challenge. ${problem?.description?.substring(0, 150) || 'Practice system design skills'}...`;
+  const pageTitle =
+    idFromUrl === "free"
+      ? "Free Design Canvas | Diagrammatic"
+      : `${problem?.title || "System Design Challenge"} | Diagrammatic`;
+
+  const pageDescription =
+    idFromUrl === "free"
+      ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 45+ components."
+      : `Solve the ${problem?.title || "system design"} challenge. ${problem?.description?.substring(0, 150) || "Practice system design skills"}...`;
 
   return (
     <>
-      <SEO 
+      <SEO
         title={pageTitle}
         description={pageDescription}
-        keywords={`system design playground, ${problem?.title || 'free canvas'}, architecture diagram tool, ${problem?.category || 'design tool'}`}
-        url={`https://satya00089.github.io/diagrammatic/#/playground/${idFromUrl || 'free'}`}
+        keywords={`system design playground, ${problem?.title || "free canvas"}, architecture diagram tool, ${problem?.category || "design tool"}`}
+        url={`https://satya00089.github.io/diagrammatic/#/playground/${idFromUrl || "free"}`}
       />
       <div className="h-screen flex flex-col bg-theme">
-      {/* Header */}
-      <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onBack}
-              className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
-            >
-              ← Back to Dashboard
-            </button>
-            <div className="flex items-center space-x-3">
-              <h1 className="text-lg font-semibold text-theme">
-                {problem.title}
-              </h1>
-              <span
-                className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
+        {/* Header */}
+        <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={onBack}
+                className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
               >
-                {problem.difficulty}
-              </span>
-              <span className="text-sm text-muted">
-                {problem.estimated_time}
-              </span>
-              <span className="text-sm text-muted">•</span>
-              <span className="text-sm text-muted">{problem.category}</span>
+                ← Back to Dashboard
+              </button>
+              <div className="flex items-center space-x-3">
+                <h1 className="text-lg font-semibold text-theme">
+                  {problem.title}
+                </h1>
+                <span
+                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
+                >
+                  {problem.difficulty}
+                </span>
+                <span className="text-sm text-muted">
+                  {problem.estimated_time}
+                </span>
+                <span className="text-sm text-muted">•</span>
+                <span className="text-sm text-muted">{problem.category}</span>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <ThemeSwitcher />
-            {problem?.id !== "free" && (
+            <div className="flex items-center space-x-2">
+              {/* Undo/Redo buttons */}
+              <div className="flex items-center border-r border-theme/10 pr-2 mr-2">
+                <button
+                  type="button"
+                  onClick={undo}
+                  disabled={!canUndo}
+                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={redo}
+                  disabled={!canRedo}
+                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Clear Canvas button */}
               <button
                 type="button"
-                onClick={runAssessment}
-                disabled={isAssessing}
-                className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                title="Run assessment on current design"
+                onClick={handleClearCanvas}
+                disabled={nodes.length === 0 && edges.length === 0}
+                className="p-2 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer border-r border-theme/10 pr-2 mr-2"
+                title="Clear Canvas"
               >
-                {isAssessing ? "Assessing..." : "Run Assessment"}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
-            )}
+
+              {/* Download Image button with dropdown */}
+              <div className="relative border-r border-theme/10 pr-2 mr-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                  disabled={nodes.length === 0}
+                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Download as Image"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                </button>
+
+                {/* Download format dropdown */}
+                {showDownloadMenu && (
+                  <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[120px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        downloadImage("png");
+                        setShowDownloadMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      PNG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        downloadImage("jpeg");
+                        setShowDownloadMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      JPEG
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        downloadImage("svg");
+                        setShowDownloadMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      SVG
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Layout button with dropdown */}
+              <div className="relative border-r border-theme/10 pr-2 mr-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                  disabled={nodes.length === 0}
+                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Auto Layout"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"
+                    />
+                  </svg>
+                </button>
+
+                {/* Layout direction dropdown */}
+                {showLayoutMenu && (
+                  <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[160px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onLayout("TB");
+                        setShowLayoutMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      Vertical Layout
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onLayout("LR");
+                        setShowLayoutMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      Horizontal Layout
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <ThemeSwitcher />
+              {problem?.id !== "free" && (
+                <button
+                  type="button"
+                  onClick={runAssessment}
+                  disabled={isAssessing}
+                  className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  title="Run assessment on current design"
+                >
+                  {isAssessing ? "Assessing..." : "Run Assessment"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex min-h-0">
-        <ComponentPalette components={COMPONENTS} onAdd={addNodeFromPalette} />
-        <DiagramCanvas
-          reactFlowWrapperRef={
-            reactFlowWrapper as React.RefObject<HTMLDivElement>
-          }
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={
-            onNodesChange as unknown as (...changes: unknown[]) => void
-          }
-          onEdgesChange={
-            onEdgesChange as unknown as (...changes: unknown[]) => void
-          }
-          onConnect={onConnect}
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-        />
-        <InspectorPanel
-          problem={problem}
-          activeTab={activeRightTab}
-          setActiveTab={setActiveRightTab}
-          inspectedNodeId={inspectedNodeId}
-          setInspectedNodeId={setInspectedNodeId}
-          propertyElements={propertyElements}
-          customPropertyElements={customPropertyElements}
-          onAddCustomProperty={handleAddCustomProperty}
-          handleSave={handleSave}
-          assessmentResult={assessment}
-        />
+        {/* Main Content */}
+        <div className="flex-1 flex min-h-0">
+          <ComponentPalette
+            components={COMPONENTS}
+            onAdd={addNodeFromPalette}
+          />
+          <DiagramCanvas
+            reactFlowWrapperRef={
+              reactFlowWrapper as React.RefObject<HTMLDivElement>
+            }
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={
+              onNodesChange as unknown as (...changes: unknown[]) => void
+            }
+            onEdgesChange={
+              onEdgesChange as unknown as (...changes: unknown[]) => void
+            }
+            onConnect={onConnect}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onNodeDragStop={onNodeDragStop}
+          />
+          <InspectorPanel
+            problem={problem}
+            activeTab={activeRightTab}
+            setActiveTab={setActiveRightTab}
+            inspectedNodeId={inspectedNodeId}
+            setInspectedNodeId={setInspectedNodeId}
+            propertyElements={propertyElements}
+            customPropertyElements={customPropertyElements}
+            onAddCustomProperty={handleAddCustomProperty}
+            handleSave={handleSave}
+            assessmentResult={assessment}
+            onDetachFromGroup={handleDetachFromGroup}
+            isNodeInGroup={
+              inspectedNodeId
+                ? nodes.find((n) => n.id === inspectedNodeId)?.parentId !== undefined
+                : false
+            }
+          />
+        </div>
+
+        {/* Clear Canvas Confirmation Modal */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-theme/10">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-red-600 dark:text-red-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-theme">
+                    Clear Canvas?
+                  </h3>
+                  <p className="text-sm text-muted">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+              <p className="text-muted mb-6">
+                Are you sure you want to clear all components and connections
+                from the canvas? You will lose all your current work.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={cancelClearCanvas}
+                  className="flex-1 px-4 py-2 bg-theme/5 hover:bg-theme/10 text-theme font-medium rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmClearCanvas}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
     </>
   );
 };
