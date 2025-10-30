@@ -1151,35 +1151,103 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       });
   };
 
-  // Auto-layout nodes using Dagre
+  // Auto-layout nodes using Dagre with proper group handling
   const onLayout = (direction: "TB" | "LR" = "TB") => {
-    const dagreGraph = new dagre.graphlib.Graph();
-    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    // Separate groups and regular nodes
+    const groupNodes = nodes.filter((node) => node.type === "group");
+    const regularNodes = nodes.filter((node) => node.type !== "group" && !node.parentId);
+
+    // First, layout groups with larger spacing
+    const groupGraph = new dagre.graphlib.Graph();
+    groupGraph.setDefaultEdgeLabel(() => ({}));
+    groupGraph.setGraph({ 
+      rankdir: direction, 
+      nodesep: 150, // More space between groups
+      ranksep: 200, // More vertical space
+      marginx: 50,
+      marginy: 50
+    });
+
+    const groupWidth = 350;
+    const groupHeight = 250;
+
+    groupNodes.forEach((node) => {
+      groupGraph.setNode(node.id, { width: groupWidth, height: groupHeight });
+    });
+
+    // Add edges between groups (if any)
+    edges.filter(edge => 
+      groupNodes.some(g => g.id === edge.source) && 
+      groupNodes.some(g => g.id === edge.target)
+    ).forEach((edge) => {
+      groupGraph.setEdge(edge.source, edge.target);
+    });
+
+    if (groupNodes.length > 0) {
+      dagre.layout(groupGraph);
+    }
+
+    // Layout regular nodes (non-grouped)
+    const regularGraph = new dagre.graphlib.Graph();
+    regularGraph.setDefaultEdgeLabel(() => ({}));
+    regularGraph.setGraph({ 
+      rankdir: direction,
+      nodesep: 80,
+      ranksep: 100
+    });
 
     const nodeWidth = 200;
     const nodeHeight = 80;
 
-    dagreGraph.setGraph({ rankdir: direction });
-
-    nodes.forEach((node) => {
-      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    regularNodes.forEach((node) => {
+      regularGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
     });
 
-    edges.forEach((edge) => {
-      dagreGraph.setEdge(edge.source, edge.target);
+    // Add edges between regular nodes
+    edges.filter(edge => 
+      regularNodes.some(n => n.id === edge.source) && 
+      regularNodes.some(n => n.id === edge.target)
+    ).forEach((edge) => {
+      regularGraph.setEdge(edge.source, edge.target);
     });
 
-    dagre.layout(dagreGraph);
+    if (regularNodes.length > 0) {
+      dagre.layout(regularGraph);
+    }
 
+    // Apply positions
     const layoutedNodes = nodes.map((node) => {
-      const nodeWithPosition = dagreGraph.node(node.id);
-      return {
-        ...node,
-        position: {
-          x: nodeWithPosition.x - nodeWidth / 2,
-          y: nodeWithPosition.y - nodeHeight / 2,
-        },
-      };
+      if (node.type === "group") {
+        // Position group nodes
+        const nodeWithPosition = groupGraph.node(node.id);
+        if (nodeWithPosition) {
+          return {
+            ...node,
+            position: {
+              x: nodeWithPosition.x - groupWidth / 2,
+              y: nodeWithPosition.y - groupHeight / 2,
+            },
+          };
+        }
+      } else if (!node.parentId) {
+        // Position regular nodes
+        const nodeWithPosition = regularGraph.node(node.id);
+        if (nodeWithPosition) {
+          // Offset regular nodes to avoid group area
+          const offsetX = groupNodes.length > 0 ? groupWidth + 100 : 0;
+          return {
+            ...node,
+            position: {
+              x: nodeWithPosition.x - nodeWidth / 2 + offsetX,
+              y: nodeWithPosition.y - nodeHeight / 2,
+            },
+          };
+        }
+      } else {
+        // Keep child nodes in their relative positions within groups
+        return node;
+      }
+      return node;
     });
 
     setNodes(layoutedNodes);
