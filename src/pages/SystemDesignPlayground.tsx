@@ -15,6 +15,7 @@ import type {
 } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
+import { useUndoRedo } from "../hooks/useUndoRedo";
 import { 
   useNodesState, 
   useEdgesState, 
@@ -158,9 +159,62 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
   })();
 
-  // start with empty canvas state — the user will drag & drop components
-  const [nodes, setNodes, onNodesChange] = useNodesState([] as Node[]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([] as Edge[]);
+  // Undo/Redo state management
+  interface CanvasState {
+    nodes: Node[];
+    edges: Edge[];
+  }
+
+  const {
+    state: canvasState,
+    setState: setCanvasState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<CanvasState>({
+    nodes: [],
+    edges: [],
+  });
+
+  // Use React Flow's state hooks but sync with undo/redo
+  const [nodes, setNodes, onNodesChange] = useNodesState(canvasState.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(canvasState.edges);
+
+  // Sync canvas state to undo/redo history when nodes or edges change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCanvasState({ nodes, edges });
+    }, 300); // Debounce to avoid too many history entries during dragging
+
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges, setCanvasState]);
+
+  // Apply undo/redo state to React Flow
+  useEffect(() => {
+    setNodes(canvasState.nodes);
+    setEdges(canvasState.edges);
+  }, [canvasState, setNodes, setEdges]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Z or Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for redo
+      if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') || 
+          (e.ctrlKey && e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   const onConnect = (connection: Connection) => {
     // Use React Flow's addEdge helper with our custom edge type
@@ -876,6 +930,54 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Undo/Redo buttons */}
+            <div className="flex items-center border-r border-theme/10 pr-2 mr-2">
+              <button
+                type="button"
+                onClick={undo}
+                disabled={!canUndo}
+                className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                title="Undo (Ctrl+Z)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={redo}
+                disabled={!canRedo}
+                className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
+                  />
+                </svg>
+              </button>
+            </div>
+
             <ThemeSwitcher />
             {problem?.id !== "free" && (
               <button
