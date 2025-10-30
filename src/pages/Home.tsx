@@ -297,7 +297,7 @@ const Home: React.FC = () => {
               </div>
               <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
                 <span className="inline-block animate-gradient bg-gradient-to-r from-white via-white/90 to-white bg-clip-text">
-                  Design Systems
+                  System Design
                 </span>
                 <br />
                 <span className="text-white/95">Visually, Intuitively</span>
