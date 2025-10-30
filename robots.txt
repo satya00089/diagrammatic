@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow private or dynamic content if any
+Disallow: /api/
+Disallow: /__blobstorage__/
+
+# Sitemap
+Sitemap: https://satya00089.github.io/diagrammatic/sitemap.xml
