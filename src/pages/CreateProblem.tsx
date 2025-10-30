@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import AnimatedTextarea from "../components/shared/AnimatedTextarea";
+import SEO from "../components/SEO";
 
 type ArrayField = "requirements" | "constraints" | "hints" | "tags";
 
@@ -102,7 +103,14 @@ const CreateProblem: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+    <>
+      <SEO 
+        title="Create Custom System Design Problem | Diagrammatic"
+        description="Create and share custom system design problems with your students or team. Define requirements, constraints, and evaluation criteria for personalized learning experiences."
+        keywords="create system design problem, custom architecture challenge, teaching system design, system design assignment creator"
+        url="https://satya00089.github.io/diagrammatic/#/create-problem"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -479,6 +487,7 @@ const CreateProblem: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

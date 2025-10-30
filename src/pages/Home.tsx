@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
+import SEO from "../components/SEO";
 
 const Home: React.FC = () => {
   useTheme();
@@ -110,7 +111,15 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+    <>
+      <SEO 
+        title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
+        description="Master system design with Diagrammatic - an interactive playground featuring 45+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators."
+        keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design"
+        url="https://satya00089.github.io/diagrammatic/"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+
 
 
       {/* Global Animated Architecture Diagram Background - Scrolls with page */}
@@ -288,7 +297,7 @@ const Home: React.FC = () => {
               </div>
               <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
                 <span className="inline-block animate-gradient bg-gradient-to-r from-white via-white/90 to-white bg-clip-text">
-                  Design Systems
+                  System Design
                 </span>
                 <br />
                 <span className="text-white/95">Visually, Intuitively</span>
@@ -630,6 +639,7 @@ const Home: React.FC = () => {
         }
       `}</style>
     </div>
+    </>
   );
 };
 

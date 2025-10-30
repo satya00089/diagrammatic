@@ -29,6 +29,7 @@ import DiagramCanvas from "../components/DiagramCanvas";
 import InspectorPanel from "../components/InspectorPanel";
 import type { ComponentProperty } from "../types/canvas";
 import { useNavigate, useParams } from "react-router-dom";
+import SEO from "../components/SEO";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
@@ -830,8 +831,23 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   };
 
+  const pageTitle = idFromUrl === 'free' 
+    ? 'Free Design Canvas | Diagrammatic'
+    : `${problem?.title || 'System Design Challenge'} | Diagrammatic`;
+  
+  const pageDescription = idFromUrl === 'free'
+    ? 'Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 45+ components.'
+    : `Solve the ${problem?.title || 'system design'} challenge. ${problem?.description?.substring(0, 150) || 'Practice system design skills'}...`;
+
   return (
-    <div className="h-screen flex flex-col bg-theme">
+    <>
+      <SEO 
+        title={pageTitle}
+        description={pageDescription}
+        keywords={`system design playground, ${problem?.title || 'free canvas'}, architecture diagram tool, ${problem?.category || 'design tool'}`}
+        url={`https://satya00089.github.io/diagrammatic/#/playground/${idFromUrl || 'free'}`}
+      />
+      <div className="h-screen flex flex-col bg-theme">
       {/* Header */}
       <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
         <div className="flex items-center justify-between">
@@ -911,6 +927,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         />
       </div>
     </div>
+    </>
   );
 };
 

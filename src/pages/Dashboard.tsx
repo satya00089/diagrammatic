@@ -5,6 +5,7 @@ import Fuse from "fuse.js";
 import type { SystemDesignProblem } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
+import SEO from "../components/SEO";
 
 const Dashboard: React.FC = () => {
   useTheme();
@@ -99,7 +100,14 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+    <>
+      <SEO 
+        title="System Design Practice Problems | Diagrammatic"
+        description="Browse and solve curated system design problems with real-world scenarios. Master distributed systems, scalable architectures, and ace your tech interviews with hands-on practice."
+        keywords="system design problems, architecture challenges, distributed systems practice, system design interview prep, scalable architecture exercises"
+        url="https://satya00089.github.io/diagrammatic/#/problems"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
       {/* Header */}
       <header className='fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300'>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -328,6 +336,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
