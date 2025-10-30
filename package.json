@@ -30,6 +30,7 @@
     "@tiptap/react": "^3.6.1",
     "@tiptap/starter-kit": "^3.6.1",
     "@xyflow/react": "^12.8.4",
+    "dagre": "^0.8.5",
     "framer-motion": "^12.23.12",
     "fuse.js": "^7.1.0",
     "gh-pages": "^6.3.0",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@types/dagre": "^0.7.53",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
