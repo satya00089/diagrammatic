@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import {
   AnimatedNumberInput,
@@ -39,6 +39,7 @@ import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
 import CustomEdge from "../components/CustomEdge";
+import GroupNode from "../components/GroupNode";
 import CustomPropertyInput, {
   type CustomProperty,
 } from "../components/CustomPropertyInput";
@@ -54,19 +55,22 @@ const NodeWithCopy = React.memo(
     id: string;
     data: unknown;
     onCopy: (id: string, data: NodeData) => void;
+    isInGroup?: boolean;
   }) => {
     const nodeData = props.data as NodeData;
-    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} />;
+    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} isInGroup={props.isInGroup} />;
   }
 );
 
-// Factory function to create node component with copy handler
+// Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData) => void
+  onCopy: (id: string, data: NodeData) => void,
+  nodes: Node[]
 ) => {
-  return (props: { id: string; data: unknown }) => (
-    <NodeWithCopy {...props} onCopy={onCopy} />
-  );
+  return (props: { id: string; data: unknown }) => {
+    const isInGroup = nodes.find((n) => n.id === props.id)?.parentId !== undefined;
+    return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
+  };
 };
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
@@ -411,16 +415,128 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const id = `${type}-${Date.now()}`;
     const comp = COMPONENTS.find((c) => c.id === type);
+    
+    // Check if it's a group/cluster component
+    const isGroupComponent = comp?.group === "Grouping";
+    
     const newNode: Node = {
       id,
       position,
-      type: "custom",
+      type: isGroupComponent ? "group" : "custom",
+      // For group nodes, use different styling
+      style: isGroupComponent ? {
+        width: 400,
+        height: 300,
+        zIndex: -1, // Groups should be behind regular nodes
+      } : undefined,
       // include icon so the custom node can render it
-      data: { label: comp?.label ?? type, icon: comp?.icon },
+      data: { 
+        label: comp?.label ?? type, 
+        icon: comp?.icon,
+        subtitle: comp?.description,
+        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
+        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+      },
     };
 
     setNodes((nds) => [...nds, newNode]);
   };
+
+  // Handle node drag stop to assign parent-child relationships with groups
+  const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
+    // Only allow attaching nodes to groups, NOT detaching
+    // Detachment can only be done via the explicit detach buttons
+    
+    // Skip if node already has a parent - they can only detach via buttons
+    if (node.parentId) return;
+    
+    // Find if the node is being dragged over a group node
+    const groupNodes = nodes.filter(n => n.type === 'group');
+    
+    // Check if node is inside any group
+    let newParentId: string | undefined = undefined;
+    
+    for (const groupNode of groupNodes) {
+      if (groupNode.id === node.id) continue; // Skip if dragging the group itself
+      
+      const groupX = groupNode.position.x;
+      const groupY = groupNode.position.y;
+      const groupWidth = (groupNode.style?.width as number) || 400;
+      const groupHeight = (groupNode.style?.height as number) || 300;
+      
+      // Get absolute position of the node
+      const nodeAbsX = node.position.x;
+      const nodeAbsY = node.position.y;
+      
+      // Check if node is within group bounds (with some padding for better UX)
+      const padding = 10;
+      if (
+        nodeAbsX > groupX + padding &&
+        nodeAbsX < groupX + groupWidth - padding &&
+        nodeAbsY > groupY + padding &&
+        nodeAbsY < groupY + groupHeight - padding
+      ) {
+        newParentId = groupNode.id;
+        break;
+      }
+    }
+    
+    // Only attach if we found a new parent
+    if (newParentId) {
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === node.id) {
+            // Calculate position relative to the new parent
+            const newParent = nds.find(gn => gn.id === newParentId);
+            const newPosition = newParent
+              ? {
+                  x: node.position.x - newParent.position.x,
+                  y: node.position.y - newParent.position.y,
+                }
+              : node.position;
+            
+            return {
+              ...n,
+              position: newPosition,
+              parentId: newParentId,
+              extent: 'parent' as const,
+            };
+          }
+          return n;
+        })
+      );
+    }
+  };
+
+  // Handle detaching a node from its parent group
+  const handleDetachFromGroup = useCallback(() => {
+    const nodeId = inspectedNodeIdRef.current;
+    if (!nodeId) return;
+    
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId && n.parentId) {
+          // Calculate absolute position before detaching
+          const parent = nds.find(p => p.id === n.parentId);
+          let absX = n.position.x;
+          let absY = n.position.y;
+          
+          if (parent) {
+            absX += parent.position.x;
+            absY += parent.position.y;
+          }
+          
+          return {
+            ...n,
+            position: { x: absX, y: absY },
+            parentId: undefined,
+            extent: undefined,
+          };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -516,6 +632,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
+    const detachListener = (e: Event) => {
+      const evt = e as CustomEvent<{ id: string }>;
+      // Detach the node from its parent group
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.id && n.parentId) {
+            // Calculate absolute position before detaching
+            const parent = nds.find((p) => p.id === n.parentId);
+            let absX = n.position.x;
+            let absY = n.position.y;
+
+            if (parent) {
+              absX += parent.position.x;
+              absY += parent.position.y;
+            }
+
+            return {
+              ...n,
+              position: { x: absX, y: absY },
+              parentId: undefined,
+              extent: undefined,
+            };
+          }
+          return n;
+        })
+      );
+    };
+
     globalThis.addEventListener(
       "diagram:node-delete",
       deleteListener as EventListener
@@ -523,6 +667,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener
+    );
+    globalThis.addEventListener(
+      "diagram:node-detach",
+      detachListener as EventListener
     );
     return () => {
       globalThis.removeEventListener(
@@ -532,6 +680,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener
+      );
+      globalThis.removeEventListener(
+        "diagram:node-detach",
+        detachListener as EventListener
       );
     };
   }, []);
@@ -875,11 +1027,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
 
     const nodeId = `${id}-${Date.now()}`;
+    
+    // Check if it's a group/cluster component
+    const isGroupComponent = comp?.group === "Grouping";
+    
     const newNode: Node = {
       id: nodeId,
       position,
-      type: "custom",
-      data: { label: comp?.label ?? id, icon: comp?.icon },
+      type: isGroupComponent ? "group" : "custom",
+      style: isGroupComponent ? {
+        width: 400,
+        height: 300,
+        zIndex: -1,
+      } : undefined,
+      data: { 
+        label: comp?.label ?? id, 
+        icon: comp?.icon,
+        subtitle: comp?.description,
+        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
+        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+      },
     };
 
     setNodes((nds) => [...nds, newNode]);
@@ -1019,7 +1186,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // register node and edge types
   const nodeTypes = {
-    custom: createNodeWithCopyHandler(handleNodeCopy),
+    custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
+    group: GroupNode,
   };
   const edgeTypes = { customEdge: CustomEdge };
 
@@ -1316,6 +1484,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onConnect={onConnect}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onNodeDragStop={onNodeDragStop}
           />
           <InspectorPanel
             problem={problem}
@@ -1328,6 +1497,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onAddCustomProperty={handleAddCustomProperty}
             handleSave={handleSave}
             assessmentResult={assessment}
+            onDetachFromGroup={handleDetachFromGroup}
+            isNodeInGroup={
+              inspectedNodeId
+                ? nodes.find((n) => n.id === inspectedNodeId)?.parentId !== undefined
+                : false
+            }
           />
         </div>
 
