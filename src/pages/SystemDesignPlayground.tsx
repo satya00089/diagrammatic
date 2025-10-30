@@ -431,7 +431,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       } : undefined,
       // include icon so the custom node can render it
       data: { 
-        label: comp?.label ?? type, 
+        label: comp?.label ?? type,
+        componentId: comp?.id, // Store the original component ID
         icon: comp?.icon,
         subtitle: comp?.description,
         backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
@@ -909,7 +910,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   if (inspectedNodeId) {
     const node = nodes.find((n) => n.id === inspectedNodeId);
     if (node) {
-      const comp = COMPONENTS.find((c) => c.label === node.data.label);
+      // Find the component definition using componentId or label
+      const comp = node.data.componentId 
+        ? COMPONENTS.find((c) => c.id === node.data.componentId)
+        : COMPONENTS.find((c) => c.label === node.data.label);
+      
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
           renderProperty(p)
@@ -1041,7 +1046,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         zIndex: -1,
       } : undefined,
       data: { 
-        label: comp?.label ?? id, 
+        label: comp?.label ?? id,
+        componentId: comp?.id, // Store the original component ID
         icon: comp?.icon,
         subtitle: comp?.description,
         backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,

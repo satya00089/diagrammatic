@@ -1,5 +1,7 @@
 import React from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeResizer } from '@xyflow/react';
+import { MdSettings, MdDelete } from 'react-icons/md';
+import { motion } from 'framer-motion';
 
 export interface GroupNodeData {
   label: string;
@@ -10,12 +12,33 @@ export interface GroupNodeData {
 }
 
 interface GroupNodeProps {
+  id: string;
   data: GroupNodeData;
 }
 
-const GroupNode: React.FC<GroupNodeProps> = ({ data }) => {
+const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
   const bgColor = data.backgroundColor || 'rgba(100, 100, 255, 0.05)';
   const borderColor = data.borderColor || 'rgba(100, 100, 255, 0.3)';
+
+  const onDelete = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-delete", { detail: { id } }),
+      );
+    },
+    [id],
+  );
+
+  const onToggle = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-toggle", { detail: { id } }),
+      );
+    },
+    [id],
+  );
 
   return (
     <div
@@ -31,6 +54,54 @@ const GroupNode: React.FC<GroupNodeProps> = ({ data }) => {
         position: 'relative',
       }}
     >
+      {/* Node Resizer - allows resizing the group */}
+      <NodeResizer
+        minWidth={300}
+        minHeight={200}
+        isVisible={true}
+        lineStyle={{
+          borderColor: borderColor,
+          borderWidth: 2,
+          borderStyle: 'dashed',
+        }}
+        handleStyle={{
+          width: 8,
+          height: 8,
+          borderRadius: '2px',
+          backgroundColor: 'var(--surface)',
+          border: `2px solid ${borderColor}`,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        }}
+      />
+
+      {/* Action buttons - positioned at top-right */}
+      <div className="absolute -top-3 right-2 flex items-center z-10 bg-[var(--surface)]/90 border border-theme rounded-full shadow-sm">
+        <motion.button
+          type="button"
+          aria-label="Settings"
+          onClick={onToggle}
+          className="p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
+          title="Group Settings"
+          whileHover={{ scale: 1.1, y: -1, rotate: 90 }}
+          whileTap={{ scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        >
+          <MdSettings className="w-3 h-3" />
+        </motion.button>
+        <motion.button
+          type="button"
+          aria-label="Delete Group"
+          onClick={onDelete}
+          className="p-1 text-red-600 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
+          title="Delete Group"
+          whileHover={{ scale: 1.15, y: -2, rotate: 5 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        >
+          <MdDelete className="w-3 h-3" />
+        </motion.button>
+      </div>
+
       {/* Group Header */}
       <div
         className="group-header"
@@ -69,45 +140,64 @@ const GroupNode: React.FC<GroupNodeProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Handles for connections */}
+      {/* Handles for connections - invisible but available in all directions */}
       <Handle
-        type="target"
-        position={Position.Top}
-        style={{
-          background: borderColor,
-          width: '12px',
-          height: '12px',
-          border: '2px solid var(--surface)',
-        }}
-      />
-      <Handle
+        id="top"
         type="source"
-        position={Position.Bottom}
+        position={Position.Top}
+        isConnectable={true}
         style={{
-          background: borderColor,
-          width: '12px',
-          height: '12px',
-          border: '2px solid var(--surface)',
+          width: '100%',
+          height: '8px',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
         }}
       />
+      
       <Handle
-        type="target"
-        position={Position.Left}
-        style={{
-          background: borderColor,
-          width: '12px',
-          height: '12px',
-          border: '2px solid var(--surface)',
-        }}
-      />
-      <Handle
+        id="right"
         type="source"
         position={Position.Right}
+        isConnectable={true}
         style={{
-          background: borderColor,
-          width: '12px',
-          height: '12px',
-          border: '2px solid var(--surface)',
+          width: '8px',
+          height: '100%',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
+        }}
+      />
+      
+      <Handle
+        id="bottom"
+        type="source"
+        position={Position.Bottom}
+        isConnectable={true}
+        style={{
+          width: '100%',
+          height: '8px',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
+        }}
+      />
+      
+      <Handle
+        id="left"
+        type="source"
+        position={Position.Left}
+        isConnectable={true}
+        style={{
+          width: '8px',
+          height: '100%',
+          background: 'transparent',
+          border: 'none',
+          opacity: 0,
+          cursor: 'crosshair',
         }}
       />
     </div>
