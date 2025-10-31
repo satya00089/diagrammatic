@@ -56,7 +56,7 @@ const Home: React.FC = () => {
   const capabilities = [
     {
       icon: "🧩",
-      title: "45+ Components",
+      title: "55+ Components",
       description: "Databases, APIs, caches, queues, and more",
     },
     {
@@ -87,7 +87,7 @@ const Home: React.FC = () => {
   ];
 
   const stats = [
-    { value: "45+", label: "Components", icon: "🧩" },
+    { value: "55+", label: "Components", icon: "🧩" },
     { value: "1000+", label: "Users", icon: "👥" },
     { value: "∞", label: "Possibilities", icon: "✨" },
   ];
@@ -114,7 +114,7 @@ const Home: React.FC = () => {
     <>
       <SEO 
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
-        description="Master system design with Diagrammatic - an interactive playground featuring 45+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators."
+        description="Master system design with Diagrammatic - an interactive playground featuring 55+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design"
         url="https://satya00089.github.io/diagrammatic/"
       />
@@ -292,7 +292,7 @@ const Home: React.FC = () => {
             >
               <div className="inline-block mb-6">
                 <span className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full shadow-lg">
-                  ✨ Now with 45+ Components & AI Assessment
+                  ✨ Now with 55+ Components & AI Assessment
                 </span>
               </div>
               <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
@@ -352,7 +352,7 @@ const Home: React.FC = () => {
               </div>
 
               <p className="mt-6 text-sm text-white/80">
-                No signup required • Free forever • 45+ components
+                No signup required • Free forever • 55+ components
               </p>
             </div>
           </div>
