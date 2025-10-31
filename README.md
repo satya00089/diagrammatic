@@ -3,13 +3,13 @@
 _Design. Practice. Master System Architecture._
 
 Diagrammatic is an **interactive System Design Playground** built with **React Flow** and **Tailwind CSS**.
-Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 46+ production-grade components — ideal for **interview preparation, learning, and technical documentation**.
+Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 55 production-grade components — ideal for **interview preparation, learning, and technical documentation**.
 
 ---
 
 ## ✨ Features
 
-- �️ **46+ System Design Components** - Database, Load Balancer, Cache, CDN, Message Queue, API Gateway, and more
+- 🧩 **55 System Design Components** - Database, Load Balancer, Cache, CDN, Message Queue, API Gateway, and more
 - 🔍 **Smart Component Search** - Fuzzy search powered by Fuse.js to quickly find components
 - 🎯 **Practice Problems** - Real system design interview questions with assessment and hints
 - 🎨 **Interactive Drag & Drop Canvas** - Build architecture diagrams with ease
@@ -51,7 +51,7 @@ Practice system design interviews, learn distributed systems architecture, and c
 
 ## 🧩 Component Library
 
-Diagrammatic includes **46 production-grade system design components** organized into 9 categories:
+Diagrammatic includes **55 production-grade system design components** organized into 9 categories:
 
 ### Compute & Storage (8)
 
@@ -199,7 +199,7 @@ diagrammatic/
 │   │   ├── Toolbar.tsx             # Top toolbar
 │   │   └── shared/                 # Shared UI components
 │   ├── config/
-│   │   └── components.ts    # Component library definitions (46 components)
+│   │   └── components.ts    # Component library definitions (55 components)
 │   ├── data/
 │   │   └── problems.ts      # System design practice problems
 │   ├── pages/
@@ -231,10 +231,10 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 ### Short-term
 
 - [ ] More practice problems (Twitter, WhatsApp, Uber, Netflix)
-- [ ] AI-powered design assessment and feedback
-- [ ] Undo/Redo functionality
-- [ ] Keyboard shortcuts for power users
-- [ ] Save/load diagrams to localStorage
+- [x] AI-powered design assessment and feedback (integrated — requires API configuration)
+- [x] Undo/Redo functionality
+- [x] Keyboard shortcuts for power users
+- [ ] Save/load diagrams to localStorage (custom problems saved to localStorage; diagram save/load not implemented yet)
 
 ### Long-term
 
