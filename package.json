@@ -32,6 +32,7 @@
     "@xyflow/react": "^12.8.4",
     "dagre": "^0.8.5",
     "framer-motion": "^12.23.12",
+    "jwt-decode": "^4.0.0",
     "fuse.js": "^7.1.0",
     "gh-pages": "^6.3.0",
     "html-to-image": "^1.11.13",

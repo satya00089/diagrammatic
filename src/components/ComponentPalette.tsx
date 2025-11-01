@@ -46,16 +46,18 @@ export default function ComponentPalette({ components, onAdd }: Props) {
 
     const results = fuse.search(query);
     const searchResults = results.map((result) => result.item);
-    
+
     // Always include Custom Component in search results
-    const customComponent = components.find(c => c.id === 'custom-component');
-    const hasCustomComponent = searchResults.some(c => c.id === 'custom-component');
-    
+    const customComponent = components.find((c) => c.id === "custom-component");
+    const hasCustomComponent = searchResults.some(
+      (c) => c.id === "custom-component",
+    );
+
     if (customComponent && !hasCustomComponent) {
       // Add Custom Component at the end of search results
       searchResults.push(customComponent);
     }
-    
+
     return searchResults;
   }, [components, fuse, searchQuery]);
 

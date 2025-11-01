@@ -73,7 +73,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📱",
     label: "Mobile App",
     description: "iOS/Android client",
-    tags: ["ios", "android", "mobile", "app", "native", "react native", "flutter"],
+    tags: [
+      "ios",
+      "android",
+      "mobile",
+      "app",
+      "native",
+      "react native",
+      "flutter",
+    ],
     properties: [
       {
         key: "componentName",
@@ -167,7 +175,18 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🗄️",
     label: "Database",
     description: "Relational/NoSQL data storage",
-    tags: ["db", "rdbms", "nosql", "sql", "postgres", "mysql", "mongodb", "data", "storage", "persistence"],
+    tags: [
+      "db",
+      "rdbms",
+      "nosql",
+      "sql",
+      "postgres",
+      "mysql",
+      "mongodb",
+      "data",
+      "storage",
+      "persistence",
+    ],
     properties: [
       {
         key: "componentName",
@@ -311,7 +330,18 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "⚖️",
     label: "Load Balancer",
     description: "Traffic distribution & high availability",
-    tags: ["lb", "alb", "nlb", "elb", "traffic", "distribution", "nginx", "haproxy", "layer 4", "layer 7"],
+    tags: [
+      "lb",
+      "alb",
+      "nlb",
+      "elb",
+      "traffic",
+      "distribution",
+      "nginx",
+      "haproxy",
+      "layer 4",
+      "layer 7",
+    ],
     properties: [
       {
         key: "componentName",
@@ -409,7 +439,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "⚡",
     label: "Cache",
     description: "In-memory fast data access",
-    tags: ["redis", "memcached", "in-memory", "caching", "performance", "speed"],
+    tags: [
+      "redis",
+      "memcached",
+      "in-memory",
+      "caching",
+      "performance",
+      "speed",
+    ],
     properties: [
       {
         key: "componentName",
@@ -587,7 +624,16 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔐",
     label: "Auth Service",
     description: "Authentication & session management",
-    tags: ["authentication", "authorization", "auth", "oauth", "jwt", "sso", "login", "security"],
+    tags: [
+      "authentication",
+      "authorization",
+      "auth",
+      "oauth",
+      "jwt",
+      "sso",
+      "login",
+      "security",
+    ],
     properties: [
       {
         key: "componentName",
@@ -626,7 +672,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🚀",
     label: "CDN",
     description: "Content delivery network",
-    tags: ["content delivery", "cloudflare", "akamai", "fastly", "edge", "caching", "cdn"],
+    tags: [
+      "content delivery",
+      "cloudflare",
+      "akamai",
+      "fastly",
+      "edge",
+      "caching",
+      "cdn",
+    ],
     properties: [
       {
         key: "componentName",
@@ -669,7 +723,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔎",
     label: "Search",
     description: "Search engine & indexing",
-    tags: ["elasticsearch", "opensearch", "search engine", "indexing", "full-text", "lucene"],
+    tags: [
+      "elasticsearch",
+      "opensearch",
+      "search engine",
+      "indexing",
+      "full-text",
+      "lucene",
+    ],
     properties: [
       {
         key: "componentName",
@@ -752,7 +813,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📊",
     label: "Analytics",
     description: "Event analytics pipeline",
-    tags: ["data analytics", "metrics", "events", "tracking", "bi", "business intelligence"],
+    tags: [
+      "data analytics",
+      "metrics",
+      "events",
+      "tracking",
+      "bi",
+      "business intelligence",
+    ],
     properties: [
       {
         key: "componentName",
@@ -956,7 +1024,16 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🚪",
     label: "API Gateway",
     description: "Central API entry point",
-    tags: ["api", "gateway", "rest", "graphql", "entry point", "routing", "kong", "apigee"],
+    tags: [
+      "api",
+      "gateway",
+      "rest",
+      "graphql",
+      "entry point",
+      "routing",
+      "kong",
+      "apigee",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1070,7 +1147,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔢",
     label: "ID Generator",
     description: "Distributed unique ID generation",
-    tags: ["id", "uuid", "snowflake", "ulid", "unique", "generator", "distributed"],
+    tags: [
+      "id",
+      "uuid",
+      "snowflake",
+      "ulid",
+      "unique",
+      "generator",
+      "distributed",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1113,7 +1198,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔒",
     label: "Distributed Lock",
     description: "Resource locking & coordination",
-    tags: ["lock", "distributed", "coordination", "mutex", "redis", "etcd", "zookeeper"],
+    tags: [
+      "lock",
+      "distributed",
+      "coordination",
+      "mutex",
+      "redis",
+      "etcd",
+      "zookeeper",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1158,7 +1251,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "❄️",
     label: "Cold Storage",
     description: "Archive & backup storage",
-    tags: ["archive", "backup", "glacier", "cold storage", "long-term", "s3 glacier"],
+    tags: [
+      "archive",
+      "backup",
+      "glacier",
+      "cold storage",
+      "long-term",
+      "s3 glacier",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1201,7 +1301,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🗃️",
     label: "Object Storage",
     description: "S3-compatible object store",
-    tags: ["s3", "blob", "object storage", "aws s3", "azure blob", "gcs", "minio"],
+    tags: [
+      "s3",
+      "blob",
+      "object storage",
+      "aws s3",
+      "azure blob",
+      "gcs",
+      "minio",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1252,7 +1360,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "⚙️",
     label: "Processing Worker",
     description: "Background job processor",
-    tags: ["worker", "background job", "async", "task processor", "celery", "sidekiq"],
+    tags: [
+      "worker",
+      "background job",
+      "async",
+      "task processor",
+      "celery",
+      "sidekiq",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1345,7 +1460,13 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🎯",
     label: "Recommendation",
     description: "ML-based recommendations",
-    tags: ["recommendation", "ml", "machine learning", "collaborative filtering", "personalization"],
+    tags: [
+      "recommendation",
+      "ml",
+      "machine learning",
+      "collaborative filtering",
+      "personalization",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1388,7 +1509,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "💳",
     label: "Payment Service",
     description: "Payment processing & gateway",
-    tags: ["payment", "stripe", "paypal", "transaction", "billing", "checkout", "pci"],
+    tags: [
+      "payment",
+      "stripe",
+      "paypal",
+      "transaction",
+      "billing",
+      "checkout",
+      "pci",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1437,7 +1566,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📝",
     label: "Log Processing",
     description: "Log aggregation & analysis",
-    tags: ["logging", "logs", "elk", "splunk", "aggregation", "analysis", "kibana"],
+    tags: [
+      "logging",
+      "logs",
+      "elk",
+      "splunk",
+      "aggregation",
+      "analysis",
+      "kibana",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1480,7 +1617,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📡",
     label: "Pub/Sub",
     description: "Publish-subscribe messaging",
-    tags: ["pubsub", "publish", "subscribe", "messaging", "event", "google pubsub", "sns"],
+    tags: [
+      "pubsub",
+      "publish",
+      "subscribe",
+      "messaging",
+      "event",
+      "google pubsub",
+      "sns",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1580,7 +1725,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "⚡",
     label: "Backend Server",
     description: "Application logic & microservices",
-    tags: ["backend", "server", "microservices", "api", "business logic", "application"],
+    tags: [
+      "backend",
+      "server",
+      "microservices",
+      "api",
+      "business logic",
+      "application",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1692,7 +1844,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🕸️",
     label: "Service Mesh",
     description: "Microservices communication layer",
-    tags: ["service mesh", "istio", "linkerd", "consul", "mtls", "traffic management"],
+    tags: [
+      "service mesh",
+      "istio",
+      "linkerd",
+      "consul",
+      "mtls",
+      "traffic management",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1755,7 +1914,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🐳",
     label: "Container Orchestrator",
     description: "Container management & orchestration",
-    tags: ["kubernetes", "k8s", "docker", "container", "orchestration", "ecs", "pods"],
+    tags: [
+      "kubernetes",
+      "k8s",
+      "docker",
+      "container",
+      "orchestration",
+      "ecs",
+      "pods",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1812,7 +1979,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "λ",
     label: "Serverless Function",
     description: "Event-driven compute",
-    tags: ["lambda", "serverless", "function app", "cloud function", "faas", "azure functions", "event-driven"],
+    tags: [
+      "lambda",
+      "serverless",
+      "function app",
+      "cloud function",
+      "faas",
+      "azure functions",
+      "event-driven",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1926,7 +2101,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🌊",
     label: "Stream Processor",
     description: "Real-time data processing",
-    tags: ["stream", "kafka streams", "flink", "spark streaming", "kinesis", "real-time"],
+    tags: [
+      "stream",
+      "kafka streams",
+      "flink",
+      "spark streaming",
+      "kinesis",
+      "real-time",
+    ],
     properties: [
       {
         key: "componentName",
@@ -1982,7 +2164,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🏭",
     label: "Data Warehouse",
     description: "OLAP & analytics storage",
-    tags: ["data warehouse", "snowflake", "redshift", "bigquery", "olap", "analytics"],
+    tags: [
+      "data warehouse",
+      "snowflake",
+      "redshift",
+      "bigquery",
+      "olap",
+      "analytics",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2033,7 +2222,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📈",
     label: "Monitoring",
     description: "Metrics & alerting",
-    tags: ["monitoring", "prometheus", "grafana", "datadog", "metrics", "alerts", "observability"],
+    tags: [
+      "monitoring",
+      "prometheus",
+      "grafana",
+      "datadog",
+      "metrics",
+      "alerts",
+      "observability",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2084,7 +2281,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔍",
     label: "Distributed Tracing",
     description: "Request flow tracking",
-    tags: ["tracing", "jaeger", "zipkin", "distributed tracing", "apm", "x-ray"],
+    tags: [
+      "tracing",
+      "jaeger",
+      "zipkin",
+      "distributed tracing",
+      "apm",
+      "x-ray",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2186,7 +2390,13 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "⚡",
     label: "Circuit Breaker",
     description: "Fault tolerance & resilience",
-    tags: ["circuit breaker", "fault tolerance", "resilience", "hystrix", "fallback"],
+    tags: [
+      "circuit breaker",
+      "fault tolerance",
+      "resilience",
+      "hystrix",
+      "fallback",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2275,7 +2485,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔐",
     label: "VPN Gateway",
     description: "Secure network connection",
-    tags: ["vpn", "gateway", "ipsec", "openvpn", "wireguard", "secure connection"],
+    tags: [
+      "vpn",
+      "gateway",
+      "ipsec",
+      "openvpn",
+      "wireguard",
+      "secure connection",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2321,7 +2538,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🛡️",
     label: "Firewall",
     description: "Network security & filtering",
-    tags: ["firewall", "waf", "security", "ips", "network firewall", "filtering"],
+    tags: [
+      "firewall",
+      "waf",
+      "security",
+      "ips",
+      "network firewall",
+      "filtering",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2372,7 +2596,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "🔑",
     label: "Secrets Manager",
     description: "Credentials & secrets storage",
-    tags: ["secrets", "vault", "credentials", "key management", "hashicorp vault", "secrets manager"],
+    tags: [
+      "secrets",
+      "vault",
+      "credentials",
+      "key management",
+      "hashicorp vault",
+      "secrets manager",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2423,7 +2654,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📧",
     label: "Email Service",
     description: "Transactional email delivery",
-    tags: ["email", "sendgrid", "ses", "mailgun", "smtp", "transactional email"],
+    tags: [
+      "email",
+      "sendgrid",
+      "ses",
+      "mailgun",
+      "smtp",
+      "transactional email",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2781,7 +3019,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: "📦",
     label: "Custom Group",
     description: "Create your own custom group/container",
-    tags: ["custom", "group", "container", "user-defined", "flexible", "boundary"],
+    tags: [
+      "custom",
+      "group",
+      "container",
+      "user-defined",
+      "flexible",
+      "boundary",
+    ],
     properties: [
       {
         key: "componentName",
