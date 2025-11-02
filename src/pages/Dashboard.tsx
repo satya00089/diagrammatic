@@ -160,11 +160,19 @@ const Dashboard: React.FC = () => {
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
                       >
-                        <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                          {user?.name?.[0]?.toUpperCase() ||
-                            user?.email?.[0]?.toUpperCase() ||
-                            "U"}
-                        </div>
+                        {user?.picture ? (
+                          <img
+                            src={user.picture}
+                            alt={user.name || "User"}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
+                            {user?.name?.[0]?.toUpperCase() ||
+                              user?.email?.[0]?.toUpperCase() ||
+                              "U"}
+                          </div>
+                        )}
                         <span className="hidden sm:inline">
                           {user?.name || user?.email}
                         </span>

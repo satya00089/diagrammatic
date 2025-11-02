@@ -164,9 +164,17 @@ const MyDesigns: React.FC = () => {
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/10 transition-colors cursor-pointer"
                       >
-                        <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-medium">
-                          {user?.name?.[0]?.toUpperCase() || "U"}
-                        </div>
+                        {user?.picture ? (
+                          <img
+                            src={user.picture}
+                            alt={user.name || "User"}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-medium">
+                            {user?.name?.[0]?.toUpperCase() || "U"}
+                          </div>
+                        )}
                         <span className="hidden sm:inline text-sm">
                           {user?.name || user?.email}
                         </span>

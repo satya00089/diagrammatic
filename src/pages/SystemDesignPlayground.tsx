@@ -1745,11 +1745,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       onClick={() => setShowUserMenu(!showUserMenu)}
                       className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold">
-                        {user?.name?.[0]?.toUpperCase() ||
-                          user?.email?.[0]?.toUpperCase() ||
-                          "U"}
-                      </div>
+                      {user?.picture ? (
+                        <img
+                          src={user.picture}
+                          alt={user.name || "User"}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-[var(--brand)]"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold">
+                          {user?.name?.[0]?.toUpperCase() ||
+                            user?.email?.[0]?.toUpperCase() ||
+                            "U"}
+                        </div>
+                      )}
                       <span className="hidden sm:inline">
                         {user?.name || user?.email}
                       </span>
