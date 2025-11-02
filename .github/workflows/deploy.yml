@@ -38,15 +38,20 @@ jobs:
             echo "ERROR: VITE_GOOGLE_CLIENT_ID is not set!"
             exit 1
           fi
-          echo "VITE_GOOGLE_CLIENT_ID is set (length: ${#VITE_GOOGLE_CLIENT_ID})"
+          if [ -z "$VITE_ASSESSMENT_API_URL" ]; then
+            echo "ERROR: VITE_ASSESSMENT_API_URL is not set!"
+            exit 1
+          fi
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
 
       - name: Build
         run: npm run build
         env:
           CI: true
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
 
       - name: Verify build output
         run: |
