@@ -43,6 +43,11 @@ import GroupNode from "../components/GroupNode";
 import CustomPropertyInput, {
   type CustomProperty,
 } from "../components/CustomPropertyInput";
+import { useAuth } from "../hooks/useAuth";
+import { AuthModal } from "../components/AuthModal";
+import { DiagramListModal } from "../components/DiagramListModal";
+import { apiService } from "../services/api";
+import type { SavedDiagram } from "../types/auth";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -58,17 +63,25 @@ const NodeWithCopy = React.memo(
     isInGroup?: boolean;
   }) => {
     const nodeData = props.data as NodeData;
-    return <CustomNode id={props.id} data={nodeData} onCopy={props.onCopy} isInGroup={props.isInGroup} />;
-  }
+    return (
+      <CustomNode
+        id={props.id}
+        data={nodeData}
+        onCopy={props.onCopy}
+        isInGroup={props.isInGroup}
+      />
+    );
+  },
 );
 
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
   onCopy: (id: string, data: NodeData) => void,
-  nodes: Node[]
+  nodes: Node[],
 ) => {
   return (props: { id: string; data: unknown }) => {
-    const isInGroup = nodes.find((n) => n.id === props.id)?.parentId !== undefined;
+    const isInGroup =
+      nodes.find((n) => n.id === props.id)?.parentId !== undefined;
     return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
   };
 };
@@ -79,11 +92,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const params = useParams();
   const idFromUrl = params?.id;
   const { screenToFlowPosition } = useReactFlow();
+  const { user, isAuthenticated, login, signup, googleLogin, logout } =
+    useAuth();
+
+  // Get diagramId from query parameters
+  const searchParams = new URLSearchParams(globalThis.location.hash.split('?')[1]);
+  const diagramIdFromUrl = searchParams.get('diagramId');
 
   // State for problem data
   const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Auth and diagram management state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDiagramList, setShowDiagramList] = useState(false);
+  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
+  const [loadingDiagrams, setLoadingDiagrams] = useState(false);
+  const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Fetch problem from API or localStorage
   useEffect(() => {
@@ -97,7 +124,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     if (idFromUrl === "free") {
       setProblem({
         id: "free",
-        title: "Free Design Canvas",
+        title: "Design Studio",
         description: "Create your own system design from scratch",
         difficulty: "Medium",
         category: "Custom",
@@ -114,7 +141,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Check if it's a custom problem from localStorage
     if (idFromUrl.startsWith("custom-")) {
       const customProblemData = localStorage.getItem(
-        `custom-problem-${idFromUrl}`
+        `custom-problem-${idFromUrl}`,
       );
       if (customProblemData) {
         setProblem(JSON.parse(customProblemData));
@@ -133,7 +160,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch problem: ${response.status} ${response.statusText}`
+            `Failed to fetch problem: ${response.status} ${response.statusText}`,
           );
         }
 
@@ -143,7 +170,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching the problem"
+            : "An error occurred while fetching the problem",
         );
         console.error("Error fetching problem:", err);
       } finally {
@@ -194,6 +221,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+
+  // Load diagram from URL parameter if diagramId is present
+  useEffect(() => {
+    if (!diagramIdFromUrl || !isAuthenticated) return;
+
+    const loadDiagramFromUrl = async () => {
+      try {
+        const diagram = await apiService.getDiagram(diagramIdFromUrl);
+        const loadedNodes = diagram.nodes as Node[];
+        const loadedEdges = diagram.edges as Edge[];
+        
+        setNodes(loadedNodes);
+        setEdges(loadedEdges);
+        setCurrentDiagramId(diagram.id);
+        
+        // Immediately update canvas state to prevent undo/redo from clearing the loaded data
+        setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+      } catch (err) {
+        console.error("Failed to load diagram:", err);
+        alert("Failed to load diagram. It may have been deleted or you don't have access to it.");
+      }
+    };
+
+    loadDiagramFromUrl();
+  }, [diagramIdFromUrl, isAuthenticated, setNodes, setEdges, setCanvasState]);
 
   // Sync canvas state to undo/redo history when nodes or edges change
   useEffect(() => {
@@ -278,7 +330,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
-    null
+    null,
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
@@ -415,28 +467,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const id = `${type}-${Date.now()}`;
     const comp = COMPONENTS.find((c) => c.id === type);
-    
+
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
-    
+
     const newNode: Node = {
       id,
       position,
       type: isGroupComponent ? "group" : "custom",
       // For group nodes, use different styling
-      style: isGroupComponent ? {
-        width: 400,
-        height: 300,
-        zIndex: -1, // Groups should be behind regular nodes
-      } : undefined,
+      style: isGroupComponent
+        ? {
+            width: 400,
+            height: 300,
+            zIndex: -1, // Groups should be behind regular nodes
+          }
+        : undefined,
       // include icon so the custom node can render it
-      data: { 
+      data: {
         label: comp?.label ?? type,
         componentId: comp?.id, // Store the original component ID
         icon: comp?.icon,
         subtitle: comp?.description,
-        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
-        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+        backgroundColor: isGroupComponent
+          ? "rgba(100, 100, 255, 0.05)"
+          : undefined,
+        borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
       },
     };
 
@@ -447,28 +503,28 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
     // Only allow attaching nodes to groups, NOT detaching
     // Detachment can only be done via the explicit detach buttons
-    
+
     // Skip if node already has a parent - they can only detach via buttons
     if (node.parentId) return;
-    
+
     // Find if the node is being dragged over a group node
-    const groupNodes = nodes.filter(n => n.type === 'group');
-    
+    const groupNodes = nodes.filter((n) => n.type === "group");
+
     // Check if node is inside any group
     let newParentId: string | undefined = undefined;
-    
+
     for (const groupNode of groupNodes) {
       if (groupNode.id === node.id) continue; // Skip if dragging the group itself
-      
+
       const groupX = groupNode.position.x;
       const groupY = groupNode.position.y;
       const groupWidth = (groupNode.style?.width as number) || 400;
       const groupHeight = (groupNode.style?.height as number) || 300;
-      
+
       // Get absolute position of the node
       const nodeAbsX = node.position.x;
       const nodeAbsY = node.position.y;
-      
+
       // Check if node is within group bounds (with some padding for better UX)
       const padding = 10;
       if (
@@ -481,30 +537,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         break;
       }
     }
-    
+
     // Only attach if we found a new parent
     if (newParentId) {
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === node.id) {
             // Calculate position relative to the new parent
-            const newParent = nds.find(gn => gn.id === newParentId);
+            const newParent = nds.find((gn) => gn.id === newParentId);
             const newPosition = newParent
               ? {
                   x: node.position.x - newParent.position.x,
                   y: node.position.y - newParent.position.y,
                 }
               : node.position;
-            
+
             return {
               ...n,
               position: newPosition,
               parentId: newParentId,
-              extent: 'parent' as const,
+              extent: "parent" as const,
             };
           }
           return n;
-        })
+        }),
       );
     }
   };
@@ -513,20 +569,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const handleDetachFromGroup = useCallback(() => {
     const nodeId = inspectedNodeIdRef.current;
     if (!nodeId) return;
-    
+
     setNodes((nds) =>
       nds.map((n) => {
         if (n.id === nodeId && n.parentId) {
           // Calculate absolute position before detaching
-          const parent = nds.find(p => p.id === n.parentId);
+          const parent = nds.find((p) => p.id === n.parentId);
           let absX = n.position.x;
           let absY = n.position.y;
-          
+
           if (parent) {
             absX += parent.position.x;
             absY += parent.position.y;
           }
-          
+
           return {
             ...n,
             position: { x: absX, y: absY },
@@ -535,7 +591,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           };
         }
         return n;
-      })
+      }),
     );
   }, [setNodes]);
 
@@ -549,7 +605,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
-    "details"
+    "details",
   );
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -562,7 +618,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handlers moved outside the effect to reduce nesting depth. Use refs to keep stable references.
   const handleDiagramNodeDeleteRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeDeleteRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -575,7 +631,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleDiagramNodeToggleRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeToggleRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -592,12 +648,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     eds: Edge[],
     id: string,
     label: string,
-    hasLabel: boolean
+    hasLabel: boolean,
   ) {
     return eds.map((edge) =>
       edge.id === id
         ? { ...edge, data: { ...edge.data, label, hasLabel }, label }
-        : edge
+        : edge,
     );
   }
 
@@ -618,12 +674,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
     globalThis.addEventListener(
       "diagram:edge-label-change",
-      listener as EventListener
+      listener as EventListener,
     );
     return () =>
       globalThis.removeEventListener(
         "diagram:edge-label-change",
-        listener as EventListener
+        listener as EventListener,
       );
   }, []);
 
@@ -657,37 +713,37 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        })
+        }),
       );
     };
 
     globalThis.addEventListener(
       "diagram:node-delete",
-      deleteListener as EventListener
+      deleteListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-toggle",
-      toggleListener as EventListener
+      toggleListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-detach",
-      detachListener as EventListener
+      detachListener as EventListener,
     );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
-        deleteListener as EventListener
+        deleteListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-toggle",
-        toggleListener as EventListener
+        toggleListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-detach",
-        detachListener as EventListener
+        detachListener as EventListener,
       );
     };
-  }, []);
+  }, [setNodes]);
 
   React.useEffect(() => {
     if (!inspectedNodeId) return;
@@ -698,7 +754,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // --- Helpers to reduce nested function depth in JSX ---
   const updateNodeProperty = (
     key: string,
-    value: string | number | boolean
+    value: string | number | boolean,
   ) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
@@ -707,8 +763,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, [key]: value } }
-            : n
-        )
+            : n,
+        ),
       );
     }
   };
@@ -751,8 +807,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   _customProperties: updated[inspectedNodeId],
                 },
               }
-            : n
-        )
+            : n,
+        ),
       );
 
       return updated;
@@ -761,14 +817,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const handleUpdateCustomProperty = (
     id: string,
-    updates: Partial<CustomProperty>
+    updates: Partial<CustomProperty>,
   ) => {
     if (!inspectedNodeId) return;
 
     setCustomProperties((prev) => {
       const nodeCustomProps = prev[inspectedNodeId] || [];
       const updated = nodeCustomProps.map((prop) =>
-        prop.id === id ? { ...prop, ...updates } : prop
+        prop.id === id ? { ...prop, ...updates } : prop,
       );
 
       // Save to node data
@@ -776,8 +832,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: updated } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -799,8 +855,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: filtered } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -911,13 +967,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const node = nodes.find((n) => n.id === inspectedNodeId);
     if (node) {
       // Find the component definition using componentId or label
-      const comp = node.data.componentId 
+      const comp = node.data.componentId
         ? COMPONENTS.find((c) => c.id === node.data.componentId)
         : COMPONENTS.find((c) => c.label === node.data.label);
-      
+
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
-          renderProperty(p)
+          renderProperty(p),
         );
       } else {
         propertyElements = (
@@ -1032,26 +1088,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
 
     const nodeId = `${id}-${Date.now()}`;
-    
+
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
-    
+
     const newNode: Node = {
       id: nodeId,
       position,
       type: isGroupComponent ? "group" : "custom",
-      style: isGroupComponent ? {
-        width: 400,
-        height: 300,
-        zIndex: -1,
-      } : undefined,
-      data: { 
+      style: isGroupComponent
+        ? {
+            width: 400,
+            height: 300,
+            zIndex: -1,
+          }
+        : undefined,
+      data: {
         label: comp?.label ?? id,
         componentId: comp?.id, // Store the original component ID
         icon: comp?.icon,
         subtitle: comp?.description,
-        backgroundColor: isGroupComponent ? 'rgba(100, 100, 255, 0.05)' : undefined,
-        borderColor: isGroupComponent ? 'rgba(100, 100, 255, 0.3)' : undefined,
+        backgroundColor: isGroupComponent
+          ? "rgba(100, 100, 255, 0.05)"
+          : undefined,
+        borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
       },
     };
 
@@ -1105,7 +1165,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const viewport = getViewportForBounds(nodesBounds, 1024, 768, 0.5, 2, 0.2);
 
     const viewportElement = document.querySelector(
-      ".react-flow__viewport"
+      ".react-flow__viewport",
     ) as HTMLElement;
 
     if (!viewportElement) {
@@ -1141,7 +1201,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const a = document.createElement("a");
         a.setAttribute(
           "download",
-          `system-design-${Date.now()}.${fileExtension}`
+          `system-design-${Date.now()}.${fileExtension}`,
         );
         a.setAttribute("href", dataUrl);
         a.click();
@@ -1151,37 +1211,121 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       });
   };
 
+  // Diagram management handlers
+  const handleSaveDiagram = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const title = prompt(
+      "Enter a title for this diagram:",
+      currentDiagramId ? "Untitled Diagram (updating)" : "Untitled Diagram",
+    );
+    if (!title) return;
+
+    const description = prompt("Enter a description (optional):");
+
+    try {
+      if (currentDiagramId) {
+        // Update existing diagram
+        await apiService.updateDiagram(currentDiagramId, {
+          title,
+          description: description || undefined,
+          nodes,
+          edges,
+        });
+        alert("Diagram updated successfully!");
+      } else {
+        // Save new diagram
+        const saved = await apiService.saveDiagram({
+          title,
+          description: description || undefined,
+          nodes,
+          edges,
+        });
+        setCurrentDiagramId(saved.id);
+        alert("Diagram saved successfully!");
+      }
+    } catch (err) {
+      console.error("Failed to save diagram:", err);
+      alert(err instanceof Error ? err.message : "Failed to save diagram");
+    }
+  };
+
+  const handleLoadDiagrams = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    setLoadingDiagrams(true);
+    try {
+      const diagrams = await apiService.getUserDiagrams();
+      setSavedDiagrams(diagrams);
+      setShowDiagramList(true);
+    } catch (err) {
+      console.error("Failed to load diagrams:", err);
+      alert("Failed to load diagrams");
+    } finally {
+      setLoadingDiagrams(false);
+    }
+  };
+
+  const handleLoadDiagram = (diagram: SavedDiagram) => {
+    setNodes(diagram.nodes as Node[]);
+    setEdges(diagram.edges as Edge[]);
+    setCurrentDiagramId(diagram.id);
+  };
+
+  const handleDeleteDiagram = async (id: string) => {
+    try {
+      await apiService.deleteDiagram(id);
+      setSavedDiagrams((prev) => prev.filter((d) => d.id !== id));
+      if (currentDiagramId === id) {
+        setCurrentDiagramId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete diagram:", err);
+      throw err;
+    }
+  };
+
   // Auto-layout nodes using Dagre with proper group handling
   const onLayout = (direction: "TB" | "LR" = "TB") => {
     // Separate groups and regular nodes
     const groupNodes = nodes.filter((node) => node.type === "group");
-    const regularNodes = nodes.filter((node) => node.type !== "group" && !node.parentId);
+    const regularNodes = nodes.filter(
+      (node) => node.type !== "group" && !node.parentId,
+    );
 
     // First, layout groups with larger spacing
     const groupGraph = new dagre.graphlib.Graph();
     groupGraph.setDefaultEdgeLabel(() => ({}));
-    groupGraph.setGraph({ 
-      rankdir: direction, 
+    groupGraph.setGraph({
+      rankdir: direction,
       nodesep: 150, // More space between groups
       ranksep: 200, // More vertical space
       marginx: 50,
-      marginy: 50
+      marginy: 50,
     });
 
     const groupWidth = 350;
     const groupHeight = 250;
 
-    groupNodes.forEach((node) => {
+    for (const node of groupNodes) {
       groupGraph.setNode(node.id, { width: groupWidth, height: groupHeight });
-    });
+    }
 
     // Add edges between groups (if any)
-    edges.filter(edge => 
-      groupNodes.some(g => g.id === edge.source) && 
-      groupNodes.some(g => g.id === edge.target)
-    ).forEach((edge) => {
+    const groupEdges = edges.filter(
+      (edge) =>
+        groupNodes.some((g) => g.id === edge.source) &&
+        groupNodes.some((g) => g.id === edge.target),
+    );
+    for (const edge of groupEdges) {
       groupGraph.setEdge(edge.source, edge.target);
-    });
+    }
 
     if (groupNodes.length > 0) {
       dagre.layout(groupGraph);
@@ -1190,27 +1334,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Layout regular nodes (non-grouped)
     const regularGraph = new dagre.graphlib.Graph();
     regularGraph.setDefaultEdgeLabel(() => ({}));
-    regularGraph.setGraph({ 
+    regularGraph.setGraph({
       rankdir: direction,
       nodesep: 80,
-      ranksep: 100
+      ranksep: 100,
     });
 
     const nodeWidth = 200;
     const nodeHeight = 80;
 
-    regularNodes.forEach((node) => {
+    for (const node of regularNodes) {
       regularGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-    });
+    }
 
     // Add edges between regular nodes
-    edges.filter(edge => 
-      regularNodes.some(n => n.id === edge.source) && 
-      regularNodes.some(n => n.id === edge.target)
-    ).forEach((edge) => {
+    // Add edges between regular nodes
+    const regularEdges = edges.filter(
+      (edge) =>
+        regularNodes.some((n) => n.id === edge.source) &&
+        regularNodes.some((n) => n.id === edge.target),
+    );
+    for (const edge of regularEdges) {
       regularGraph.setEdge(edge.source, edge.target);
-    });
-
+    }
     if (regularNodes.length > 0) {
       dagre.layout(regularGraph);
     }
@@ -1229,7 +1375,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             },
           };
         }
-      } else if (!node.parentId) {
+      } else if (node.parentId) {
+        // Keep child nodes in their relative positions within groups
+        return node;
+      } else {
         // Position regular nodes
         const nodeWithPosition = regularGraph.node(node.id);
         if (nodeWithPosition) {
@@ -1243,9 +1392,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             },
           };
         }
-      } else {
-        // Keep child nodes in their relative positions within groups
-        return node;
       }
       return node;
     });
@@ -1271,8 +1417,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       nds.map((n) =>
         n.id === inspectedNodeId
           ? { ...n, data: { ...n.data, ...nodeProps } }
-          : n
-      )
+          : n,
+      ),
     );
 
     // Log current node data for debugging
@@ -1288,7 +1434,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const pageTitle =
     idFromUrl === "free"
-      ? "Free Design Canvas | Diagrammatic"
+      ? "Design Studio | Diagrammatic"
       : `${problem?.title || "System Design Challenge"} | Diagrammatic`;
 
   const pageDescription =
@@ -1519,7 +1665,65 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 )}
               </div>
 
-              <ThemeSwitcher />
+              {/* Diagram Management Buttons (only for free mode and authenticated users) */}
+              {idFromUrl === "free" && (
+                <div className="flex items-center gap-2 border-r border-theme/10 pr-2 mr-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveDiagram}
+                    disabled={nodes.length === 0}
+                    className="px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                    title={
+                      isAuthenticated
+                        ? "Save diagram"
+                        : "Sign in to save diagrams"
+                    }
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                      />
+                    </svg>
+                    {currentDiagramId ? "Update" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLoadDiagrams}
+                    className="px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors flex items-center gap-2"
+                    title={
+                      isAuthenticated
+                        ? "My Designs"
+                        : "Sign in to view saved designs"
+                    }
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    My Designs
+                  </button>
+                </div>
+              )}
+
               {problem?.id !== "free" && (
                 <button
                   type="button"
@@ -1531,6 +1735,74 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   {isAssessing ? "Assessing..." : "Run Assessment"}
                 </button>
               )}
+              <ThemeSwitcher />
+              {/* User Profile / Auth Button */}
+              <div className="relative">
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold">
+                        {user?.name?.[0]?.toUpperCase() ||
+                          user?.email?.[0]?.toUpperCase() ||
+                          "U"}
+                      </div>
+                      <span className="hidden sm:inline">
+                        {user?.name || user?.email}
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {showUserMenu && (
+                      <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
+                        <div className="px-4 py-2 border-b border-theme/10">
+                          <p className="text-sm font-medium text-theme">
+                            {user?.name || "User"}
+                          </p>
+                          <p className="text-xs text-muted truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            logout();
+                            setShowUserMenu(false);
+                            setCurrentDiagramId(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-4 py-2 text-sm font-medium bg-[var(--brand)] text-white rounded-md hover:brightness-95 transition-all"
+                  >
+                    Sign In
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1574,7 +1846,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onDetachFromGroup={handleDetachFromGroup}
             isNodeInGroup={
               inspectedNodeId
-                ? nodes.find((n) => n.id === inspectedNodeId)?.parentId !== undefined
+                ? nodes.find((n) => n.id === inspectedNodeId)?.parentId !==
+                  undefined
                 : false
             }
           />
@@ -1633,6 +1906,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             </div>
           </div>
         )}
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={async (email, password) => {
+            await login({ email, password });
+          }}
+          onSignup={async (email, password, name) => {
+            await signup({ email, password, name });
+          }}
+          onGoogleLogin={googleLogin}
+        />
+
+        {/* Diagram List Modal */}
+        <DiagramListModal
+          isOpen={showDiagramList}
+          onClose={() => setShowDiagramList(false)}
+          diagrams={savedDiagrams}
+          onLoad={handleLoadDiagram}
+          onDelete={handleDeleteDiagram}
+          isLoading={loadingDiagrams}
+        />
       </div>
     </>
   );

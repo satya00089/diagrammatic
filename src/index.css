@@ -24,7 +24,7 @@
   /* indigo-500 */
   --accent: #ec4899;
   /* rose-500 */
-  --header-gradient-end: #AD63C7;
+  --header-gradient-end: #ad63c7;
 
   --theme: var(--text);
 }
@@ -50,7 +50,7 @@
   /* slightly brighter indigo */
   --accent: #f472b6;
 
-  --header-gradient-end: #BD6CD5;
+  --header-gradient-end: #bd6cd5;
 
   --theme: var(--text);
 }
@@ -393,45 +393,73 @@ select option {
 
 /* Grid pattern overlay for canvas-like background */
 .grid-pattern-overlay::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   pointer-events: none;
-  background-image: 
+  background-image:
     linear-gradient(var(--theme, var(--text)) 1px, transparent 1px),
     linear-gradient(90deg, var(--theme, var(--text)) 1px, transparent 1px);
-  background-size: 60px 60px, 60px 60px;
+  background-size:
+    60px 60px,
+    60px 60px;
   opacity: 0.05;
   z-index: 0;
 }
 
 /* Hero section grid overlay */
 .hero-grid-overlay {
-  background-image: 
+  background-image:
     linear-gradient(white 1px, transparent 1px),
     linear-gradient(90deg, white 1px, transparent 1px);
   background-size: 60px 60px;
 }
 
 /* Animation delay utility classes */
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
-.delay-700 { animation-delay: 0.7s; }
-.delay-800 { animation-delay: 0.8s; }
-.delay-900 { animation-delay: 0.9s; }
-.delay-1000 { animation-delay: 1s; }
-.delay-1100 { animation-delay: 1.1s; }
-.delay-1200 { animation-delay: 1.2s; }
-.delay-1500 { animation-delay: 1.5s; }
+.delay-200 {
+  animation-delay: 0.2s;
+}
+.delay-300 {
+  animation-delay: 0.3s;
+}
+.delay-400 {
+  animation-delay: 0.4s;
+}
+.delay-500 {
+  animation-delay: 0.5s;
+}
+.delay-600 {
+  animation-delay: 0.6s;
+}
+.delay-700 {
+  animation-delay: 0.7s;
+}
+.delay-800 {
+  animation-delay: 0.8s;
+}
+.delay-900 {
+  animation-delay: 0.9s;
+}
+.delay-1000 {
+  animation-delay: 1s;
+}
+.delay-1100 {
+  animation-delay: 1.1s;
+}
+.delay-1200 {
+  animation-delay: 1.2s;
+}
+.delay-1500 {
+  animation-delay: 1.5s;
+}
 
 /* Min height utility */
-.min-h-full { min-height: 100%; }
+.min-h-full {
+  min-height: 100%;
+}
 
 /* Fade in animations with delays */
 .fade-in-up {

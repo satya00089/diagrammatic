@@ -406,7 +406,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       <span>Detach from Group</span>
                     </button>
                   )}
-                  
+
                   {/* Save and Close Buttons */}
                   <div className="flex space-x-2">
                     <button

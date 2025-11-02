@@ -14,8 +14,11 @@ Practice system design interviews, learn distributed systems architecture, and c
 - 🎯 **Practice Problems** - Real system design interview questions with assessment and hints
 - 🎨 **Interactive Drag & Drop Canvas** - Build architecture diagrams with ease
 - 🌙 **Dark / Light Theme** - Eye-friendly theme switching
-- 🖼️ **Export Diagrams** - Save your designs as PNG images
+- 🖼️ **Export Diagrams** - Save your designs as PNG, JPEG, or SVG images
 - 📊 **Inspector Panel** - Configure component properties in real-time
+- 🔐 **Authentication** - Optional Google Sign-In or email/password authentication
+- ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
+- 🔗 **Share Diagrams** - Share your designs via compressed URLs
 - ⚡ **Modern Tech Stack** - React 19 + TypeScript + Tailwind CSS 4 + Framer Motion
 
 ---
@@ -120,7 +123,28 @@ npm run dev
 
 Visit 👉 [http://localhost:5173](http://localhost:5173)
 
-### 4️⃣ Build for production
+### 4️⃣ (Optional) Setup Authentication
+
+To enable user authentication and cloud diagram storage:
+
+1. **Get Google OAuth Client ID** (optional for Google Sign-In):
+   - Follow the guide in [docs/GOOGLE_SIGNIN.md](docs/GOOGLE_SIGNIN.md)
+   - Add to `.env`: `VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com`
+
+2. **Setup Backend API**:
+   - See [docs/FASTAPI_BACKEND.md](docs/FASTAPI_BACKEND.md) for complete backend setup
+   - Add to `.env`: `VITE_API_URL=http://localhost:8000`
+
+3. **Environment Variables**:
+   ```bash
+   # Create .env file in project root
+   VITE_API_URL=http://localhost:8000
+   VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   ```
+
+> **Note**: The app works perfectly without authentication. Auth is only needed for saving/loading diagrams to the cloud.
+
+### 5️⃣ Build for production
 
 ```bash
 npm run build
@@ -133,6 +157,7 @@ npm run build
 ### Three Modes of Operation
 
 #### 1. Practice Mode
+
 1. Navigate to **Browse Problems** from the home page
 2. Choose a problem from the list (e.g., "Design YouTube", "Design Instagram")
 3. View problem details: difficulty, requirements, constraints, and hints
@@ -144,13 +169,15 @@ npm run build
 9. Use **Hints** if you need guidance
 
 #### 2. Free Design Mode
-1. Click **Get Started Free** or **Free Design Canvas** from the home page
+
+1. Click **Get Started Free** or **Design Studio** from the home page
 2. Start with a blank canvas - no constraints, no requirements
 3. Drag and drop components to design your system
 4. Perfect for planning your next project or experimenting with ideas
 5. Export your diagram when done
 
 #### 3. Custom Problem Mode
+
 1. Click **Custom Problems** from the home page
 2. Fill in your problem details:
    - Title and description
@@ -234,13 +261,13 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 - [x] AI-powered design assessment and feedback (integrated — requires API configuration)
 - [x] Undo/Redo functionality
 - [x] Keyboard shortcuts for power users
-- [ ] Save/load diagrams to localStorage (custom problems saved to localStorage; diagram save/load not implemented yet)
+- [x] Save/load diagrams with authentication (requires backend setup - see docs/FASTAPI_BACKEND.md)
 
 ### Long-term
 
-- [ ] User authentication and cloud storage
-- [ ] Share diagrams with public URLs
-- [ ] Export to SVG and JSON
+- [x] User authentication and cloud storage (implemented with Google Sign-In support - see docs/GOOGLE_SIGNIN.md)
+- [x] Share diagrams with public URLs (implemented with URL compression)
+- [x] Export to SVG and JSON (PNG, JPEG, SVG export implemented)
 - [ ] Real-time collaboration
 - [ ] Custom component creation
 - [ ] Interactive tutorials and guided learning paths

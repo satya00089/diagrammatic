@@ -1,7 +1,7 @@
-import React from 'react';
-import { Handle, Position, NodeResizer } from '@xyflow/react';
-import { MdSettings, MdDelete } from 'react-icons/md';
-import { motion } from 'framer-motion';
+import React from "react";
+import { Handle, Position, NodeResizer } from "@xyflow/react";
+import { MdSettings, MdDelete } from "react-icons/md";
+import { motion } from "framer-motion";
 
 export interface GroupNodeData {
   label: string;
@@ -17,8 +17,8 @@ interface GroupNodeProps {
 }
 
 const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
-  const bgColor = data.backgroundColor || 'rgba(100, 100, 255, 0.05)';
-  const borderColor = data.borderColor || 'rgba(100, 100, 255, 0.3)';
+  const bgColor = data.backgroundColor || "rgba(100, 100, 255, 0.05)";
+  const borderColor = data.borderColor || "rgba(100, 100, 255, 0.3)";
 
   const onDelete = React.useCallback(
     (e: React.MouseEvent) => {
@@ -44,14 +44,14 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
     <div
       className="group-node"
       style={{
-        padding: '20px',
-        borderRadius: '12px',
+        padding: "20px",
+        borderRadius: "12px",
         border: `2px dashed ${borderColor}`,
         backgroundColor: bgColor,
-        minWidth: '300px',
-        minHeight: '200px',
-        height: '100%',
-        position: 'relative',
+        minWidth: "300px",
+        minHeight: "200px",
+        height: "100%",
+        position: "relative",
       }}
     >
       {/* Node Resizer - allows resizing the group */}
@@ -62,15 +62,15 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
         lineStyle={{
           borderColor: borderColor,
           borderWidth: 2,
-          borderStyle: 'dashed',
+          borderStyle: "dashed",
         }}
         handleStyle={{
           width: 8,
           height: 8,
-          borderRadius: '2px',
-          backgroundColor: 'var(--surface)',
+          borderRadius: "2px",
+          backgroundColor: "var(--surface)",
           border: `2px solid ${borderColor}`,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       />
 
@@ -106,20 +106,20 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
       <div
         className="group-header"
         style={{
-          position: 'absolute',
-          top: '-12px',
-          left: '10px',
-          padding: '4px 12px',
-          borderRadius: '6px',
-          backgroundColor: 'var(--surface)',
+          position: "absolute",
+          top: "-12px",
+          left: "10px",
+          padding: "4px 12px",
+          borderRadius: "6px",
+          backgroundColor: "var(--surface)",
           border: `1px solid ${borderColor}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '14px',
-          fontWeight: '600',
-          color: 'var(--theme)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "14px",
+          fontWeight: "600",
+          color: "var(--theme)",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
         {data.icon && <span>{data.icon}</span>}
@@ -130,10 +130,10 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
       {data.subtitle && (
         <div
           style={{
-            marginTop: '8px',
-            fontSize: '12px',
-            color: 'var(--muted)',
-            fontStyle: 'italic',
+            marginTop: "8px",
+            fontSize: "12px",
+            color: "var(--muted)",
+            fontStyle: "italic",
           }}
         >
           {data.subtitle}
@@ -147,57 +147,57 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
         position={Position.Top}
         isConnectable={true}
         style={{
-          width: '100%',
-          height: '8px',
-          background: 'transparent',
-          border: 'none',
+          width: "100%",
+          height: "8px",
+          background: "transparent",
+          border: "none",
           opacity: 0,
-          cursor: 'crosshair',
+          cursor: "crosshair",
         }}
       />
-      
+
       <Handle
         id="right"
         type="source"
         position={Position.Right}
         isConnectable={true}
         style={{
-          width: '8px',
-          height: '100%',
-          background: 'transparent',
-          border: 'none',
+          width: "8px",
+          height: "100%",
+          background: "transparent",
+          border: "none",
           opacity: 0,
-          cursor: 'crosshair',
+          cursor: "crosshair",
         }}
       />
-      
+
       <Handle
         id="bottom"
         type="source"
         position={Position.Bottom}
         isConnectable={true}
         style={{
-          width: '100%',
-          height: '8px',
-          background: 'transparent',
-          border: 'none',
+          width: "100%",
+          height: "8px",
+          background: "transparent",
+          border: "none",
           opacity: 0,
-          cursor: 'crosshair',
+          cursor: "crosshair",
         }}
       />
-      
+
       <Handle
         id="left"
         type="source"
         position={Position.Left}
         isConnectable={true}
         style={{
-          width: '8px',
-          height: '100%',
-          background: 'transparent',
-          border: 'none',
+          width: "8px",
+          height: "100%",
+          background: "transparent",
+          border: "none",
           opacity: 0,
-          cursor: 'crosshair',
+          cursor: "crosshair",
         }}
       />
     </div>
