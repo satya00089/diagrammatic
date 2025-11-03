@@ -48,6 +48,9 @@ import { AuthModal } from "../components/AuthModal";
 import { DiagramListModal } from "../components/DiagramListModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
+import { useToast } from "../hooks/useToast";
+import { ToastContainer } from "../components/Toast";
+import { InputDialog } from "../components/InputDialog";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -94,6 +97,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const { screenToFlowPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+
+  // Toast notifications
+  const toast = useToast();
+
+  // Input dialog state
+  const [showInputDialog, setShowInputDialog] = useState(false);
+  const [inputDialogConfig, setInputDialogConfig] = useState<{
+    title: string;
+    label: string;
+    placeholder?: string;
+    defaultValue?: string;
+    type?: 'text' | 'textarea';
+    required?: boolean;
+    onConfirm: (value: string) => void;
+  } | null>(null);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(globalThis.location.hash.split('?')[1]);
@@ -240,12 +258,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
       } catch (err) {
         console.error("Failed to load diagram:", err);
-        alert("Failed to load diagram. It may have been deleted or you don't have access to it.");
+        toast.error("Failed to load diagram. It may have been deleted or you don't have access to it.");
       }
     };
 
     loadDiagramFromUrl();
-  }, [diagramIdFromUrl, isAuthenticated, setNodes, setEdges, setCanvasState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagramIdFromUrl, isAuthenticated]);
 
   // Sync canvas state to undo/redo history when nodes or edges change
   useEffect(() => {
@@ -1218,39 +1237,64 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return;
     }
 
-    const title = prompt(
-      "Enter a title for this diagram:",
-      currentDiagramId ? "Untitled Diagram (updating)" : "Untitled Diagram",
-    );
-    if (!title) return;
-
-    const description = prompt("Enter a description (optional):");
-
-    try {
-      if (currentDiagramId) {
-        // Update existing diagram
-        await apiService.updateDiagram(currentDiagramId, {
-          title,
-          description: description || undefined,
-          nodes,
-          edges,
-        });
-        alert("Diagram updated successfully!");
-      } else {
-        // Save new diagram
-        const saved = await apiService.saveDiagram({
-          title,
-          description: description || undefined,
-          nodes,
-          edges,
-        });
-        setCurrentDiagramId(saved.id);
-        alert("Diagram saved successfully!");
-      }
-    } catch (err) {
-      console.error("Failed to save diagram:", err);
-      alert(err instanceof Error ? err.message : "Failed to save diagram");
-    }
+    // Show input dialog for title
+    setInputDialogConfig({
+      title: 'Save Design',
+      label: 'Design Title',
+      placeholder: 'Enter a title for this diagram',
+      defaultValue: currentDiagramId ? 'Untitled Diagram' : '',
+      required: true,
+      onConfirm: (title) => {
+        // Close current dialog first, then open description dialog
+        setShowInputDialog(false);
+        
+        // Use setTimeout to ensure dialog closes before opening new one
+        setTimeout(() => {
+          setInputDialogConfig({
+            title: 'Save Design',
+            label: 'Description (Optional)',
+            placeholder: 'Enter a description for this diagram',
+            type: 'textarea',
+            required: false,
+            onConfirm: (description) => {
+              // Close the dialog
+              setShowInputDialog(false);
+              
+              // Use void to wrap the async operation
+              void (async () => {
+                try {
+                  if (currentDiagramId) {
+                    // Update existing diagram
+                    await apiService.updateDiagram(currentDiagramId, {
+                      title,
+                      description: description || undefined,
+                      nodes,
+                      edges,
+                    });
+                    toast.success("Diagram updated successfully!");
+                  } else {
+                    // Save new diagram
+                    const saved = await apiService.saveDiagram({
+                      title,
+                      description: description || undefined,
+                      nodes,
+                      edges,
+                    });
+                    setCurrentDiagramId(saved.id);
+                    toast.success("Diagram saved successfully!");
+                  }
+                } catch (err) {
+                  console.error("Failed to Save Design:", err);
+                  toast.error(err instanceof Error ? err.message : "Failed to Save Design");
+                }
+              })();
+            },
+          });
+          setShowInputDialog(true);
+        }, 100);
+      },
+    });
+    setShowInputDialog(true);
   };
 
   const handleLoadDiagrams = async () => {
@@ -1266,7 +1310,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       setShowDiagramList(true);
     } catch (err) {
       console.error("Failed to load diagrams:", err);
-      alert("Failed to load diagrams");
+      toast.error("Failed to load diagrams");
     } finally {
       setLoadingDiagrams(false);
     }
@@ -1675,8 +1719,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     className="px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                     title={
                       isAuthenticated
-                        ? "Save diagram"
-                        : "Sign in to save diagrams"
+                        ? "Save Design"
+                        : "Sign in to Save Designs"
                     }
                   >
                     <svg
@@ -1937,6 +1981,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           onDelete={handleDeleteDiagram}
           isLoading={loadingDiagrams}
         />
+
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+
+        {/* Input Dialog */}
+        {inputDialogConfig && (
+          <InputDialog
+            isOpen={showInputDialog}
+            onClose={() => setShowInputDialog(false)}
+            title={inputDialogConfig.title}
+            label={inputDialogConfig.label}
+            placeholder={inputDialogConfig.placeholder}
+            defaultValue={inputDialogConfig.defaultValue}
+            type={inputDialogConfig.type}
+            required={inputDialogConfig.required}
+            onConfirm={inputDialogConfig.onConfirm}
+          />
+        )}
       </div>
     </>
   );
