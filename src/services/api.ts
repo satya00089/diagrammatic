@@ -93,8 +93,8 @@ class ApiService {
     if (!response.ok) {
       const error = await response
         .json()
-        .catch(() => ({ message: "Failed to save diagram" }));
-      throw new Error(error.message || "Failed to save diagram");
+        .catch(() => ({ message: "Failed to Save Design" }));
+      throw new Error(error.message || "Failed to Save Design");
     }
 
     return response.json();
