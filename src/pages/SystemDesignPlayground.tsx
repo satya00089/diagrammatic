@@ -201,17 +201,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const onBack = () => navigate("/");
 
-  // determine difficulty badge classes in one place to avoid nested ternary in JSX
-  const difficultyBadgeClass = (() => {
-    if (!problem) return "";
-    const d = problem.difficulty;
-    if (d === "Easy")
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-    if (d === "Medium")
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-    return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-  })();
-
   // Undo/Redo state management
   interface CanvasState {
     nodes: Node[];
@@ -1496,87 +1485,99 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}
-        <div className="bg-surface shadow-sm border-b border-theme px-4 py-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onBack}
-                className="px-3 py-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
-              >
-                ← Back to Dashboard
-              </button>
-              <div className="flex items-center space-x-3">
-                <h1 className="text-lg font-semibold text-theme">
-                  {problem.title}
-                </h1>
-                <span
-                  className={`px-2 py-1 rounded text-xs ${difficultyBadgeClass}`}
-                >
-                  {problem.difficulty}
-                </span>
-                <span className="text-sm text-muted">
-                  {problem.estimated_time}
-                </span>
-                <span className="text-sm text-muted">•</span>
-                <span className="text-sm text-muted">{problem.category}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {/* Undo/Redo buttons */}
-              <div className="flex items-center border-r border-theme/10 pr-2 mr-2">
+        <header className="bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] shadow-lg">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-12">
+              {/* Left side - Logo and Title */}
+              <div className="flex items-center space-x-4">
                 <button
                   type="button"
-                  onClick={undo}
-                  disabled={!canUndo}
-                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  title="Undo (Ctrl+Z)"
+                  onClick={onBack}
+                  className="flex items-center space-x-3 group cursor-pointer"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                    />
-                  </svg>
+                  <img
+                    src="./logo.png"
+                    alt="Logo"
+                    className="h-8 transition-transform group-hover:scale-110 duration-300"
+                  />
+                  <span className="text-lg font-bold text-white">
+                    Diagrammatic
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={redo}
-                  disabled={!canRedo}
-                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
+                  <h1 className="text-sm font-semibold text-white">
+                    {problem.title}
+                  </h1>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-medium ${
+                      problem.difficulty === "Easy"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                        : problem.difficulty === "Medium"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
-                    />
-                  </svg>
-                </button>
+                    {problem.difficulty}
+                  </span>
+                </div>
               </div>
 
-              {/* Clear Canvas button */}
-              <button
+              {/* Right side - Actions */}
+              <div className="flex items-center gap-2">
+                {/* Undo/Redo buttons */}
+                <div className="hidden sm:flex items-center gap-1 border-r border-white/20 pr-2 mr-2">
+                  <button
+                    type="button"
+                    onClick={undo}
+                    disabled={!canUndo}
+                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={redo}
+                    disabled={!canRedo}
+                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Clear Canvas button */}
+                <button
                 type="button"
                 onClick={handleClearCanvas}
                 disabled={nodes.length === 0 && edges.length === 0}
-                className="p-2 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer border-r border-theme/10 pr-2 mr-2"
+                className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                 title="Clear Canvas"
               >
                 <svg
@@ -1596,12 +1597,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               </button>
 
               {/* Download Image button with dropdown */}
-              <div className="relative border-r border-theme/10 pr-2 mr-2">
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowDownloadMenu(!showDownloadMenu)}
                   disabled={nodes.length === 0}
-                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   title="Download as Image"
                 >
                   <svg
@@ -1622,7 +1623,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                 {/* Download format dropdown */}
                 {showDownloadMenu && (
-                  <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[120px]">
+                  <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[120px]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1658,12 +1659,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               </div>
 
               {/* Layout button with dropdown */}
-              <div className="relative border-r border-theme/10 pr-2 mr-2">
+              <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowLayoutMenu(!showLayoutMenu)}
                   disabled={nodes.length === 0}
-                  className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   title="Auto Layout"
                 >
                   <svg
@@ -1684,7 +1685,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                 {/* Layout direction dropdown */}
                 {showLayoutMenu && (
-                  <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[160px]">
+                  <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[160px]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1711,12 +1712,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
               {/* Diagram Management Buttons (only for free mode and authenticated users) */}
               {idFromUrl === "free" && (
-                <div className="flex items-center gap-2 border-r border-theme/10 pr-2 mr-2">
+                <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
                   <button
                     type="button"
                     onClick={handleSaveDiagram}
                     disabled={nodes.length === 0}
-                    className="px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                     title={
                       isAuthenticated
                         ? "Save Design"
@@ -1742,7 +1743,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={handleLoadDiagrams}
-                    className="px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors flex items-center gap-2"
+                    className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors flex items-center gap-2"
                     title={
                       isAuthenticated
                         ? "My Designs"
@@ -1773,7 +1774,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   type="button"
                   onClick={runAssessment}
                   disabled={isAssessing}
-                  className="px-6 py-1 bg-[var(--brand)] text-white font-bold rounded-md hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   title="Run assessment on current design"
                 >
                   {isAssessing ? "Assessing..." : "Run Assessment"}
@@ -1787,16 +1788,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
                     >
                       {user?.picture ? (
                         <img
                           src={user.picture}
                           alt={user.name || "User"}
-                          className="w-8 h-8 rounded-full object-cover border-2 border-[var(--brand)]"
+                          className="w-8 h-8 rounded-full object-cover border-2 border-white"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-white flex items-center justify-center font-bold">
+                        <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center font-bold">
                           {user?.name?.[0]?.toUpperCase() ||
                             user?.email?.[0]?.toUpperCase() ||
                             "U"}
@@ -1822,7 +1823,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     </button>
 
                     {showUserMenu && (
-                      <div className="absolute top-full right-0 mt-1 bg-surface shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
+                      <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
                         <div className="px-4 py-2 border-b border-theme/10">
                           <p className="text-sm font-medium text-theme">
                             {user?.name || "User"}
@@ -1849,7 +1850,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={() => setShowAuthModal(true)}
-                    className="px-4 py-2 text-sm font-medium bg-[var(--brand)] text-white rounded-md hover:brightness-95 transition-all"
+                    className="px-4 py-2 text-sm font-medium text-white rounded-md hover:bg-white/20 transition-colors"
                   >
                     Sign In
                   </button>
@@ -1857,7 +1858,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </header>
 
         {/* Main Content */}
         <div className="flex-1 flex min-h-0">
