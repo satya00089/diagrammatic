@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
       new Set(problems.map((p: SystemDesignProblem) => p.category)),
     ),
   ];
-  const difficulties = ["All", "Easy", "Medium", "Hard"];
+  const difficulties = ["All", "Easy", "Medium", "Hard", "Very Hard"];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -100,6 +100,8 @@ const Dashboard: React.FC = () => {
         return "bg-yellow-100 text-yellow-800";
       case "Hard":
         return "bg-red-100 text-red-800";
+      case "Very Hard":
+        return "bg-orange-200 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }

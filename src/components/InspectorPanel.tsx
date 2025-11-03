@@ -1,5 +1,5 @@
 import React from "react";
-import { PiDotsSixVerticalBold, PiCaretDownBold } from "react-icons/pi";
+import { PiDotsSixVerticalBold, PiCaretDownBold, PiCaretLeftBold, PiCaretRightBold } from "react-icons/pi";
 import { MdAdd } from "react-icons/md";
 
 type InspectorPanelProps = {
@@ -45,6 +45,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const resizingRef = React.useRef(false);
   const panelRef = React.useRef<HTMLElement | null>(null);
   const [showHints, setShowHints] = React.useState(false);
+  const [open, setOpen] = React.useState(true);
 
   const onMouseMove = React.useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return;
@@ -77,18 +78,25 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     }
   }, [width]);
 
-  // Hide panel for free design mode when no node is selected
+  // Auto-collapse panel in free design mode when no node is selected
   const isFreeDesignMode = problem?.id === "free";
-  const shouldHidePanel = isFreeDesignMode && !inspectedNodeId;
-
-  // Auto-switch to inspector tab when node is selected in free design mode
+  
+  // Auto-collapse when no node is selected in free design mode
   React.useEffect(() => {
-    if (isFreeDesignMode && inspectedNodeId && activeTab === "details") {
-      setActiveTab("inspector");
+    if (isFreeDesignMode && !inspectedNodeId) {
+      setOpen(false);
     }
-  }, [isFreeDesignMode, inspectedNodeId, activeTab, setActiveTab]);
+  }, [isFreeDesignMode, inspectedNodeId]);
 
-  if (!problem || shouldHidePanel) return null;
+  // Auto-switch to inspector tab and expand when node is selected in free design mode
+  React.useEffect(() => {
+    if (isFreeDesignMode && inspectedNodeId) {
+      setActiveTab("inspector");
+      setOpen(true);
+    }
+  }, [isFreeDesignMode, inspectedNodeId, setActiveTab]);
+
+  if (!problem) return null;
 
   const copyAssessment = async () => {
     if (!assessmentResult) return;
@@ -123,11 +131,29 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <aside
-      ref={panelRef}
-      className="bg-surface border-l border-theme p-4 flex flex-col h-full relative inspector-resizable"
-      data-width={width}
-    >
+    <div className="relative z-40">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={
+          open ? "Collapse inspector panel" : "Expand inspector panel"
+        }
+        aria-controls="inspector-panel"
+        className="absolute top-5 -left-3 h-6 w-6 flex items-center justify-center rounded-full border border-theme bg-surface text-theme shadow cursor-pointer hover:bg-[var(--bg-hover)] transition-colors z-50"
+      >
+        {open ? <PiCaretRightBold size={16} /> : <PiCaretLeftBold size={16} />}
+      </button>
+      <aside
+        ref={panelRef}
+        id="inspector-panel"
+        className={`bg-surface border-l border-theme flex flex-col h-full relative inspector-resizable transition-[width] duration-300 ease-in-out ${
+          open ? "p-4" : "w-6 p-1"
+        }`}
+        data-width={width}
+        style={{ width: open ? `${width}px` : '24px' }}
+      >
+        {open && (
+          <>
       <button
         type="button"
         onMouseDown={onMouseDown}
@@ -433,7 +459,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           </div>
         )}
       </div>
+          </>
+        )}
     </aside>
+    </div>
   );
 };
 
