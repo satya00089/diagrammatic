@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import { MdAccessTime } from "react-icons/md";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import {
   AnimatedNumberInput,
@@ -130,6 +131,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Timer state - always running
+  const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch problem from API or localStorage
   useEffect(() => {
     if (!idFromUrl) {
@@ -229,6 +234,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
+  // State for problem title tooltip
+  const [showTitleTooltip, setShowTitleTooltip] = useState(false);
+
   // Load diagram from URL parameter if diagramId is present
   useEffect(() => {
     if (!diagramIdFromUrl || !isAuthenticated) return;
@@ -291,6 +299,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     globalThis.addEventListener("keydown", handleKeyDown);
     return () => globalThis.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
+
+  // Timer effect - runs continuously every second
+  useEffect(() => {
+    timerIntervalRef.current = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+    }, 1000);
+
+    // Cleanup on unmount
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Format elapsed time as HH:MM:SS
+  const formatTime = (seconds: number): string => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // Close download menu when clicking outside
   useEffect(() => {
@@ -1505,9 +1539,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </span>
                 </button>
                 <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
-                  <h1 className="text-sm font-semibold text-white">
-                    {problem.title}
-                  </h1>
+                  <div 
+                    className="relative"
+                    onMouseEnter={() => setShowTitleTooltip(true)}
+                    onMouseLeave={() => setShowTitleTooltip(false)}
+                  >
+                    <h1 className="text-sm font-semibold text-white max-w-[200px] truncate">
+                      {problem.title}
+                    </h1>
+                    {showTitleTooltip && problem.title.length > 25 && (
+                      <div className="absolute left-0 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap max-w-md">
+                        {problem.title}
+                        <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                      </div>
+                    )}
+                  </div>
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       problem.difficulty === "Easy"
@@ -1519,10 +1565,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   >
                     {problem.difficulty}
                   </span>
+                  {problem.estimated_time && (
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1">
+                      <MdAccessTime className="h-3 w-3" />
+                      {problem.estimated_time}
+                    </span>
+                  )}
+                  
+                  {/* Timer */}
+                  <div className="flex items-center gap-1 border-l border-white/20 pl-3">
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
+                      {formatTime(elapsedTime)}
+                    </span>
+                  </div>
+                  
                 </div>
               </div>
-
-              {/* Right side - Actions */}
               <div className="flex items-center gap-2">
                 {/* Undo/Redo buttons */}
                 <div className="hidden sm:flex items-center gap-1 border-r border-white/20 pr-2 mr-2">
