@@ -1,5 +1,22 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { MdAccessTime } from "react-icons/md";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { 
+  MdAccessTime, 
+  MdUpload,
+  MdUndo,
+  MdRedo,
+  MdClose,
+  MdDownload,
+  MdSave,
+  MdFolder,
+  MdExpandMore
+} from "react-icons/md";
+import { FcFlowChart } from "react-icons/fc";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import {
   AnimatedNumberInput,
@@ -52,6 +69,14 @@ import type { SavedDiagram } from "../types/auth";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
 import { InputDialog } from "../components/InputDialog";
+import {
+  exportAsJSON,
+  exportAsXML,
+  importFromJSON,
+  importFromXML,
+  downloadFile,
+  readFileAsText,
+} from "../utils/exportImport";
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -78,13 +103,13 @@ const NodeWithCopy = React.memo(
         isInGroup={props.isInGroup}
       />
     );
-  },
+  }
 );
 
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
   onCopy: (id: string, data: NodeData) => void,
-  nodes: Node[],
+  nodes: Node[]
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
@@ -112,14 +137,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     label: string;
     placeholder?: string;
     defaultValue?: string;
-    type?: 'text' | 'textarea';
+    type?: "text" | "textarea";
     required?: boolean;
     onConfirm: (value: string) => void;
   } | null>(null);
 
   // Get diagramId from query parameters
-  const searchParams = new URLSearchParams(globalThis.location.hash.split('?')[1]);
-  const diagramIdFromUrl = searchParams.get('diagramId');
+  const searchParams = new URLSearchParams(
+    globalThis.location.hash.split("?")[1]
+  );
+  const diagramIdFromUrl = searchParams.get("diagramId");
 
   // State for problem data
   const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
@@ -134,7 +161,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Timer state - always running
+  // Timer state - always running for problems
   const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -167,7 +194,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Check if it's a custom problem from localStorage
     if (idFromUrl.startsWith("custom-")) {
       const customProblemData = localStorage.getItem(
-        `custom-problem-${idFromUrl}`,
+        `custom-problem-${idFromUrl}`
       );
       if (customProblemData) {
         setProblem(JSON.parse(customProblemData));
@@ -186,7 +213,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch problem: ${response.status} ${response.statusText}`,
+            `Failed to fetch problem: ${response.status} ${response.statusText}`
           );
         }
 
@@ -196,7 +223,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching the problem",
+            : "An error occurred while fetching the problem"
         );
         console.error("Error fetching problem:", err);
       } finally {
@@ -237,8 +264,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
-  // State for problem title tooltip
-  const [showTitleTooltip, setShowTitleTooltip] = useState(false);
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load diagram from URL parameter if diagramId is present
   useEffect(() => {
@@ -249,16 +276,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const diagram = await apiService.getDiagram(diagramIdFromUrl);
         const loadedNodes = diagram.nodes as Node[];
         const loadedEdges = diagram.edges as Edge[];
-        
+
         setNodes(loadedNodes);
         setEdges(loadedEdges);
         setCurrentDiagramId(diagram.id);
-        
+
         // Immediately update canvas state to prevent undo/redo from clearing the loaded data
         setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
       } catch (err) {
         console.error("Failed to load diagram:", err);
-        toast.error("Failed to load diagram. It may have been deleted or you don't have access to it.");
+        toast.error(
+          "Failed to load diagram. It may have been deleted or you don't have access to it."
+        );
       }
     };
 
@@ -303,8 +332,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     return () => globalThis.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  // Timer effect - runs continuously every second
+  // Timer effect - runs continuously every second (only for problems, not free mode)
   useEffect(() => {
+    if (idFromUrl === "free") return; // Don't run timer for Design Studio
+
     timerIntervalRef.current = setInterval(() => {
       setElapsedTime((prev) => prev + 1);
     }, 1000);
@@ -315,18 +346,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, []);
+  }, [idFromUrl]);
 
   // Format elapsed time as HH:MM:SS
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hrs > 0) {
-      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Close download menu when clicking outside
@@ -375,7 +406,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
-    null,
+    null
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
@@ -605,7 +636,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        }),
+        })
       );
     }
   };
@@ -636,7 +667,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           };
         }
         return n;
-      }),
+      })
     );
   }, [setNodes]);
 
@@ -650,7 +681,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
-    "details",
+    "details"
   );
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -663,7 +694,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handlers moved outside the effect to reduce nesting depth. Use refs to keep stable references.
   const handleDiagramNodeDeleteRef = useRef<((e: Event) => void) | undefined>(
-    undefined,
+    undefined
   );
   handleDiagramNodeDeleteRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -676,7 +707,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleDiagramNodeToggleRef = useRef<((e: Event) => void) | undefined>(
-    undefined,
+    undefined
   );
   handleDiagramNodeToggleRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -693,12 +724,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     eds: Edge[],
     id: string,
     label: string,
-    hasLabel: boolean,
+    hasLabel: boolean
   ) {
     return eds.map((edge) =>
       edge.id === id
         ? { ...edge, data: { ...edge.data, label, hasLabel }, label }
-        : edge,
+        : edge
     );
   }
 
@@ -719,12 +750,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
     globalThis.addEventListener(
       "diagram:edge-label-change",
-      listener as EventListener,
+      listener as EventListener
     );
     return () =>
       globalThis.removeEventListener(
         "diagram:edge-label-change",
-        listener as EventListener,
+        listener as EventListener
       );
   }, []);
 
@@ -758,34 +789,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        }),
+        })
       );
     };
 
     globalThis.addEventListener(
       "diagram:node-delete",
-      deleteListener as EventListener,
+      deleteListener as EventListener
     );
     globalThis.addEventListener(
       "diagram:node-toggle",
-      toggleListener as EventListener,
+      toggleListener as EventListener
     );
     globalThis.addEventListener(
       "diagram:node-detach",
-      detachListener as EventListener,
+      detachListener as EventListener
     );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
-        deleteListener as EventListener,
+        deleteListener as EventListener
       );
       globalThis.removeEventListener(
         "diagram:node-toggle",
-        toggleListener as EventListener,
+        toggleListener as EventListener
       );
       globalThis.removeEventListener(
         "diagram:node-detach",
-        detachListener as EventListener,
+        detachListener as EventListener
       );
     };
   }, [setNodes]);
@@ -799,7 +830,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // --- Helpers to reduce nested function depth in JSX ---
   const updateNodeProperty = (
     key: string,
-    value: string | number | boolean,
+    value: string | number | boolean
   ) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
@@ -808,8 +839,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, [key]: value } }
-            : n,
-        ),
+            : n
+        )
       );
     }
   };
@@ -852,8 +883,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   _customProperties: updated[inspectedNodeId],
                 },
               }
-            : n,
-        ),
+            : n
+        )
       );
 
       return updated;
@@ -862,14 +893,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const handleUpdateCustomProperty = (
     id: string,
-    updates: Partial<CustomProperty>,
+    updates: Partial<CustomProperty>
   ) => {
     if (!inspectedNodeId) return;
 
     setCustomProperties((prev) => {
       const nodeCustomProps = prev[inspectedNodeId] || [];
       const updated = nodeCustomProps.map((prop) =>
-        prop.id === id ? { ...prop, ...updates } : prop,
+        prop.id === id ? { ...prop, ...updates } : prop
       );
 
       // Save to node data
@@ -877,8 +908,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: updated } }
-            : n,
-        ),
+            : n
+        )
       );
 
       return {
@@ -900,8 +931,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: filtered } }
-            : n,
-        ),
+            : n
+        )
       );
 
       return {
@@ -1018,7 +1049,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       if (comp?.properties) {
         propertyElements = comp.properties.map((p: ComponentProperty) =>
-          renderProperty(p),
+          renderProperty(p)
         );
       } else {
         propertyElements = (
@@ -1075,7 +1106,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [nodes, setNodes],
+    [nodes, setNodes]
   );
 
   // Register node types (memoized to prevent unnecessary re-renders)
@@ -1084,7 +1115,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
       group: GroupNode,
     }),
-    [handleNodeCopy, nodes],
+    [handleNodeCopy, nodes]
   );
 
   // Handle loading state
@@ -1222,7 +1253,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const viewport = getViewportForBounds(nodesBounds, 1024, 768, 0.5, 2, 0.2);
 
     const viewportElement = document.querySelector(
-      ".react-flow__viewport",
+      ".react-flow__viewport"
     ) as HTMLElement;
 
     if (!viewportElement) {
@@ -1258,7 +1289,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const a = document.createElement("a");
         a.setAttribute(
           "download",
-          `system-design-${Date.now()}.${fileExtension}`,
+          `system-design-${Date.now()}.${fileExtension}`
         );
         a.setAttribute("href", dataUrl);
         a.click();
@@ -1268,7 +1299,103 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       });
   };
 
-  // Diagram management handlers
+  // Export diagram as JSON
+  const handleExportJSON = () => {
+    try {
+      const title = problem?.title || "System Design";
+      const description = problem?.description;
+      const jsonContent = exportAsJSON(nodes, edges, title, description);
+      const filename = `${title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
+      downloadFile(jsonContent, filename, "application/json");
+      toast.success("Design exported as JSON successfully!");
+    } catch (error) {
+      console.error("Export JSON error:", error);
+      toast.error("Failed to export as JSON");
+    }
+  };
+
+  // Export diagram as XML
+  const handleExportXML = () => {
+    try {
+      const title = problem?.title || "System Design";
+      const description = problem?.description;
+      const xmlContent = exportAsXML(nodes, edges, title, description);
+      const filename = `${title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.drawio`;
+      downloadFile(xmlContent, filename, "application/xml");
+      toast.success("Design exported as XML successfully!");
+    } catch (error) {
+      console.error("Export XML error:", error);
+      toast.error("Failed to export as XML");
+    }
+  };
+
+  // Import diagram from file
+  const handleImportFile = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const content = await readFileAsText(file);
+      let importedData: { nodes: Node[]; edges: Edge[] };
+
+      // Determine file type and parse accordingly
+      if (file.name.endsWith(".json")) {
+        importedData = importFromJSON(content);
+        toast.success("Design imported from JSON successfully!");
+      } else if (file.name.endsWith(".xml") || file.name.endsWith(".drawio")) {
+        importedData = importFromXML(content);
+        toast.success("Design imported from XML successfully!");
+      } else {
+        // Try to detect format from content
+        const trimmed = content.trim();
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+          importedData = importFromJSON(content);
+          toast.success("Design imported from JSON successfully!");
+        } else if (
+          trimmed.startsWith("<?xml") ||
+          trimmed.startsWith("<mxfile")
+        ) {
+          importedData = importFromXML(content);
+          toast.success("Design imported from XML successfully!");
+        } else {
+          throw new Error(
+            "Unsupported file format. Please use JSON or XML/DrawIO files."
+          );
+        }
+      }
+
+      // Apply imported data
+      setNodes(importedData.nodes);
+      setEdges(importedData.edges);
+
+      // Clear current diagram ID since this is now a new/imported diagram
+      setCurrentDiagramId(null);
+
+      // Fit view to show all imported nodes
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 400 });
+      }, 100);
+    } catch (error) {
+      console.error("Import error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import diagram"
+      );
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Trigger file input click
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Design management handlers
   const handleSaveDiagram = async () => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
@@ -1277,27 +1404,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Show input dialog for title
     setInputDialogConfig({
-      title: 'Save Design',
-      label: 'Design Title',
-      placeholder: 'Enter a title for this diagram',
-      defaultValue: currentDiagramId ? 'Untitled Diagram' : '',
+      title: "Save Design",
+      label: "Design Title",
+      placeholder: "Enter a title for this diagram",
+      defaultValue: currentDiagramId ? "Untitled Design" : "",
       required: true,
       onConfirm: (title) => {
         // Close current dialog first, then open description dialog
         setShowInputDialog(false);
-        
+
         // Use setTimeout to ensure dialog closes before opening new one
         setTimeout(() => {
           setInputDialogConfig({
-            title: 'Save Design',
-            label: 'Description (Optional)',
-            placeholder: 'Enter a description for this diagram',
-            type: 'textarea',
+            title: "Save Design",
+            label: "Description (Optional)",
+            placeholder: "Enter a description for this diagram",
+            type: "textarea",
             required: false,
             onConfirm: (description) => {
               // Close the dialog
               setShowInputDialog(false);
-              
+
               // Use void to wrap the async operation
               void (async () => {
                 try {
@@ -1309,7 +1436,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       nodes,
                       edges,
                     });
-                    toast.success("Diagram updated successfully!");
+                    toast.success("Design updated successfully!");
                   } else {
                     // Save new diagram
                     const saved = await apiService.saveDiagram({
@@ -1319,11 +1446,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       edges,
                     });
                     setCurrentDiagramId(saved.id);
-                    toast.success("Diagram saved successfully!");
+                    toast.success("Design saved successfully!");
                   }
                 } catch (err) {
                   console.error("Failed to Save Design:", err);
-                  toast.error(err instanceof Error ? err.message : "Failed to Save Design");
+                  toast.error(
+                    err instanceof Error ? err.message : "Failed to Save Design"
+                  );
                 }
               })();
             },
@@ -1378,7 +1507,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Separate groups and regular nodes
     const groupNodes = nodes.filter((node) => node.type === "group");
     const regularNodes = nodes.filter(
-      (node) => node.type !== "group" && !node.parentId,
+      (node) => node.type !== "group" && !node.parentId
     );
 
     // First, layout groups with larger spacing
@@ -1403,7 +1532,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const groupEdges = edges.filter(
       (edge) =>
         groupNodes.some((g) => g.id === edge.source) &&
-        groupNodes.some((g) => g.id === edge.target),
+        groupNodes.some((g) => g.id === edge.target)
     );
     for (const edge of groupEdges) {
       groupGraph.setEdge(edge.source, edge.target);
@@ -1434,7 +1563,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const regularEdges = edges.filter(
       (edge) =>
         regularNodes.some((n) => n.id === edge.source) &&
-        regularNodes.some((n) => n.id === edge.target),
+        regularNodes.some((n) => n.id === edge.target)
     );
     for (const edge of regularEdges) {
       regularGraph.setEdge(edge.source, edge.target);
@@ -1492,8 +1621,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       nds.map((n) =>
         n.id === inspectedNodeId
           ? { ...n, data: { ...n.data, ...nodeProps } }
-          : n,
-      ),
+          : n
+      )
     );
 
     // Log current node data for debugging
@@ -1527,9 +1656,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}
-        <header className="bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] shadow-lg">
-          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-12">
+        <header className="bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] shadow-lg overflow-visible">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+            <div className="flex items-center justify-between h-12 overflow-visible">
               {/* Left side - Logo and Title */}
               <div className="flex items-center space-x-4">
                 <button
@@ -1547,46 +1676,44 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </span>
                 </button>
                 <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
-                  <div 
-                    className="relative"
-                    onMouseEnter={() => setShowTitleTooltip(true)}
-                    onMouseLeave={() => setShowTitleTooltip(false)}
+                  <h1 
+                    className="text-sm font-semibold text-white max-w-[200px] truncate cursor-default"
+                    data-tooltip={problem.title}
                   >
-                    <h1 className="text-sm font-semibold text-white max-w-[200px] truncate">
-                      {problem.title}
-                    </h1>
-                    {showTitleTooltip && problem.title.length > 25 && (
-                      <div className="absolute left-0 top-full mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-50 whitespace-nowrap max-w-md">
-                        {problem.title}
-                        <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      problem.difficulty === "Easy"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        : problem.difficulty === "Medium"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                    }`}
-                  >
-                    {problem.difficulty}
-                  </span>
-                  {problem.estimated_time && (
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1">
-                      <MdAccessTime className="h-3 w-3" />
-                      {problem.estimated_time}
-                    </span>
+                    {problem.title}
+                  </h1>
+
+                  {/* Show difficulty and estimated time only for problems, not Design Studio */}
+                  {idFromUrl !== "free" && (
+                    <>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          problem.difficulty === "Easy"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            : problem.difficulty === "Medium"
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                        }`}
+                      >
+                        {problem.difficulty}
+                      </span>
+                      {problem.estimated_time && (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1">
+                          <MdAccessTime className="h-3 w-3" />
+                          {problem.estimated_time}
+                        </span>
+                      )}
+                    </>
                   )}
-                  
-                  {/* Timer */}
-                  <div className="flex items-center gap-1 border-l border-white/20 pl-3">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
-                      {formatTime(elapsedTime)}
-                    </span>
-                  </div>
-                  
+
+                  {/* Timer - only show for problems, not Design Studio */}
+                  {idFromUrl !== "free" && (
+                    <div className="flex items-center gap-1 border-l border-white/20 pl-3">
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
+                        {formatTime(elapsedTime)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1597,333 +1724,282 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     onClick={undo}
                     disabled={!canUndo}
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                    title="Undo (Ctrl+Z)"
+                    data-tooltip="Undo (Ctrl+Z)"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                      />
-                    </svg>
+                    <MdUndo className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     onClick={redo}
                     disabled={!canRedo}
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                    title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+                    data-tooltip="Redo (Ctrl+Y or Ctrl+Shift+Z)"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"
-                      />
-                    </svg>
+                    <MdRedo className="h-5 w-5" />
                   </button>
                 </div>
 
                 {/* Clear Canvas button */}
                 <button
-                type="button"
-                onClick={handleClearCanvas}
-                disabled={nodes.length === 0 && edges.length === 0}
-                className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                title="Clear Canvas"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-
-              {/* Download Image button with dropdown */}
-              <div className="relative">
-                <button
                   type="button"
-                  onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                  disabled={nodes.length === 0}
+                  onClick={handleClearCanvas}
+                  disabled={nodes.length === 0 && edges.length === 0}
                   className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  title="Download as Image"
+                  data-tooltip="Clear Canvas"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                    />
-                  </svg>
+                  <MdClose className="h-5 w-5" />
                 </button>
 
-                {/* Download format dropdown */}
-                {showDownloadMenu && (
-                  <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[120px]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        downloadImage("png");
-                        setShowDownloadMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    >
-                      PNG
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        downloadImage("jpeg");
-                        setShowDownloadMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    >
-                      JPEG
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        downloadImage("svg");
-                        setShowDownloadMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    >
-                      SVG
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Layout button with dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-                  disabled={nodes.length === 0}
-                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  title="Auto Layout"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"
-                    />
-                  </svg>
-                </button>
-
-                {/* Layout direction dropdown */}
-                {showLayoutMenu && (
-                  <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[160px]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onLayout("TB");
-                        setShowLayoutMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    >
-                      Vertical Layout
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onLayout("LR");
-                        setShowLayoutMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    >
-                      Horizontal Layout
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Diagram Management Buttons (only for free mode and authenticated users) */}
-              {idFromUrl === "free" && (
-                <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
-                  <button
-                    type="button"
-                    onClick={handleSaveDiagram}
-                    disabled={nodes.length === 0}
-                    className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
-                    title={
-                      isAuthenticated
-                        ? "Save Design"
-                        : "Sign in to Save Designs"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                      />
-                    </svg>
-                    {currentDiagramId ? "Update" : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLoadDiagrams}
-                    className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors flex items-center gap-2"
-                    title={
-                      isAuthenticated
-                        ? "My Designs"
-                        : "Sign in to view saved designs"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    My Designs
-                  </button>
-                </div>
-              )}
-
-              {problem?.id !== "free" && (
-                <button
-                  type="button"
-                  onClick={runAssessment}
-                  disabled={isAssessing}
-                  className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                  title="Run assessment on current design"
-                >
-                  {isAssessing ? "Assessing..." : "Run Assessment"}
-                </button>
-              )}
-              <ThemeSwitcher />
-              {/* User Profile / Auth Button */}
-              <div className="relative">
-                {isAuthenticated ? (
+                {/* Import button - only show for Design Studio (free mode) */}
+                {idFromUrl === "free" && (
                   <>
                     <button
                       type="button"
-                      onClick={() => setShowUserMenu(!showUserMenu)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
+                      onClick={handleImportClick}
+                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                      data-tooltip="Import Design"
                     >
-                      {user?.picture ? (
-                        <img
-                          src={user.picture}
-                          alt={user.name || "User"}
-                          className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center font-bold">
-                          {user?.name?.[0]?.toUpperCase() ||
-                            user?.email?.[0]?.toUpperCase() ||
-                            "U"}
-                        </div>
-                      )}
-                      <span className="hidden sm:inline">
-                        {user?.name || user?.email}
-                      </span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
+                      <MdUpload className="h-5 w-5" />
                     </button>
 
-                    {showUserMenu && (
-                      <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                        <div className="px-4 py-2 border-b border-theme/10">
-                          <p className="text-sm font-medium text-theme">
-                            {user?.name || "User"}
-                          </p>
-                          <p className="text-xs text-muted truncate">
-                            {user?.email}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            logout();
-                            setShowUserMenu(false);
-                            setCurrentDiagramId(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                        >
-                          Sign Out
-                        </button>
-                      </div>
-                    )}
+                    {/* Hidden file input for import */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".json,.xml,.drawio"
+                      onChange={handleImportFile}
+                      className="hidden"
+                      aria-label="Import diagram file"
+                    />
                   </>
-                ) : (
+                )}
+
+                {/* Download/Export button with dropdown */}
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setShowAuthModal(true)}
-                    className="px-4 py-2 text-sm font-medium text-white rounded-md hover:bg-white/20 transition-colors"
+                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                    disabled={nodes.length === 0}
+                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    data-tooltip="Export Design"
                   >
-                    Sign In
+                    <MdDownload className="h-5 w-5" />
+                  </button>
+
+                  {/* Export format dropdown */}
+                  {showDownloadMenu && (
+                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
+                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
+                        Images
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadImage("png");
+                          setShowDownloadMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        PNG Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadImage("jpeg");
+                          setShowDownloadMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        JPEG Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadImage("svg");
+                          setShowDownloadMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        SVG Vector
+                      </button>
+
+                      <div className="border-t border-theme/10 my-1"></div>
+
+                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
+                        Data Files
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleExportJSON();
+                          setShowDownloadMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        JSON Format
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleExportXML();
+                          setShowDownloadMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        XML/DrawIO
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Layout button with dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                    disabled={nodes.length === 0}
+                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    data-tooltip="Auto Layout"
+                  >
+                    <FcFlowChart className="h-5 w-5" />
+                  </button>
+
+                  {/* Layout direction dropdown */}
+                  {showLayoutMenu && (
+                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[160px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLayout("TB");
+                          setShowLayoutMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        Vertical Layout
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLayout("LR");
+                          setShowLayoutMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        Horizontal Layout
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Design Management Buttons (only for free mode and authenticated users) */}
+                {idFromUrl === "free" && (
+                  <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveDiagram}
+                      disabled={nodes.length === 0}
+                      className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                      data-tooltip={
+                        isAuthenticated
+                          ? "Save Design"
+                          : "Sign in to Save Designs"
+                      }
+                    >
+                      <MdSave className="h-4 w-4" />
+                      {currentDiagramId ? "Update" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLoadDiagrams}
+                      className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors flex items-center gap-2"
+                      data-tooltip={
+                        isAuthenticated
+                          ? "My Designs"
+                          : "Sign in to view saved designs"
+                      }
+                    >
+                      <MdFolder className="h-4 w-4" />
+                      My Designs
+                    </button>
+                  </div>
+                )}
+
+                {problem?.id !== "free" && (
+                  <button
+                    type="button"
+                    onClick={runAssessment}
+                    disabled={isAssessing}
+                    className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    data-tooltip="Run assessment on current design"
+                  >
+                    {isAssessing ? "Assessing..." : "Run Assessment"}
                   </button>
                 )}
+                <ThemeSwitcher />
+                {/* User Profile / Auth Button */}
+                <div className="relative">
+                  {isAuthenticated ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
+                      >
+                        {user?.picture ? (
+                          <img
+                            src={user.picture}
+                            alt={user.name || "User"}
+                            className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center font-bold">
+                            {user?.name?.[0]?.toUpperCase() ||
+                              user?.email?.[0]?.toUpperCase() ||
+                              "U"}
+                          </div>
+                        )}
+                        <span className="hidden sm:inline">
+                          {user?.name || user?.email}
+                        </span>
+                        <MdExpandMore className="h-4 w-4" />
+                      </button>
+
+                      {showUserMenu && (
+                        <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
+                          <div className="px-4 py-2 border-b border-theme/10">
+                            <p className="text-sm font-medium text-theme">
+                              {user?.name || "User"}
+                            </p>
+                            <p className="text-xs text-muted truncate">
+                              {user?.email}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              logout();
+                              setShowUserMenu(false);
+                              setCurrentDiagramId(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowAuthModal(true)}
+                      className="px-4 py-2 text-sm font-medium text-white rounded-md hover:bg-white/20 transition-colors"
+                    >
+                      Sign In
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </header>
 
@@ -2040,7 +2116,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           onGoogleLogin={googleLogin}
         />
 
-        {/* Diagram List Modal */}
+        {/* Design List Modal */}
         <DiagramListModal
           isOpen={showDiagramList}
           onClose={() => setShowDiagramList(false)}
