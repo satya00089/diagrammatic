@@ -15,7 +15,8 @@ Practice system design interviews, learn distributed systems architecture, and c
 - 🎨 **Interactive Drag & Drop Canvas** - Build architecture diagrams with ease
 - 🌙 **Dark / Light Theme** - Eye-friendly theme switching
 - 🖼️ **Export Diagrams** - Save your designs as PNG, JPEG, or SVG images
-- 📊 **Inspector Panel** - Configure component properties in real-time
+- � **Export/Import** - Export as JSON or XML/DrawIO format for sharing and backup
+- �📊 **Inspector Panel** - Configure component properties in real-time
 - 🔐 **Authentication** - Optional Google Sign-In or email/password authentication
 - ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
 - 🔗 **Share Diagrams** - Share your designs via compressed URLs
@@ -203,7 +204,11 @@ npm run build
 - **Select**: Click on nodes or edges to select them
 - **Delete**: Press `Delete` or `Backspace` to remove selected items
 - **Multi-select**: Hold `Shift` and click multiple items
-- **Export**: Click "Save as Image" to download your diagram as PNG
+- **Export Image**: Click "Download" button to save as PNG, JPEG, or SVG
+- **Export/Import**: 
+  - Click "Export" to download as JSON or XML/DrawIO format
+  - Click "Import" to load diagrams from JSON or XML files
+  - See [Export/Import Guide](docs/EXPORT_IMPORT.md) for details
 
 ### Theme Switching
 
@@ -262,16 +267,17 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 - [x] Undo/Redo functionality
 - [x] Keyboard shortcuts for power users
 - [x] Save/load diagrams with authentication (requires backend setup - see docs/FASTAPI_BACKEND.md)
+- [x] Export/Import diagrams as JSON and XML/DrawIO formats
 
 ### Long-term
 
 - [x] User authentication and cloud storage (implemented with Google Sign-In support - see docs/GOOGLE_SIGNIN.md)
 - [x] Share diagrams with public URLs (implemented with URL compression)
-- [x] Export to SVG and JSON (PNG, JPEG, SVG export implemented)
+- [x] Export to SVG and JSON (PNG, JPEG, SVG, JSON, XML export implemented)
 - [ ] Real-time collaboration
 - [ ] Custom component creation
 - [ ] Interactive tutorials and guided learning paths
-- [ ] Integration with popular design tools (Figma, Lucidchart)
+- [ ] Integration with popular design tools (Figma, Lucidchart, draw.io)
 
 ---
 
