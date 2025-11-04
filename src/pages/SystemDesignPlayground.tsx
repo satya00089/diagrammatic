@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { MdAccessTime } from "react-icons/md";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
 import {
@@ -57,6 +57,9 @@ interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
   onBack?: () => void;
 }
+
+// Define edgeTypes outside component to prevent re-creation on every render
+const edgeTypes = { customEdge: CustomEdge };
 
 // Create a wrapper component for CustomNode with onCopy prop
 const NodeWithCopy = React.memo(
@@ -1051,6 +1054,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }
 
+  // Handle copying a node (defined before early returns to satisfy React Hook rules)
+  const handleNodeCopy = useCallback(
+    (id: string, data: NodeData) => {
+      const originalNode = nodes.find((n) => n.id === id);
+      if (!originalNode) return;
+
+      // Create a new node with copied data but new position and ID
+      const newNodeId = `${id}-copy-${Date.now()}`;
+      const newNode: Node = {
+        ...originalNode,
+        id: newNodeId,
+        position: {
+          x: originalNode.position.x + 200, // Larger offset to prevent overlap
+          y: originalNode.position.y + 100,
+        },
+        data: { ...data },
+        selected: false, // Ensure the copied node is not selected
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+    },
+    [nodes, setNodes],
+  );
+
+  // Register node types (memoized to prevent unnecessary re-renders)
+  const nodeTypes = useMemo(
+    () => ({
+      custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
+      group: GroupNode,
+    }),
+    [handleNodeCopy, nodes],
+  );
+
   // Handle loading state
   if (loading) {
     return (
@@ -1159,27 +1195,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     setNodes((nds) => [...nds, newNode]);
   }
-
-  // handle copying a node
-  const handleNodeCopy = (id: string, data: NodeData) => {
-    const originalNode = nodes.find((n) => n.id === id);
-    if (!originalNode) return;
-
-    // Create a new node with copied data but new position and ID
-    const newNodeId = `${id}-copy-${Date.now()}`;
-    const newNode: Node = {
-      ...originalNode,
-      id: newNodeId,
-      position: {
-        x: originalNode.position.x + 200, // Larger offset to prevent overlap
-        y: originalNode.position.y + 100,
-      },
-      data: { ...data },
-      selected: false, // Ensure the copied node is not selected
-    };
-
-    setNodes((nds) => [...nds, newNode]);
-  };
 
   // Clear all nodes and edges from canvas
   const handleClearCanvas = () => {
@@ -1470,13 +1485,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       fitView({ padding: 0.2, duration: 400 });
     });
   };
-
-  // register node and edge types
-  const nodeTypes = {
-    custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
-    group: GroupNode,
-  };
-  const edgeTypes = { customEdge: CustomEdge };
 
   // persist nodeProps back into node data (manual save - now mainly for debugging)
   const handleSave = () => {
