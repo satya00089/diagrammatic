@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { MdClose } from "react-icons/md";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +23,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                      document.documentElement.classList.contains('dark');
+      setIsDarkMode(darkMode);
+    };
+
+    // Initial check
+    updateTheme();
+
+    // Listen for theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const observer = new MutationObserver(updateTheme);
+    
+    mediaQuery.addEventListener('change', updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateTheme);
+      observer.disconnect();
+    };
+  }, []);
 
   const handleGoogleResponse = useCallback(
     async (response: GoogleCredentialResponse) => {
@@ -64,10 +93,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         window.google.accounts.id.renderButton(
           document.getElementById("google-signin-button"),
           {
-            theme: "outline",
+            theme: isDarkMode ? "filled_black" : "outline",
             size: "large",
             width: 400,
             text: mode === "login" ? "signin_with" : "signup_with",
+            shape: "rectangular",
+            logo_alignment: "left",
           },
         );
       }
@@ -78,7 +109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         document.body.removeChild(script);
       }
     };
-  }, [isOpen, mode, onGoogleLogin, handleGoogleResponse]);
+  }, [isOpen, mode, onGoogleLogin, handleGoogleResponse, isDarkMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,26 +164,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="p-2 text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
                 aria-label="Close"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <MdClose className="h-5 w-5" />
               </button>
             </div>
 
             <p className="text-muted mb-6">
               {mode === "login"
-                ? "Sign in to save and manage your diagrams"
+                ? "Sign in to save and manage your designs"
                 : "Create an account to start saving your work"}
             </p>
 
@@ -279,7 +297,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Optional note */}
             <div className="mt-6 p-3 bg-theme/5 rounded-lg">
               <p className="text-xs text-muted text-center">
-                🔒 Your diagrams are securely stored and only accessible to you
+                🔒 Your designs are securely stored and only accessible to you
               </p>
             </div>
           </motion.div>
