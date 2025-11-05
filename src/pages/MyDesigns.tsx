@@ -19,6 +19,8 @@ const MyDesigns: React.FC = () => {
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(null);
   const {
     user,
     isAuthenticated: isAuth,
@@ -64,17 +66,30 @@ const MyDesigns: React.FC = () => {
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (!globalThis.confirm("Are you sure you want to delete this diagram?")) {
-      return;
-    }
+    const diagram = savedDiagrams.find(d => d.id === diagramId);
+    if (!diagram) return;
+
+    setDiagramToDelete(diagram);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteDiagram = async () => {
+    if (!diagramToDelete) return;
 
     try {
-      await apiService.deleteDiagram(diagramId);
-      setSavedDiagrams((prev) => prev.filter((d) => d.id !== diagramId));
+      await apiService.deleteDiagram(diagramToDelete.id);
+      setSavedDiagrams((prev) => prev.filter((d) => d.id !== diagramToDelete.id));
+      setShowDeleteDialog(false);
+      setDiagramToDelete(null);
     } catch (error) {
       console.error("Failed to delete diagram:", error);
       alert("Failed to delete diagram. Please try again.");
     }
+  };
+
+  const cancelDeleteDiagram = () => {
+    setShowDeleteDialog(false);
+    setDiagramToDelete(null);
   };
 
   // Filter and sort diagrams
@@ -497,6 +512,60 @@ const MyDesigns: React.FC = () => {
             await googleLogin(credential);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && diagramToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[var(--surface)] rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-[var(--theme)]/10">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-red-600 dark:text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[var(--theme)]">
+                  Delete Design?
+                </h3>
+                <p className="text-sm text-muted">
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+            <p className="text-muted mb-6">
+              Are you sure you want to delete <strong>"{diagramToDelete.title}"</strong>?
+              This will permanently remove the design and all its data.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={cancelDeleteDiagram}
+                className="flex-1 px-4 py-2 bg-[var(--theme)]/5 hover:bg-[var(--theme)]/10 text-[var(--theme)] font-medium rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteDiagram}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Delete Design
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
