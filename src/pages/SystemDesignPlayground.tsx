@@ -12,7 +12,6 @@ import {
   MdRedo,
   MdClose,
   MdDownload,
-  MdFolder,
   MdExpandMore
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
@@ -30,6 +29,7 @@ import type {
   ComponentType,
   ConnectionType,
 } from "../types/systemDesign";
+import type { SavedDiagram } from "../types/auth";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useUndoRedo } from "../hooks/useUndoRedo";
@@ -62,9 +62,7 @@ import CustomPropertyInput, {
 } from "../components/CustomPropertyInput";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
-import { DiagramListModal } from "../components/DiagramListModal";
 import { apiService } from "../services/api";
-import type { SavedDiagram } from "../types/auth";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
 import {
@@ -141,11 +139,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Auth and diagram management state
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showDiagramList, setShowDiagramList] = useState(false);
-  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
-  const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
+  const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Title/Description dialog state for first save
+  const [showTitleDialog, setShowTitleDialog] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState<{
+    nodes: Node[];
+    edges: Edge[];
+  } | null>(null);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogDescription, setDialogDescription] = useState('');
 
   // Auto-save state
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -271,6 +276,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           setNodes(loadedNodes);
           setEdges(loadedEdges);
           setCurrentDiagramId(diagram.id);
+          setCurrentDiagram(diagram);
 
           // Immediately update canvas state to prevent undo/redo from clearing the loaded data
           setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
@@ -299,6 +305,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             setNodes(loadedNodes);
             setEdges(loadedEdges);
             setCurrentDiagramId(diagram.id);
+            setCurrentDiagram(diagram);
 
             // Immediately update canvas state to prevent undo/redo from clearing the loaded data
             setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
@@ -360,15 +367,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (idFromUrl === "free") {
           // For Design Studio: save to API as diagrams
-          const title = currentDiagramId
-            ? "Auto-saved Design"
-            : `Auto-saved Design - ${new Date().toLocaleString()}`;
-
           if (currentDiagramId) {
             // Update existing diagram
             await apiService.updateDiagram(currentDiagramId, {
-              title,
-              description: "Auto-saved design",
+              title: currentDiagram?.title || "Auto-saved Design",
+              description: currentDiagram?.description || "Auto-saved design",
               nodes,
               edges,
             });
@@ -377,18 +380,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
             localStorage.setItem(lastDiagramKey, currentDiagramId);
           } else {
-            // Create new auto-saved diagram
-            const saved = await apiService.saveDiagram({
-              title,
-              description: "Auto-saved design",
-              nodes,
-              edges,
-            });
-            setCurrentDiagramId(saved.id);
-
-            // Store the diagram ID for restoration on refresh
-            const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
-            localStorage.setItem(lastDiagramKey, saved.id);
+            // First save - prompt for title and description
+            setPendingSaveData({ nodes, edges });
+            setShowTitleDialog(true);
+            setAutoSaveStatus('idle'); // Reset status since we're not saving yet
+            return;
           }
         } else {
           // For Problem-solving: save progress to localStorage
@@ -475,6 +471,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
   }, [idFromUrl]);
 
+  // Cleanup localStorage when user navigates away from the page
+  useEffect(() => {
+    return () => {
+      // Remove Design Studio progress
+      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      localStorage.removeItem(lastDiagramKey);
+
+      // Remove problem-solving progress if applicable
+      if (idFromUrl && idFromUrl !== "free") {
+        const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+        localStorage.removeItem(progressKey);
+      }
+    };
+  }, [user?.id, idFromUrl]);
+
   // Format elapsed time as HH:MM:SS
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
@@ -485,6 +496,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     }
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Format saved time - show relative time for recent saves, exact time for older ones
+  const formatSavedTime = (savedAt: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - savedAt.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return "a moment ago";
+    } else if (diffInSeconds < 1800) { // 5 minutes
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} min ago`;
+    } else if (diffInSeconds < 3600) { // 1 hour
+      return "about an hour ago";
+    } else if (diffInSeconds < 86400) { // 24 hours
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else {
+      // Show exact time for anything older than a day
+      return `at ${savedAt.toLocaleTimeString()}`;
+    }
   };
 
   // Close download menu when clicking outside
@@ -1522,48 +1554,68 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fileInputRef.current?.click();
   };
 
-  const handleLoadDiagrams = async () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
+  // Handle title/description dialog confirmation
+  const handleTitleDialogConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingSaveData || !dialogTitle.trim()) return;
 
-    setLoadingDiagrams(true);
     try {
-      const diagrams = await apiService.getUserDiagrams();
-      setSavedDiagrams(diagrams);
-      setShowDiagramList(true);
-    } catch (err) {
-      console.error("Failed to load diagrams:", err);
-      toast.error("Failed to load diagrams");
-    } finally {
-      setLoadingDiagrams(false);
+      setAutoSaveStatus('saving');
+      setShowTitleDialog(false);
+
+      const title = dialogTitle.trim();
+      const description = dialogDescription.trim();
+
+      // Create new diagram with user-provided title and description
+      const saved = await apiService.saveDiagram({
+        title,
+        description,
+        nodes: pendingSaveData.nodes,
+        edges: pendingSaveData.edges,
+      });
+
+      setCurrentDiagramId(saved.id);
+      setCurrentDiagram({
+        id: saved.id,
+        userId: user?.id || '',
+        title,
+        description,
+        nodes: pendingSaveData.nodes,
+        edges: pendingSaveData.edges,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setPendingSaveData(null);
+
+      // Store the diagram ID for restoration on refresh
+      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      localStorage.setItem(lastDiagramKey, saved.id);
+
+      setAutoSaveStatus('saved');
+      setLastSavedAt(new Date());
+
+      toast.success(`Your design "${title}" has been saved successfully.`);
+
+      // Reset dialog state
+      setDialogTitle('');
+      setDialogDescription('');
+
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Save failed:', error);
+      setAutoSaveStatus('error');
+      setPendingSaveData(null);
+      toast.error('Failed to save your design. Please try again.');
+      setTimeout(() => setAutoSaveStatus('idle'), 5000);
     }
   };
 
-  const handleLoadDiagram = (diagram: SavedDiagram) => {
-    setNodes(diagram.nodes as Node[]);
-    setEdges(diagram.edges as Edge[]);
-    setCurrentDiagramId(diagram.id);
-
-    // Store the diagram ID for restoration on refresh
-    if (isAuthenticated && user?.id) {
-      const lastDiagramKey = `last-diagram-${user.id}`;
-      localStorage.setItem(lastDiagramKey, diagram.id);
-    }
-  };
-
-  const handleDeleteDiagram = async (id: string) => {
-    try {
-      await apiService.deleteDiagram(id);
-      setSavedDiagrams((prev) => prev.filter((d) => d.id !== id));
-      if (currentDiagramId === id) {
-        setCurrentDiagramId(null);
-      }
-    } catch (err) {
-      console.error("Failed to delete diagram:", err);
-      throw err;
-    }
+  const handleTitleDialogCancel = () => {
+    setShowTitleDialog(false);
+    setPendingSaveData(null);
+    setAutoSaveStatus('idle');
+    setDialogTitle('');
+    setDialogDescription('');
   };
 
   // Auto-layout nodes using Dagre with proper group handling
@@ -1781,8 +1833,75 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Design Management Buttons (only for free mode and authenticated users) */}
+                {idFromUrl === "free" && (
+                  <div className="hidden sm:flex items-center gap-2 border-white/20">
+                    {/* Auto-save indicator */}
+                    {autoSaveEnabled && (
+                      <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
+                        {autoSaveStatus === 'saving' && (
+                          <>
+                            <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
+                            <span>Saving...</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'saved' && (
+                          <>
+                            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                            <span>Saved {lastSavedAt && formatSavedTime(lastSavedAt)}</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'error' && (
+                          <>
+                            <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                            <span>Save failed</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'idle' && lastSavedAt && (
+                          <>
+                            <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                            <span>Saved {formatSavedTime(lastSavedAt)}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Auto-save indicator for problem-solving mode */}
+                {idFromUrl && idFromUrl !== "free" && autoSaveEnabled && (
+                  <div className="hidden sm:flex items-center gap-2 border-white/20">
+                    <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
+                      {autoSaveStatus === 'saving' && (
+                        <>
+                          <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Saving progress...</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                          <span>Progress saved {lastSavedAt && formatSavedTime(lastSavedAt)}</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <>
+                          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                          <span>Save failed</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && lastSavedAt && (
+                        <>
+                          <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                          <span>Progress saved {formatSavedTime(lastSavedAt)}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Undo/Redo buttons */}
-                <div className="hidden sm:flex items-center gap-1 border-r border-white/20 pr-2 mr-2">
+                <div className="hidden sm:flex items-center gap-1 border-l border-r border-white/20 pl-2 pr-2">
                   <button
                     type="button"
                     onClick={undo}
@@ -1801,18 +1920,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   >
                     <MdRedo className="h-5 w-5" />
                   </button>
-                </div>
 
-                {/* Clear Canvas button */}
-                <button
-                  type="button"
-                  onClick={handleClearCanvas}
-                  disabled={nodes.length === 0 && edges.length === 0}
-                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                  data-tooltip="Clear Canvas"
-                >
-                  <MdClose className="h-5 w-5" />
-                </button>
+                  {/* Clear Canvas button */}
+                  <button
+                    type="button"
+                    onClick={handleClearCanvas}
+                    disabled={nodes.length === 0 && edges.length === 0}
+                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                    data-tooltip="Clear Canvas"
+                  >
+                    <MdClose className="h-5 w-5" />
+                  </button>
+                </div>
 
                 {/* Import button - only show for Design Studio (free mode) */}
                 {idFromUrl === "free" && (
@@ -1954,86 +2073,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Design Management Buttons (only for free mode and authenticated users) */}
-                {idFromUrl === "free" && (
-                  <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
-                    {/* Auto-save indicator */}
-                    {autoSaveEnabled && (
-                      <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
-                        {autoSaveStatus === 'saving' && (
-                          <>
-                            <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Saving...</span>
-                          </>
-                        )}
-                        {autoSaveStatus === 'saved' && (
-                          <>
-                            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                            <span>Saved {lastSavedAt && `at ${lastSavedAt.toLocaleTimeString()}`}</span>
-                          </>
-                        )}
-                        {autoSaveStatus === 'error' && (
-                          <>
-                            <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                            <span>Save failed</span>
-                          </>
-                        )}
-                        {autoSaveStatus === 'idle' && lastSavedAt && (
-                          <>
-                            <div className="w-3 h-3 bg-white/40 rounded-full"></div>
-                            <span>Saved {lastSavedAt.toLocaleTimeString()}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleLoadDiagrams}
-                      className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors flex items-center gap-2"
-                      data-tooltip={
-                        isAuthenticated
-                          ? "My Designs"
-                          : "Sign in to view saved designs"
-                      }
-                    >
-                      <MdFolder className="h-4 w-4" />
-                      My Designs
-                    </button>
-                  </div>
-                )}
-
-                {/* Auto-save indicator for problem-solving mode */}
-                {idFromUrl && idFromUrl !== "free" && autoSaveEnabled && (
-                  <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
-                    <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
-                      {autoSaveStatus === 'saving' && (
-                        <>
-                          <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Saving progress...</span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'saved' && (
-                        <>
-                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                          <span>Progress saved {lastSavedAt && `at ${lastSavedAt.toLocaleTimeString()}`}</span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'error' && (
-                        <>
-                          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                          <span>Save failed</span>
-                        </>
-                      )}
-                      {autoSaveStatus === 'idle' && lastSavedAt && (
-                        <>
-                          <div className="w-3 h-3 bg-white/40 rounded-full"></div>
-                          <span>Progress saved {lastSavedAt.toLocaleTimeString()}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {problem?.id !== "free" && (
                   <button
@@ -2227,15 +2266,70 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           onGoogleLogin={googleLogin}
         />
 
-        {/* Design List Modal */}
-        <DiagramListModal
-          isOpen={showDiagramList}
-          onClose={() => setShowDiagramList(false)}
-          diagrams={savedDiagrams}
-          onLoad={handleLoadDiagram}
-          onDelete={handleDeleteDiagram}
-          isLoading={loadingDiagrams}
-        />
+        {/* Title and Description Dialog */}
+        {showTitleDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface rounded-lg shadow-xl border border-theme/10 w-full max-w-md mx-4">
+              <form onSubmit={handleTitleDialogConfirm}>
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-theme/10">
+                  <h2 className="text-lg font-semibold text-theme">
+                    Save Your Design
+                  </h2>
+                </div>
+
+                {/* Content */}
+                <div className="px-6 py-4 space-y-4">
+                  <div>
+                    <label htmlFor="title-input" className="block text-sm font-medium text-theme mb-2">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="title-input"
+                      type="text"
+                      value={dialogTitle}
+                      onChange={(e) => setDialogTitle(e.target.value)}
+                      placeholder="Enter a title for your design"
+                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description-input" className="block text-sm font-medium text-theme mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      id="description-input"
+                      value={dialogDescription}
+                      onChange={(e) => setDialogDescription(e.target.value)}
+                      placeholder="Describe your design (optional)"
+                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme resize-none"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-theme/10 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTitleDialogCancel}
+                    className="px-4 py-2 text-sm font-medium text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!dialogTitle.trim()}
+                    className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Design
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
