@@ -147,6 +147,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Title/Description dialog state for first save
+  const [showTitleDialog, setShowTitleDialog] = useState(false);
+  const [pendingSaveData, setPendingSaveData] = useState<{
+    nodes: Node[];
+    edges: Edge[];
+  } | null>(null);
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogDescription, setDialogDescription] = useState('');
+
   // Auto-save state
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -360,14 +369,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (idFromUrl === "free") {
           // For Design Studio: save to API as diagrams
-          const title = currentDiagramId
-            ? "Auto-saved Design"
-            : `Auto-saved Design - ${new Date().toLocaleString()}`;
-
           if (currentDiagramId) {
             // Update existing diagram
             await apiService.updateDiagram(currentDiagramId, {
-              title,
+              title: "Auto-saved Design",
               description: "Auto-saved design",
               nodes,
               edges,
@@ -377,18 +382,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
             localStorage.setItem(lastDiagramKey, currentDiagramId);
           } else {
-            // Create new auto-saved diagram
-            const saved = await apiService.saveDiagram({
-              title,
-              description: "Auto-saved design",
-              nodes,
-              edges,
-            });
-            setCurrentDiagramId(saved.id);
-
-            // Store the diagram ID for restoration on refresh
-            const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
-            localStorage.setItem(lastDiagramKey, saved.id);
+            // First save - prompt for title and description
+            setPendingSaveData({ nodes, edges });
+            setShowTitleDialog(true);
+            setAutoSaveStatus('idle'); // Reset status since we're not saving yet
+            return;
           }
         } else {
           // For Problem-solving: save progress to localStorage
@@ -474,6 +472,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
     };
   }, [idFromUrl]);
+
+  // Cleanup localStorage when user navigates away from the page
+  useEffect(() => {
+    return () => {
+      // Remove Design Studio progress
+      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      localStorage.removeItem(lastDiagramKey);
+
+      // Remove problem-solving progress if applicable
+      if (idFromUrl && idFromUrl !== "free") {
+        const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+        localStorage.removeItem(progressKey);
+      }
+    };
+  }, [user?.id, idFromUrl]);
 
   // Format elapsed time as HH:MM:SS
   const formatTime = (seconds: number): string => {
@@ -1566,6 +1579,60 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   };
 
+  // Handle title/description dialog confirmation
+  const handleTitleDialogConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingSaveData || !dialogTitle.trim()) return;
+
+    try {
+      setAutoSaveStatus('saving');
+      setShowTitleDialog(false);
+
+      const title = dialogTitle.trim();
+      const description = dialogDescription.trim();
+
+      // Create new diagram with user-provided title and description
+      const saved = await apiService.saveDiagram({
+        title,
+        description,
+        nodes: pendingSaveData.nodes,
+        edges: pendingSaveData.edges,
+      });
+
+      setCurrentDiagramId(saved.id);
+      setPendingSaveData(null);
+
+      // Store the diagram ID for restoration on refresh
+      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      localStorage.setItem(lastDiagramKey, saved.id);
+
+      setAutoSaveStatus('saved');
+      setLastSavedAt(new Date());
+
+      toast.success(`Your design "${title}" has been saved successfully.`);
+
+      // Reset dialog state
+      setDialogTitle('');
+      setDialogDescription('');
+
+      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Save failed:', error);
+      setAutoSaveStatus('error');
+      setPendingSaveData(null);
+      toast.error('Failed to save your design. Please try again.');
+      setTimeout(() => setAutoSaveStatus('idle'), 5000);
+    }
+  };
+
+  const handleTitleDialogCancel = () => {
+    setShowTitleDialog(false);
+    setPendingSaveData(null);
+    setAutoSaveStatus('idle');
+    setDialogTitle('');
+    setDialogDescription('');
+  };
+
   // Auto-layout nodes using Dagre with proper group handling
   const onLayout = (direction: "TB" | "LR" = "TB") => {
     // Separate groups and regular nodes
@@ -2236,6 +2303,71 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           onDelete={handleDeleteDiagram}
           isLoading={loadingDiagrams}
         />
+
+        {/* Title and Description Dialog */}
+        {showTitleDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface rounded-lg shadow-xl border border-theme/10 w-full max-w-md mx-4">
+              <form onSubmit={handleTitleDialogConfirm}>
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-theme/10">
+                  <h2 className="text-lg font-semibold text-theme">
+                    Save Your Design
+                  </h2>
+                </div>
+
+                {/* Content */}
+                <div className="px-6 py-4 space-y-4">
+                  <div>
+                    <label htmlFor="title-input" className="block text-sm font-medium text-theme mb-2">
+                      Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="title-input"
+                      type="text"
+                      value={dialogTitle}
+                      onChange={(e) => setDialogTitle(e.target.value)}
+                      placeholder="Enter a title for your design"
+                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description-input" className="block text-sm font-medium text-theme mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      id="description-input"
+                      value={dialogDescription}
+                      onChange={(e) => setDialogDescription(e.target.value)}
+                      placeholder="Describe your design (optional)"
+                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme resize-none"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-theme/10 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleTitleDialogCancel}
+                    className="px-4 py-2 text-sm font-medium text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!dialogTitle.trim()}
+                    className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Design
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
