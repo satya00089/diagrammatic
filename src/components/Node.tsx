@@ -1,7 +1,9 @@
 import React from "react";
+import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdCopyAll } from "react-icons/md";
+import { MdSettings, MdDelete } from "react-icons/md";
+import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 
 export type NodeData = {
@@ -20,6 +22,12 @@ type Props = {
 };
 
 const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
+  const [contextMenu, setContextMenu] = React.useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({ visible: false, x: 0, y: 0 });
+
   // Use componentName if available, otherwise fall back to label
   const displayLabel = data.componentName || data.label;
 
@@ -61,144 +69,199 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
     [id],
   );
 
+  const handleContextMenu = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    },
+    [],
+  );
+
+  const closeContextMenu = React.useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }, []);
+
+  // Close menu on outside click
+  React.useEffect(() => {
+    if (contextMenu.visible) {
+      const handleClick = (e: MouseEvent) => {
+        // Only close if clicking outside the menu
+        const menu = document.querySelector('[data-context-menu]');
+        if (menu && !menu.contains(e.target as Node)) {
+          closeContextMenu();
+        }
+      };
+      document.addEventListener("click", handleClick);
+      document.addEventListener("contextmenu", handleClick);
+      return () => {
+        document.removeEventListener("click", handleClick);
+        document.removeEventListener("contextmenu", handleClick);
+      };
+    }
+  }, [contextMenu.visible, closeContextMenu]);
+
   return (
-    <motion.fieldset
-      initial={{ y: 0, opacity: 1 }}
-      whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
-      whileTap={{ scale: 0.985 }}
-      transition={{ type: "spring", stiffness: 320, damping: 28 }}
-      className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative"
-    >
-      <legend className="sr-only">{displayLabel}</legend>
+    <>
+      <motion.fieldset
+        initial={{ y: 0, opacity: 1 }}
+        whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
+        whileTap={{ scale: 0.985 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative"
+        onContextMenu={handleContextMenu}
+      >
+        <legend className="sr-only">{displayLabel}</legend>
 
-      {/* Action buttons - positioned at top-right */}
-      <div className="absolute -top-5 right-1 flex items-center z-10 bg-[var(--surface)]/80 border border-theme rounded-full shadow-sm">
-        <motion.button
-          type="button"
-          aria-label="Settings"
-          onClick={onToggle}
-          className="p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-          title="Settings"
-          whileHover={{ scale: 1.1, y: -1, rotate: 90 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-          <MdSettings className="w-2 h-2" />
-        </motion.button>
-        {isInGroup && (
-          <motion.button
-            type="button"
-            aria-label="Detach from Group"
-            onClick={handleDetach}
-            className="p-1 text-orange-500 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-            title="Detach from Group"
-            whileHover={{ scale: 1.1, y: -1 }}
-            whileTap={{ scale: 0.95 }}
+        <Handle
+          id="top"
+          type="source"
+          position={Position.Top}
+          isConnectable={true}
+          style={{
+            width: "100%",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="right"
+          type="source"
+          position={Position.Right}
+          isConnectable={true}
+          style={{
+            width: "8px",
+            height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="bottom"
+          type="source"
+          position={Position.Bottom}
+          isConnectable={true}
+          style={{
+            width: "100%",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="left"
+          type="source"
+          position={Position.Left}
+          isConnectable={true}
+          style={{
+            width: "8px",
+            height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        {/* Main content */}
+        <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--bg-hover)] flex items-center justify-center text-xl">
+            {data.icon ?? "●"}
+          </div>
+
+          <div className="min-w-0 w-full text-center">
+            <div className="truncate font-medium text-sm">{displayLabel}</div>
+            {data.subtitle && (
+              <div className="text-xs text-muted truncate">{data.subtitle}</div>
+            )}
+          </div>
+        </div>
+      </motion.fieldset>
+
+      {/* Context Menu Portal */}
+      {contextMenu.visible &&
+        ReactDOM.createPortal(
+          <motion.div
+            data-context-menu
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed z-[10000] bg-[var(--surface)] border border-theme rounded-lg shadow-lg py-1 min-w-[140px] pointer-events-auto"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              transform: "translate(-50%, -10px)",
+            }}
           >
-            <FiUnlock className="w-2 h-2" />
-          </motion.button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
+              <MdSettings className="w-4 h-4" />
+              Settings
+            </button>
+            {isInGroup && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDetach(e);
+                  closeContextMenu();
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-orange-500"
+              >
+                <FiUnlock className="w-4 h-4" />
+                Detach from Group
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopy(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
+              <IoDuplicateOutline className="w-4 h-4" />
+              Duplicate
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-red-600"
+            >
+              <MdDelete className="w-4 h-4" />
+              Delete
+            </button>
+          </motion.div>,
+          document.body
         )}
-        <motion.button
-          type="button"
-          aria-label="Copy Node"
-          onClick={handleCopy}
-          className="p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-          title="Copy Node"
-          whileHover={{ scale: 1.1, y: -1 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-          <MdCopyAll className="w-2 h-2" />
-        </motion.button>
-        <motion.button
-          type="button"
-          aria-label="Delete"
-          onClick={onDelete}
-          className="p-1 text-red-600 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-          title="Delete"
-          whileHover={{ scale: 1.15, y: -2, rotate: 5 }}
-          whileTap={{ scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        >
-          <MdDelete className="w-2 h-2" />
-        </motion.button>
-      </div>
-
-      <Handle
-        id="top"
-        type="source"
-        position={Position.Top}
-        isConnectable={true}
-        style={{
-          width: "100%",
-          height: "8px",
-          background: "transparent",
-          border: "none",
-          opacity: 0,
-          cursor: "crosshair",
-        }}
-      />
-
-      <Handle
-        id="right"
-        type="source"
-        position={Position.Right}
-        isConnectable={true}
-        style={{
-          width: "8px",
-          height: "100%",
-          background: "transparent",
-          border: "none",
-          opacity: 0,
-          cursor: "crosshair",
-        }}
-      />
-
-      <Handle
-        id="bottom"
-        type="source"
-        position={Position.Bottom}
-        isConnectable={true}
-        style={{
-          width: "100%",
-          height: "8px",
-          background: "transparent",
-          border: "none",
-          opacity: 0,
-          cursor: "crosshair",
-        }}
-      />
-
-      <Handle
-        id="left"
-        type="source"
-        position={Position.Left}
-        isConnectable={true}
-        style={{
-          width: "8px",
-          height: "100%",
-          background: "transparent",
-          border: "none",
-          opacity: 0,
-          cursor: "crosshair",
-        }}
-      />
-
-      {/* Main content */}
-      <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--bg-hover)] flex items-center justify-center text-xl">
-          {data.icon ?? "●"}
-        </div>
-
-        <div className="min-w-0 w-full text-center">
-          <div className="truncate font-medium text-sm">{displayLabel}</div>
-          {data.subtitle && (
-            <div className="text-xs text-muted truncate">{data.subtitle}</div>
-          )}
-        </div>
-      </div>
-    </motion.fieldset>
+    </>
   );
 });
 
