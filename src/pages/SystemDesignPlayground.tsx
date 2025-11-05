@@ -12,7 +12,6 @@ import {
   MdRedo,
   MdClose,
   MdDownload,
-  MdSave,
   MdFolder,
   MdExpandMore
 } from "react-icons/md";
@@ -68,7 +67,6 @@ import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
-import { InputDialog } from "../components/InputDialog";
 import {
   exportAsJSON,
   exportAsXML,
@@ -130,18 +128,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Toast notifications
   const toast = useToast();
 
-  // Input dialog state
-  const [showInputDialog, setShowInputDialog] = useState(false);
-  const [inputDialogConfig, setInputDialogConfig] = useState<{
-    title: string;
-    label: string;
-    placeholder?: string;
-    defaultValue?: string;
-    type?: "text" | "textarea";
-    required?: boolean;
-    onConfirm: (value: string) => void;
-  } | null>(null);
-
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(
     globalThis.location.hash.split("?")[1]
@@ -160,6 +146,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
 
   // Timer state - always running for problems
   const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
@@ -267,42 +258,178 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load diagram from URL parameter if diagramId is present
+  // Load diagram from URL parameter if diagramId is present, or load saved progress for problems
   useEffect(() => {
-    if (!diagramIdFromUrl || !isAuthenticated) return;
+    if (diagramIdFromUrl && isAuthenticated) {
+      // Load specific diagram from URL
+      const loadDiagramFromUrl = async () => {
+        try {
+          const diagram = await apiService.getDiagram(diagramIdFromUrl);
+          const loadedNodes = diagram.nodes as Node[];
+          const loadedEdges = diagram.edges as Edge[];
 
-    const loadDiagramFromUrl = async () => {
+          setNodes(loadedNodes);
+          setEdges(loadedEdges);
+          setCurrentDiagramId(diagram.id);
+
+          // Immediately update canvas state to prevent undo/redo from clearing the loaded data
+          setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+        } catch (err) {
+          console.error("Failed to load diagram:", err);
+          toast.error(
+            "Failed to load diagram. It may have been deleted or you don't have access to it."
+          );
+        }
+      };
+
+      loadDiagramFromUrl();
+    } else if (idFromUrl === "free" && isAuthenticated) {
+      // For Design Studio: restore the last auto-saved diagram
+      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      const lastDiagramId = localStorage.getItem(lastDiagramKey);
+
+      if (lastDiagramId) {
+        // Try to load the last auto-saved diagram
+        const loadLastDiagram = async () => {
+          try {
+            const diagram = await apiService.getDiagram(lastDiagramId);
+            const loadedNodes = diagram.nodes as Node[];
+            const loadedEdges = diagram.edges as Edge[];
+
+            setNodes(loadedNodes);
+            setEdges(loadedEdges);
+            setCurrentDiagramId(diagram.id);
+
+            // Immediately update canvas state to prevent undo/redo from clearing the loaded data
+            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+
+            toast.success("Design restored from previous session");
+          } catch (err) {
+            console.error("Failed to load last diagram:", err);
+            // If loading fails, remove the invalid diagram ID from localStorage
+            localStorage.removeItem(lastDiagramKey);
+            toast.error("Failed to restore previous design. Starting fresh.");
+          }
+        };
+
+        loadLastDiagram();
+      }
+    } else if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
+      // Load saved progress for problem-solving
+      const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+      const savedProgress = localStorage.getItem(progressKey);
+
+      if (savedProgress) {
+        try {
+          const progressData = JSON.parse(savedProgress);
+          const loadedNodes = progressData.nodes as Node[];
+          const loadedEdges = progressData.edges as Edge[];
+
+          setNodes(loadedNodes);
+          setEdges(loadedEdges);
+
+          // Restore timer progress if available
+          if (progressData.elapsedTime) {
+            setElapsedTime(progressData.elapsedTime);
+          }
+
+          // Immediately update canvas state
+          setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+
+          toast.success("Progress restored from previous session");
+        } catch (error) {
+          console.error("Failed to load saved progress:", error);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagramIdFromUrl, isAuthenticated, idFromUrl, user?.id]);
+
+  // Enable auto-save for authenticated users in both free mode and problem-solving mode
+  useEffect(() => {
+    setAutoSaveEnabled(isAuthenticated && idFromUrl !== undefined);
+  }, [isAuthenticated, idFromUrl]);
+
+  // Auto-save effect - save canvas state when diagram content changes
+  useEffect(() => {
+    if (!autoSaveEnabled || nodes.length === 0) return;
+
+    const autoSave = async () => {
       try {
-        const diagram = await apiService.getDiagram(diagramIdFromUrl);
-        const loadedNodes = diagram.nodes as Node[];
-        const loadedEdges = diagram.edges as Edge[];
+        setAutoSaveStatus('saving');
 
-        setNodes(loadedNodes);
-        setEdges(loadedEdges);
-        setCurrentDiagramId(diagram.id);
+        if (idFromUrl === "free") {
+          // For Design Studio: save to API as diagrams
+          const title = currentDiagramId
+            ? "Auto-saved Design"
+            : `Auto-saved Design - ${new Date().toLocaleString()}`;
 
-        // Immediately update canvas state to prevent undo/redo from clearing the loaded data
-        setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
-      } catch (err) {
-        console.error("Failed to load diagram:", err);
-        toast.error(
-          "Failed to load diagram. It may have been deleted or you don't have access to it."
+          if (currentDiagramId) {
+            // Update existing diagram
+            await apiService.updateDiagram(currentDiagramId, {
+              title,
+              description: "Auto-saved design",
+              nodes,
+              edges,
+            });
+
+            // Ensure the diagram ID is stored for restoration on refresh
+            const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+            localStorage.setItem(lastDiagramKey, currentDiagramId);
+          } else {
+            // Create new auto-saved diagram
+            const saved = await apiService.saveDiagram({
+              title,
+              description: "Auto-saved design",
+              nodes,
+              edges,
+            });
+            setCurrentDiagramId(saved.id);
+
+            // Store the diagram ID for restoration on refresh
+            const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+            localStorage.setItem(lastDiagramKey, saved.id);
+          }
+        } else {
+          // For Problem-solving: save progress to localStorage
+          const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+          const progressData = {
+            problemId: idFromUrl,
+            nodes,
+            edges,
+            lastSaved: new Date().toISOString(),
+            elapsedTime, // Also save timer progress
+          };
+          localStorage.setItem(progressKey, JSON.stringify(progressData));
+        }
+
+        setAutoSaveStatus('saved');
+        setLastSavedAt(new Date());
+
+        // Show toast notification for successful auto-save
+        toast.success(
+          idFromUrl === "free"
+            ? "Design auto-saved successfully!"
+            : "Progress auto-saved successfully!"
         );
+
+        // Reset status after 3 seconds
+        setTimeout(() => setAutoSaveStatus('idle'), 3000);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setAutoSaveStatus('error');
+
+        // Reset status after 5 seconds
+        setTimeout(() => setAutoSaveStatus('idle'), 5000);
       }
     };
 
-    loadDiagramFromUrl();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diagramIdFromUrl, isAuthenticated]);
-
-  // Sync canvas state to undo/redo history when nodes or edges change
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setCanvasState({ nodes, edges });
-    }, 300); // Debounce to avoid too many history entries during dragging
+    // Debounce auto-save to avoid too many requests
+    const timeoutId = setTimeout(autoSave, 3000); // Save after 3 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges, setCanvasState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id]);
 
   // Apply undo/redo state to React Flow
   useEffect(() => {
@@ -438,8 +565,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             : ({} as Record<string, unknown>);
 
         // Remove system properties from the properties object
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-        const { label: _label, icon: _icon, subtitle: _subtitle, ...customProperties } = allProperties;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { icon, subtitle, ...customProperties } = allProperties;
 
         return {
           id: n.id,
@@ -466,14 +593,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             : "api-call";
 
         const maybeLabel = (dataObj as { label?: unknown }).label;
-        const label = typeof maybeLabel === "string" ? maybeLabel : undefined;
+        const edgeLabel = typeof maybeLabel === "string" ? maybeLabel : undefined;
 
         return {
           id: e.id ?? `${e.source}-${e.target}`,
           source: e.source,
           target: e.target,
           type: inferredType,
-          label,
+          label: edgeLabel,
           properties: dataObj as Record<string, unknown>,
         };
       }),
@@ -1395,75 +1522,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fileInputRef.current?.click();
   };
 
-  // Design management handlers
-  const handleSaveDiagram = async () => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    // Show input dialog for title
-    setInputDialogConfig({
-      title: "Save Design",
-      label: "Design Title",
-      placeholder: "Enter a title for this diagram",
-      defaultValue: currentDiagramId ? "Untitled Design" : "",
-      required: true,
-      onConfirm: (title) => {
-        // Close current dialog first, then open description dialog
-        setShowInputDialog(false);
-
-        // Use setTimeout to ensure dialog closes before opening new one
-        setTimeout(() => {
-          setInputDialogConfig({
-            title: "Save Design",
-            label: "Description (Optional)",
-            placeholder: "Enter a description for this diagram",
-            type: "textarea",
-            required: false,
-            onConfirm: (description) => {
-              // Close the dialog
-              setShowInputDialog(false);
-
-              // Use void to wrap the async operation
-              void (async () => {
-                try {
-                  if (currentDiagramId) {
-                    // Update existing diagram
-                    await apiService.updateDiagram(currentDiagramId, {
-                      title,
-                      description: description || undefined,
-                      nodes,
-                      edges,
-                    });
-                    toast.success("Design updated successfully!");
-                  } else {
-                    // Save new diagram
-                    const saved = await apiService.saveDiagram({
-                      title,
-                      description: description || undefined,
-                      nodes,
-                      edges,
-                    });
-                    setCurrentDiagramId(saved.id);
-                    toast.success("Design saved successfully!");
-                  }
-                } catch (err) {
-                  console.error("Failed to Save Design:", err);
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to Save Design"
-                  );
-                }
-              })();
-            },
-          });
-          setShowInputDialog(true);
-        }, 100);
-      },
-    });
-    setShowInputDialog(true);
-  };
-
   const handleLoadDiagrams = async () => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
@@ -1487,6 +1545,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setNodes(diagram.nodes as Node[]);
     setEdges(diagram.edges as Edge[]);
     setCurrentDiagramId(diagram.id);
+
+    // Store the diagram ID for restoration on refresh
+    if (isAuthenticated && user?.id) {
+      const lastDiagramKey = `last-diagram-${user.id}`;
+      localStorage.setItem(lastDiagramKey, diagram.id);
+    }
   };
 
   const handleDeleteDiagram = async (id: string) => {
@@ -1894,20 +1958,35 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {/* Design Management Buttons (only for free mode and authenticated users) */}
                 {idFromUrl === "free" && (
                   <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveDiagram}
-                      disabled={nodes.length === 0}
-                      className="px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
-                      data-tooltip={
-                        isAuthenticated
-                          ? "Save Design"
-                          : "Sign in to Save Designs"
-                      }
-                    >
-                      <MdSave className="h-4 w-4" />
-                      {currentDiagramId ? "Update" : "Save"}
-                    </button>
+                    {/* Auto-save indicator */}
+                    {autoSaveEnabled && (
+                      <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
+                        {autoSaveStatus === 'saving' && (
+                          <>
+                            <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
+                            <span>Saving...</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'saved' && (
+                          <>
+                            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                            <span>Saved {lastSavedAt && `at ${lastSavedAt.toLocaleTimeString()}`}</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'error' && (
+                          <>
+                            <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                            <span>Save failed</span>
+                          </>
+                        )}
+                        {autoSaveStatus === 'idle' && lastSavedAt && (
+                          <>
+                            <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                            <span>Saved {lastSavedAt.toLocaleTimeString()}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={handleLoadDiagrams}
@@ -1921,6 +2000,38 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <MdFolder className="h-4 w-4" />
                       My Designs
                     </button>
+                  </div>
+                )}
+
+                {/* Auto-save indicator for problem-solving mode */}
+                {idFromUrl && idFromUrl !== "free" && autoSaveEnabled && (
+                  <div className="hidden sm:flex items-center gap-2 border-r border-white/20 pr-2 mr-2">
+                    <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
+                      {autoSaveStatus === 'saving' && (
+                        <>
+                          <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Saving progress...</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                          <span>Progress saved {lastSavedAt && `at ${lastSavedAt.toLocaleTimeString()}`}</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <>
+                          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                          <span>Save failed</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'idle' && lastSavedAt && (
+                        <>
+                          <div className="w-3 h-3 bg-white/40 rounded-full"></div>
+                          <span>Progress saved {lastSavedAt.toLocaleTimeString()}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -2128,21 +2239,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
-
-        {/* Input Dialog */}
-        {inputDialogConfig && (
-          <InputDialog
-            isOpen={showInputDialog}
-            onClose={() => setShowInputDialog(false)}
-            title={inputDialogConfig.title}
-            label={inputDialogConfig.label}
-            placeholder={inputDialogConfig.placeholder}
-            defaultValue={inputDialogConfig.defaultValue}
-            type={inputDialogConfig.type}
-            required={inputDialogConfig.required}
-            onConfirm={inputDialogConfig.onConfirm}
-          />
-        )}
       </div>
     </>
   );
