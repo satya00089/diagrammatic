@@ -5,9 +5,10 @@ import type {
   SignupCredentials,
   SavedDiagram,
   SaveDiagramPayload,
+  Collaborator,
 } from "../types/auth";
 
-const API_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL || "";
 
 class ApiService {
   private getAuthHeaders(): HeadersInit {
@@ -144,6 +145,18 @@ class ApiService {
     return response.json();
   }
 
+  async getPublicDiagram(id: string): Promise<SavedDiagram> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${id}/public`, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch diagram");
+    }
+
+    return response.json();
+  }
+
   async deleteDiagram(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${id}`, {
       method: "DELETE",
@@ -152,6 +165,60 @@ class ApiService {
 
     if (!response.ok) {
       throw new Error("Failed to delete diagram");
+    }
+  }
+
+  // Collaborator management endpoints
+  async addCollaborator(diagramId: string, email: string, permission: 'read' | 'edit'): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/share`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ email, permission }),
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to add collaborator" }));
+      throw new Error(error.message || "Failed to add collaborator");
+    }
+  }
+
+  async getCollaborators(diagramId: string): Promise<Collaborator[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch collaborators");
+    }
+
+    return response.json();
+  }
+
+  async updateCollaborator(diagramId: string, collaboratorId: string, permission: 'read' | 'edit'): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`, {
+      method: "PUT",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ permission }),
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to update collaborator" }));
+      throw new Error(error.message || "Failed to update collaborator");
+    }
+  }
+
+  async removeCollaborator(diagramId: string, collaboratorId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`, {
+      method: "DELETE",
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to remove collaborator");
     }
   }
 }
