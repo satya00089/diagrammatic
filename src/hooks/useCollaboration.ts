@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Node, Edge } from '@xyflow/react';
-import { useWebSocket } from './useWebSocket';
-import type { WebSocketMessage } from './useWebSocket';
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Node, Edge } from "@xyflow/react";
+import { useWebSocket } from "./useWebSocket";
+import type { WebSocketMessage } from "./useWebSocket";
 
 interface CollaboratorUser {
   id: string;
@@ -46,20 +46,22 @@ interface UseCollaborationReturn {
 
 // Convert HTTP/HTTPS URL to WS/WSS appropriately
 const getWebSocketUrl = (apiUrl: string): string => {
-  if (!apiUrl) return 'ws://localhost:8000';
-  
+  if (!apiUrl) return "ws://localhost:8000";
+
   // Replace https:// with wss:// and http:// with ws://
-  if (apiUrl.startsWith('https://')) {
-    return apiUrl.replace('https://', 'wss://');
-  } else if (apiUrl.startsWith('http://')) {
-    return apiUrl.replace('http://', 'ws://');
+  if (apiUrl.startsWith("https://")) {
+    return apiUrl.replace("https://", "wss://");
+  } else if (apiUrl.startsWith("http://")) {
+    return apiUrl.replace("http://", "ws://");
   }
-  
+
   // If no protocol, default to ws://
   return `ws://${apiUrl}`;
 };
 
-const WS_BASE_URL = getWebSocketUrl(import.meta.env.VITE_ASSESSMENT_API_URL || '');
+const WS_BASE_URL = getWebSocketUrl(
+  import.meta.env.VITE_ASSESSMENT_API_URL || ""
+);
 
 export const useCollaboration = ({
   diagramId,
@@ -84,14 +86,14 @@ export const useCollaboration = ({
       const messageType = message.type?.trim();
 
       switch (messageType) {
-        case 'welcome': {
+        case "welcome": {
           const user = message.user as CollaboratorUser;
           currentUserIdRef.current = user.id;
-          console.log('Welcome message received:', user.name);
+          console.log("Welcome message received:", user.name);
           break;
         }
 
-        case 'user_joined': {
+        case "user_joined": {
           const user = message.user as CollaboratorUser;
           setCollaborators((prev) => {
             // Don't add if already exists
@@ -102,7 +104,7 @@ export const useCollaboration = ({
           break;
         }
 
-        case 'user_left': {
+        case "user_left": {
           const user = message.user as CollaboratorUser;
           setCollaborators((prev) => prev.filter((c) => c.id !== user.id));
           setCursors((prev) => prev.filter((c) => c.userId !== user.id));
@@ -110,10 +112,10 @@ export const useCollaboration = ({
           break;
         }
 
-        case 'diagram_update': {
+        case "diagram_update": {
           const user = message.user as CollaboratorUser;
           const data = message.data as DiagramUpdateData;
-          
+
           // Ignore our own updates
           if (user.id === currentUserIdRef.current) {
             return;
@@ -130,7 +132,9 @@ export const useCollaboration = ({
           break;
         }
 
-        case 'cursor_move': {
+        case "cursor_move":
+        case "cursor_update": {
+          // cursor_update is legacy support, both use same logic
           const user = message.user as CollaboratorUser;
           const position = message.position as { x: number; y: number };
           const timestamp = message.timestamp as string;
@@ -159,74 +163,50 @@ export const useCollaboration = ({
           break;
         }
 
-        case 'cursor_update': {
-          // Legacy support for old message type
-          const user = message.user as CollaboratorUser;
-          const position = message.position as { x: number; y: number };
-          const timestamp = message.timestamp as string;
-
-          // Ignore our own cursor
-          if (user.id === currentUserIdRef.current) {
-            return;
-          }
-
-          setCursors((prev) => {
-            const existing = prev.findIndex((c) => c.userId === user.id);
-            const newCursor: CollaboratorCursor = {
-              userId: user.id,
-              user,
-              position,
-              timestamp,
-            };
-
-            if (existing >= 0) {
-              const updated = [...prev];
-              updated[existing] = newCursor;
-              return updated;
-            }
-            return [...prev, newCursor];
-          });
-          break;
-        }
-
-        case 'pong': {
+        case "pong": {
           // Heartbeat response
           break;
         }
 
-        case 'error': {
-          const errorMessage = (message.message as string) || 'Unknown error';
-          console.error('WebSocket error:', errorMessage);
+        case "error": {
+          const errorMessage = (message.message as string) || "Unknown error";
+          console.error("WebSocket error:", errorMessage);
           onError?.(errorMessage);
           break;
         }
 
         default:
-          console.warn('Unknown WebSocket message type:', messageType);
+          console.warn("Unknown WebSocket message type:", messageType);
       }
     },
     [onDiagramUpdate, onUserJoined, onUserLeft, onError]
   );
 
   const handleOpen = useCallback(() => {
-    console.log('Collaboration WebSocket connected');
+    console.log("Collaboration WebSocket connected");
   }, []);
 
   const handleClose = useCallback(() => {
-    console.log('Collaboration WebSocket disconnected');
+    console.log("Collaboration WebSocket disconnected");
     setCollaborators([]);
     setCursors([]);
   }, []);
 
   const handleError = useCallback(
     (error: Event) => {
-      console.error('Collaboration WebSocket error:', error);
-      onError?.('Connection error. Retrying...');
+      console.error("Collaboration WebSocket error:", error);
+      onError?.("Connection error. Retrying...");
     },
     [onError]
   );
 
-  const { sendMessage, disconnect, isConnected, isConnecting, reconnectAttempts } = useWebSocket({
+  const {
+    sendMessage,
+    disconnect,
+    isConnected,
+    isConnecting,
+    reconnectAttempts,
+  } = useWebSocket({
     url: wsUrl,
     onMessage: handleMessage,
     onOpen: handleOpen,
@@ -248,7 +228,7 @@ export const useCollaboration = ({
 
       updateDebounceRef.current = setTimeout(() => {
         sendMessage({
-          type: 'diagram_update',
+          type: "diagram_update",
           data,
           timestamp: new Date().toISOString(),
         });
@@ -262,7 +242,7 @@ export const useCollaboration = ({
       if (!enabled || !isConnected) return;
 
       sendMessage({
-        type: 'cursor_move',
+        type: "cursor_move",
         position,
         timestamp: new Date().toISOString(),
       });
@@ -284,7 +264,7 @@ export const useCollaboration = ({
     if (!isConnected || !enabled) return;
 
     const pingInterval = setInterval(() => {
-      sendMessage({ type: 'ping', timestamp: new Date().toISOString() });
+      sendMessage({ type: "ping", timestamp: new Date().toISOString() });
     }, 30000);
 
     return () => clearInterval(pingInterval);
