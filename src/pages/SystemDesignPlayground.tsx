@@ -65,6 +65,10 @@ import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
+import { useCollaboration } from "../hooks/useCollaboration";
+import { CollaborationStatus } from "../components/CollaborationStatus";
+import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import { getCollaboratorColor } from "../utils/collaborationUtils";
 import {
   exportAsJSON,
   exportAsXML,
@@ -160,6 +164,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [isSharing, setIsSharing] = useState(false);
   const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
+
+  // Collaboration is always enabled for saved diagrams (Figma-style)
+  // No manual toggle needed - automatically connects when diagram is loaded
 
   // Auto-save state
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -1319,6 +1326,74 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }, [showShareModal, currentDiagramId, loadCollaborators]);
 
+  // Real-time collaboration integration
+  const token = localStorage.getItem('auth_token') || '';
+  const {
+    sendDiagramUpdate,
+    sendCursorPosition,
+    collaborators: onlineCollaborators,
+    cursors,
+    isConnected: isCollaborationConnected,
+    isConnecting: isCollaborationConnecting,
+    reconnectAttempts: collaborationReconnectAttempts,
+  } = useCollaboration({
+    diagramId: currentDiagramId || '',
+    token,
+    enabled: !!currentDiagramId && isAuthenticated, // Auto-enable for saved diagrams (Figma-style)
+    onDiagramUpdate: useCallback((data: { nodes?: Node[]; edges?: Edge[]; title?: string }, userId: string) => {
+      console.log('Received diagram update from user:', userId);
+      
+      // Apply remote changes without triggering our own update
+      if (data.nodes) {
+        setNodes(data.nodes);
+      }
+      if (data.edges) {
+        setEdges(data.edges);
+      }
+      if (data.title && currentDiagram) {
+        setCurrentDiagram({ ...currentDiagram, title: data.title });
+      }
+      
+      toastRef.current.success('Diagram updated by collaborator');
+    }, [setNodes, setEdges, currentDiagram]),
+    onUserJoined: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
+      toastRef.current.success(`${user.name} joined the collaboration`);
+    }, []),
+    onUserLeft: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
+      toastRef.current.success(`${user.name} left the collaboration`);
+    }, []),
+    onError: useCallback((error: string) => {
+      toastRef.current.error(error);
+    }, []),
+  });
+
+  // Send diagram updates to collaborators when nodes or edges change
+  useEffect(() => {
+    if (!isCollaborationConnected) return;
+
+    const timeoutId = setTimeout(() => {
+      sendDiagramUpdate({
+        nodes,
+        edges,
+        title: currentDiagram?.title,
+      });
+    }, 500); // Debounce updates
+
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges, currentDiagram?.title, isCollaborationConnected, sendDiagramUpdate]);
+
+  // Track cursor position for collaboration
+  const handleCanvasMouseMove = useCallback((event: React.MouseEvent) => {
+    if (!isCollaborationConnected) return;
+
+    const position = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    sendCursorPosition(position);
+  }, [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]);
+
   // Handle loading state
   if (loading) {
     return (
@@ -2148,16 +2223,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                 {/* Share button - only show for Design Studio and authenticated users with owned diagrams */}
                 {idFromUrl === "free" && isAuthenticated && currentDiagramId && (
-                  <button
-                    type="button"
-                    onClick={() => setShowShareModal(true)}
-                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                    data-tooltip="Share Design"
-                  >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                    </svg>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowShareModal(true)}
+                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                      data-tooltip="Share Diagram"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    </button>
+
+                    {/* Collaboration Status - Figma-style: invisible when working, visible when needed */}
+                    <CollaborationStatus
+                      isConnected={isCollaborationConnected}
+                      isConnecting={isCollaborationConnecting}
+                      reconnectAttempts={collaborationReconnectAttempts}
+                      collaborators={onlineCollaborators}
+                      showCollaborators={true}
+                    />
+                  </>
                 )}
 
                 {problem?.id !== "free" && (
@@ -2263,7 +2349,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onDragOver={onDragOver}
             onDrop={onDrop}
             onNodeDragStop={onNodeDragStop}
-          />
+            onMouseMove={handleCanvasMouseMove}
+          >
+            {/* Render collaborator cursors (always shown when connected) */}
+            {cursors.map((cursor) => (
+              <CollaboratorCursor
+                key={cursor.userId}
+                name={cursor.user.name}
+                color={getCollaboratorColor(cursor.userId)}
+                position={cursor.position}
+                pictureUrl={cursor.user.pictureUrl}
+              />
+            ))}
+          </DiagramCanvas>
           <InspectorPanel
             problem={problem}
             activeTab={activeRightTab}
