@@ -44,7 +44,22 @@ interface UseCollaborationReturn {
   disconnect: () => void;
 }
 
-const WS_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL?.replace(/^https?/, 'ws') || 'ws://localhost:8000';
+// Convert HTTP/HTTPS URL to WS/WSS appropriately
+const getWebSocketUrl = (apiUrl: string): string => {
+  if (!apiUrl) return 'ws://localhost:8000';
+  
+  // Replace https:// with wss:// and http:// with ws://
+  if (apiUrl.startsWith('https://')) {
+    return apiUrl.replace('https://', 'wss://');
+  } else if (apiUrl.startsWith('http://')) {
+    return apiUrl.replace('http://', 'ws://');
+  }
+  
+  // If no protocol, default to ws://
+  return `ws://${apiUrl}`;
+};
+
+const WS_BASE_URL = getWebSocketUrl(import.meta.env.VITE_ASSESSMENT_API_URL || '');
 
 export const useCollaboration = ({
   diagramId,
