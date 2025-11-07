@@ -19,7 +19,7 @@ Practice system design interviews, learn distributed systems architecture, and c
 - �📊 **Inspector Panel** - Configure component properties in real-time
 - 🔐 **Authentication** - Optional Google Sign-In or email/password authentication
 - ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
-- 🔗 **Share Diagrams** - Share your designs via compressed URLs
+- 🔗 **Share Designs** - Share your designs via compressed URLs
 - ⚡ **Modern Tech Stack** - React 19 + TypeScript + Tailwind CSS 4 + Framer Motion
 
 ---
@@ -272,7 +272,7 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 ### Long-term
 
 - [x] User authentication and cloud storage (implemented with Google Sign-In support - see docs/GOOGLE_SIGNIN.md)
-- [x] Share diagrams with public URLs (implemented with URL compression)
+- [x] Share Designs with public URLs (implemented with URL compression)
 - [x] Export to SVG and JSON (PNG, JPEG, SVG, JSON, XML export implemented)
 - [ ] Real-time collaboration
 - [ ] Custom component creation

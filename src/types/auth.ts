@@ -40,6 +40,13 @@ export interface SavedDiagram {
   updatedAt: string;
 }
 
+export interface Collaborator {
+  id: string;
+  email: string;
+  permission: 'read' | 'edit';
+  addedAt: string;
+}
+
 export interface SaveDiagramPayload {
   title: string;
   description?: string;

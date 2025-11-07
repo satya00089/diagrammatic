@@ -29,7 +29,7 @@ import type {
   ComponentType,
   ConnectionType,
 } from "../types/systemDesign";
-import type { SavedDiagram } from "../types/auth";
+import type { SavedDiagram, Collaborator } from "../types/auth";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useUndoRedo } from "../hooks/useUndoRedo";
@@ -65,6 +65,10 @@ import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
+import { useCollaboration } from "../hooks/useCollaboration";
+import { CollaborationStatus } from "../components/CollaborationStatus";
+import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import { getCollaboratorColor } from "../utils/collaborationUtils";
 import {
   exportAsJSON,
   exportAsXML,
@@ -105,11 +109,11 @@ const NodeWithCopy = React.memo(
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
   onCopy: (id: string, data: NodeData) => void,
-  nodes: Node[]
+  nodesRef: React.MutableRefObject<Node[]>
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
-      nodes.find((n) => n.id === props.id)?.parentId !== undefined;
+      nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
     return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
   };
 };
@@ -125,6 +129,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Toast notifications
   const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  // Store current nodes in ref to avoid dependency issues
+  const nodesRef = useRef<Node[]>([]);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(
@@ -145,12 +154,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Title/Description dialog state for first save
   const [showTitleDialog, setShowTitleDialog] = useState(false);
-  const [pendingSaveData, setPendingSaveData] = useState<{
-    nodes: Node[];
-    edges: Edge[];
-  } | null>(null);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogDescription, setDialogDescription] = useState('');
+
+  // Sharing state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareEmail, setShareEmail] = useState('');
+  const [sharePermission, setSharePermission] = useState<'read' | 'edit'>('read');
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
+
+  // Collaboration is always enabled for saved diagrams (Figma-style)
+  // No manual toggle needed - automatically connects when diagram is loaded
 
   // Auto-save state
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -255,6 +271,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(canvasState.edges);
   const { getNodes, fitView } = useReactFlow();
 
+  // Update nodes ref whenever nodes change
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
   // State for download menu
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
   // State for layout menu
@@ -265,11 +286,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Load diagram from URL parameter if diagramId is present, or load saved progress for problems
   useEffect(() => {
-    if (diagramIdFromUrl && isAuthenticated) {
-      // Load specific diagram from URL
+    if (diagramIdFromUrl) {
+      // Load specific diagram from URL (allow for both authenticated and unauthenticated users for shared diagrams)
       const loadDiagramFromUrl = async () => {
         try {
-          const diagram = await apiService.getDiagram(diagramIdFromUrl);
+          // Use public endpoint for unauthenticated users, authenticated endpoint for logged-in users
+          const diagram = isAuthenticated
+            ? await apiService.getDiagram(diagramIdFromUrl)
+            : await apiService.getPublicDiagram(diagramIdFromUrl);
           const loadedNodes = diagram.nodes as Node[];
           const loadedEdges = diagram.edges as Edge[];
 
@@ -381,7 +405,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             localStorage.setItem(lastDiagramKey, currentDiagramId);
           } else {
             // First save - prompt for title and description
-            setPendingSaveData({ nodes, edges });
             setShowTitleDialog(true);
             setAutoSaveStatus('idle'); // Reset status since we're not saving yet
             return;
@@ -1247,7 +1270,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Handle copying a node (defined before early returns to satisfy React Hook rules)
   const handleNodeCopy = useCallback(
     (id: string, data: NodeData) => {
-      const originalNode = nodes.find((n) => n.id === id);
+      const originalNode = nodesRef.current.find((n) => n.id === id);
       if (!originalNode) return;
 
       // Create a new node with copied data but new position and ID
@@ -1265,17 +1288,111 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [nodes, setNodes]
+    [setNodes]
   );
 
   // Register node types (memoized to prevent unnecessary re-renders)
   const nodeTypes = useMemo(
     () => ({
-      custom: createNodeWithCopyHandler(handleNodeCopy, nodes),
+      custom: createNodeWithCopyHandler(handleNodeCopy, nodesRef),
       group: GroupNode,
     }),
-    [handleNodeCopy, nodes]
+    [handleNodeCopy]
   );
+
+  // Load collaborators for current diagram
+  const loadCollaborators = useCallback(async () => {
+    if (!currentDiagramId || !showShareModal) return;
+
+    try {
+      setIsLoadingCollaborators(true);
+      const collaboratorsData = await apiService.getCollaborators(currentDiagramId);
+      setCollaborators(collaboratorsData);
+    } catch (error) {
+      console.error('Failed to load collaborators:', error);
+      toastRef.current.error('Failed to load collaborators.');
+    } finally {
+      setIsLoadingCollaborators(false);
+    }
+  }, [currentDiagramId, showShareModal]);
+
+  // Load collaborators when share modal opens
+  useEffect(() => {
+    if (showShareModal && currentDiagramId) {
+      loadCollaborators();
+    } else if (!showShareModal) {
+      // Clear collaborators when modal closes
+      setCollaborators([]);
+    }
+  }, [showShareModal, currentDiagramId, loadCollaborators]);
+
+  // Real-time collaboration integration
+  const token = localStorage.getItem('auth_token') || '';
+  const {
+    sendDiagramUpdate,
+    sendCursorPosition,
+    collaborators: onlineCollaborators,
+    cursors,
+    isConnected: isCollaborationConnected,
+    isConnecting: isCollaborationConnecting,
+    reconnectAttempts: collaborationReconnectAttempts,
+  } = useCollaboration({
+    diagramId: currentDiagramId || '',
+    token,
+    enabled: !!currentDiagramId && isAuthenticated, // Auto-enable for saved diagrams (Figma-style)
+    onDiagramUpdate: useCallback((data: { nodes?: Node[]; edges?: Edge[]; title?: string }, userId: string) => {
+      console.log('Received diagram update from user:', userId);
+      
+      // Apply remote changes without triggering our own update
+      if (data.nodes) {
+        setNodes(data.nodes);
+      }
+      if (data.edges) {
+        setEdges(data.edges);
+      }
+      if (data.title && currentDiagram) {
+        setCurrentDiagram({ ...currentDiagram, title: data.title });
+      }
+      
+      toastRef.current.success('Diagram updated by collaborator');
+    }, [setNodes, setEdges, currentDiagram]),
+    onUserJoined: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
+      toastRef.current.success(`${user.name} joined the collaboration`);
+    }, []),
+    onUserLeft: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
+      toastRef.current.success(`${user.name} left the collaboration`);
+    }, []),
+    onError: useCallback((error: string) => {
+      toastRef.current.error(error);
+    }, []),
+  });
+
+  // Send diagram updates to collaborators when nodes or edges change
+  useEffect(() => {
+    if (!isCollaborationConnected) return;
+
+    const timeoutId = setTimeout(() => {
+      sendDiagramUpdate({
+        nodes,
+        edges,
+        title: currentDiagram?.title,
+      });
+    }, 500); // Debounce updates
+
+    return () => clearTimeout(timeoutId);
+  }, [nodes, edges, currentDiagram?.title, isCollaborationConnected, sendDiagramUpdate]);
+
+  // Track cursor position for collaboration
+  const handleCanvasMouseMove = useCallback((event: React.MouseEvent) => {
+    if (!isCollaborationConnected) return;
+
+    const position = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    sendCursorPosition(position);
+  }, [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]);
 
   // Handle loading state
   if (loading) {
@@ -1466,10 +1583,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const jsonContent = exportAsJSON(nodes, edges, title, description);
       const filename = `${title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
       downloadFile(jsonContent, filename, "application/json");
-      toast.success("Design exported as JSON successfully!");
+      toastRef.current.success("Design exported as JSON successfully!");
     } catch (error) {
       console.error("Export JSON error:", error);
-      toast.error("Failed to export as JSON");
+      toastRef.current.error("Failed to export as JSON");
     }
   };
 
@@ -1554,65 +1671,95 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fileInputRef.current?.click();
   };
 
-  // Handle title/description dialog confirmation
+  // Handle sharing diagram with collaborator
+  const handleShareDiagram = async () => {
+    if (!shareEmail.trim() || !currentDiagramId) return;
+
+    try {
+      setIsSharing(true);
+      await apiService.addCollaborator(currentDiagramId, shareEmail.trim(), sharePermission);
+      toastRef.current.success(`Diagram shared with ${shareEmail} successfully!`);
+      setShareEmail('');
+      setSharePermission('read');
+      // Reload collaborators
+      loadCollaborators();
+    } catch (error) {
+      console.error('Failed to Share Design:', error);
+      toastRef.current.error('Failed to Share Design. Please try again.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Update collaborator permission
+  const handleUpdateCollaboratorPermission = async (collaboratorId: string, permission: 'read' | 'edit') => {
+    if (!currentDiagramId) return;
+
+    try {
+      await apiService.updateCollaborator(currentDiagramId, collaboratorId, permission);
+      toastRef.current.success('Permission updated successfully!');
+      // Reload collaborators
+      loadCollaborators();
+    } catch (error) {
+      console.error('Failed to update permission:', error);
+      toastRef.current.error('Failed to update permission.');
+    }
+  };
+
+  // Remove collaborator
+  const handleRemoveCollaborator = async (collaboratorId: string) => {
+    if (!currentDiagramId) return;
+
+    try {
+      await apiService.removeCollaborator(currentDiagramId, collaboratorId);
+      toastRef.current.success('Collaborator removed successfully!');
+      // Reload collaborators
+      loadCollaborators();
+    } catch (error) {
+      console.error('Failed to remove collaborator:', error);
+      toastRef.current.error('Failed to remove collaborator.');
+    }
+  };
+
+  // Handle title dialog confirmation
   const handleTitleDialogConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pendingSaveData || !dialogTitle.trim()) return;
+    if (!dialogTitle.trim()) return;
 
     try {
       setAutoSaveStatus('saving');
-      setShowTitleDialog(false);
 
-      const title = dialogTitle.trim();
-      const description = dialogDescription.trim();
+      const diagramData = {
+        title: dialogTitle.trim(),
+        description: dialogDescription.trim() || undefined,
+        nodes,
+        edges,
+      };
 
-      // Create new diagram with user-provided title and description
-      const saved = await apiService.saveDiagram({
-        title,
-        description,
-        nodes: pendingSaveData.nodes,
-        edges: pendingSaveData.edges,
-      });
-
-      setCurrentDiagramId(saved.id);
-      setCurrentDiagram({
-        id: saved.id,
-        userId: user?.id || '',
-        title,
-        description,
-        nodes: pendingSaveData.nodes,
-        edges: pendingSaveData.edges,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      setPendingSaveData(null);
+      const savedDiagram = await apiService.saveDiagram(diagramData);
+      setCurrentDiagramId(savedDiagram.id);
+      setCurrentDiagram(savedDiagram);
 
       // Store the diagram ID for restoration on refresh
       const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
-      localStorage.setItem(lastDiagramKey, saved.id);
+      localStorage.setItem(lastDiagramKey, savedDiagram.id);
 
       setAutoSaveStatus('saved');
       setLastSavedAt(new Date());
-
-      toast.success(`Your design "${title}" has been saved successfully.`);
-
-      // Reset dialog state
+      setShowTitleDialog(false);
       setDialogTitle('');
       setDialogDescription('');
 
-      setTimeout(() => setAutoSaveStatus('idle'), 3000);
+      toast.success('Design saved successfully!');
     } catch (error) {
-      console.error('Save failed:', error);
+      console.error('Failed to save diagram:', error);
       setAutoSaveStatus('error');
-      setPendingSaveData(null);
-      toast.error('Failed to save your design. Please try again.');
-      setTimeout(() => setAutoSaveStatus('idle'), 5000);
+      toast.error('Failed to save design. Please try again.');
     }
   };
 
   const handleTitleDialogCancel = () => {
     setShowTitleDialog(false);
-    setPendingSaveData(null);
     setAutoSaveStatus('idle');
     setDialogTitle('');
     setDialogDescription('');
@@ -2074,6 +2221,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   )}
                 </div>
 
+                {/* Share button - only show for Design Studio and authenticated users with owned diagrams */}
+                {idFromUrl === "free" && isAuthenticated && currentDiagramId && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowShareModal(true)}
+                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                      data-tooltip="Share Diagram"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                      </svg>
+                    </button>
+
+                    {/* Collaboration Status - Figma-style: invisible when working, visible when needed */}
+                    <CollaborationStatus
+                      isConnected={isCollaborationConnected}
+                      isConnecting={isCollaborationConnecting}
+                      reconnectAttempts={collaborationReconnectAttempts}
+                      collaborators={onlineCollaborators}
+                      showCollaborators={true}
+                    />
+                  </>
+                )}
+
                 {problem?.id !== "free" && (
                   <button
                     type="button"
@@ -2177,7 +2349,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onDragOver={onDragOver}
             onDrop={onDrop}
             onNodeDragStop={onNodeDragStop}
-          />
+            onMouseMove={handleCanvasMouseMove}
+          >
+            {/* Render collaborator cursors (always shown when connected) */}
+            {cursors.map((cursor) => (
+              <CollaboratorCursor
+                key={cursor.userId}
+                name={cursor.user.name}
+                color={getCollaboratorColor(cursor.userId)}
+                position={cursor.position}
+                pictureUrl={cursor.user.pictureUrl}
+              />
+            ))}
+          </DiagramCanvas>
           <InspectorPanel
             problem={problem}
             activeTab={activeRightTab}
@@ -2327,6 +2511,155 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Share Design Modal */}
+        {showShareModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface rounded-lg shadow-xl border border-theme/10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-theme/10">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-theme">
+                    Share Design
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowShareModal(false)}
+                    className="p-1 text-muted hover:text-theme rounded-md transition-colors"
+                  >
+                    <MdClose className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-muted mt-1">
+                  Share "{currentDiagram?.title || 'Untitled Design'}" with others
+                </p>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-4 space-y-6">
+                {/* Add Collaborator Form */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-theme">Add Collaborator</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label htmlFor="share-email" className="block text-sm font-medium text-theme mb-2">
+                        Email Address
+                      </label>
+                      <input
+                        id="share-email"
+                        type="email"
+                        value={shareEmail}
+                        onChange={(e) => setShareEmail(e.target.value)}
+                        placeholder="Enter email address"
+                        className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="share-permission" className="block text-sm font-medium text-theme mb-2">
+                        Permission Level
+                      </label>
+                      <select
+                        id="share-permission"
+                        value={sharePermission}
+                        onChange={(e) => setSharePermission(e.target.value as 'read' | 'edit')}
+                        className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
+                      >
+                        <option value="read">Read Only - Can view the diagram</option>
+                        <option value="edit">Read & Edit - Can view and modify the diagram</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleShareDiagram}
+                      disabled={!shareEmail.trim() || isSharing}
+                      className="w-full px-4 py-2 bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSharing ? 'Sharing...' : 'Share Design'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current Collaborators */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-theme">Current Collaborators</h3>
+                  {isLoadingCollaborators ? (
+                    <div className="text-center py-4">
+                      <div className="inline-block w-4 h-4 border border-accent/30 border-t-accent rounded-full animate-spin"></div>
+                      <p className="text-sm text-muted mt-2">Loading collaborators...</p>
+                    </div>
+                  ) : collaborators.length === 0 ? (
+                    <div className="text-center py-4 text-muted">
+                      <p className="text-sm">No collaborators yet</p>
+                      <p className="text-xs mt-1">Share this diagram to start collaborating</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {collaborators.map((collaborator) => (
+                        <div key={collaborator.id} className="flex items-center justify-between p-3 bg-theme/5 rounded-md">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                              <span className="text-sm font-medium text-accent">
+                                {collaborator.email[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-theme">{collaborator.email}</p>
+                              <p className="text-xs text-muted capitalize">{collaborator.permission} access</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <select
+                              value={collaborator.permission}
+                              onChange={(e) => handleUpdateCollaboratorPermission(collaborator.id, e.target.value as 'read' | 'edit')}
+                              className="text-xs px-2 py-1 border border-theme/20 rounded bg-theme text-theme"
+                            >
+                              <option value="read">Read</option>
+                              <option value="edit">Edit</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCollaborator(collaborator.id)}
+                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Remove collaborator"
+                            >
+                              <MdClose className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Share Link */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-theme">Share Link</h3>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={`${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`}
+                      readOnly
+                      className="flex-1 px-3 py-2 text-sm border border-theme/20 rounded-md bg-theme/50 text-theme"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`);
+                        toast.success('Link copied to clipboard!');
+                      }}
+                      className="px-3 py-2 bg-theme/10 hover:bg-theme/20 text-theme rounded-md transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted">
+                    Anyone with this link can access the diagram according to their permission level
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

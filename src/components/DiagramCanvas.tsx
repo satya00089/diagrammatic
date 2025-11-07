@@ -24,6 +24,8 @@ type DiagramCanvasProps = {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
+  onMouseMove?: (event: React.MouseEvent) => void;
+  children?: React.ReactNode;
 };
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
@@ -38,6 +40,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onDragOver,
   onDrop,
   onNodeDragStop,
+  onMouseMove,
+  children,
 }) => {
   return (
     <div className="flex-1 relative bg-theme min-h-0">
@@ -46,6 +50,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         ref={reactFlowWrapperRef}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onMouseMove={onMouseMove}
         aria-label="Diagram canvas drop area"
       >
         <ReactFlow
@@ -65,6 +70,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           <MiniMap nodeStrokeWidth={3} />
           <Controls />
           <Background gap={16} />
+          {children}
         </ReactFlow>
       </section>
     </div>
