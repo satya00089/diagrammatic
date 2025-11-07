@@ -5,14 +5,14 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { 
-  MdAccessTime, 
+import {
+  MdAccessTime,
   MdUpload,
   MdUndo,
   MdRedo,
   MdClose,
   MdDownload,
-  MdExpandMore
+  MdExpandMore,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
@@ -123,7 +123,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const navigate = useNavigate();
   const params = useParams();
   const idFromUrl = params?.id;
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
 
@@ -149,18 +149,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Auth and diagram management state
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
-  const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(null);
+  const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(
+    null
+  );
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Title/Description dialog state for first save
   const [showTitleDialog, setShowTitleDialog] = useState(false);
-  const [dialogTitle, setDialogTitle] = useState('');
-  const [dialogDescription, setDialogDescription] = useState('');
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogDescription, setDialogDescription] = useState("");
 
   // Sharing state
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareEmail, setShareEmail] = useState('');
-  const [sharePermission, setSharePermission] = useState<'read' | 'edit'>('read');
+  const [shareEmail, setShareEmail] = useState("");
+  const [sharePermission, setSharePermission] = useState<"read" | "edit">(
+    "read"
+  );
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [isSharing, setIsSharing] = useState(false);
   const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
@@ -169,7 +173,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // No manual toggle needed - automatically connects when diagram is loaded
 
   // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
 
@@ -315,7 +321,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       loadDiagramFromUrl();
     } else if (idFromUrl === "free" && isAuthenticated) {
       // For Design Studio: restore the last auto-saved diagram
-      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
       const lastDiagramId = localStorage.getItem(lastDiagramKey);
 
       if (lastDiagramId) {
@@ -347,7 +353,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
     } else if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
       // Load saved progress for problem-solving
-      const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+      const progressKey = `problem-progress-${user?.id || "anonymous"}-${idFromUrl}`;
       const savedProgress = localStorage.getItem(progressKey);
 
       if (savedProgress) {
@@ -387,7 +393,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const autoSave = async () => {
       try {
-        setAutoSaveStatus('saving');
+        setAutoSaveStatus("saving");
 
         if (idFromUrl === "free") {
           // For Design Studio: save to API as diagrams
@@ -401,17 +407,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             });
 
             // Ensure the diagram ID is stored for restoration on refresh
-            const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+            const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
             localStorage.setItem(lastDiagramKey, currentDiagramId);
           } else {
             // First save - prompt for title and description
             setShowTitleDialog(true);
-            setAutoSaveStatus('idle'); // Reset status since we're not saving yet
+            setAutoSaveStatus("idle"); // Reset status since we're not saving yet
             return;
           }
         } else {
           // For Problem-solving: save progress to localStorage
-          const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+          const progressKey = `problem-progress-${user?.id || "anonymous"}-${idFromUrl}`;
           const progressData = {
             problemId: idFromUrl,
             nodes,
@@ -422,7 +428,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           localStorage.setItem(progressKey, JSON.stringify(progressData));
         }
 
-        setAutoSaveStatus('saved');
+        setAutoSaveStatus("saved");
         setLastSavedAt(new Date());
 
         // Show toast notification for successful auto-save
@@ -433,13 +439,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         );
 
         // Reset status after 3 seconds
-        setTimeout(() => setAutoSaveStatus('idle'), 3000);
+        setTimeout(() => setAutoSaveStatus("idle"), 3000);
       } catch (error) {
-        console.error('Auto-save failed:', error);
-        setAutoSaveStatus('error');
+        console.error("Auto-save failed:", error);
+        setAutoSaveStatus("error");
 
         // Reset status after 5 seconds
-        setTimeout(() => setAutoSaveStatus('idle'), 5000);
+        setTimeout(() => setAutoSaveStatus("idle"), 5000);
       }
     };
 
@@ -447,7 +453,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const timeoutId = setTimeout(autoSave, 3000); // Save after 3 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id]);
 
   // Apply undo/redo state to React Flow
@@ -498,12 +504,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useEffect(() => {
     return () => {
       // Remove Design Studio progress
-      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
       localStorage.removeItem(lastDiagramKey);
 
       // Remove problem-solving progress if applicable
       if (idFromUrl && idFromUrl !== "free") {
-        const progressKey = `problem-progress-${user?.id || 'anonymous'}-${idFromUrl}`;
+        const progressKey = `problem-progress-${user?.id || "anonymous"}-${idFromUrl}`;
         localStorage.removeItem(progressKey);
       }
     };
@@ -524,18 +530,23 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Format saved time - show relative time for recent saves, exact time for older ones
   const formatSavedTime = (savedAt: Date): string => {
     const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - savedAt.getTime()) / 1000);
+    const diffInSeconds = Math.floor(
+      (now.getTime() - savedAt.getTime()) / 1000
+    );
 
     if (diffInSeconds < 60) {
       return "a moment ago";
-    } else if (diffInSeconds < 1800) { // 5 minutes
+    } else if (diffInSeconds < 1800) {
+      // 5 minutes
       const minutes = Math.floor(diffInSeconds / 60);
       return `${minutes} min ago`;
-    } else if (diffInSeconds < 3600) { // 1 hour
+    } else if (diffInSeconds < 3600) {
+      // 1 hour
       return "about an hour ago";
-    } else if (diffInSeconds < 86400) { // 24 hours
+    } else if (diffInSeconds < 86400) {
+      // 24 hours
       const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
     } else {
       // Show exact time for anything older than a day
       return `at ${savedAt.toLocaleTimeString()}`;
@@ -648,7 +659,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             : "api-call";
 
         const maybeLabel = (dataObj as { label?: unknown }).label;
-        const edgeLabel = typeof maybeLabel === "string" ? maybeLabel : undefined;
+        const edgeLabel =
+          typeof maybeLabel === "string" ? maybeLabel : undefined;
 
         return {
           id: e.id ?? `${e.source}-${e.target}`,
@@ -1306,11 +1318,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     try {
       setIsLoadingCollaborators(true);
-      const collaboratorsData = await apiService.getCollaborators(currentDiagramId);
+      const collaboratorsData =
+        await apiService.getCollaborators(currentDiagramId);
       setCollaborators(collaboratorsData);
     } catch (error) {
-      console.error('Failed to load collaborators:', error);
-      toastRef.current.error('Failed to load collaborators.');
+      console.error("Failed to load collaborators:", error);
+      toastRef.current.error("Failed to load collaborators.");
     } finally {
       setIsLoadingCollaborators(false);
     }
@@ -1327,7 +1340,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [showShareModal, currentDiagramId, loadCollaborators]);
 
   // Real-time collaboration integration
-  const token = localStorage.getItem('auth_token') || '';
+  const token = localStorage.getItem("auth_token") || "";
   const {
     sendDiagramUpdate,
     sendCursorPosition,
@@ -1337,31 +1350,53 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     isConnecting: isCollaborationConnecting,
     reconnectAttempts: collaborationReconnectAttempts,
   } = useCollaboration({
-    diagramId: currentDiagramId || '',
+    diagramId: currentDiagramId || "",
     token,
     enabled: !!currentDiagramId && isAuthenticated, // Auto-enable for saved diagrams (Figma-style)
-    onDiagramUpdate: useCallback((data: { nodes?: Node[]; edges?: Edge[]; title?: string }, userId: string) => {
-      console.log('Received diagram update from user:', userId);
-      
-      // Apply remote changes without triggering our own update
-      if (data.nodes) {
-        setNodes(data.nodes);
-      }
-      if (data.edges) {
-        setEdges(data.edges);
-      }
-      if (data.title && currentDiagram) {
-        setCurrentDiagram({ ...currentDiagram, title: data.title });
-      }
-      
-      toastRef.current.success('Diagram updated by collaborator');
-    }, [setNodes, setEdges, currentDiagram]),
-    onUserJoined: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
-      toastRef.current.success(`${user.name} joined the collaboration`);
-    }, []),
-    onUserLeft: useCallback((user: { id: string; name: string; email: string; pictureUrl?: string }) => {
-      toastRef.current.success(`${user.name} left the collaboration`);
-    }, []),
+    onDiagramUpdate: useCallback(
+      (
+        data: { nodes?: Node[]; edges?: Edge[]; title?: string },
+        userId: string
+      ) => {
+        console.log("Received diagram update from user:", userId);
+
+        // Apply remote changes without triggering our own update
+        if (data.nodes) {
+          setNodes(data.nodes);
+        }
+        if (data.edges) {
+          setEdges(data.edges);
+        }
+        if (data.title && currentDiagram) {
+          setCurrentDiagram({ ...currentDiagram, title: data.title });
+        }
+
+        toastRef.current.success("Diagram updated by collaborator");
+      },
+      [setNodes, setEdges, currentDiagram]
+    ),
+    onUserJoined: useCallback(
+      (user: {
+        id: string;
+        name: string;
+        email: string;
+        pictureUrl?: string;
+      }) => {
+        toastRef.current.success(`${user.name} joined the collaboration`);
+      },
+      []
+    ),
+    onUserLeft: useCallback(
+      (user: {
+        id: string;
+        name: string;
+        email: string;
+        pictureUrl?: string;
+      }) => {
+        toastRef.current.success(`${user.name} left the collaboration`);
+      },
+      []
+    ),
     onError: useCallback((error: string) => {
       toastRef.current.error(error);
     }, []),
@@ -1380,19 +1415,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }, 500); // Debounce updates
 
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges, currentDiagram?.title, isCollaborationConnected, sendDiagramUpdate]);
+  }, [
+    nodes,
+    edges,
+    currentDiagram?.title,
+    isCollaborationConnected,
+    sendDiagramUpdate,
+  ]);
 
   // Track cursor position for collaboration
-  const handleCanvasMouseMove = useCallback((event: React.MouseEvent) => {
-    if (!isCollaborationConnected) return;
+  // Use ReactFlow's onMouseMove which provides proper coordinates
+  const handleCanvasMouseMove = useCallback(
+    (event: React.MouseEvent) => {
+      if (!isCollaborationConnected) return;
 
-    const position = screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+      // Get the ReactFlow wrapper bounds for accurate coordinate conversion
+      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!bounds) return;
 
-    sendCursorPosition(position);
-  }, [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]);
+      // Convert client coordinates relative to the ReactFlow wrapper
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      sendCursorPosition(position);
+    },
+    [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]
+  );
 
   // Handle loading state
   if (loading) {
@@ -1677,32 +1727,45 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     try {
       setIsSharing(true);
-      await apiService.addCollaborator(currentDiagramId, shareEmail.trim(), sharePermission);
-      toastRef.current.success(`Diagram shared with ${shareEmail} successfully!`);
-      setShareEmail('');
-      setSharePermission('read');
+      await apiService.addCollaborator(
+        currentDiagramId,
+        shareEmail.trim(),
+        sharePermission
+      );
+      toastRef.current.success(
+        `Diagram shared with ${shareEmail} successfully!`
+      );
+      setShareEmail("");
+      setSharePermission("read");
       // Reload collaborators
       loadCollaborators();
     } catch (error) {
-      console.error('Failed to Share Design:', error);
-      toastRef.current.error('Failed to Share Design. Please try again.');
+      console.error("Failed to Share Design:", error);
+      toastRef.current.error("Failed to Share Design. Please try again.");
     } finally {
       setIsSharing(false);
     }
   };
 
   // Update collaborator permission
-  const handleUpdateCollaboratorPermission = async (collaboratorId: string, permission: 'read' | 'edit') => {
+  const handleUpdateCollaboratorPermission = async (
+    collaboratorId: string,
+    permission: "read" | "edit"
+  ) => {
     if (!currentDiagramId) return;
 
     try {
-      await apiService.updateCollaborator(currentDiagramId, collaboratorId, permission);
-      toastRef.current.success('Permission updated successfully!');
+      await apiService.updateCollaborator(
+        currentDiagramId,
+        collaboratorId,
+        permission
+      );
+      toastRef.current.success("Permission updated successfully!");
       // Reload collaborators
       loadCollaborators();
     } catch (error) {
-      console.error('Failed to update permission:', error);
-      toastRef.current.error('Failed to update permission.');
+      console.error("Failed to update permission:", error);
+      toastRef.current.error("Failed to update permission.");
     }
   };
 
@@ -1712,12 +1775,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     try {
       await apiService.removeCollaborator(currentDiagramId, collaboratorId);
-      toastRef.current.success('Collaborator removed successfully!');
+      toastRef.current.success("Collaborator removed successfully!");
       // Reload collaborators
       loadCollaborators();
     } catch (error) {
-      console.error('Failed to remove collaborator:', error);
-      toastRef.current.error('Failed to remove collaborator.');
+      console.error("Failed to remove collaborator:", error);
+      toastRef.current.error("Failed to remove collaborator.");
     }
   };
 
@@ -1727,7 +1790,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     if (!dialogTitle.trim()) return;
 
     try {
-      setAutoSaveStatus('saving');
+      setAutoSaveStatus("saving");
 
       const diagramData = {
         title: dialogTitle.trim(),
@@ -1741,28 +1804,28 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       setCurrentDiagram(savedDiagram);
 
       // Store the diagram ID for restoration on refresh
-      const lastDiagramKey = `last-diagram-${user?.id || 'anonymous'}`;
+      const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
       localStorage.setItem(lastDiagramKey, savedDiagram.id);
 
-      setAutoSaveStatus('saved');
+      setAutoSaveStatus("saved");
       setLastSavedAt(new Date());
       setShowTitleDialog(false);
-      setDialogTitle('');
-      setDialogDescription('');
+      setDialogTitle("");
+      setDialogDescription("");
 
-      toast.success('Design saved successfully!');
+      toast.success("Design saved successfully!");
     } catch (error) {
-      console.error('Failed to save diagram:', error);
-      setAutoSaveStatus('error');
-      toast.error('Failed to save design. Please try again.');
+      console.error("Failed to save diagram:", error);
+      setAutoSaveStatus("error");
+      toast.error("Failed to save design. Please try again.");
     }
   };
 
   const handleTitleDialogCancel = () => {
     setShowTitleDialog(false);
-    setAutoSaveStatus('idle');
-    setDialogTitle('');
-    setDialogDescription('');
+    setAutoSaveStatus("idle");
+    setDialogTitle("");
+    setDialogDescription("");
   };
 
   // Auto-layout nodes using Dagre with proper group handling
@@ -1939,7 +2002,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </span>
                 </button>
                 <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
-                  <h1 
+                  <h1
                     className="text-sm font-semibold text-white max-w-[200px] truncate cursor-default"
                     data-tooltip={problem.title}
                   >
@@ -1986,25 +2049,28 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     {/* Auto-save indicator */}
                     {autoSaveEnabled && (
                       <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
-                        {autoSaveStatus === 'saving' && (
+                        {autoSaveStatus === "saving" && (
                           <>
                             <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
                             <span>Saving...</span>
                           </>
                         )}
-                        {autoSaveStatus === 'saved' && (
+                        {autoSaveStatus === "saved" && (
                           <>
                             <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                            <span>Saved {lastSavedAt && formatSavedTime(lastSavedAt)}</span>
+                            <span>
+                              Saved{" "}
+                              {lastSavedAt && formatSavedTime(lastSavedAt)}
+                            </span>
                           </>
                         )}
-                        {autoSaveStatus === 'error' && (
+                        {autoSaveStatus === "error" && (
                           <>
                             <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                             <span>Save failed</span>
                           </>
                         )}
-                        {autoSaveStatus === 'idle' && lastSavedAt && (
+                        {autoSaveStatus === "idle" && lastSavedAt && (
                           <>
                             <div className="w-3 h-3 bg-white/40 rounded-full"></div>
                             <span>Saved {formatSavedTime(lastSavedAt)}</span>
@@ -2019,28 +2085,33 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {idFromUrl && idFromUrl !== "free" && autoSaveEnabled && (
                   <div className="hidden sm:flex items-center gap-2 border-white/20">
                     <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
-                      {autoSaveStatus === 'saving' && (
+                      {autoSaveStatus === "saving" && (
                         <>
                           <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
                           <span>Saving progress...</span>
                         </>
                       )}
-                      {autoSaveStatus === 'saved' && (
+                      {autoSaveStatus === "saved" && (
                         <>
                           <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                          <span>Progress saved {lastSavedAt && formatSavedTime(lastSavedAt)}</span>
+                          <span>
+                            Progress saved{" "}
+                            {lastSavedAt && formatSavedTime(lastSavedAt)}
+                          </span>
                         </>
                       )}
-                      {autoSaveStatus === 'error' && (
+                      {autoSaveStatus === "error" && (
                         <>
                           <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                           <span>Save failed</span>
                         </>
                       )}
-                      {autoSaveStatus === 'idle' && lastSavedAt && (
+                      {autoSaveStatus === "idle" && lastSavedAt && (
                         <>
                           <div className="w-3 h-3 bg-white/40 rounded-full"></div>
-                          <span>Progress saved {formatSavedTime(lastSavedAt)}</span>
+                          <span>
+                            Progress saved {formatSavedTime(lastSavedAt)}
+                          </span>
                         </>
                       )}
                     </div>
@@ -2222,29 +2293,41 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 </div>
 
                 {/* Share button - only show for Design Studio and authenticated users with owned diagrams */}
-                {idFromUrl === "free" && isAuthenticated && currentDiagramId && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowShareModal(true)}
-                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                      data-tooltip="Share Diagram"
-                    >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                      </svg>
-                    </button>
+                {idFromUrl === "free" &&
+                  isAuthenticated &&
+                  currentDiagramId && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowShareModal(true)}
+                        className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                        data-tooltip="Share Diagram"
+                      >
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                          />
+                        </svg>
+                      </button>
 
-                    {/* Collaboration Status - Figma-style: invisible when working, visible when needed */}
-                    <CollaborationStatus
-                      isConnected={isCollaborationConnected}
-                      isConnecting={isCollaborationConnecting}
-                      reconnectAttempts={collaborationReconnectAttempts}
-                      collaborators={onlineCollaborators}
-                      showCollaborators={true}
-                    />
-                  </>
-                )}
+                      {/* Collaboration Status - Figma-style: invisible when working, visible when needed */}
+                      <CollaborationStatus
+                        isConnected={isCollaborationConnected}
+                        isConnecting={isCollaborationConnecting}
+                        reconnectAttempts={collaborationReconnectAttempts}
+                        collaborators={onlineCollaborators}
+                        showCollaborators={true}
+                      />
+                    </>
+                  )}
 
                 {problem?.id !== "free" && (
                   <button
@@ -2352,15 +2435,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onMouseMove={handleCanvasMouseMove}
           >
             {/* Render collaborator cursors (always shown when connected) */}
-            {cursors.map((cursor) => (
-              <CollaboratorCursor
-                key={cursor.userId}
-                name={cursor.user.name}
-                color={getCollaboratorColor(cursor.userId)}
-                position={cursor.position}
-                pictureUrl={cursor.user.pictureUrl}
-              />
-            ))}
+            {cursors.map((cursor) => {
+              // Convert flow coordinates to screen coordinates for proper rendering
+              const screenPosition = flowToScreenPosition(cursor.position);
+              return (
+                <CollaboratorCursor
+                  key={cursor.userId}
+                  name={cursor.user.name}
+                  color={getCollaboratorColor(cursor.userId)}
+                  position={screenPosition}
+                  pictureUrl={cursor.user.pictureUrl}
+                />
+              );
+            })}
           </DiagramCanvas>
           <InspectorPanel
             problem={problem}
@@ -2465,7 +2552,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {/* Content */}
                 <div className="px-6 py-4 space-y-4">
                   <div>
-                    <label htmlFor="title-input" className="block text-sm font-medium text-theme mb-2">
+                    <label
+                      htmlFor="title-input"
+                      className="block text-sm font-medium text-theme mb-2"
+                    >
                       Title <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -2479,7 +2569,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     />
                   </div>
                   <div>
-                    <label htmlFor="description-input" className="block text-sm font-medium text-theme mb-2">
+                    <label
+                      htmlFor="description-input"
+                      className="block text-sm font-medium text-theme mb-2"
+                    >
                       Description
                     </label>
                     <textarea
@@ -2534,7 +2627,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </button>
                 </div>
                 <p className="text-sm text-muted mt-1">
-                  Share "{currentDiagram?.title || 'Untitled Design'}" with others
+                  Share "{currentDiagram?.title || "Untitled Design"}" with
+                  others
                 </p>
               </div>
 
@@ -2542,10 +2636,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               <div className="px-6 py-4 space-y-6">
                 {/* Add Collaborator Form */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-theme">Add Collaborator</h3>
+                  <h3 className="text-sm font-medium text-theme">
+                    Add Collaborator
+                  </h3>
                   <div className="space-y-3">
                     <div>
-                      <label htmlFor="share-email" className="block text-sm font-medium text-theme mb-2">
+                      <label
+                        htmlFor="share-email"
+                        className="block text-sm font-medium text-theme mb-2"
+                      >
                         Email Address
                       </label>
                       <input
@@ -2558,17 +2657,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="share-permission" className="block text-sm font-medium text-theme mb-2">
+                      <label
+                        htmlFor="share-permission"
+                        className="block text-sm font-medium text-theme mb-2"
+                      >
                         Permission Level
                       </label>
                       <select
                         id="share-permission"
                         value={sharePermission}
-                        onChange={(e) => setSharePermission(e.target.value as 'read' | 'edit')}
+                        onChange={(e) =>
+                          setSharePermission(e.target.value as "read" | "edit")
+                        }
                         className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
                       >
-                        <option value="read">Read Only - Can view the diagram</option>
-                        <option value="edit">Read & Edit - Can view and modify the diagram</option>
+                        <option value="read">
+                          Read Only - Can view the diagram
+                        </option>
+                        <option value="edit">
+                          Read & Edit - Can view and modify the diagram
+                        </option>
                       </select>
                     </div>
                     <button
@@ -2577,28 +2685,37 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       disabled={!shareEmail.trim() || isSharing}
                       className="w-full px-4 py-2 bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSharing ? 'Sharing...' : 'Share Design'}
+                      {isSharing ? "Sharing..." : "Share Design"}
                     </button>
                   </div>
                 </div>
 
                 {/* Current Collaborators */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-theme">Current Collaborators</h3>
+                  <h3 className="text-sm font-medium text-theme">
+                    Current Collaborators
+                  </h3>
                   {isLoadingCollaborators ? (
                     <div className="text-center py-4">
                       <div className="inline-block w-4 h-4 border border-accent/30 border-t-accent rounded-full animate-spin"></div>
-                      <p className="text-sm text-muted mt-2">Loading collaborators...</p>
+                      <p className="text-sm text-muted mt-2">
+                        Loading collaborators...
+                      </p>
                     </div>
                   ) : collaborators.length === 0 ? (
                     <div className="text-center py-4 text-muted">
                       <p className="text-sm">No collaborators yet</p>
-                      <p className="text-xs mt-1">Share this diagram to start collaborating</p>
+                      <p className="text-xs mt-1">
+                        Share this diagram to start collaborating
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {collaborators.map((collaborator) => (
-                        <div key={collaborator.id} className="flex items-center justify-between p-3 bg-theme/5 rounded-md">
+                        <div
+                          key={collaborator.id}
+                          className="flex items-center justify-between p-3 bg-theme/5 rounded-md"
+                        >
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
                               <span className="text-sm font-medium text-accent">
@@ -2606,14 +2723,23 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                               </span>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-theme">{collaborator.email}</p>
-                              <p className="text-xs text-muted capitalize">{collaborator.permission} access</p>
+                              <p className="text-sm font-medium text-theme">
+                                {collaborator.email}
+                              </p>
+                              <p className="text-xs text-muted capitalize">
+                                {collaborator.permission} access
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <select
                               value={collaborator.permission}
-                              onChange={(e) => handleUpdateCollaboratorPermission(collaborator.id, e.target.value as 'read' | 'edit')}
+                              onChange={(e) =>
+                                handleUpdateCollaboratorPermission(
+                                  collaborator.id,
+                                  e.target.value as "read" | "edit"
+                                )
+                              }
                               className="text-xs px-2 py-1 border border-theme/20 rounded bg-theme text-theme"
                             >
                               <option value="read">Read</option>
@@ -2621,7 +2747,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                             </select>
                             <button
                               type="button"
-                              onClick={() => handleRemoveCollaborator(collaborator.id)}
+                              onClick={() =>
+                                handleRemoveCollaborator(collaborator.id)
+                              }
                               className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                               title="Remove collaborator"
                             >
@@ -2647,8 +2775,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`);
-                        toast.success('Link copied to clipboard!');
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`
+                        );
+                        toast.success("Link copied to clipboard!");
                       }}
                       className="px-3 py-2 bg-theme/10 hover:bg-theme/20 text-theme rounded-md transition-colors"
                     >
@@ -2656,7 +2786,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     </button>
                   </div>
                   <p className="text-xs text-muted">
-                    Anyone with this link can access the diagram according to their permission level
+                    Anyone with this link can access the diagram according to
+                    their permission level
                   </p>
                 </div>
               </div>

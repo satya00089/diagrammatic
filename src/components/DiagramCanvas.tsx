@@ -50,7 +50,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         ref={reactFlowWrapperRef}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        onMouseMove={onMouseMove}
         aria-label="Diagram canvas drop area"
       >
         <ReactFlow
@@ -63,6 +62,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDragStop={onNodeDragStop}
+          onMouseMove={onMouseMove}
           connectionMode={ConnectionMode.Loose}
           fitView
           proOptions={{ hideAttribution: true }}
