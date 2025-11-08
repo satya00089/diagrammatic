@@ -29,6 +29,13 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface DiagramOwner {
+  id: string;
+  name: string;
+  email: string;
+  pictureUrl?: string;
+}
+
 export interface SavedDiagram {
   id: string;
   userId: string;
@@ -38,6 +45,12 @@ export interface SavedDiagram {
   edges: unknown[];
   createdAt: string;
   updatedAt: string;
+  isPublic?: boolean;
+  collaborators?: Collaborator[];
+  // New fields from backend enhancement
+  isOwner: boolean;
+  permission: 'owner' | 'edit' | 'read';
+  owner: DiagramOwner;
 }
 
 export interface Collaborator {

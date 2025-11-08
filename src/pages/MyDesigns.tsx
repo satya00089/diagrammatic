@@ -17,6 +17,7 @@ const MyDesigns: React.FC = () => {
   const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
     "updated"
   );
+  const [filterBy, setFilterBy] = useState<"all" | "owned" | "shared">("all");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -62,12 +63,15 @@ const MyDesigns: React.FC = () => {
   };
 
   const handleDeleteDiagram = async (
-    diagramId: string,
+    diagram: SavedDiagram,
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    const diagram = savedDiagrams.find(d => d.id === diagramId);
-    if (!diagram) return;
+    
+    // Only owners can delete
+    if (!diagram.isOwner) {
+      return;
+    }
 
     setDiagramToDelete(diagram);
     setShowDeleteDialog(true);
@@ -95,10 +99,17 @@ const MyDesigns: React.FC = () => {
   // Filter and sort diagrams
   const filteredDiagrams = savedDiagrams
     .filter((diagram) => {
+      // Filter by ownership
+      if (filterBy === "owned" && !diagram.isOwner) return false;
+      if (filterBy === "shared" && diagram.isOwner) return false;
+
+      // Filter by search term
       const searchLower = searchTerm.toLowerCase();
       return (
         diagram.title.toLowerCase().includes(searchLower) ||
         diagram.description?.toLowerCase().includes(searchLower) ||
+        diagram.owner.name.toLowerCase().includes(searchLower) ||
+        diagram.owner.email.toLowerCase().includes(searchLower) ||
         false
       );
     })
@@ -118,11 +129,15 @@ const MyDesigns: React.FC = () => {
       }
     });
 
+  // Count owned and shared diagrams
+  const ownedCount = savedDiagrams.filter(d => d.isOwner).length;
+  const sharedCount = savedDiagrams.filter(d => !d.isOwner).length;
+
   return (
     <>
       <SEO
         title="My Designs | Diagrammatic"
-        description="View and manage your saved system design projects"
+        description="View and manage your saved system design projects and diagrams shared with you"
         url="https://satya00089.github.io/diagrammatic/#/diagrams"
       />
       <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
@@ -158,7 +173,7 @@ const MyDesigns: React.FC = () => {
                 <div className="hidden md:block text-sm text-white/90">
                   {loadingDiagrams
                     ? "Loading..."
-                    : `${filteredDiagrams.length} design${filteredDiagrams.length === 1 ? "" : "s"}`}
+                    : `${ownedCount} owned · ${sharedCount} shared`}
                 </div>
                 <button
                   type="button"
@@ -259,13 +274,50 @@ const MyDesigns: React.FC = () => {
                 My Designs
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                View and manage your saved system design projects
+                View and manage your saved projects and diagrams shared with you
               </p>
             </div>
 
             {/* Filters */}
             {!loadingDiagrams && (
               <>
+                {/* Filter Tabs */}
+                <div className="flex gap-2 mb-6 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setFilterBy("all")}
+                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "all"
+                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    }`}
+                  >
+                    All Designs ({savedDiagrams.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterBy("owned")}
+                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "owned"
+                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    }`}
+                  >
+                    My Designs ({ownedCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilterBy("shared")}
+                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "shared"
+                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    }`}
+                  >
+                    Shared with Me ({sharedCount})
+                  </button>
+                </div>
+
                 <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Search */}
@@ -329,17 +381,29 @@ const MyDesigns: React.FC = () => {
                 {!loadingDiagrams && filteredDiagrams.length === 0 && (
                   <div className="text-center py-20">
                     <div className="text-7xl mb-6">
-                      {searchTerm ? "🔍" : "🎨"}
+                      {searchTerm 
+                        ? "🔍" 
+                        : filterBy === "shared" 
+                          ? "🤝" 
+                          : "🎨"}
                     </div>
                     <div className="text-theme text-2xl font-bold mb-2">
-                      {searchTerm ? "No designs found" : "No designs yet"}
+                      {searchTerm 
+                        ? "No designs found" 
+                        : filterBy === "shared"
+                          ? "No shared designs yet"
+                          : filterBy === "owned"
+                            ? "No designs created yet"
+                            : "No designs yet"}
                     </div>
                     <div className="text-muted text-lg mb-6">
                       {searchTerm
                         ? "Try adjusting your search terms"
-                        : "Start creating your first system design project"}
+                        : filterBy === "shared"
+                          ? "Diagrams shared with you will appear here"
+                          : "Start creating your first system design project"}
                     </div>
-                    {!searchTerm && (
+                    {!searchTerm && filterBy !== "shared" && (
                       <button
                         type="button"
                         onClick={() => navigate("/playground/free")}
@@ -371,28 +435,30 @@ const MyDesigns: React.FC = () => {
                         <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
 
                         <div className="relative p-6">
-                          {/* Delete Button */}
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteDiagram(diagram.id, e)}
-                            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg z-10"
-                            title="Delete diagram"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5 text-red-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                          {/* Delete Button - Only for owners */}
+                          {diagram.isOwner && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteDiagram(diagram, e)}
+                              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg z-10"
+                              title="Delete diagram"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 text-red-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          )}
 
                           <div
                             className="cursor-pointer"
@@ -400,9 +466,68 @@ const MyDesigns: React.FC = () => {
                           >
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1 pr-8">
-                                <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 mb-1">
-                                  {diagram.title}
-                                </h3>
+                                <div className="flex items-start gap-2 mb-2">
+                                  <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1">
+                                    {diagram.title}
+                                  </h3>
+                                </div>
+                                
+                                {/* Enhanced Ownership & Permission Section */}
+                                {!diagram.isOwner && (
+                                  <div className="mb-2 flex items-center gap-2 flex-wrap">
+                                    {/* Owner Info Badge - Inline */}
+                                    <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
+                                      {/* Animated gradient background */}
+                                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
+                                      
+                                      <div className="relative flex items-center gap-1.5">
+                                        {/* Avatar */}
+                                        <div className="relative flex-shrink-0">
+                                          {diagram.owner.pictureUrl ? (
+                                            <img
+                                              src={diagram.owner.pictureUrl}
+                                              alt={diagram.owner.name}
+                                              className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
+                                            />
+                                          ) : (
+                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
+                                              {diagram.owner.name[0]?.toUpperCase()}
+                                            </div>
+                                          )}
+                                          {/* Online indicator */}
+                                          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
+                                        </div>
+                                        
+                                        {/* Owner Name */}
+                                        <div className="flex items-center gap-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                          </svg>
+                                          <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
+                                            {diagram.owner.name}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Permission Badge */}
+                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
+                                      diagram.permission === 'edit'
+                                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30'
+                                        : 'bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30'
+                                    }`}>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        {diagram.permission === 'edit' ? (
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        ) : (
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        )}
+                                      </svg>
+                                      <span>{diagram.permission === 'edit' ? 'Can Edit' : 'View Only'}</span>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 {diagram.description && (
                                   <p className="text-muted text-sm line-clamp-2 leading-relaxed">
                                     {diagram.description}
