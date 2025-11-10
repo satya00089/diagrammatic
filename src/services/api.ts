@@ -275,7 +275,7 @@ class ApiService {
     return response.json();
   }
 
-  async getAttemptByProblem(problemId: string): Promise<unknown | null> {
+  async getAttemptByProblem(problemId: string): Promise<unknown> {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/attempts/problem/${problemId}`,
       {

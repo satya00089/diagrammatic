@@ -108,9 +108,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       // fallback: create temporary textarea
       const t = document.createElement("textarea");
       t.value = JSON.stringify(assessmentResult, null, 2);
+      t.style.position = "fixed";
+      t.style.opacity = "0";
       document.body.appendChild(t);
       t.select();
-      document.execCommand("copy");
+      try {
+        document.execCommand("copy");
+      } catch {
+        // Copy failed
+      }
       t.remove();
     }
   };
@@ -415,8 +421,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   </div>
                   {assessmentResult.architectureStrengths.length > 0 ? (
                     <ul className="space-y-2">
-                      {assessmentResult.architectureStrengths.map((s, idx) => (
-                        <li key={`strength-${idx}`} className="flex items-start gap-2 text-sm">
+                      {assessmentResult.architectureStrengths.map((s) => (
+                        <li key={s} className="flex items-start gap-2 text-sm">
                           <span className="text-green-500 mt-0.5">•</span>
                           <span className="text-theme">{s}</span>
                         </li>
@@ -437,8 +443,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   </div>
                   {assessmentResult.improvements.length > 0 ? (
                     <ul className="space-y-2">
-                      {assessmentResult.improvements.map((imp, idx) => (
-                        <li key={`imp-${idx}`} className="flex items-start gap-2 text-sm">
+                      {assessmentResult.improvements.map((imp) => (
+                        <li key={imp} className="flex items-start gap-2 text-sm">
                           <span className="text-orange-500 mt-0.5">•</span>
                           <span className="text-theme">{imp}</span>
                         </li>
@@ -457,8 +463,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     Detailed Feedback
                   </div>
                   <div className="space-y-3">
-                    {assessmentResult.feedback.map((f, idx) => (
-                      <div key={`feedback-${idx}`} className="border-l-2 border-[var(--brand)] pl-3 py-1">
+                    {assessmentResult.feedback.map((f) => (
+                      <div key={`${f.category}-${f.message}`} className="border-l-2 border-[var(--brand)] pl-3 py-1">
                         <div className="font-medium text-xs text-[var(--brand)] uppercase mb-1">
                           {f.category}
                         </div>

@@ -459,7 +459,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             // Restore last assessment if available
             if (attempt.lastAssessment) {
               console.log("Restoring assessment:", attempt.lastAssessment);
-              setAssessment(attempt.lastAssessment as ValidationResult);
+              setAssessment(attempt.lastAssessment);
               // Automatically open Assessment tab to show the assessment
               setActiveRightTab("assessment");
             }
@@ -3189,7 +3189,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <div className="flex space-x-2">
                     <input
                       type="text"
-                      value={`${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`}
+                      value={`${globalThis.location.origin}/#/playground/free?diagramId=${currentDiagramId}`}
                       readOnly
                       className="flex-1 px-3 py-2 text-sm border border-theme/20 rounded-md bg-theme/50 text-theme"
                     />
@@ -3197,7 +3197,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          `${window.location.origin}/#/playground/free?diagramId=${currentDiagramId}`
+                          `${globalThis.location.origin}/#/playground/free?diagramId=${currentDiagramId}`
                         );
                         toast.success("Link copied to clipboard!");
                       }}

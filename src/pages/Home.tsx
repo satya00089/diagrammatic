@@ -665,20 +665,28 @@ const Home: React.FC = () => {
 
                 {/* Stats Bar */}
                 <div className="flex flex-wrap justify-center gap-8 mb-12">
-                  {stats.map((stat, index) => (
-                    <div
-                      key={stat.label}
-                      className={`text-center transition-all duration-500 bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 hover:bg-white/20 hover:scale-105 ${
-                        isVisible ? "fade-in-up" : "opacity-0 translate-y-5"
-                      } ${index === 0 ? "fade-in-up-delay-100" : index === 1 ? "fade-in-up-delay-200" : "fade-in-up-delay-300"}`}
-                    >
-                      <div className="text-3xl mb-1">{stat.icon}</div>
-                      <div className="text-3xl font-bold text-white">
-                        {stat.value}
+                  {stats.map((stat, index) => {
+                    const getDelayClass = () => {
+                      if (index === 0) return "fade-in-up-delay-100";
+                      if (index === 1) return "fade-in-up-delay-200";
+                      return "fade-in-up-delay-300";
+                    };
+
+                    return (
+                      <div
+                        key={stat.label}
+                        className={`text-center transition-all duration-500 bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 hover:bg-white/20 hover:scale-105 ${
+                          isVisible ? "fade-in-up" : "opacity-0 translate-y-5"
+                        } ${getDelayClass()}`}
+                      >
+                        <div className="text-3xl mb-1">{stat.icon}</div>
+                        <div className="text-3xl font-bold text-white">
+                          {stat.value}
+                        </div>
+                        <div className="text-sm text-white/80">{stat.label}</div>
                       </div>
-                      <div className="text-sm text-white/80">{stat.label}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -708,7 +716,7 @@ const Home: React.FC = () => {
                 </div>
 
                 <p className="mt-6 text-sm text-white/80">
-                  No signup required • Free forever • 55+ components
+                  Trusted by 1000+ developers • AI-powered feedback • Open source
                 </p>
               </div>
             </div>
@@ -762,29 +770,38 @@ const Home: React.FC = () => {
                 </div>
               </div>
 
-              {loadingDiagrams ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]"></div>
-                </div>
-              ) : savedDiagrams.length === 0 ? (
-                <div className="text-center py-20 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-12 elevated-card-bg">
-                  <div className="text-6xl mb-4">🎨</div>
-                  <h3 className="text-xl font-semibold text-theme mb-2">
-                    No designs yet
-                  </h3>
-                  <p className="text-muted mb-6">
-                    Start creating your first system design project
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/playground/free")}
-                    className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:brightness-95 transition-all"
-                  >
-                    Create Your First Design
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(() => {
+                if (loadingDiagrams) {
+                  return (
+                    <div className="flex items-center justify-center py-20">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]"></div>
+                    </div>
+                  );
+                }
+                
+                if (savedDiagrams.length === 0) {
+                  return (
+                    <div className="text-center py-20 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-12 elevated-card-bg">
+                      <div className="text-6xl mb-4">🎨</div>
+                      <h3 className="text-xl font-semibold text-theme mb-2">
+                        No designs yet
+                      </h3>
+                      <p className="text-muted mb-6">
+                        Start creating your first system design project
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/playground/free")}
+                        className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:brightness-95 transition-all"
+                      >
+                        Create Your First Design
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {savedDiagrams.slice(0, 6).map((diagram) => (
                     <div
                       key={diagram.id}
@@ -915,7 +932,8 @@ const Home: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              )}
+                );
+              })()}
             </div>
           </section>
         )}
@@ -931,23 +949,24 @@ const Home: React.FC = () => {
               covered
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <div
-                  key={feature.title}
-                  className={`group relative backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-[1.02] cursor-pointer overflow-hidden transition-all duration-500 elevated-card-bg ${
-                    index === 0
-                      ? "delay-0"
-                      : index === 1
-                        ? "delay-100"
-                        : "delay-200"
-                  }`}
-                  onClick={() => navigate(feature.route)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && navigate(feature.route)
-                  }
-                  role="button"
-                  tabIndex={0}
-                >
+              {features.map((feature, index) => {
+                const getFeatureDelayClass = () => {
+                  if (index === 0) return "delay-0";
+                  if (index === 1) return "delay-100";
+                  return "delay-200";
+                };
+
+                return (
+                  <div
+                    key={feature.title}
+                    className={`group relative backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-[1.02] cursor-pointer overflow-hidden transition-all duration-500 elevated-card-bg ${getFeatureDelayClass()}`}
+                    onClick={() => navigate(feature.route)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && navigate(feature.route)
+                    }
+                    role="button"
+                    tabIndex={0}
+                  >
                   {/* Animated gradient background */}
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500`}
@@ -974,7 +993,8 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -990,34 +1010,29 @@ const Home: React.FC = () => {
               architectures
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {capabilities.map((capability, capIndex) => (
-                <div
-                  key={capability.title}
-                  className={`group backdrop-blur-md rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-1 elevated-card-bg ${
-                    capIndex === 0
-                      ? "delay-0"
-                      : capIndex === 1
-                        ? "delay-[50ms]"
-                        : capIndex === 2
-                          ? "delay-[100ms]"
-                          : capIndex === 3
-                            ? "delay-[150ms]"
-                            : capIndex === 4
-                              ? "delay-[200ms]"
-                              : "delay-[250ms]"
-                  }`}
-                >
-                  <div className="text-4xl mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
-                    {capability.icon}
+              {capabilities.map((capability, capIndex) => {
+                const getCapabilityDelayClass = () => {
+                  const delays = ["delay-0", "delay-[50ms]", "delay-[100ms]", "delay-[150ms]", "delay-[200ms]", "delay-[250ms]"];
+                  return delays[capIndex] || "delay-[250ms]";
+                };
+
+                return (
+                  <div
+                    key={capability.title}
+                    className={`group backdrop-blur-md rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-1 elevated-card-bg ${getCapabilityDelayClass()}`}
+                  >
+                    <div className="text-4xl mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                      {capability.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2 text-theme group-hover:text-[var(--brand)] transition-colors duration-300">
+                      {capability.title}
+                    </h3>
+                    <p className="text-muted text-sm leading-relaxed">
+                      {capability.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-theme group-hover:text-[var(--brand)] transition-colors duration-300">
-                    {capability.title}
-                  </h3>
-                  <p className="text-muted text-sm leading-relaxed">
-                    {capability.description}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -1033,9 +1048,9 @@ const Home: React.FC = () => {
               needs
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, testIndex) => (
+              {testimonials.map((testimonial) => (
                 <div
-                  key={`testimonial-${testIndex}`}
+                  key={`${testimonial.author}-${testimonial.role}`}
                   className="group relative backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] transition-all duration-500 hover:-translate-y-2 elevated-card-bg"
                 >
                   {/* Quote decoration */}

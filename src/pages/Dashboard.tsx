@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
       results = fuse.search(q).map((r) => r.item);
     }
 
-    return results.filter((problem: SystemDesignProblem) => {
+    const filtered = results.filter((problem: SystemDesignProblem) => {
       const matchesDifficulty =
         selectedDifficulty === "All" ||
         problem.difficulty === selectedDifficulty;
@@ -104,7 +104,14 @@ const Dashboard: React.FC = () => {
         selectedCategory === "All" || problem.category === selectedCategory;
       return matchesDifficulty && matchesCategory;
     });
-  }, [selectedDifficulty, selectedCategory, searchTerm, problems]);
+
+    // Sort: attempted problems first, then by original order
+    return filtered.sort((a, b) => {
+      const aAttempted = attemptedProblems.has(a.id) ? 1 : 0;
+      const bAttempted = attemptedProblems.has(b.id) ? 1 : 0;
+      return bAttempted - aAttempted; // Attempted (1) comes before not attempted (0)
+    });
+  }, [selectedDifficulty, selectedCategory, searchTerm, problems, attemptedProblems]);
 
   const categories = [
     "All",
@@ -388,18 +395,6 @@ const Dashboard: React.FC = () => {
                       <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
 
                       <div className="relative p-6">
-                        {/* Attempted Badge - Only shown when user is authenticated */}
-                        {isAuth && attemptedProblems.has(problem.id) && (
-                          <div className="absolute top-4 right-4 z-10">
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="text-xs font-bold">Attempted</span>
-                            </div>
-                          </div>
-                        )}
-
                         <div className="flex items-start justify-between mb-4">
                           <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
                             {problem.title}
@@ -447,9 +442,20 @@ const Dashboard: React.FC = () => {
                             navigate(`/playground/${problem.id}`);
                           }}
                           aria-label={`Start ${problem.title}`}
-                          className="w-full px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group-hover:shadow-xl"
+                          className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
+                            isAuth && attemptedProblems.has(problem.id)
+                              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:scale-105"
+                              : "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white hover:shadow-lg hover:scale-105"
+                          }`}
                         >
-                          Start Problem →
+                          <span className="flex items-center justify-center gap-2">
+                            {isAuth && attemptedProblems.has(problem.id) && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                            {isAuth && attemptedProblems.has(problem.id) ? "Continue Problem" : "Start Problem"} →
+                          </span>
                         </button>
                       </div>
                     </div>

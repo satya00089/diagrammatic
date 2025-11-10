@@ -161,22 +161,13 @@ const MyDesigns: React.FC = () => {
               </button>
               <div className="flex items-center gap-4">
                 {isAuth && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => navigate("/problems")}
-                      className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
-                    >
-                      Problems
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate("/attempts")}
-                      className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
-                    >
-                      My Attempts
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/problems")}
+                    className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
+                  >
+                    Problems
+                  </button>
                 )}
 
                 <div className="hidden md:block text-sm text-white/90">
