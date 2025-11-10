@@ -1,0 +1,415 @@
+import React from "react";
+import ReactDOM from "react-dom";
+import { Handle, Position } from "@xyflow/react";
+import { motion } from "framer-motion";
+import { MdSettings, MdDelete } from "react-icons/md";
+import { IoDuplicateOutline } from "react-icons/io5";
+import { FiUnlock } from "react-icons/fi";
+import DOMPurify from "dompurify";
+
+export type ERNodeData = {
+  label: string;
+  icon?: string;
+  componentName?: string;
+  description?: string;
+  attributes?: string;
+  primaryKey?: string;
+  foreignKeys?: string;
+  cardinality?: string;
+  nodeType?:
+    | "entity"
+    | "weak-entity"
+    | "er-note"
+    | "er-view"
+    | "er-trigger";
+  [key: string]: string | number | boolean | undefined;
+};
+
+type Props = {
+  id: string;
+  data: ERNodeData;
+  onCopy?: (id: string, data: ERNodeData) => void;
+  isInGroup?: boolean;
+};
+
+const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
+  const [contextMenu, setContextMenu] = React.useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({ visible: false, x: 0, y: 0 });
+
+  const displayLabel = data.componentName || data.label;
+  const nodeType = data.nodeType || "entity";
+
+  const onDelete = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-delete", { detail: { id } }),
+      );
+    },
+    [id],
+  );
+
+  const onToggle = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-toggle", { detail: { id } }),
+      );
+    },
+    [id],
+  );
+
+  const handleCopy = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onCopy?.(id, data);
+    },
+    [id, data, onCopy],
+  );
+
+  const handleDetach = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-detach", { detail: { id } }),
+      );
+    },
+    [id],
+  );
+
+  const handleContextMenu = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    },
+    [],
+  );
+
+  const closeContextMenu = React.useCallback(() => {
+    setContextMenu({ visible: false, x: 0, y: 0 });
+  }, []);
+
+  React.useEffect(() => {
+    if (contextMenu.visible) {
+      const handleClick = (e: MouseEvent) => {
+        const menu = document.querySelector('[data-context-menu]');
+        if (menu && !menu.contains(e.target as Node)) {
+          closeContextMenu();
+        }
+      };
+      document.addEventListener("click", handleClick);
+      document.addEventListener("contextmenu", handleClick);
+      return () => {
+        document.removeEventListener("click", handleClick);
+        document.removeEventListener("contextmenu", handleClick);
+      };
+    }
+  }, [contextMenu.visible, closeContextMenu]);
+
+  // Parse attributes if they exist
+  const attributesList = data.attributes
+    ? data.attributes.split("\n").filter((attr) => attr.trim())
+    : [];
+
+  // Determine styling based on node type
+  const getNodeStyle = () => {
+    switch (nodeType) {
+      case "weak-entity":
+        return {
+          border: "3px double var(--theme-color, #333)",
+          borderRadius: "0.5rem",
+          minWidth: "200px",
+          maxWidth: "400px",
+          maxHeight: "500px",
+        };
+      case "er-note":
+        return {
+          borderRadius: "0.25rem",
+          minWidth: "180px",
+          maxWidth: "400px",
+          maxHeight: "300px",
+          backgroundColor: "var(--note-bg, #fef3c7)",
+          borderLeft: "4px solid var(--warning, #f59e0b)",
+        };
+      case "er-trigger":
+        return {
+          borderRadius: "0.5rem",
+          minWidth: "200px",
+          maxWidth: "400px",
+          maxHeight: "300px",
+          backgroundColor: "var(--accent-bg, #fef3e7)",
+          borderLeft: "4px solid var(--accent, #f59e0b)",
+        };
+      case "er-view":
+        return {
+          borderRadius: "0.5rem",
+          minWidth: "200px",
+          maxWidth: "400px",
+          maxHeight: "500px",
+          borderStyle: "dashed",
+          borderWidth: "2px",
+        };
+      default:
+        return {
+          borderRadius: "0.5rem",
+          minWidth: "200px",
+          maxWidth: "400px",
+          maxHeight: "500px",
+        };
+    }
+  };
+
+  const nodeStyle = getNodeStyle();
+  
+  // Special node type checks
+  const isNote = nodeType === "er-note";
+  const isTrigger = nodeType === "er-trigger";
+
+  return (
+    <>
+      <motion.div
+        initial={{ y: 0, opacity: 1 }}
+        whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
+        whileTap={{ scale: 0.985 }}
+        transition={{ type: "spring", stiffness: 320, damping: 28 }}
+        className={`bg-surface border-2 border-theme text-sm shadow-sm cursor-grab relative overflow-auto er-node-scroll ${isNote ? "bg-yellow-50 dark:bg-yellow-900/20 text-gray-900 dark:text-gray-100" : ""} ${isTrigger ? "bg-orange-50 dark:bg-orange-900/20 text-gray-900 dark:text-gray-100" : "text-theme"}`}
+        style={nodeStyle}
+        onContextMenu={handleContextMenu}
+      >
+        {/* Handles for connections */}
+        <Handle
+          id="top"
+          type="source"
+          position={Position.Top}
+          isConnectable={true}
+          style={{
+            width: "100%",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+        <Handle
+          id="right"
+          type="source"
+          position={Position.Right}
+          isConnectable={true}
+          style={{
+            width: "8px",
+            height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+        <Handle
+          id="bottom"
+          type="source"
+          position={Position.Bottom}
+          isConnectable={true}
+          style={{
+            width: "100%",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+        <Handle
+          id="left"
+          type="source"
+          position={Position.Left}
+          isConnectable={true}
+          style={{
+            width: "8px",
+            height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        {/* Entity Header */}
+        {!isNote && !isTrigger && (
+          <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold text-center flex items-center justify-center gap-2">
+            {data.icon && <span className="text-lg">{data.icon}</span>}
+            <span>{displayLabel}</span>
+          </div>
+        )}
+
+        {/* Note content */}
+        {isNote && (
+            <div className="px-3 py-2">
+              <div className="flex items-center gap-2 mb-1">
+                {data.icon && <span className="text-lg">{data.icon}</span>}
+                <span className="font-semibold text-gray-700">{displayLabel}</span>
+              </div>
+              {data.description && (
+                <div 
+                  className="text-xs text-gray-700 mt-1"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.description) }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Trigger content */}
+          {isTrigger && (
+            <div className="px-3 py-2">
+              <div className="flex items-center gap-2 mb-1">
+                {data.icon && <span className="text-lg">{data.icon}</span>}
+                <span className="font-semibold text-gray-700">{displayLabel}</span>
+              </div>
+              <div className="text-xs space-y-1 mt-2">
+                {data.timing && data.event && (
+                  <div className="font-mono text-[11px] text-orange-700">
+                    {data.timing} {data.event}
+                  </div>
+                )}
+                {data.targetTable && (
+                  <div className="text-gray-700">
+                    ON <span className="font-semibold text-gray-700">{data.targetTable}</span>
+                  </div>
+                )}
+                {data.level && (
+                  <div className="text-gray-600 text-[10px]">
+                    FOR EACH {data.level}
+                  </div>
+                )}
+                {data.description && (
+                  <div 
+                    className="text-gray-700 mt-1 pt-1 border-t border-gray-300"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.description) }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Attributes Section - only for entity types */}
+          {(nodeType === "entity" || nodeType === "weak-entity") &&
+            attributesList.length > 0 && (
+              <div className="px-3 py-2 border-t border-theme/20">
+                <div className="space-y-1 text-xs">
+                  {attributesList.map((attr, index) => {
+                    const isPrimaryKey =
+                      data.primaryKey && attr.includes(data.primaryKey);
+                    const isForeignKey =
+                      data.foreignKeys &&
+                      data.foreignKeys.split("\n").some((fk) => attr.includes(fk));
+
+                    return (
+                      <div
+                        key={index}
+                        className={`font-mono ${
+                          isPrimaryKey
+                            ? "font-bold text-yellow-600 dark:text-yellow-400"
+                            : isForeignKey
+                              ? "text-blue-600 dark:text-blue-400"
+                              : ""
+                        }`}
+                      >
+                        {attr.trim().startsWith("+") ? (
+                          <span className="text-yellow-600 dark:text-yellow-400">
+                            🔑 {attr.trim().substring(1).trim()}
+                          </span>
+                        ) : (
+                          attr.trim()
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+      </motion.div>
+
+      {/* Context Menu Portal */}
+      {contextMenu.visible &&
+        ReactDOM.createPortal(
+          <motion.div
+            data-context-menu
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed z-[10000] bg-[var(--surface)] border border-theme rounded-lg shadow-lg py-1 min-w-[140px] pointer-events-auto"
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              transform: "translate(-50%, -10px)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
+              <MdSettings className="w-4 h-4" />
+              Settings
+            </button>
+            {isInGroup && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDetach(e);
+                  closeContextMenu();
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-orange-500"
+              >
+                <FiUnlock className="w-4 h-4" />
+                Detach from Group
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopy(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
+              <IoDuplicateOutline className="w-4 h-4" />
+              Duplicate
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e);
+                closeContextMenu();
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-red-600"
+            >
+              <MdDelete className="w-4 h-4" />
+              Delete
+            </button>
+          </motion.div>,
+          document.body,
+        )}
+    </>
+  );
+});
+
+ERNode.displayName = "ERNode";
+
+export default ERNode;

@@ -208,6 +208,7 @@ export const useCollaboration = ({
     reconnectAttempts,
   } = useWebSocket({
     url: wsUrl,
+    enabled, // Pass the enabled flag to prevent connection when not authenticated
     onMessage: handleMessage,
     onOpen: handleOpen,
     onClose: handleClose,
