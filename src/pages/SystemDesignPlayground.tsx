@@ -327,16 +327,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fetchProblem();
   }, [idFromUrl]);
 
-  // Mark problem as attempted when user is authenticated and problem is loaded
-  useEffect(() => {
-    if (isAuthenticated && idFromUrl && idFromUrl !== "free" && !idFromUrl.startsWith("custom-") && problem) {
-      apiService.markProblemAsAttempted(idFromUrl).catch((err) => {
-        // Silently fail - marking as attempted is not critical
-        console.error("Failed to mark problem as attempted:", err);
-      });
-    }
-  }, [isAuthenticated, idFromUrl, problem]);
-
   const onBack = () => navigate("/");
 
   // Undo/Redo state management
@@ -452,6 +442,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             lastAssessment?: ValidationResult;
           } | null;
 
+          console.log("Loaded attempt:", attempt);
+
           if (attempt) {
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
@@ -466,7 +458,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
             // Restore last assessment if available
             if (attempt.lastAssessment) {
-              setAssessment(attempt.lastAssessment);
+              console.log("Restoring assessment:", attempt.lastAssessment);
+              setAssessment(attempt.lastAssessment as ValidationResult);
+              // Automatically open Assessment tab to show the assessment
+              setActiveRightTab("assessment");
             }
 
             // Immediately update canvas state
@@ -826,11 +821,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // Call AI assessor (now returns Promise) with problem context
       const res = await assessSolution(solution, problem);
       setAssessment(res);
-      setActiveRightTab("details");
+      setActiveRightTab("assessment");
 
       // Save assessment to database for problem-solving mode
       if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
         try {
+          console.log("Saving assessment to database:", res);
           await apiService.saveAttempt({
             problemId: idFromUrl,
             title: problem?.title || "Unknown Problem",
@@ -841,6 +837,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             elapsedTime,
             lastAssessment: res,
           });
+          console.log("Assessment saved successfully");
         } catch (error) {
           console.error("Failed to save assessment:", error);
         }
@@ -1061,7 +1058,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     Record<string, CustomProperty[]>
   >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
-  const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector">(
+  const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector" | "assessment">(
     "details"
   );
   // Clear canvas confirmation state

@@ -12,8 +12,8 @@ type InspectorPanelProps = {
     hints: string[];
     tags: string[];
   } | null;
-  activeTab: "details" | "inspector";
-  setActiveTab: (t: "details" | "inspector") => void;
+  activeTab: "details" | "inspector" | "assessment";
+  setActiveTab: (t: "details" | "inspector" | "assessment") => void;
   inspectedNodeId: string | null;
   setInspectedNodeId: (id: string | null) => void;
   propertyElements: React.ReactNode;
@@ -169,7 +169,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       </button>
 
       <div
-        className="flex items-center justify-start gap-2"
+        className="flex flex-wrap items-center justify-start gap-2"
         role="tablist"
         aria-label="Sidebar tabs"
       >
@@ -182,6 +182,23 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           >
             <span className="text-sm">📄</span>
             <span className="text-sm font-medium">Details</span>
+          </button>
+        )}
+
+        {!isFreeDesignMode && (
+          <button
+            type="button"
+            role="tab"
+            className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "assessment" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+            onClick={() => setActiveTab("assessment")}
+          >
+            <span className="text-sm">📊</span>
+            <span className="text-sm font-medium">Assessment</span>
+            {assessmentResult && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[var(--brand)] text-white">
+                {assessmentResult.score}
+              </span>
+            )}
           </button>
         )}
 
@@ -205,94 +222,6 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <div className="overflow-y-auto component-palette flex-1">
         {activeTab === "details" && (
           <div>
-            {/* Assessment summary */}
-            {assessmentResult && (
-              <div className="mb-4 p-2 border rounded bg-[var(--surface)]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-medium text-theme">
-                    Assessment
-                  </div>
-                  <div className="text-sm font-semibold text-theme">
-                    {assessmentResult.score}%
-                  </div>
-                </div>
-                <div className="text-xs text-muted mb-2">
-                  {assessmentResult.isValid ? "Pass" : "Needs work"}
-                </div>
-                <div className="space-y-1 text-xs">
-                  {assessmentResult.feedback.slice(0, 3).map((f) => (
-                    <div
-                      key={`${f.category}-${f.type}`}
-                      className="text-sm text-theme"
-                    >
-                      {f.message}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-3 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={copyAssessment}
-                    className="px-2 py-1 bg-theme border border-theme rounded text-sm hover:bg-[var(--bg-hover)]"
-                  >
-                    Copy JSON
-                  </button>
-                  <button
-                    type="button"
-                    onClick={downloadAssessment}
-                    className="px-2 py-1 bg-theme border border-theme rounded text-sm hover:bg-[var(--bg-hover)]"
-                  >
-                    Download JSON
-                  </button>
-                </div>
-
-                {/* Expanded assessment details */}
-                <div className="mt-3 text-xs">
-                  <div className="font-medium text-sm mb-1">
-                    What went right
-                  </div>
-                  {assessmentResult.architectureStrengths.length > 0 ? (
-                    <ul className="list-disc list-inside text-xs mb-2">
-                      {assessmentResult.architectureStrengths.map((s) => (
-                        <li key={`strength-${s}`}>{s}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-xs text-muted mb-2">
-                      No notable strengths detected.
-                    </div>
-                  )}
-
-                  <div className="font-medium text-sm mb-1">
-                    What to improve
-                  </div>
-                  {assessmentResult.improvements.length > 0 ? (
-                    <ul className="list-disc list-inside text-xs mb-2">
-                      {assessmentResult.improvements.map((imp) => (
-                        <li key={`imp-${imp}`}>{imp}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-xs text-muted mb-2">
-                      No specific improvements suggested.
-                    </div>
-                  )}
-
-                  <div className="font-medium text-sm mb-1">Feedback</div>
-                  <div className="space-y-1">
-                    {assessmentResult.feedback.map((f) => (
-                      <div key={`${f.category}-${f.type}`} className="text-xs">
-                        <div className="font-medium">
-                          {f.category.toUpperCase()}
-                        </div>
-                        <div className="text-muted">{f.message}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
             <h3 className="text-lg font-semibold text-theme mb-3">
               {problem.title}
             </h3>
@@ -453,6 +382,118 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       Close
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "assessment" && (
+          <div>
+            {assessmentResult ? (
+              <div className="space-y-4">
+                {/* Score Header */}
+                <div className="p-4 border rounded-lg bg-[var(--surface)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-lg font-semibold text-theme">
+                      Assessment Score
+                    </div>
+                    <div className="text-2xl font-bold text-[var(--brand)]">
+                      {assessmentResult.score}%
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted">
+                    {assessmentResult.isValid ? "✅ Pass" : "⚠️ Needs Improvement"}
+                  </div>
+                </div>
+
+                {/* What Went Right */}
+                <div className="p-4 border rounded-lg bg-[var(--surface)]">
+                  <div className="font-semibold text-theme mb-3 flex items-center gap-2">
+                    <span className="text-green-500">✓</span>
+                    <span>What Went Right</span>
+                  </div>
+                  {assessmentResult.architectureStrengths.length > 0 ? (
+                    <ul className="space-y-2">
+                      {assessmentResult.architectureStrengths.map((s, idx) => (
+                        <li key={`strength-${idx}`} className="flex items-start gap-2 text-sm">
+                          <span className="text-green-500 mt-0.5">•</span>
+                          <span className="text-theme">{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-muted">
+                      No notable strengths detected.
+                    </div>
+                  )}
+                </div>
+
+                {/* What to Improve */}
+                <div className="p-4 border rounded-lg bg-[var(--surface)]">
+                  <div className="font-semibold text-theme mb-3 flex items-center gap-2">
+                    <span className="text-orange-500">!</span>
+                    <span>What to Improve</span>
+                  </div>
+                  {assessmentResult.improvements.length > 0 ? (
+                    <ul className="space-y-2">
+                      {assessmentResult.improvements.map((imp, idx) => (
+                        <li key={`imp-${idx}`} className="flex items-start gap-2 text-sm">
+                          <span className="text-orange-500 mt-0.5">•</span>
+                          <span className="text-theme">{imp}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-muted">
+                      No specific improvements suggested.
+                    </div>
+                  )}
+                </div>
+
+                {/* Detailed Feedback */}
+                <div className="p-4 border rounded-lg bg-[var(--surface)]">
+                  <div className="font-semibold text-theme mb-3">
+                    Detailed Feedback
+                  </div>
+                  <div className="space-y-3">
+                    {assessmentResult.feedback.map((f, idx) => (
+                      <div key={`feedback-${idx}`} className="border-l-2 border-[var(--brand)] pl-3 py-1">
+                        <div className="font-medium text-xs text-[var(--brand)] uppercase mb-1">
+                          {f.category}
+                        </div>
+                        <div className="text-sm text-theme">{f.message}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyAssessment}
+                    className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
+                  >
+                    📋 Copy JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadAssessment}
+                    className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
+                  >
+                    💾 Download
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📊</div>
+                <div className="text-lg font-semibold text-theme mb-2">
+                  No Assessment Yet
+                </div>
+                <div className="text-sm text-muted">
+                  Run an assessment to see your design evaluation and feedback.
                 </div>
               </div>
             )}

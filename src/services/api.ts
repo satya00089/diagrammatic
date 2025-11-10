@@ -236,17 +236,6 @@ class ApiService {
     return response.json();
   }
 
-  async markProblemAsAttempted(problemId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/problems/${problemId}/attempt`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      console.warn("Failed to mark problem as attempted");
-    }
-  }
-
   // Problem attempts management
   async saveAttempt(payload: {
     problemId: string;
