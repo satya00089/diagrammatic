@@ -221,6 +221,100 @@ class ApiService {
       throw new Error("Failed to remove collaborator");
     }
   }
+
+  // Problem attempts tracking
+  async getAttemptedProblems(): Promise<string[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/problems/attempted`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      // Return empty array if endpoint fails (user not authenticated or endpoint not available)
+      return [];
+    }
+
+    return response.json();
+  }
+
+  async markProblemAsAttempted(problemId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/problems/${problemId}/attempt`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      console.warn("Failed to mark problem as attempted");
+    }
+  }
+
+  // Problem attempts management
+  async saveAttempt(payload: {
+    problemId: string;
+    title: string;
+    difficulty?: string;
+    category?: string;
+    nodes: unknown[];
+    edges: unknown[];
+    elapsedTime: number;
+    lastAssessment?: unknown;
+  }): Promise<unknown> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/attempts`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Failed to save attempt" }));
+      throw new Error(error.message || "Failed to save attempt");
+    }
+
+    return response.json();
+  }
+
+  async getUserAttempts(): Promise<unknown[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/attempts`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch attempts");
+    }
+
+    return response.json();
+  }
+
+  async getAttemptByProblem(problemId: string): Promise<unknown | null> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/attempts/problem/${problemId}`,
+      {
+        headers: this.getAuthHeaders(),
+      }
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch attempt");
+    }
+
+    return response.json();
+  }
+
+  async deleteAttempt(problemId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/problem/${problemId}`, {
+      method: "DELETE",
+      headers: this.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete attempt");
+    }
+  }
 }
 
 export const apiService = new ApiService();

@@ -6,22 +6,46 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
-import type { SavedDiagram } from "../types/auth";
 
-const MyDesigns: React.FC = () => {
+interface ProblemAttempt {
+  id: string;
+  userId: string;
+  problemId: string;
+  title: string;
+  difficulty?: string;
+  category?: string;
+  nodes: unknown[];
+  edges: unknown[];
+  elapsedTime: number;
+  lastAssessment?: {
+    score: number;
+    isValid: boolean;
+    feedback: unknown[];
+  };
+  assessmentCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastAttemptedAt: string;
+}
+
+const MyAttempts: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
-  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
-  const [loadingDiagrams, setLoadingDiagrams] = useState(false);
+  const [attempts, setAttempts] = useState<ProblemAttempt[]>([]);
+  const [loadingAttempts, setLoadingAttempts] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
-    "updated"
+  const [sortBy, setSortBy] = useState<"recent" | "difficulty" | "score">(
+    "recent"
   );
-  const [filterBy, setFilterBy] = useState<"all" | "owned" | "shared">("all");
+  const [filterBy, setFilterBy] = useState<"all" | "assessed" | "inprogress">(
+    "all"
+  );
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(null);
+  const [attemptToDelete, setAttemptToDelete] = useState<ProblemAttempt | null>(
+    null
+  );
   const {
     user,
     isAuthenticated: isAuth,
@@ -38,107 +62,128 @@ const MyDesigns: React.FC = () => {
     }
   }, [isAuth, navigate]);
 
-  // Load diagrams
+  // Load attempts
   useEffect(() => {
-    const loadDiagrams = async () => {
+    const loadAttempts = async () => {
       if (!isAuth) {
-        setSavedDiagrams([]);
+        setAttempts([]);
         return;
       }
-      setLoadingDiagrams(true);
+      setLoadingAttempts(true);
       try {
-        const diagrams = await apiService.getUserDiagrams();
-        setSavedDiagrams(diagrams);
+        const userAttempts =
+          (await apiService.getUserAttempts()) as ProblemAttempt[];
+        setAttempts(userAttempts);
       } catch (error) {
-        console.error("Failed to load diagrams:", error);
+        console.error("Failed to load attempts:", error);
       } finally {
-        setLoadingDiagrams(false);
+        setLoadingAttempts(false);
       }
     };
-    loadDiagrams();
+    loadAttempts();
   }, [isAuth]);
 
-  const handleOpenDiagram = (diagramId: string) => {
-    navigate(`/playground/free?diagramId=${diagramId}`);
+  const handleOpenAttempt = (problemId: string) => {
+    navigate(`/playground/${problemId}`);
   };
 
-  const handleDeleteDiagram = async (
-    diagram: SavedDiagram,
+  const handleDeleteAttempt = async (
+    attempt: ProblemAttempt,
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    
-    // Only owners can delete
-    if (!diagram.isOwner) {
-      return;
-    }
-
-    setDiagramToDelete(diagram);
+    setAttemptToDelete(attempt);
     setShowDeleteDialog(true);
   };
 
-  const confirmDeleteDiagram = async () => {
-    if (!diagramToDelete) return;
+  const confirmDeleteAttempt = async () => {
+    if (!attemptToDelete) return;
 
     try {
-      await apiService.deleteDiagram(diagramToDelete.id);
-      setSavedDiagrams((prev) => prev.filter((d) => d.id !== diagramToDelete.id));
+      await apiService.deleteAttempt(attemptToDelete.id);
+      setAttempts((prev) => prev.filter((a) => a.id !== attemptToDelete.id));
       setShowDeleteDialog(false);
-      setDiagramToDelete(null);
+      setAttemptToDelete(null);
     } catch (error) {
-      console.error("Failed to delete diagram:", error);
-      alert("Failed to delete diagram. Please try again.");
+      console.error("Failed to delete attempt:", error);
+      alert("Failed to delete attempt. Please try again.");
     }
   };
 
-  const cancelDeleteDiagram = () => {
+  const cancelDeleteAttempt = () => {
     setShowDeleteDialog(false);
-    setDiagramToDelete(null);
+    setAttemptToDelete(null);
   };
 
-  // Filter and sort diagrams
-  const filteredDiagrams = savedDiagrams
-    .filter((diagram) => {
-      // Filter by ownership
-      if (filterBy === "owned" && !diagram.isOwner) return false;
-      if (filterBy === "shared" && diagram.isOwner) return false;
+  // Format elapsed time as HH:MM:SS
+  const formatTime = (seconds: number): string => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m`;
+    }
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
+  // Filter and sort attempts
+  const filteredAttempts = attempts
+    .filter((attempt) => {
+      // Filter by assessment status
+      if (filterBy === "assessed" && !attempt.lastAssessment) return false;
+      if (filterBy === "inprogress" && attempt.lastAssessment) return false;
 
       // Filter by search term
       const searchLower = searchTerm.toLowerCase();
       return (
-        diagram.title.toLowerCase().includes(searchLower) ||
-        diagram.description?.toLowerCase().includes(searchLower) ||
-        diagram.owner.name.toLowerCase().includes(searchLower) ||
-        diagram.owner.email.toLowerCase().includes(searchLower) ||
+        attempt.title.toLowerCase().includes(searchLower) ||
+        attempt.category?.toLowerCase().includes(searchLower) ||
+        attempt.difficulty?.toLowerCase().includes(searchLower) ||
         false
       );
     })
     .sort((a, b) => {
       switch (sortBy) {
-        case "title":
-          return a.title.localeCompare(b.title);
-        case "created":
+        case "difficulty": {
+          const difficultyOrder: Record<string, number> = {
+            easy: 1,
+            medium: 2,
+            hard: 3,
+            "very hard": 4,
+          };
           return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            difficultyOrder[a.difficulty?.toLowerCase() || "medium"] -
+            difficultyOrder[b.difficulty?.toLowerCase() || "medium"]
           );
-        case "updated":
+        }
+        case "score": {
+          const scoreA = a.lastAssessment?.score || 0;
+          const scoreB = b.lastAssessment?.score || 0;
+          return scoreB - scoreA;
+        }
+        case "recent":
         default:
           return (
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            new Date(b.lastAttemptedAt).getTime() -
+            new Date(a.lastAttemptedAt).getTime()
           );
       }
     });
 
-  // Count owned and shared diagrams
-  const ownedCount = savedDiagrams.filter(d => d.isOwner).length;
-  const sharedCount = savedDiagrams.filter(d => !d.isOwner).length;
+  // Count attempts
+  const assessedCount = attempts.filter((a) => a.lastAssessment).length;
+  const inProgressCount = attempts.filter((a) => !a.lastAssessment).length;
 
   return (
     <>
       <SEO
-        title="My Designs | Diagrammatic"
-        description="View and manage your saved system design projects and diagrams shared with you"
-        url="https://satya00089.github.io/diagrammatic/#/diagrams"
+        title="My Attempts | Diagrammatic"
+        description="View your attempted system design problems and track your progress"
+        url="https://satya00089.github.io/diagrammatic/#/attempts"
       />
       <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
         {/* Header */}
@@ -171,26 +216,19 @@ const MyDesigns: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigate("/attempts")}
+                      onClick={() => navigate("/diagrams")}
                       className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                     >
-                      My Attempts
+                      My Designs
                     </button>
                   </>
                 )}
 
                 <div className="hidden md:block text-sm text-white/90">
-                  {loadingDiagrams
+                  {loadingAttempts
                     ? "Loading..."
-                    : `${ownedCount} owned · ${sharedCount} shared`}
+                    : `${attempts.length} attempt${attempts.length === 1 ? "" : "s"}`}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate("/playground/free")}
-                  className="px-4 py-2 bg-white/20 text-white text-sm font-semibold rounded-lg hover:bg-white/30 transition-all cursor-pointer"
-                >
-                  New Design
-                </button>
 
                 <ThemeSwitcher />
 
@@ -280,18 +318,19 @@ const MyDesigns: React.FC = () => {
             {/* Page Header */}
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                My Designs
+                My Attempts
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                View and manage your saved projects and diagrams shared with you
+                Track your progress and continue working on system design
+                problems
               </p>
             </div>
 
             {/* Filters */}
-            {!loadingDiagrams && (
+            {!loadingAttempts && (
               <>
                 {/* Filter Tabs */}
-                <div className="flex gap-2 mb-6 justify-center">
+                <div className="flex gap-2 mb-6 justify-center flex-wrap">
                   <button
                     type="button"
                     onClick={() => setFilterBy("all")}
@@ -301,29 +340,29 @@ const MyDesigns: React.FC = () => {
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
-                    All Designs ({savedDiagrams.length})
+                    All Attempts ({attempts.length})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFilterBy("owned")}
+                    onClick={() => setFilterBy("assessed")}
                     className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
-                      filterBy === "owned"
+                      filterBy === "assessed"
                         ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
-                    My Designs ({ownedCount})
+                    Assessed ({assessedCount})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFilterBy("shared")}
+                    onClick={() => setFilterBy("inprogress")}
                     className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
-                      filterBy === "shared"
+                      filterBy === "inprogress"
                         ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
-                    Shared with Me ({sharedCount})
+                    In Progress ({inProgressCount})
                   </button>
                 </div>
 
@@ -340,7 +379,7 @@ const MyDesigns: React.FC = () => {
                       <input
                         id="search-input"
                         type="text"
-                        placeholder="Search designs..."
+                        placeholder="Search problems..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
@@ -360,76 +399,74 @@ const MyDesigns: React.FC = () => {
                         value={sortBy}
                         onChange={(e) =>
                           setSortBy(
-                            e.target.value as "updated" | "created" | "title"
+                            e.target.value as "recent" | "difficulty" | "score"
                           )
                         }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                       >
-                        <option value="updated">Last Updated</option>
-                        <option value="created">Date Created</option>
-                        <option value="title">Title (A-Z)</option>
+                        <option value="recent">Recently Attempted</option>
+                        <option value="difficulty">Difficulty</option>
+                        <option value="score">Assessment Score</option>
                       </select>
                     </div>
                   </div>
                 </div>
 
                 {/* Loading State */}
-                {loadingDiagrams && (
+                {loadingAttempts && (
                   <div className="text-center py-20">
                     <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <div className="text-theme text-xl mb-2">
-                      Loading designs...
+                      Loading attempts...
                     </div>
                     <div className="text-muted text-sm">
-                      Please wait while we fetch your designs
+                      Please wait while we fetch your problem attempts
                     </div>
                   </div>
                 )}
 
                 {/* Empty State */}
-                {!loadingDiagrams && filteredDiagrams.length === 0 && (
+                {!loadingAttempts && filteredAttempts.length === 0 && (
                   <div className="text-center py-20">
                     <div className="text-7xl mb-6">
-                      {searchTerm 
-                        ? "🔍" 
-                        : filterBy === "shared" 
-                          ? "🤝" 
-                          : "🎨"}
+                      {searchTerm
+                        ? "🔍"
+                        : filterBy === "assessed"
+                          ? "📊"
+                          : "🎯"}
                     </div>
                     <div className="text-theme text-2xl font-bold mb-2">
-                      {searchTerm 
-                        ? "No designs found" 
-                        : filterBy === "shared"
-                          ? "No shared designs yet"
-                          : filterBy === "owned"
-                            ? "No designs created yet"
-                            : "No designs yet"}
+                      {searchTerm
+                        ? "No attempts found"
+                        : filterBy === "assessed"
+                          ? "No assessed problems yet"
+                          : filterBy === "inprogress"
+                            ? "No problems in progress"
+                            : "No attempts yet"}
                     </div>
                     <div className="text-muted text-lg mb-6">
                       {searchTerm
                         ? "Try adjusting your search terms"
-                        : filterBy === "shared"
-                          ? "Diagrams shared with you will appear here"
-                          : "Start creating your first system design project"}
+                        : "Start solving system design problems to see your progress here"}
                     </div>
-                    {!searchTerm && filterBy !== "shared" && (
+                    {!searchTerm && (
                       <button
                         type="button"
-                        onClick={() => navigate("/playground/free")}
+                        onClick={() => navigate("/problems")}
                         className="px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer"
                       >
-                        Create Your First Design →
+                        Browse Problems →
                       </button>
                     )}
                   </div>
                 )}
 
-                {/* Diagrams Grid */}
-                {!loadingDiagrams && filteredDiagrams.length > 0 && (
+                {/* Attempts Grid */}
+                {!loadingAttempts && filteredAttempts.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                    {filteredDiagrams.map((diagram, index) => (
+                    {filteredAttempts.map((attempt, index) => (
                       <div
-                        key={diagram.id}
+                        key={attempt.id}
                         className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
                           index === 0
                             ? "delay-0"
@@ -444,162 +481,172 @@ const MyDesigns: React.FC = () => {
                         <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
 
                         <div className="relative p-6">
-                          {/* Delete Button - Only for owners */}
-                          {diagram.isOwner && (
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteDiagram(diagram, e)}
-                              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg z-10"
-                              title="Delete diagram"
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteAttempt(attempt, e)}
+                            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg z-10"
+                            title="Delete attempt"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5 text-red-500"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 text-red-500"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
-                          )}
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
 
                           <div
                             className="cursor-pointer"
-                            onClick={() => handleOpenDiagram(diagram.id)}
+                            onClick={() => handleOpenAttempt(attempt.problemId)}
                           >
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex-1 pr-8">
-                                <div className="flex items-start gap-2 mb-2">
-                                  <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1">
-                                    {diagram.title}
-                                  </h3>
+                                <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 mb-2">
+                                  {attempt.title}
+                                </h3>
+
+                                {/* Difficulty and Category */}
+                                <div className="flex items-center gap-2 flex-wrap mb-3">
+                                  {attempt.difficulty && (
+                                    <span
+                                      className={`px-2 py-1 rounded text-xs font-medium ${
+                                        attempt.difficulty.toLowerCase() ===
+                                        "easy"
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                          : attempt.difficulty.toLowerCase() ===
+                                              "medium"
+                                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                      }`}
+                                    >
+                                      {attempt.difficulty}
+                                    </span>
+                                  )}
+                                  {attempt.category && (
+                                    <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                      {attempt.category}
+                                    </span>
+                                  )}
                                 </div>
-                                
-                                {/* Enhanced Ownership & Permission Section */}
-                                {!diagram.isOwner && (
-                                  <div className="mb-2 flex items-center gap-2 flex-wrap">
-                                    {/* Owner Info Badge - Inline */}
-                                    <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
-                                      {/* Animated gradient background */}
-                                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
-                                      
-                                      <div className="relative flex items-center gap-1.5">
-                                        {/* Avatar */}
-                                        <div className="relative flex-shrink-0">
-                                          {diagram.owner.pictureUrl ? (
-                                            <img
-                                              src={diagram.owner.pictureUrl}
-                                              alt={diagram.owner.name}
-                                              className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
-                                            />
-                                          ) : (
-                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
-                                              {diagram.owner.name[0]?.toUpperCase()}
-                                            </div>
-                                          )}
-                                          {/* Online indicator */}
-                                          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
-                                        </div>
-                                        
-                                        {/* Owner Name */}
-                                        <div className="flex items-center gap-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                          </svg>
-                                          <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
-                                            {diagram.owner.name}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Permission Badge */}
-                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
-                                      diagram.permission === 'edit'
-                                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30'
-                                        : 'bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30'
-                                    }`}>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                        {diagram.permission === 'edit' ? (
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        ) : (
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        )}
-                                      </svg>
-                                      <span>{diagram.permission === 'edit' ? 'Can Edit' : 'View Only'}</span>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                {diagram.description && (
-                                  <p className="text-muted text-sm line-clamp-2 leading-relaxed">
-                                    {diagram.description}
-                                  </p>
-                                )}
                               </div>
-                              <div className="text-3xl">📐</div>
+                              <div className="text-3xl">🎯</div>
                             </div>
 
-                            <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
-                              <span className="flex items-center gap-1">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-                                  />
-                                </svg>
-                                {diagram.nodes.length} node
-                                {diagram.nodes.length === 1 ? "" : "s"}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                                  />
-                                </svg>
-                                {diagram.edges.length} connection
-                                {diagram.edges.length === 1 ? "" : "s"}
-                              </span>
+                            {/* Stats */}
+                            <div className="space-y-3 mb-4 pb-4 border-b border-[var(--theme)]/10">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted flex items-center gap-1">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                  Time spent
+                                </span>
+                                <span className="font-semibold text-theme">
+                                  {formatTime(attempt.elapsedTime)}
+                                </span>
+                              </div>
+
+                              {attempt.lastAssessment && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted flex items-center gap-1">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    Assessment score
+                                  </span>
+                                  <span
+                                    className={`font-bold ${
+                                      attempt.lastAssessment.score >= 80
+                                        ? "text-green-600 dark:text-green-400"
+                                        : attempt.lastAssessment.score >= 60
+                                          ? "text-yellow-600 dark:text-yellow-400"
+                                          : "text-red-600 dark:text-red-400"
+                                    }`}
+                                  >
+                                    {attempt.lastAssessment.score}/100
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted flex items-center gap-1">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                                    />
+                                  </svg>
+                                  Components
+                                </span>
+                                <span className="font-semibold text-theme">
+                                  {attempt.nodes.length}
+                                </span>
+                              </div>
+
+                              {attempt.assessmentCount > 0 && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted">
+                                    Assessments run
+                                  </span>
+                                  <span className="font-semibold text-theme">
+                                    {attempt.assessmentCount}
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center justify-between text-xs text-muted mb-6">
                               <span>
-                                Updated{" "}
-                                {new Date(diagram.updatedAt).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  }
-                                )}
+                                Last worked{" "}
+                                {new Date(
+                                  attempt.lastAttemptedAt
+                                ).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
                               </span>
                               <span>
-                                Created{" "}
-                                {new Date(diagram.createdAt).toLocaleDateString(
+                                Started{" "}
+                                {new Date(attempt.createdAt).toLocaleDateString(
                                   "en-US",
                                   {
                                     month: "short",
@@ -613,11 +660,11 @@ const MyDesigns: React.FC = () => {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenDiagram(diagram.id);
+                                handleOpenAttempt(attempt.problemId);
                               }}
                               className="w-full px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group-hover:shadow-xl"
                             >
-                              Open Design →
+                              Continue Working →
                             </button>
                           </div>
                         </div>
@@ -649,7 +696,7 @@ const MyDesigns: React.FC = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {showDeleteDialog && diagramToDelete && (
+      {showDeleteDialog && attemptToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-[var(--surface)] rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 border border-[var(--theme)]/10">
             <div className="flex items-center space-x-3 mb-4">
@@ -671,7 +718,7 @@ const MyDesigns: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-[var(--theme)]">
-                  Delete Design?
+                  Delete Attempt?
                 </h3>
                 <p className="text-sm text-muted">
                   This action cannot be undone
@@ -679,23 +726,24 @@ const MyDesigns: React.FC = () => {
               </div>
             </div>
             <p className="text-muted mb-6">
-              Are you sure you want to delete <strong>"{diagramToDelete.title}"</strong>?
-              This will permanently remove the design and all its data.
+              Are you sure you want to delete your attempt for{" "}
+              <strong>"{attemptToDelete.title}"</strong>? This will permanently
+              remove your progress and assessment data.
             </p>
             <div className="flex space-x-3">
               <button
                 type="button"
-                onClick={cancelDeleteDiagram}
+                onClick={cancelDeleteAttempt}
                 className="flex-1 px-4 py-2 bg-[var(--theme)]/5 hover:bg-[var(--theme)]/10 text-[var(--theme)] font-medium rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={confirmDeleteDiagram}
+                onClick={confirmDeleteAttempt}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
               >
-                Delete Design
+                Delete Attempt
               </button>
             </div>
           </div>
@@ -705,4 +753,4 @@ const MyDesigns: React.FC = () => {
   );
 };
 
-export default MyDesigns;
+export default MyAttempts;

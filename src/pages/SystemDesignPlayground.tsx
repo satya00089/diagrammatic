@@ -83,6 +83,9 @@ import {
   readFileAsText,
 } from "../utils/exportImport";
 
+// Type alias for all node data types
+type AnyNodeData = NodeData | ERNodeData | TableNodeData;
+
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
   onBack?: () => void;
@@ -99,7 +102,7 @@ const NodeWithCopy = React.memo(
   (props: {
     id: string;
     data: unknown;
-    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
+    onCopy: (id: string, data: AnyNodeData) => void;
     isInGroup?: boolean;
   }) => {
     const nodeData = props.data as NodeData;
@@ -119,7 +122,7 @@ const ERNodeWithCopy = React.memo(
   (props: {
     id: string;
     data: unknown;
-    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
+    onCopy: (id: string, data: AnyNodeData) => void;
     isInGroup?: boolean;
   }) => {
     const nodeData = props.data as ERNodeData;
@@ -139,7 +142,7 @@ const TableNodeWithCopy = React.memo(
   (props: {
     id: string;
     data: unknown;
-    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
+    onCopy: (id: string, data: AnyNodeData) => void;
     isInGroup?: boolean;
   }) => {
     const nodeData = props.data as TableNodeData;
@@ -156,32 +159,32 @@ const TableNodeWithCopy = React.memo(
 
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
-  nodesRef: React.MutableRefObject<Node[]>
+  onCopy: (id: string, data: AnyNodeData) => void,
+  nodesRef: React.RefObject<Node[]>
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
-      nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
+      nodesRef.current?.find((n) => n.id === props.id)?.parentId !== undefined;
     return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
   };
 };
 
 // Factory function to create ER node component with copy handler and group detection
 const createERNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
-  nodesRef: React.MutableRefObject<Node[]>
+  onCopy: (id: string, data: AnyNodeData) => void,
+  nodesRef: React.RefObject<Node[]>
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
-      nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
+      nodesRef.current?.find((n) => n.id === props.id)?.parentId !== undefined;
     return <ERNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
   };
 };
 
 // Factory function to create table node component with copy handler and group detection
 const createTableNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
-  nodesRef: React.MutableRefObject<Node[]>
+  onCopy: (id: string, data: AnyNodeData) => void,
+  nodesRef: React.RefObject<Node[]>
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
@@ -324,6 +327,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fetchProblem();
   }, [idFromUrl]);
 
+  // Mark problem as attempted when user is authenticated and problem is loaded
+  useEffect(() => {
+    if (isAuthenticated && idFromUrl && idFromUrl !== "free" && !idFromUrl.startsWith("custom-") && problem) {
+      apiService.markProblemAsAttempted(idFromUrl).catch((err) => {
+        // Silently fail - marking as attempted is not critical
+        console.error("Failed to mark problem as attempted:", err);
+      });
+    }
+  }, [isAuthenticated, idFromUrl, problem]);
+
   const onBack = () => navigate("/");
 
   // Undo/Redo state management
@@ -348,6 +361,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(canvasState.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(canvasState.edges);
   const { getNodes, fitView } = useReactFlow();
+
+  // Track if we're currently applying undo/redo to prevent circular updates
+  const isApplyingUndoRedo = useRef(false);
 
   // Update nodes ref whenever nodes change
   useEffect(() => {
@@ -424,32 +440,46 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         loadLastDiagram();
       }
     } else if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
-      // Load saved progress for problem-solving
-      const progressKey = `problem-progress-${user?.id || "anonymous"}-${idFromUrl}`;
-      const savedProgress = localStorage.getItem(progressKey);
-
-      if (savedProgress) {
+      // Load saved progress for problem-solving from database
+      const loadAttempt = async () => {
         try {
-          const progressData = JSON.parse(savedProgress);
-          const loadedNodes = progressData.nodes as Node[];
-          const loadedEdges = progressData.edges as Edge[];
+          const attempt = (await apiService.getAttemptByProblem(
+            idFromUrl
+          )) as {
+            nodes: Node[];
+            edges: Edge[];
+            elapsedTime: number;
+            lastAssessment?: ValidationResult;
+          } | null;
 
-          setNodes(loadedNodes);
-          setEdges(loadedEdges);
+          if (attempt) {
+            const loadedNodes = attempt.nodes;
+            const loadedEdges = attempt.edges;
 
-          // Restore timer progress if available
-          if (progressData.elapsedTime) {
-            setElapsedTime(progressData.elapsedTime);
+            setNodes(loadedNodes);
+            setEdges(loadedEdges);
+
+            // Restore timer progress if available
+            if (attempt.elapsedTime) {
+              setElapsedTime(attempt.elapsedTime);
+            }
+
+            // Restore last assessment if available
+            if (attempt.lastAssessment) {
+              setAssessment(attempt.lastAssessment);
+            }
+
+            // Immediately update canvas state
+            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+
+            toast.success("Progress restored from previous session");
           }
-
-          // Immediately update canvas state
-          setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
-
-          toast.success("Progress restored from previous session");
         } catch (error) {
-          console.error("Failed to load saved progress:", error);
+          console.error("Failed to load saved attempt:", error);
         }
-      }
+      };
+
+      loadAttempt();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diagramIdFromUrl, isAuthenticated, idFromUrl, user?.id]);
@@ -488,27 +518,38 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             return;
           }
         } else {
-          // For Problem-solving: save progress to localStorage
-          const progressKey = `problem-progress-${user?.id || "anonymous"}-${idFromUrl}`;
-          const progressData = {
+          // For Problem-solving: save progress to database
+          if (!idFromUrl) return; // Safety check
+          
+          await apiService.saveAttempt({
             problemId: idFromUrl,
+            title: problem?.title || "Unknown Problem",
+            difficulty: problem?.difficulty,
+            category: problem?.category,
             nodes,
             edges,
-            lastSaved: new Date().toISOString(),
-            elapsedTime, // Also save timer progress
-          };
-          localStorage.setItem(progressKey, JSON.stringify(progressData));
+            elapsedTime,
+            // Don't save assessment in auto-save, only when assessment is explicitly run
+          });
         }
 
         setAutoSaveStatus("saved");
         setLastSavedAt(new Date());
 
-        // Show toast notification for successful auto-save
-        toast.success(
-          idFromUrl === "free"
-            ? "Design auto-saved successfully!"
-            : "Progress auto-saved successfully!"
-        );
+        // Show toast notification for successful auto-save (only show occasionally to avoid spam)
+        const lastToastTime = localStorage.getItem("lastAutoSaveToast");
+        const now = Date.now();
+        if (
+          !lastToastTime ||
+          now - Number.parseInt(lastToastTime) > 60000 // Show toast max once per minute
+        ) {
+          toast.success(
+            idFromUrl === "free"
+              ? "Design auto-saved successfully!"
+              : "Progress auto-saved successfully!"
+          );
+          localStorage.setItem("lastAutoSaveToast", now.toString());
+        }
 
         // Reset status after 3 seconds
         setTimeout(() => setAutoSaveStatus("idle"), 3000);
@@ -526,13 +567,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id]);
+  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id, elapsedTime, problem]);
 
   // Apply undo/redo state to React Flow
   useEffect(() => {
+    isApplyingUndoRedo.current = true;
     setNodes(canvasState.nodes);
     setEdges(canvasState.edges);
+    // Reset flag after a brief delay to allow state updates to complete
+    setTimeout(() => {
+      isApplyingUndoRedo.current = false;
+    }, 0);
   }, [canvasState, setNodes, setEdges]);
+
+  // Sync nodes and edges changes to undo/redo history
+  useEffect(() => {
+    // Skip if this change is from undo/redo
+    if (isApplyingUndoRedo.current) return;
+    
+    // Skip if nodes/edges are empty (initial state)
+    if (nodes.length === 0 && edges.length === 0) return;
+    
+    // Update canvas state for undo/redo tracking
+    setCanvasState({ nodes, edges });
+  }, [nodes, edges, setCanvasState]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
@@ -769,6 +827,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const res = await assessSolution(solution, problem);
       setAssessment(res);
       setActiveRightTab("details");
+
+      // Save assessment to database for problem-solving mode
+      if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
+        try {
+          await apiService.saveAttempt({
+            problemId: idFromUrl,
+            title: problem?.title || "Unknown Problem",
+            difficulty: problem?.difficulty,
+            category: problem?.category,
+            nodes,
+            edges,
+            elapsedTime,
+            lastAssessment: res,
+          });
+        } catch (error) {
+          console.error("Failed to save assessment:", error);
+        }
+      }
     } catch (error) {
       console.error("Assessment failed:", error);
       setAssessment({
@@ -1577,7 +1653,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Handle copying a node (defined before early returns to satisfy React Hook rules)
   const handleNodeCopy = useCallback(
-    (id: string, data: NodeData | ERNodeData | TableNodeData) => {
+    (id: string, data: AnyNodeData) => {
       const originalNode = nodesRef.current.find((n) => n.id === id);
       if (!originalNode) return;
 
@@ -1933,7 +2009,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const title = problem?.title || "System Design";
       const description = problem?.description;
       const jsonContent = exportAsJSON(nodes, edges, title, description);
-      const filename = `${title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
+      const filename = `${title.replaceAll(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
       downloadFile(jsonContent, filename, "application/json");
       toastRef.current.success("Design exported as JSON successfully!");
     } catch (error) {
@@ -1948,7 +2024,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const title = problem?.title || "System Design";
       const description = problem?.description;
       const xmlContent = exportAsXML(nodes, edges, title, description);
-      const filename = `${title.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.drawio`;
+      const filename = `${title.replaceAll(/\s+/g, "-").toLowerCase()}-${Date.now()}.drawio`;
       downloadFile(xmlContent, filename, "application/xml");
       toast.success("Design exported as XML successfully!");
     } catch (error) {
@@ -2138,47 +2214,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       (node) => node.type !== "group" && !node.parentId
     );
 
-    // First, layout groups with larger spacing
-    const groupGraph = new dagre.graphlib.Graph();
-    groupGraph.setDefaultEdgeLabel(() => ({}));
-    groupGraph.setGraph({
-      rankdir: direction,
-      nodesep: 150, // More space between groups
-      ranksep: 200, // More vertical space
-      marginx: 50,
-      marginy: 50,
-    });
-
-    const groupWidth = 350;
-    const groupHeight = 250;
-
-    for (const node of groupNodes) {
-      groupGraph.setNode(node.id, { width: groupWidth, height: groupHeight });
-    }
-
-    // Add edges between groups (if any)
-    const groupEdges = edges.filter(
-      (edge) =>
-        groupNodes.some((g) => g.id === edge.source) &&
-        groupNodes.some((g) => g.id === edge.target)
-    );
-    for (const edge of groupEdges) {
-      groupGraph.setEdge(edge.source, edge.target);
-    }
-
-    if (groupNodes.length > 0) {
-      dagre.layout(groupGraph);
-    }
-
-    // Layout regular nodes (non-grouped) with dynamic sizing for ER nodes
-    const regularGraph = new dagre.graphlib.Graph();
-    regularGraph.setDefaultEdgeLabel(() => ({}));
-    regularGraph.setGraph({
-      rankdir: direction,
-      nodesep: direction === "LR" ? 150 : 80, // More horizontal space for LR layout
-      ranksep: direction === "LR" ? 200 : 100, // More vertical space for LR layout
-    });
-
     // Function to get node dimensions based on type
     const getNodeDimensions = (node: Node) => {
       // ER diagram nodes (tableNode, erNode) are larger
@@ -2195,6 +2230,74 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Store dimensions for later use
     const nodeDimensions = new Map<string, { width: number; height: number }>();
+
+    // Layout children within each group (keep groups in their current positions)
+    const childLayouts = new Map<string, Map<string, { x: number; y: number }>>();
+
+    for (const groupNode of groupNodes) {
+      const children = nodes.filter((n) => n.parentId === groupNode.id);
+      if (children.length === 0) continue;
+
+      const childGraph = new dagre.graphlib.Graph();
+      childGraph.setDefaultEdgeLabel(() => ({}));
+      childGraph.setGraph({
+        rankdir: direction,
+        nodesep: direction === "LR" ? 80 : 60,
+        ranksep: direction === "LR" ? 100 : 80,
+        marginx: 20,
+        marginy: 20,
+      });
+
+      // Add children to the graph
+      for (const child of children) {
+        const dims = getNodeDimensions(child);
+        nodeDimensions.set(child.id, dims);
+        childGraph.setNode(child.id, dims);
+      }
+
+      // Add edges between children
+      const childEdges = edges.filter(
+        (edge) =>
+          children.some((c) => c.id === edge.source) &&
+          children.some((c) => c.id === edge.target)
+      );
+      for (const edge of childEdges) {
+        childGraph.setEdge(edge.source, edge.target);
+      }
+
+      // Layout children
+      dagre.layout(childGraph);
+
+      // Calculate offset to center children within the group
+      // Add padding from group edges
+      const paddingX = 30;
+      const paddingY = 50; // More padding at top for group header
+
+      // Store child positions (relative to parent group)
+      const positions = new Map<string, { x: number; y: number }>();
+      for (const child of children) {
+        const nodeWithPosition = childGraph.node(child.id);
+        if (nodeWithPosition) {
+          const dims = nodeDimensions.get(child.id) || { width: 200, height: 80 };
+          // Position relative to parent, with padding
+          positions.set(child.id, {
+            x: nodeWithPosition.x - dims.width / 2 + paddingX,
+            y: nodeWithPosition.y - dims.height / 2 + paddingY,
+          });
+        }
+      }
+
+      childLayouts.set(groupNode.id, positions);
+    }
+
+    // Only layout regular nodes (non-grouped nodes without parents)
+    const regularGraph = new dagre.graphlib.Graph();
+    regularGraph.setDefaultEdgeLabel(() => ({}));
+    regularGraph.setGraph({
+      rankdir: direction,
+      nodesep: direction === "LR" ? 150 : 80, // More horizontal space for LR layout
+      ranksep: direction === "LR" ? 200 : 100, // More vertical space for LR layout
+    });
 
     for (const node of regularNodes) {
       const dims = getNodeDimensions(node);
@@ -2218,31 +2321,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Apply positions
     const layoutedNodes = nodes.map((node) => {
       if (node.type === "group") {
-        // Position group nodes
-        const nodeWithPosition = groupGraph.node(node.id);
-        if (nodeWithPosition) {
-          return {
-            ...node,
-            position: {
-              x: nodeWithPosition.x - groupWidth / 2,
-              y: nodeWithPosition.y - groupHeight / 2,
-            },
-          };
-        }
+        // Keep group nodes in their current positions - DO NOT MOVE
+        return node;
       } else if (node.parentId) {
-        // Keep child nodes in their relative positions within groups
+        // Layout child nodes within their parent group
+        const childLayout = childLayouts.get(node.parentId);
+        if (childLayout) {
+          const position = childLayout.get(node.id);
+          if (position) {
+            return {
+              ...node,
+              position: {
+                x: position.x,
+                y: position.y,
+              },
+            };
+          }
+        }
+        // Fallback: keep existing position if layout failed
         return node;
       } else {
         // Position regular nodes
         const nodeWithPosition = regularGraph.node(node.id);
         if (nodeWithPosition) {
           const dims = nodeDimensions.get(node.id) || { width: 200, height: 80 };
-          // Offset regular nodes to avoid group area
-          const offsetX = groupNodes.length > 0 ? groupWidth + 100 : 0;
           return {
             ...node,
             position: {
-              x: nodeWithPosition.x - dims.width / 2 + offsetX,
+              x: nodeWithPosition.x - dims.width / 2,
               y: nodeWithPosition.y - dims.height / 2,
             },
           };
