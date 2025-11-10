@@ -21,6 +21,7 @@ export type TableNodeData = {
   label: string;
   icon?: string;
   componentName?: string;
+  componentId?: string; // Component ID like 'uml-class', 'entity', etc.
   description?: string;
   attributes?: TableAttribute[] | string; // Can be array or JSON string
   renderConfig?: NodeRenderConfig; // Column configuration
@@ -130,27 +131,6 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
     setContextMenu({ visible: false, x: 0, y: 0 });
   }, []);
 
-  // Add new attribute
-  const handleAddAttribute = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const newAttr: TableAttribute = {
-        id: `attr-${Date.now()}`,
-        name: "newColumn",
-        type: "VARCHAR(255)",
-        isNullable: true,
-      };
-      
-      globalThis.dispatchEvent(
-        new CustomEvent("diagram:table-attribute-add", {
-          detail: { nodeId: id, attribute: newAttr },
-        }),
-      );
-    },
-    [id],
-  );
-
-  // Delete attribute
   const handleDeleteAttribute = useCallback(
     (attrId: string) => {
       globalThis.dispatchEvent(
@@ -160,6 +140,37 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
       );
     },
     [id],
+  );
+
+  // Add new attribute
+  const handleAddAttribute = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      
+      // Determine if this is a UML Class or Entity based on componentId
+      const isUMLClass = data.componentId?.startsWith('uml-');
+      
+      const newAttr: TableAttribute = isUMLClass
+        ? {
+            id: `attr-${Date.now()}`,
+            name: "+ newMethod()",
+            type: "void",
+            isNullable: false,
+          }
+        : {
+            id: `attr-${Date.now()}`,
+            name: "newColumn",
+            type: "VARCHAR(255)",
+            isNullable: true,
+          };
+      
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:table-attribute-add", {
+          detail: { nodeId: id, attribute: newAttr },
+        }),
+      );
+    },
+    [id, data.componentId],
   );
 
   // Start editing attribute
@@ -351,7 +362,7 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        className="min-w-[220px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-hidden"
+        className="min-w-[220px] max-h-[500px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-hidden flex flex-col"
         onContextMenu={handleContextMenu}
       >
         {/* Connection Handles */}
@@ -413,7 +424,7 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
         />
 
         {/* Table Header */}
-        <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold flex items-center justify-between">
+        <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             {data.icon && <span className="text-lg">{data.icon}</span>}
             <span>{displayLabel}</span>
@@ -429,7 +440,7 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
         </div>
 
         {/* Column Headers */}
-        <div className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold">
+        <div className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold flex-shrink-0">
           {columns.map((col) => (
             <span 
               key={col.key} 
@@ -442,7 +453,7 @@ const TableNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) 
         </div>
 
         {/* Attributes List */}
-        <div className="divide-y divide-theme/10">
+        <div className="divide-y divide-theme/10 overflow-y-auto flex-1 table-node-scroll">
           {attributes.map((attr) => {
             const isEditing = editingAttrId === attr.id;
             return (

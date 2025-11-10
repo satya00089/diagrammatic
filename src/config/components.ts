@@ -4027,6 +4027,51 @@ export const COMPONENTS: CanvasComponent[] = [
     },
   },
   {
+    id: "er-use-case",
+    group: "ER Diagram",
+    nodeType: "erNode",
+    icon: "⭕",
+    label: "Use Case",
+    description: "Use case or functional requirement for the system",
+    tags: ["use case", "requirement", "functionality", "scenario", "note", "annotation"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "uml-use-case",
+      },
+      {
+        key: "componentName",
+        label: "Use Case Name",
+        type: "text",
+        placeholder: "e.g., User Registration, Place Order, Generate Report",
+        default: "Use Case",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe this use case or requirement",
+        default: "",
+      },
+      {
+        key: "priority",
+        label: "Priority",
+        type: "select",
+        default: "Medium",
+        options: ["High", "Medium", "Low"],
+      },
+      {
+        key: "relatedEntities",
+        label: "Related Entities",
+        type: "text",
+        placeholder: "Entities involved (comma-separated)",
+        default: "",
+      },
+    ],
+  },
+  {
     id: "er-view",
     group: "ER Diagram",
     nodeType: "tableNode",
@@ -4142,6 +4187,347 @@ export const COMPONENTS: CanvasComponent[] = [
       borderStyle: "dashed",
       borderWidth: 1,
     },
+  },
+
+  // ========================================
+  // UML DIAGRAMS
+  // ========================================
+  {
+    id: "uml-class",
+    group: "UML",
+    icon: "📦",
+    label: "Class",
+    description: "UML Class with attributes and methods",
+    nodeType: "tableNode",
+    tags: ["uml", "class", "object-oriented", "oop", "class diagram", "blueprint"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Class Name",
+        type: "text",
+        placeholder: "e.g., User, Product, Order",
+        default: "Class",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this class represents",
+        default: "",
+      },
+      {
+        key: "stereotype",
+        label: "Stereotype",
+        type: "select",
+        default: "None",
+        options: ["None", "<<abstract>>", "<<interface>>", "<<entity>>", "<<controller>>", "<<service>>", "<<repository>>"],
+      },
+      {
+        key: "visibility",
+        label: "Default Visibility",
+        type: "select",
+        default: "public",
+        options: ["public", "private", "protected", "package"],
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "- id", type: "String", isPrimaryKey: false, isNullable: false },
+        { id: "attr-2", name: "+ name", type: "String", isNullable: false },
+        { id: "attr-3", name: "# createdAt", type: "Date", isNullable: false },
+        { id: "attr-4", name: "+ getName()", type: "String", isNullable: false },
+        { id: "attr-5", name: "+ setName(name: String)", type: "void", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "name", 
+          label: "Member", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-mono text-sm" }
+        },
+        { 
+          key: "type", 
+          label: "Type", 
+          width: "w-32", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+    },
+  },
+  {
+    id: "uml-interface",
+    group: "UML",
+    icon: "🔌",
+    label: "Interface",
+    description: "UML Interface definition",
+    nodeType: "tableNode",
+    tags: ["uml", "interface", "contract", "abstraction", "oop"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Interface Name",
+        type: "text",
+        placeholder: "e.g., IRepository, IService, Serializable",
+        default: "Interface",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this interface defines",
+        default: "",
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "+ save()", type: "void", isNullable: false },
+        { id: "attr-2", name: "+ delete()", type: "void", isNullable: false },
+        { id: "attr-3", name: "+ findById(id: String)", type: "Object", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "name", 
+          label: "Method", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-mono text-sm italic" }
+        },
+        { 
+          key: "type", 
+          label: "Return Type", 
+          width: "w-32", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+      borderStyle: "dashed",
+      borderWidth: 2,
+    },
+  },
+  {
+    id: "uml-abstract-class",
+    group: "UML",
+    icon: "📐",
+    label: "Abstract Class",
+    description: "Abstract class with abstract methods",
+    nodeType: "tableNode",
+    tags: ["uml", "abstract", "base class", "inheritance", "oop"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Class Name",
+        type: "text",
+        placeholder: "e.g., BaseRepository, AbstractService",
+        default: "AbstractClass",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe this abstract class",
+        default: "",
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "# data", type: "Object", isNullable: false },
+        { id: "attr-2", name: "+ process()", type: "void", isNullable: false },
+        { id: "attr-3", name: "+ validate()", type: "boolean", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "name", 
+          label: "Member", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-mono text-sm" }
+        },
+        { 
+          key: "type", 
+          label: "Type", 
+          width: "w-32", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+      borderStyle: "solid",
+      borderWidth: 2,
+    },
+  },
+  {
+    id: "uml-enum",
+    group: "UML",
+    icon: "📋",
+    label: "Enum",
+    description: "Enumeration type",
+    nodeType: "tableNode",
+    tags: ["uml", "enum", "enumeration", "constants", "type"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Enum Name",
+        type: "text",
+        placeholder: "e.g., Status, Color, Role",
+        default: "Enum",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe this enumeration",
+        default: "",
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "ACTIVE", type: "", isNullable: false },
+        { id: "attr-2", name: "INACTIVE", type: "", isNullable: false },
+        { id: "attr-3", name: "PENDING", type: "", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "name", 
+          label: "Value", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-mono text-sm uppercase" }
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+    },
+  },
+  {
+    id: "uml-use-case",
+    group: "UML",
+    nodeType: "erNode",
+    icon: "⭕",
+    label: "Use Case",
+    description: "System use case or functionality",
+    tags: ["uml", "use case", "functionality", "requirement", "scenario", "er diagram", "note"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "uml-use-case",
+      },
+      {
+        key: "componentName",
+        label: "Use Case Name",
+        type: "text",
+        placeholder: "e.g., Login, Place Order, Generate Report",
+        default: "Use Case",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe this use case",
+        default: "",
+      },
+      {
+        key: "priority",
+        label: "Priority",
+        type: "select",
+        default: "Medium",
+        options: ["High", "Medium", "Low"],
+      },
+      {
+        key: "complexity",
+        label: "Complexity",
+        type: "select",
+        default: "Medium",
+        options: ["Simple", "Medium", "Complex"],
+      },
+    ],
+  },
+  {
+    id: "uml-note",
+    group: "UML",
+    nodeType: "erNode",
+    icon: "📝",
+    label: "Note/Comment",
+    description: "Annotation or comment",
+    tags: ["uml", "note", "comment", "annotation", "documentation"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "uml-note",
+      },
+      {
+        key: "componentName",
+        label: "Note Title",
+        type: "text",
+        placeholder: "Optional title",
+        default: "Note",
+      },
+      {
+        key: "description",
+        label: "Content",
+        type: "textarea",
+        placeholder: "Add your note or comment here",
+        default: "",
+      },
+    ],
   },
 ];
 

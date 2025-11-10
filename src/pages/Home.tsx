@@ -73,7 +73,7 @@ const Home: React.FC = () => {
       icon: "🎨",
       title: "Design Studio",
       description:
-        "Create your own system designs from scratch. Perfect for planning your next project",
+        "Create system designs, ER diagrams, and UML diagrams from scratch. Perfect for planning your next project",
       action: "Start Designing",
       route: "/playground/free",
       gradient: "from-purple-500 to-pink-500",
@@ -92,8 +92,8 @@ const Home: React.FC = () => {
   const capabilities = [
     {
       icon: "🧩",
-      title: "55+ Components",
-      description: "Databases, APIs, caches, queues, and more",
+      title: "75+ Components",
+      description: "System design, ER diagrams, UML diagrams, and more",
     },
     {
       icon: "🔗",
@@ -123,7 +123,7 @@ const Home: React.FC = () => {
   ];
 
   const stats = [
-    { value: "55+", label: "Components", icon: "🧩" },
+    { value: "75+", label: "Components", icon: "🧩" },
     { value: "1000+", label: "Users", icon: "👥" },
     { value: "∞", label: "Possibilities", icon: "✨" },
   ];
@@ -151,8 +151,8 @@ const Home: React.FC = () => {
     <>
       <SEO
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
-        description="Master system design with Diagrammatic - an interactive playground featuring 55+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators."
-        keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design"
+        description="Master system design with Diagrammatic - an interactive playground featuring 78+ components, AI assessment, UML & ER diagrams, and real-world practice problems. Free system architecture tool for students, professionals, and educators."
+        keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
         url="https://satya00089.github.io/diagrammatic/"
       />
       <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
@@ -648,7 +648,7 @@ const Home: React.FC = () => {
               >
                 <div className="inline-block mb-6">
                   <span className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full shadow-lg">
-                    ✨ Now with 55+ Components & AI Assessment
+                    ✨ Now with 75+ Components, UML & ER Diagrams, AI Assessment
                   </span>
                 </div>
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
@@ -659,7 +659,7 @@ const Home: React.FC = () => {
                   <span className="text-white/95">Visually, Intuitively</span>
                 </h1>
                 <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8 leading-relaxed">
-                  The interactive playground for system design — practice,
+                  The interactive playground for system design, ER diagrams, and UML — practice,
                   learn, and create architecture diagrams with ease
                 </p>
 
