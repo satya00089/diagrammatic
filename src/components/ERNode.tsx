@@ -21,7 +21,9 @@ export type ERNodeData = {
     | "weak-entity"
     | "er-note"
     | "er-view"
-    | "er-trigger";
+    | "er-trigger"
+    | "uml-use-case"
+    | "uml-note";
   [key: string]: string | number | boolean | undefined;
 };
 
@@ -128,6 +130,7 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
           borderRadius: "0.5rem",
           minWidth: "200px",
           maxWidth: "400px",
+          height: "auto",
           maxHeight: "500px",
         };
       case "er-note":
@@ -135,6 +138,7 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
           borderRadius: "0.25rem",
           minWidth: "180px",
           maxWidth: "400px",
+          height: "auto",
           maxHeight: "300px",
           backgroundColor: "var(--note-bg, #fef3c7)",
           borderLeft: "4px solid var(--warning, #f59e0b)",
@@ -144,6 +148,7 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
           borderRadius: "0.5rem",
           minWidth: "200px",
           maxWidth: "400px",
+          height: "auto",
           maxHeight: "300px",
           backgroundColor: "var(--accent-bg, #fef3e7)",
           borderLeft: "4px solid var(--accent, #f59e0b)",
@@ -153,15 +158,37 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
           borderRadius: "0.5rem",
           minWidth: "200px",
           maxWidth: "400px",
+          height: "auto",
           maxHeight: "500px",
           borderStyle: "dashed",
           borderWidth: "2px",
+        };
+      case "uml-use-case":
+        return {
+          borderRadius: "0.25rem",
+          minWidth: "180px",
+          maxWidth: "400px",
+          height: "auto",
+          maxHeight: "300px",
+          backgroundColor: "var(--note-bg, #fef3c7)",
+          borderLeft: "4px solid var(--brand, #6366f1)",
+        };
+      case "uml-note":
+        return {
+          borderRadius: "0.25rem",
+          minWidth: "160px",
+          maxWidth: "450px",
+          height: "auto",
+          maxHeight: "300px",
+          backgroundColor: "var(--note-bg, #fef3c7)",
+          borderLeft: "4px solid var(--warning, #f59e0b)",
         };
       default:
         return {
           borderRadius: "0.5rem",
           minWidth: "200px",
           maxWidth: "400px",
+          height: "auto",
           maxHeight: "500px",
         };
     }
@@ -170,8 +197,12 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
   const nodeStyle = getNodeStyle();
   
   // Special node type checks
-  const isNote = nodeType === "er-note";
+  const isNote = nodeType === "er-note" || nodeType === "uml-note" || nodeType === "uml-use-case";
   const isTrigger = nodeType === "er-trigger";
+  const isUMLNode = [
+    "uml-use-case",
+    "uml-note",
+  ].includes(nodeType || "");
 
   return (
     <>
@@ -180,7 +211,7 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        className={`bg-surface border-2 border-theme text-sm shadow-sm cursor-grab relative overflow-auto er-node-scroll ${isNote ? "bg-yellow-50 dark:bg-yellow-900/20 text-gray-900 dark:text-gray-100" : ""} ${isTrigger ? "bg-orange-50 dark:bg-orange-900/20 text-gray-900 dark:text-gray-100" : "text-theme"}`}
+        className={`bg-surface border-2 border-theme text-sm shadow-sm cursor-grab relative overflow-y-auto er-node-scroll ${isNote ? "bg-yellow-50 dark:bg-yellow-900/20 text-gray-900 dark:text-gray-100" : ""} ${isTrigger ? "bg-orange-50 dark:bg-orange-900/20 text-gray-900 dark:text-gray-100" : "text-theme"}`}
         style={nodeStyle}
         onContextMenu={handleContextMenu}
       >
@@ -292,6 +323,22 @@ const ERNode: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => 
                 {data.description && (
                   <div 
                     className="text-gray-700 mt-1 pt-1 border-t border-gray-300"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.description) }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* UML Node content */}
+          {isUMLNode && !isNote && (
+            <div className="px-4 py-3">
+              <div className="flex flex-col items-center gap-2">
+                {data.icon && <span className="text-3xl">{data.icon}</span>}
+                <span className="font-semibold text-theme text-center">{displayLabel}</span>
+                {data.description && (
+                  <div 
+                    className="text-xs text-muted mt-1 text-center"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.description) }}
                   />
                 )}

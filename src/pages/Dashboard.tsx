@@ -8,6 +8,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
 import SEO from "../components/SEO";
+import { apiService } from "../services/api";
 
 const Dashboard: React.FC = () => {
   useTheme();
@@ -20,6 +21,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [attemptedProblems, setAttemptedProblems] = useState<Set<string>>(new Set());
   const { user, isAuthenticated: isAuth, login, signup, googleLogin, logout } =
     useAuth();
 
@@ -56,6 +58,26 @@ const Dashboard: React.FC = () => {
     fetchProblems();
   }, []);
 
+  // Fetch attempted problems when user is authenticated
+  useEffect(() => {
+    const fetchAttemptedProblems = async () => {
+      if (!isAuth) {
+        setAttemptedProblems(new Set());
+        return;
+      }
+
+      try {
+        const attempted = await apiService.getAttemptedProblems();
+        setAttemptedProblems(new Set(attempted));
+      } catch (err) {
+        console.error("Failed to fetch attempted problems:", err);
+        // Silently fail - attempted problems is a nice-to-have feature
+      }
+    };
+
+    fetchAttemptedProblems();
+  }, [isAuth]);
+
   const filteredProblems = useMemo(() => {
     const q = searchTerm?.trim() ?? "";
     let results = problems;
@@ -74,7 +96,7 @@ const Dashboard: React.FC = () => {
       results = fuse.search(q).map((r) => r.item);
     }
 
-    return results.filter((problem: SystemDesignProblem) => {
+    const filtered = results.filter((problem: SystemDesignProblem) => {
       const matchesDifficulty =
         selectedDifficulty === "All" ||
         problem.difficulty === selectedDifficulty;
@@ -82,7 +104,14 @@ const Dashboard: React.FC = () => {
         selectedCategory === "All" || problem.category === selectedCategory;
       return matchesDifficulty && matchesCategory;
     });
-  }, [selectedDifficulty, selectedCategory, searchTerm, problems]);
+
+    // Sort: attempted problems first, then by original order
+    return filtered.sort((a, b) => {
+      const aAttempted = attemptedProblems.has(a.id) ? 1 : 0;
+      const bAttempted = attemptedProblems.has(b.id) ? 1 : 0;
+      return bAttempted - aAttempted; // Attempted (1) comes before not attempted (0)
+    });
+  }, [selectedDifficulty, selectedCategory, searchTerm, problems, attemptedProblems]);
 
   const categories = [
     "All",
@@ -367,11 +396,11 @@ const Dashboard: React.FC = () => {
 
                       <div className="relative p-6">
                         <div className="flex items-start justify-between mb-4">
-                          <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1">
+                          <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
                             {problem.title}
                           </h3>
                           <span
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ml-2 ${getDifficultyColor(problem.difficulty)}`}
+                            className={`px-3 py-1 text-xs font-semibold rounded-full ml-2 flex-shrink-0 ${getDifficultyColor(problem.difficulty)}`}
                           >
                             {problem.difficulty}
                           </span>
@@ -413,9 +442,20 @@ const Dashboard: React.FC = () => {
                             navigate(`/playground/${problem.id}`);
                           }}
                           aria-label={`Start ${problem.title}`}
-                          className="w-full px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group-hover:shadow-xl"
+                          className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
+                            isAuth && attemptedProblems.has(problem.id)
+                              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:scale-105"
+                              : "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white hover:shadow-lg hover:scale-105"
+                          }`}
                         >
-                          Start Problem →
+                          <span className="flex items-center justify-center gap-2">
+                            {isAuth && attemptedProblems.has(problem.id) && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                            {isAuth && attemptedProblems.has(problem.id) ? "Continue Problem" : "Start Problem"} →
+                          </span>
                         </button>
                       </div>
                     </div>
