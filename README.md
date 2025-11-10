@@ -93,7 +93,50 @@ Email Service, SMS Service, Payment Gateway
 
 Web Client, Mobile Client
 
+### ER Diagram Components (5)
+
+Entity, Weak Entity, View, Trigger, Note
+
 Each component comes with **comprehensive configurable properties** for realistic system design practice.
+
+---
+
+## 🗄️ ER Diagram Support
+
+Create professional **Entity-Relationship diagrams** with advanced features:
+
+### 📋 ER Components
+- **Entity & Weak Entity** - Interactive tables with inline attribute editing
+- **View, Trigger, Note** - Supporting ER elements with rich descriptions
+- **Relationship Edges** - 18+ cardinality types with crow's foot notation
+
+### 🔗 Relationship Cardinality Types
+
+Choose from **18 relationship types** organized in 5 categories:
+
+**Basic Cardinality:**
+- 1:1, 1:N, N:1, N:M
+
+**Mandatory Participation** (both must exist):
+- 1:1 Mandatory, 1:N Mandatory, M:N Mandatory
+
+**Optional Participation** (may or may not exist):
+- 0:1, 0:N, 0:M to 0:N
+
+**Mixed Participation:**
+- 1 to 0..N, 0..1, 0..N, 1..N
+
+**Recursive Relationships** (self-referencing):
+- Self 1:1, Self 1:N, Self M:N
+
+📖 **[View Complete ER Relationship Guide →](docs/ER_RELATIONSHIP_GUIDE.md)**
+
+### ✨ ER Features
+- **Interactive Tables** - Double-click to edit attributes, mark primary keys, set nullable
+- **Visual Markers** - Crow's foot notation with mandatory/optional indicators
+- **Smart Edge Detection** - Automatically uses ER edges when connecting ER nodes
+- **Cardinality Selector** - Change relationship types on-the-fly
+- **HTML Descriptions** - Rich text support in notes and triggers (sanitized with DOMPurify)
 
 ---
 

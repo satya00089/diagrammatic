@@ -3659,4 +3659,490 @@ export const COMPONENTS: CanvasComponent[] = [
       },
     ],
   },
+
+  // ========================================
+  // ENTITY-RELATIONSHIP DIAGRAM (ERD)
+  // ========================================
+  {
+    id: "entity",
+    group: "ER Diagram",
+    icon: "📋",
+    label: "Entity",
+    description: "Database table/entity with attributes",
+    nodeType: "tableNode",
+    tags: ["entity", "table", "database", "erd", "relation", "schema", "model"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Entity Name",
+        type: "text",
+        placeholder: "e.g., User, Order, Product",
+        default: "Entity",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this entity represents",
+        default: "",
+      },
+      {
+        key: "tableType",
+        label: "Table Type",
+        type: "select",
+        default: "Regular",
+        options: ["Regular", "Junction", "Audit", "Archive", "View", "Materialized View"],
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: true, isNullable: false },
+        { id: "attr-2", name: "name", type: "VARCHAR(100)", isNullable: false },
+        { id: "attr-3", name: "created_at", type: "TIMESTAMP", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "isPrimaryKey", 
+          label: "PK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔑", inactive: "" },
+          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "name", 
+          label: "Column Name", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-semibold" }
+        },
+        { 
+          key: "type", 
+          label: "Data Type", 
+          width: "w-24", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "isForeignKey", 
+          label: "FK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔗", inactive: "" },
+          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isUnique", 
+          label: "UQ", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "★", inactive: "" },
+          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isNullable", 
+          label: "NULL", 
+          width: "w-8", 
+          type: "boolean",
+          icon: { active: "✓", inactive: "✗" },
+          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+    },
+  },
+  {
+    id: "weak-entity",
+    group: "ER Diagram",
+    icon: "📄",
+    label: "Weak Entity",
+    description: "Entity dependent on another entity for identification",
+    nodeType: "tableNode",
+    tags: ["weak entity", "dependent", "erd", "relationship", "partial key"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Entity Name",
+        type: "text",
+        placeholder: "e.g., OrderItem, Dependent, Comment",
+        default: "Weak Entity",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe this weak entity",
+        default: "",
+      },
+      {
+        key: "ownerEntity",
+        label: "Owner Entity",
+        type: "text",
+        placeholder: "Parent entity that this depends on",
+        default: "",
+      },
+      {
+        key: "tableType",
+        label: "Table Type",
+        type: "select",
+        default: "Weak Entity",
+        options: ["Weak Entity", "Junction", "Dependent"],
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "owner_id", type: "UUID", isForeignKey: true, isNullable: false },
+        { id: "attr-2", name: "sequence_number", type: "INT", isPrimaryKey: true, isNullable: false },
+        { id: "attr-3", name: "data", type: "VARCHAR(255)", isNullable: false },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "isPrimaryKey", 
+          label: "PK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔑", inactive: "" },
+          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "name", 
+          label: "Column Name", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-semibold" }
+        },
+        { 
+          key: "type", 
+          label: "Data Type", 
+          width: "w-24", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "isForeignKey", 
+          label: "FK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔗", inactive: "" },
+          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isUnique", 
+          label: "UQ", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "★", inactive: "" },
+          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isNullable", 
+          label: "NULL", 
+          width: "w-8", 
+          type: "boolean",
+          icon: { active: "✓", inactive: "✗" },
+          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+      borderStyle: "double",
+      borderWidth: 4,
+    },
+  },
+  {
+    id: "er-trigger",
+    group: "ER Diagram",
+    nodeType: "erNode",
+    icon: "⚡",
+    label: "Trigger",
+    description: "Database trigger for automated actions on events",
+    tags: ["trigger", "automation", "event", "database", "erd"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "er-trigger",
+      },
+      {
+        key: "componentName",
+        label: "Trigger Name",
+        type: "text",
+        placeholder: "e.g., update_timestamp, log_changes, validate_data",
+        default: "update_timestamp",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this trigger does",
+        default: "Automatically updates the updated_at timestamp when a row is modified",
+      },
+      {
+        key: "targetTable",
+        label: "Target Table",
+        type: "text",
+        placeholder: "Table this trigger is attached to",
+        default: "users",
+      },
+      {
+        key: "timing",
+        label: "Timing",
+        type: "select",
+        default: "BEFORE",
+        options: ["BEFORE", "AFTER", "INSTEAD OF"],
+      },
+      {
+        key: "event",
+        label: "Event",
+        type: "select",
+        default: "UPDATE",
+        options: ["INSERT", "UPDATE", "DELETE", "TRUNCATE"],
+      },
+      {
+        key: "level",
+        label: "Level",
+        type: "select",
+        default: "ROW",
+        options: ["ROW", "STATEMENT"],
+      },
+      {
+        key: "condition",
+        label: "Condition (WHEN)",
+        type: "textarea",
+        placeholder: "Optional condition: e.g., NEW.status != OLD.status",
+        default: "",
+      },
+    ],
+    renderConfig: {
+      shape: "note",
+      sections: [
+        { type: "header", editable: false },
+        { type: "content", editable: false },
+      ],
+      minWidth: 200,
+      minHeight: 100,
+    },
+  },
+  {
+    id: "er-note",
+    group: "ER Diagram",
+    nodeType: "erNode",
+    icon: "📝",
+    label: "Note/Constraint",
+    description: "Business rule, constraint, or annotation",
+    tags: ["note", "constraint", "rule", "annotation", "comment", "documentation"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "er-note",
+      },
+      {
+        key: "componentName",
+        label: "Note Title",
+        type: "text",
+        placeholder: "e.g., Business Rule, Constraint, Assumption",
+        default: "Business Rule",
+      },
+      {
+        key: "description",
+        label: "Note Content",
+        type: "textarea",
+        placeholder: "Describe the rule, constraint, or important note\ne.g., Email must be unique across all users\nOrders can only be placed by verified customers",
+        default: "Email addresses must be unique across all user accounts",
+      },
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        default: "Business Rule",
+        options: [
+          "Business Rule",
+          "Database Constraint",
+          "Assumption",
+          "Clarification",
+          "TODO",
+          "Warning",
+          "Best Practice",
+        ],
+      },
+      {
+        key: "severity",
+        label: "Severity",
+        type: "select",
+        default: "Info",
+        options: ["Critical", "High", "Medium", "Low", "Info"],
+      },
+      {
+        key: "relatedEntity",
+        label: "Related To",
+        type: "text",
+        placeholder: "Entity or relationship this applies to",
+        default: "",
+      },
+      {
+        key: "sqlConstraint",
+        label: "SQL Constraint",
+        type: "textarea",
+        placeholder: "SQL code for this constraint\ne.g., CHECK (price > 0)\nCHECK (start_date < end_date)",
+        default: "",
+      },
+    ],
+    renderConfig: {
+      shape: "note",
+      sections: [
+        { type: "header", editable: false },
+        { type: "content", editable: false },
+      ],
+      minWidth: 200,
+      minHeight: 120,
+      borderStyle: "dashed",
+    },
+  },
+  {
+    id: "er-view",
+    group: "ER Diagram",
+    nodeType: "tableNode",
+    icon: "👁️",
+    label: "View",
+    description: "Database view or materialized view",
+    tags: ["view", "query", "virtual table", "materialized", "aggregation"],
+    properties: [
+      {
+        key: "componentName",
+        label: "View Name",
+        type: "text",
+        placeholder: "e.g., active_users_view, order_summary_view",
+        default: "View",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe what this view provides",
+        default: "",
+      },
+      {
+        key: "viewType",
+        label: "View Type",
+        type: "select",
+        default: "Standard View",
+        options: ["Standard View", "Materialized View", "Indexed View", "Updateable View"],
+      },
+      {
+        key: "baseTables",
+        label: "Base Tables",
+        type: "text",
+        placeholder: "Tables this view depends on (comma-separated)",
+        default: "",
+      },
+      {
+        key: "tableType",
+        label: "Table Type",
+        type: "select",
+        default: "View",
+        options: ["View", "Materialized View", "Indexed View"],
+      },
+    ],
+    data: {
+      attributes: [
+        { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: false, isNullable: false },
+        { id: "attr-2", name: "computed_field", type: "VARCHAR(100)", isNullable: true },
+        { id: "attr-3", name: "aggregate_value", type: "INT", isNullable: true },
+      ],
+    },
+    renderConfig: {
+      shape: "table",
+      sections: [
+        { type: "header", editable: false },
+        { type: "attributes", editable: true },
+      ],
+      columns: [
+        { 
+          key: "isPrimaryKey", 
+          label: "PK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔑", inactive: "" },
+          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "name", 
+          label: "Column Name", 
+          width: "flex-1", 
+          type: "text",
+          editable: true,
+          color: { active: "font-semibold" }
+        },
+        { 
+          key: "type", 
+          label: "Data Type", 
+          width: "w-24", 
+          type: "text",
+          editable: true
+        },
+        { 
+          key: "isForeignKey", 
+          label: "FK", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "🔗", inactive: "" },
+          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isUnique", 
+          label: "UQ", 
+          width: "w-6", 
+          type: "boolean",
+          icon: { active: "★", inactive: "" },
+          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+        },
+        { 
+          key: "isNullable", 
+          label: "NULL", 
+          width: "w-8", 
+          type: "boolean",
+          icon: { active: "✓", inactive: "✗" },
+          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+        },
+        { 
+          key: "actions", 
+          label: "", 
+          width: "w-8", 
+          type: "readonly"
+        },
+      ],
+      borderStyle: "dashed",
+      borderWidth: 1,
+    },
+  },
 ];
+
+

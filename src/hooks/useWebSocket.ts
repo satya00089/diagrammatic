@@ -7,6 +7,7 @@ export interface WebSocketMessage {
 
 interface UseWebSocketOptions {
   url: string;
+  enabled?: boolean; // Add enabled flag to conditionally connect
   onMessage?: (message: WebSocketMessage) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -27,6 +28,7 @@ interface UseWebSocketReturn {
 
 export const useWebSocket = ({
   url,
+  enabled = true, // Default to true for backwards compatibility
   onMessage,
   onOpen,
   onClose,
@@ -163,6 +165,11 @@ export const useWebSocket = ({
   }, []);
 
   useEffect(() => {
+    // Only connect if enabled
+    if (!enabled) {
+      return;
+    }
+
     shouldReconnectRef.current = true;
     connect();
 
@@ -170,7 +177,7 @@ export const useWebSocket = ({
       shouldReconnectRef.current = false;
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [connect, disconnect, enabled]);
 
   return {
     sendMessage,

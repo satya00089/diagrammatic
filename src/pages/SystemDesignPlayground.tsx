@@ -55,7 +55,12 @@ import SEO from "../components/SEO";
 import assessSolution from "../utils/assessor";
 import CustomNode from "../components/Node";
 import type { NodeData } from "../components/Node";
+import ERNode from "../components/ERNode";
+import type { ERNodeData } from "../components/ERNode";
+import TableNode from "../components/TableNode";
+import type { TableNodeData, TableAttribute } from "../components/TableNode";
 import CustomEdge from "../components/CustomEdge";
+import ERRelationshipEdge from "../components/ERRelationshipEdge";
 import GroupNode from "../components/GroupNode";
 import CustomPropertyInput, {
   type CustomProperty,
@@ -84,14 +89,17 @@ interface SystemDesignPlaygroundProps {
 }
 
 // Define edgeTypes outside component to prevent re-creation on every render
-const edgeTypes = { customEdge: CustomEdge };
+const edgeTypes = { 
+  customEdge: CustomEdge,
+  erRelationship: ERRelationshipEdge 
+};
 
 // Create a wrapper component for CustomNode with onCopy prop
 const NodeWithCopy = React.memo(
   (props: {
     id: string;
     data: unknown;
-    onCopy: (id: string, data: NodeData) => void;
+    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
     isInGroup?: boolean;
   }) => {
     const nodeData = props.data as NodeData;
@@ -99,7 +107,47 @@ const NodeWithCopy = React.memo(
       <CustomNode
         id={props.id}
         data={nodeData}
-        onCopy={props.onCopy}
+        onCopy={(id, data) => props.onCopy(id, data)}
+        isInGroup={props.isInGroup}
+      />
+    );
+  }
+);
+
+// Create a wrapper component for ERNode with onCopy prop
+const ERNodeWithCopy = React.memo(
+  (props: {
+    id: string;
+    data: unknown;
+    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
+    isInGroup?: boolean;
+  }) => {
+    const nodeData = props.data as ERNodeData;
+    return (
+      <ERNode
+        id={props.id}
+        data={nodeData}
+        onCopy={(id, data) => props.onCopy(id, data)}
+        isInGroup={props.isInGroup}
+      />
+    );
+  }
+);
+
+// Create a wrapper component for TableNode with onCopy prop
+const TableNodeWithCopy = React.memo(
+  (props: {
+    id: string;
+    data: unknown;
+    onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void;
+    isInGroup?: boolean;
+  }) => {
+    const nodeData = props.data as TableNodeData;
+    return (
+      <TableNode
+        id={props.id}
+        data={nodeData}
+        onCopy={(id, data) => props.onCopy(id, data)}
         isInGroup={props.isInGroup}
       />
     );
@@ -108,13 +156,37 @@ const NodeWithCopy = React.memo(
 
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
-  onCopy: (id: string, data: NodeData) => void,
+  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
   nodesRef: React.MutableRefObject<Node[]>
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
       nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
     return <NodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
+  };
+};
+
+// Factory function to create ER node component with copy handler and group detection
+const createERNodeWithCopyHandler = (
+  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
+  nodesRef: React.MutableRefObject<Node[]>
+) => {
+  return (props: { id: string; data: unknown }) => {
+    const isInGroup =
+      nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
+    return <ERNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
+  };
+};
+
+// Factory function to create table node component with copy handler and group detection
+const createTableNodeWithCopyHandler = (
+  onCopy: (id: string, data: NodeData | ERNodeData | TableNodeData) => void,
+  nodesRef: React.MutableRefObject<Node[]>
+) => {
+  return (props: { id: string; data: unknown }) => {
+    const isInGroup =
+      nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
+    return <TableNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
   };
 };
 
@@ -588,11 +660,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [showLayoutMenu]);
 
   const onConnect = (connection: Connection) => {
-    // Use React Flow's addEdge helper with our custom edge type
+    // Determine if we're connecting ER nodes (tableNode or erNode types)
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
+    
+    // Only use ER relationship edge for entity-to-entity connections
+    // Exclude triggers, notes, and views - they should use default customEdge
+    const isEntityNode = (node: Node | undefined) => {
+      const componentId = node?.data?.componentId;
+      return componentId === "entity" || componentId === "weak-entity";
+    };
+
+    const isERConnection = isEntityNode(sourceNode) && isEntityNode(targetNode);
+    
+    // Use ER relationship edge for ER diagrams, custom edge for others
     const newEdge = {
       ...connection,
-      type: "customEdge",
-      data: { label: "", hasLabel: false },
+      type: isERConnection ? "erRelationship" : "customEdge",
+      data: isERConnection 
+        ? { label: "", hasLabel: false, cardinality: "one-to-many" }
+        : { label: "", hasLabel: false },
     };
     setEdges((eds) => addEdge(newEdge, eds));
   };
@@ -740,11 +827,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
+    
+    // Determine node type: use component's nodeType if specified, otherwise default behavior
+    const nodeTypeToUse = comp?.nodeType || (isGroupComponent ? "group" : "custom");
 
     const newNode: Node = {
       id,
       position,
-      type: isGroupComponent ? "group" : "custom",
+      type: nodeTypeToUse,
       // For group nodes, use different styling
       style: isGroupComponent
         ? {
@@ -763,6 +853,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
+        // For table nodes, add default attributes structure and renderConfig
+        ...(nodeTypeToUse === "tableNode"
+          ? {
+              componentName: comp?.label || "Entity",
+              attributes: comp?.data?.attributes || [
+                { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: true },
+                { id: "attr-2", name: "name", type: "VARCHAR(100)", isNullable: false },
+                { id: "attr-3", name: "created_at", type: "TIMESTAMP", isNullable: false },
+              ] as TableAttribute[],
+              renderConfig: comp?.renderConfig, // Pass the renderConfig from component
+            }
+          : {}),
+        // For erNode types, add default property values
+        ...(nodeTypeToUse === "erNode"
+          ? comp?.properties?.reduce((acc, prop) => {
+              if (prop.default !== undefined && prop.default !== "") {
+                acc[prop.key] = prop.default;
+              }
+              return acc;
+            }, {} as Record<string, string | number | boolean>)
+          : {}),
       },
     };
 
@@ -927,6 +1038,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     );
   }
 
+  function updateEdgeCardinality(
+    eds: Edge[],
+    id: string,
+    cardinality: string
+  ) {
+    return eds.map((edge) =>
+      edge.id === id
+        ? { ...edge, data: { ...edge.data, cardinality } }
+        : edge
+    );
+  }
+
   const edgeLabelChangeHandlerRef = React.useRef<
     ((e: Event) => void) | undefined
   >(undefined);
@@ -940,17 +1063,41 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setEdges((eds) => updateEdgeLabel(eds, id, label, hasLabel));
   };
 
+  const edgeCardinalityChangeHandlerRef = React.useRef<
+    ((e: Event) => void) | undefined
+  >(undefined);
+  edgeCardinalityChangeHandlerRef.current = (e: Event) => {
+    const ce = e as CustomEvent;
+    const { id, cardinality } = ce.detail as {
+      id: string;
+      cardinality: string;
+    };
+    setEdges((eds) => updateEdgeCardinality(eds, id, cardinality));
+  };
+
   React.useEffect(() => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
+    const cardinalityListener = (e: Event) => edgeCardinalityChangeHandlerRef.current?.(e);
+    
     globalThis.addEventListener(
       "diagram:edge-label-change",
       listener as EventListener
     );
-    return () =>
+    globalThis.addEventListener(
+      "diagram:edge-cardinality-change",
+      cardinalityListener as EventListener
+    );
+    
+    return () => {
       globalThis.removeEventListener(
         "diagram:edge-label-change",
         listener as EventListener
       );
+      globalThis.removeEventListener(
+        "diagram:edge-cardinality-change",
+        cardinalityListener as EventListener
+      );
+    };
   }, []);
 
   // register window event listeners once (mount/unmount)
@@ -1011,6 +1158,155 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-detach",
         detachListener as EventListener
+      );
+    };
+  }, [setNodes]);
+
+  // Table node attribute event handlers
+  React.useEffect(() => {
+    // Helper to parse attributes from node data
+    const parseAttributes = (attrs: TableAttribute[] | string | undefined): TableAttribute[] => {
+      if (!attrs) return [];
+      if (Array.isArray(attrs)) return attrs;
+      if (typeof attrs === "string") {
+        try {
+          const parsed = JSON.parse(attrs);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const addAttributeListener = (e: Event) => {
+      const evt = e as CustomEvent<{ nodeId: string; attribute: TableAttribute }>;
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.nodeId) {
+            const data = n.data as TableNodeData;
+            const currentAttrs = parseAttributes(data.attributes);
+            return {
+              ...n,
+              data: {
+                ...data,
+                attributes: [...currentAttrs, evt.detail.attribute],
+              },
+            };
+          }
+          return n;
+        })
+      );
+    };
+
+    const deleteAttributeListener = (e: Event) => {
+      const evt = e as CustomEvent<{ nodeId: string; attributeId: string }>;
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.nodeId) {
+            const data = n.data as TableNodeData;
+            const currentAttrs = parseAttributes(data.attributes);
+            return {
+              ...n,
+              data: {
+                ...data,
+                attributes: currentAttrs.filter(
+                  (attr) => attr.id !== evt.detail.attributeId
+                ),
+              },
+            };
+          }
+          return n;
+        })
+      );
+    };
+
+    const toggleAttributeListener = (e: Event) => {
+      const evt = e as CustomEvent<{ nodeId: string; attributeId: string; key: string }>;
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.nodeId) {
+            const data = n.data as TableNodeData;
+            const currentAttrs = parseAttributes(data.attributes);
+            return {
+              ...n,
+              data: {
+                ...data,
+                attributes: currentAttrs.map((attr) =>
+                  attr.id === evt.detail.attributeId
+                    ? { ...attr, [evt.detail.key]: !attr[evt.detail.key as keyof TableAttribute] }
+                    : attr
+                ),
+              },
+            };
+          }
+          return n;
+        })
+      );
+    };
+
+    const updateAttributeListener = (e: Event) => {
+      const evt = e as CustomEvent<{
+        nodeId: string;
+        attributeId: string;
+        name: string;
+        type: string;
+      }>;
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === evt.detail.nodeId) {
+            const data = n.data as TableNodeData;
+            const currentAttrs = parseAttributes(data.attributes);
+            return {
+              ...n,
+              data: {
+                ...data,
+                attributes: currentAttrs.map((attr) =>
+                  attr.id === evt.detail.attributeId
+                    ? { ...attr, name: evt.detail.name, type: evt.detail.type }
+                    : attr
+                ),
+              },
+            };
+          }
+          return n;
+        })
+      );
+    };
+
+    globalThis.addEventListener(
+      "diagram:table-attribute-add",
+      addAttributeListener as EventListener
+    );
+    globalThis.addEventListener(
+      "diagram:table-attribute-delete",
+      deleteAttributeListener as EventListener
+    );
+    globalThis.addEventListener(
+      "diagram:table-attribute-toggle",
+      toggleAttributeListener as EventListener
+    );
+    globalThis.addEventListener(
+      "diagram:table-attribute-update",
+      updateAttributeListener as EventListener
+    );
+
+    return () => {
+      globalThis.removeEventListener(
+        "diagram:table-attribute-add",
+        addAttributeListener as EventListener
+      );
+      globalThis.removeEventListener(
+        "diagram:table-attribute-delete",
+        deleteAttributeListener as EventListener
+      );
+      globalThis.removeEventListener(
+        "diagram:table-attribute-toggle",
+        toggleAttributeListener as EventListener
+      );
+      globalThis.removeEventListener(
+        "diagram:table-attribute-update",
+        updateAttributeListener as EventListener
       );
     };
   }, [setNodes]);
@@ -1281,7 +1577,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Handle copying a node (defined before early returns to satisfy React Hook rules)
   const handleNodeCopy = useCallback(
-    (id: string, data: NodeData) => {
+    (id: string, data: NodeData | ERNodeData | TableNodeData) => {
       const originalNode = nodesRef.current.find((n) => n.id === id);
       if (!originalNode) return;
 
@@ -1307,6 +1603,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const nodeTypes = useMemo(
     () => ({
       custom: createNodeWithCopyHandler(handleNodeCopy, nodesRef),
+      erNode: createERNodeWithCopyHandler(handleNodeCopy, nodesRef),
+      tableNode: createTableNodeWithCopyHandler(handleNodeCopy, nodesRef),
       group: GroupNode,
     }),
     [handleNodeCopy]
@@ -1352,7 +1650,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   } = useCollaboration({
     diagramId: currentDiagramId || "",
     token,
-    enabled: !!currentDiagramId && isAuthenticated, // Auto-enable for saved diagrams (Figma-style)
+    // Only enable collaboration if user is authenticated, has a token, and has a diagram ID
+    enabled: !!currentDiagramId && isAuthenticated && !!token,
     onDiagramUpdate: useCallback(
       (
         data: { nodes?: Node[]; edges?: Edge[]; title?: string },
@@ -1526,11 +1825,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
+    
+    // Determine node type: use component's nodeType if specified, otherwise default behavior
+    const nodeTypeToUse = comp?.nodeType || (isGroupComponent ? "group" : "custom");
 
     const newNode: Node = {
       id: nodeId,
       position,
-      type: isGroupComponent ? "group" : "custom",
+      type: nodeTypeToUse,
       style: isGroupComponent
         ? {
             width: 400,
@@ -1868,23 +2170,38 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       dagre.layout(groupGraph);
     }
 
-    // Layout regular nodes (non-grouped)
+    // Layout regular nodes (non-grouped) with dynamic sizing for ER nodes
     const regularGraph = new dagre.graphlib.Graph();
     regularGraph.setDefaultEdgeLabel(() => ({}));
     regularGraph.setGraph({
       rankdir: direction,
-      nodesep: 80,
-      ranksep: 100,
+      nodesep: direction === "LR" ? 150 : 80, // More horizontal space for LR layout
+      ranksep: direction === "LR" ? 200 : 100, // More vertical space for LR layout
     });
 
-    const nodeWidth = 200;
-    const nodeHeight = 80;
+    // Function to get node dimensions based on type
+    const getNodeDimensions = (node: Node) => {
+      // ER diagram nodes (tableNode, erNode) are larger
+      if (node.type === "tableNode") {
+        // Table nodes vary based on number of attributes, use max size
+        return { width: 400, height: 400 };
+      } else if (node.type === "erNode") {
+        // ER nodes (View, Trigger, Note) have max dimensions
+        return { width: 400, height: 300 };
+      }
+      // Default system design nodes
+      return { width: 200, height: 80 };
+    };
+
+    // Store dimensions for later use
+    const nodeDimensions = new Map<string, { width: number; height: number }>();
 
     for (const node of regularNodes) {
-      regularGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+      const dims = getNodeDimensions(node);
+      nodeDimensions.set(node.id, dims);
+      regularGraph.setNode(node.id, dims);
     }
 
-    // Add edges between regular nodes
     // Add edges between regular nodes
     const regularEdges = edges.filter(
       (edge) =>
@@ -1919,13 +2236,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         // Position regular nodes
         const nodeWithPosition = regularGraph.node(node.id);
         if (nodeWithPosition) {
+          const dims = nodeDimensions.get(node.id) || { width: 200, height: 80 };
           // Offset regular nodes to avoid group area
           const offsetX = groupNodes.length > 0 ? groupWidth + 100 : 0;
           return {
             ...node,
             position: {
-              x: nodeWithPosition.x - nodeWidth / 2 + offsetX,
-              y: nodeWithPosition.y - nodeHeight / 2,
+              x: nodeWithPosition.x - dims.width / 2 + offsetX,
+              y: nodeWithPosition.y - dims.height / 2,
             },
           };
         }

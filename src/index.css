@@ -176,21 +176,25 @@ body {
   overflow: hidden;
 }
 
-/* Themed scrollbar for component palette */
-.component-palette {
+/* Themed scrollbar for component palette and ER nodes */
+.component-palette,
+.er-node-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
-.component-palette::-webkit-scrollbar {
+.component-palette::-webkit-scrollbar,
+.er-node-scroll::-webkit-scrollbar {
   width: 10px;
 }
 
-.component-palette::-webkit-scrollbar-track {
+.component-palette::-webkit-scrollbar-track,
+.er-node-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.component-palette::-webkit-scrollbar-thumb {
+.component-palette::-webkit-scrollbar-thumb,
+.er-node-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
   border: 2px solid transparent;
@@ -198,11 +202,13 @@ body {
 }
 
 /* Dark theme override */
-.dark .component-palette {
+.dark .component-palette,
+.dark .er-node-scroll {
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
-.dark .component-palette::-webkit-scrollbar-thumb {
+.dark .component-palette::-webkit-scrollbar-thumb,
+.dark .er-node-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.12);
 }
 

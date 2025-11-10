@@ -8,6 +8,8 @@ Welcome to the Diagrammatic documentation! Here you'll find guides for using, de
 
 ### User Guides
 
+- **[ER Relationship Guide](ER_RELATIONSHIP_GUIDE.md)** - Complete ER diagram cardinality reference
+- **[ER Quick Reference](ER_QUICK_REFERENCE.md)** - Printable cheat sheet for ER relationships
 - **Coming Soon:** Getting Started Guide
 - **Coming Soon:** Component Library Reference
 - **Coming Soon:** Keyboard Shortcuts
@@ -15,6 +17,7 @@ Welcome to the Diagrammatic documentation! Here you'll find guides for using, de
 ### Feature Documentation
 
 - **[Collaboration Features](COLLABORATION_FEATURES.md)** - Real-time collaboration overview (Figma-style)
+- **[ER Implementation Summary](ER_IMPLEMENTATION_SUMMARY.md)** - Technical details of ER diagram system
 - **Coming Soon:** Export/Import Guide
 - **Coming Soon:** AI Assessment Guide
 
