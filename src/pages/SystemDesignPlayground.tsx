@@ -49,6 +49,7 @@ import { COMPONENTS } from "../config/components";
 import ComponentPalette from "../components/ComponentPalette";
 import DiagramCanvas from "../components/DiagramCanvas";
 import InspectorPanel from "../components/InspectorPanel";
+import CollaboratorsList from "../components/CollaboratorsList";
 import type { ComponentProperty } from "../types/canvas";
 import { useNavigate, useParams } from "react-router-dom";
 import SEO from "../components/SEO";
@@ -82,6 +83,10 @@ import {
   downloadFile,
   readFileAsText,
 } from "../utils/exportImport";
+import { ChatBot } from "../components/ChatBot";
+import type { CanvasContext, UserIntent } from "../types/chatBot";
+import { useChatBot } from "../hooks/useChatBot";
+import { ProjectIntentDialog } from "../components/ProjectIntentDialog";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData;
@@ -201,6 +206,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+  
+  // Chat bot context for getting user intent
+  const { userIntent, setUserIntent, resetChatBot } = useChatBot();
 
   // Toast notifications
   const toast = useToast();
@@ -209,6 +217,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Store current nodes in ref to avoid dependency issues
   const nodesRef = useRef<Node[]>([]);
+  
+  // Track if we've shown the project intent dialog for this session
+  const hasShownProjectIntentRef = useRef(false);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(
@@ -228,6 +239,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     null
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Project Intent dialog state (shown when entering Design Studio)
+  const [showProjectIntentDialog, setShowProjectIntentDialog] = useState(false);
 
   // Title/Description dialog state for first save
   const [showTitleDialog, setShowTitleDialog] = useState(false);
@@ -359,6 +373,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  // Show project intent dialog when entering Design Studio with blank canvas
+  useEffect(() => {
+    if (idFromUrl === "free" && !loading) {
+      // Check if this is a blank canvas (no diagram loaded, no nodes)
+      const isBlankCanvas = !currentDiagramId && !diagramIdFromUrl && nodes.length === 0;
+      
+      if (isBlankCanvas && !hasShownProjectIntentRef.current) {
+        // Reset chat bot for fresh start on blank canvas
+        resetChatBot();
+        
+        // Show dialog after a brief delay for better UX
+        const timer = setTimeout(() => {
+          setShowProjectIntentDialog(true);
+          hasShownProjectIntentRef.current = true;
+        }, 500);
+        return () => clearTimeout(timer);
+      } else if (!isBlankCanvas) {
+        // Reset the flag when a diagram is loaded
+        hasShownProjectIntentRef.current = false;
+      }
+    }
+  }, [idFromUrl, loading, currentDiagramId, diagramIdFromUrl, nodes.length, resetChatBot]);
 
   // State for download menu
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -506,8 +543,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             // Ensure the diagram ID is stored for restoration on refresh
             const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
             localStorage.setItem(lastDiagramKey, currentDiagramId);
+          } else if (userIntent && (userIntent.title || userIntent.description)) {
+            // First save - use chat bot's user intent for first save
+            const newDiagram = await apiService.saveDiagram({
+              title: userIntent.title || "Untitled Design",
+              description: userIntent.description || "",
+              nodes,
+              edges,
+            });
+            setCurrentDiagramId(newDiagram.id);
+            setCurrentDiagram(newDiagram);
+            
+            // Store the diagram ID for restoration
+            const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
+            localStorage.setItem(lastDiagramKey, newDiagram.id);
           } else {
-            // First save - prompt for title and description
+            // No user intent - prompt for title and description
             setShowTitleDialog(true);
             setAutoSaveStatus("idle"); // Reset status since we're not saving yet
             return;
@@ -562,7 +613,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id, elapsedTime, problem]);
+  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id, elapsedTime, problem, userIntent]);
 
   // Apply undo/redo state to React Flow
   useEffect(() => {
@@ -574,6 +625,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       isApplyingUndoRedo.current = false;
     }, 0);
   }, [canvasState, setNodes, setEdges]);
+
+  // Pre-populate dialog with user intent when it opens
+  useEffect(() => {
+    if (showTitleDialog && userIntent) {
+      if (userIntent.title && !dialogTitle) {
+        setDialogTitle(userIntent.title);
+      }
+      if (userIntent.description && !dialogDescription) {
+        setDialogDescription(userIntent.description);
+      }
+    }
+  }, [showTitleDialog, userIntent, dialogTitle, dialogDescription]);
 
   // Sync nodes and edges changes to undo/redo history
   useEffect(() => {
@@ -1816,6 +1879,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]
   );
 
+  // Calculate canvas context for chat bot (only for free mode)
+  const canvasContext: CanvasContext | undefined = useMemo(() => {
+    if (idFromUrl !== "free") return undefined;
+
+    const componentTypes = nodes
+      .map((n) => (n.data as AnyNodeData)?.componentId)
+      .filter(Boolean) as string[];
+
+    return {
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      componentTypes,
+      isEmpty: nodes.length === 0,
+    };
+  }, [idFromUrl, nodes, edges]);
+
   // Handle loading state
   if (loading) {
     return (
@@ -2157,6 +2236,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       console.error("Failed to remove collaborator:", error);
       toastRef.current.error("Failed to remove collaborator.");
     }
+  };
+
+  // Handle project intent dialog
+  const handleProjectIntentSubmit = (intent: UserIntent) => {
+    setUserIntent(intent);
+    setShowProjectIntentDialog(false);
+    toast.success("Great! I'll provide suggestions based on your project.");
+  };
+
+  const handleProjectIntentSkip = () => {
+    setShowProjectIntentDialog(false);
   };
 
   // Handle title dialog confirmation
@@ -2958,6 +3048,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           onGoogleLogin={googleLogin}
         />
 
+        {/* Project Intent Dialog - shown when entering Design Studio */}
+        {showProjectIntentDialog && (
+          <ProjectIntentDialog
+            onSubmit={handleProjectIntentSubmit}
+            onSkip={handleProjectIntentSkip}
+          />
+        )}
+
         {/* Title and Description Dialog */}
         {showTitleDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -3116,71 +3214,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <h3 className="text-sm font-medium text-theme">
                     Current Collaborators
                   </h3>
-                  {isLoadingCollaborators ? (
-                    <div className="text-center py-4">
-                      <div className="inline-block w-4 h-4 border border-accent/30 border-t-accent rounded-full animate-spin"></div>
-                      <p className="text-sm text-muted mt-2">
-                        Loading collaborators...
-                      </p>
-                    </div>
-                  ) : collaborators.length === 0 ? (
-                    <div className="text-center py-4 text-muted">
-                      <p className="text-sm">No collaborators yet</p>
-                      <p className="text-xs mt-1">
-                        Share this diagram to start collaborating
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {collaborators.map((collaborator) => (
-                        <div
-                          key={collaborator.id}
-                          className="flex items-center justify-between p-3 bg-theme/5 rounded-md"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-                              <span className="text-sm font-medium text-accent">
-                                {collaborator.email[0].toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-theme">
-                                {collaborator.email}
-                              </p>
-                              <p className="text-xs text-muted capitalize">
-                                {collaborator.permission} access
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <select
-                              value={collaborator.permission}
-                              onChange={(e) =>
-                                handleUpdateCollaboratorPermission(
-                                  collaborator.id,
-                                  e.target.value as "read" | "edit"
-                                )
-                              }
-                              className="text-xs px-2 py-1 border border-theme/20 rounded bg-theme text-theme"
-                            >
-                              <option value="read">Read</option>
-                              <option value="edit">Edit</option>
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRemoveCollaborator(collaborator.id)
-                              }
-                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Remove collaborator"
-                            >
-                              <MdClose className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <CollaboratorsList
+                    isLoading={isLoadingCollaborators}
+                    collaborators={collaborators}
+                    onUpdatePermission={handleUpdateCollaboratorPermission}
+                    onRemove={handleRemoveCollaborator}
+                  />
                 </div>
 
                 {/* Share Link */}
@@ -3218,6 +3257,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Toast Notifications */}
         <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+
+        {/* Chat Bot - Only for free mode (Design Studio) */}
+        {idFromUrl === "free" && (
+          <ChatBot 
+            canvasContext={canvasContext} 
+            onAddComponent={addNodeFromPalette}
+          />
+        )}
       </div>
     </>
   );

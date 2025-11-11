@@ -14,9 +14,8 @@ jobs:
   build-deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    environment: github-pages
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify environment variable
+      - name: Verify environment variables
         run: |
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then
             echo "ERROR: VITE_GOOGLE_CLIENT_ID is not set!"
@@ -55,10 +54,17 @@ jobs:
 
       - name: Verify build output
         run: |
-          if grep -r "client_id.*import\.meta\.env" dist/; then
-            echo "WARNING: Environment variable may not have been embedded!"
+          if [ ! -d dist ]; then
+            echo "ERROR: build output directory 'dist' not found!"
+            ls -la
+            exit 1
           fi
-          echo "Build verification complete"
+          if [ ! -f dist/index.html ]; then
+            echo "ERROR: dist/index.html not found!"
+            ls -la dist || true
+            exit 1
+          fi
+          echo "Build output verified."
 
       - name: Configure Git author
         run: |
@@ -69,12 +75,36 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Ensure pushing through token-authenticated remote
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
 
-      - name: Deploy to GitHub Pages
-        run: npm run deploy
+      - name: Prepare subdirectory deployment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Remove old temp dir if present
+          rm -rf temp_deploy
+          # Create deployment directory containing the diagrammatic/ subfolder
+          mkdir -p temp_deploy/diagrammatic
+          # Copy build output into that subfolder
+          cp -r dist/* temp_deploy/diagrammatic/
+          # Create CNAME at the root of deploy folder so gh-pages branch root contains it
+          echo "next-zen.dev" > temp_deploy/CNAME
+          # (Optional) show structure for debugging in logs
+          echo "=== temp_deploy structure ==="
+          find temp_deploy -maxdepth 3 -type f -print || true
+
+      - name: Deploy subdirectory to gh-pages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Publish temp_deploy/ to gh-pages using gh-pages package
+          # -r forces the authenticated remote (uses GH_TOKEN)
+          npx --yes gh-pages -d temp_deploy -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+
+      - name: Cleanup temp deploy folder
+        if: always()
+        run: rm -rf temp_deploy
 
       - name: Deployment complete
-        run: echo "🚀 Deployment complete! Visit https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        run: echo "🚀 Deployment complete! Visit https://next-zen.dev/diagrammatic/#/"
