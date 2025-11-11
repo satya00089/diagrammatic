@@ -89,7 +89,7 @@ jobs:
           # Copy build output into that subfolder
           cp -r dist/* temp_deploy/diagrammatic/
           # Create CNAME at the root of deploy folder so gh-pages branch root contains it
-          echo "next-zen.dev" > temp_deploy/CNAME
+          echo "diagrammatic.next-zen.dev" > temp_deploy/CNAME
           # (Optional) show structure for debugging in logs
           echo "=== temp_deploy structure ==="
           find temp_deploy -maxdepth 3 -type f -print || true
@@ -107,4 +107,4 @@ jobs:
         run: rm -rf temp_deploy
 
       - name: Deployment complete
-        run: echo "🚀 Deployment complete! Visit https://next-zen.dev/diagrammatic/#/"
+        run: echo "🚀 Deployment complete! Visit https://diagrammatic.next-zen.dev/diagrammatic/#/"
