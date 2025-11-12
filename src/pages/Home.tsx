@@ -427,7 +427,7 @@ const Home: React.FC = () => {
                 className="flex items-center space-x-3 group cursor-pointer"
               >
                 <img
-                  src="./logo.png"
+                  src="/logo.png"
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
