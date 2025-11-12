@@ -78,33 +78,25 @@ jobs:
           # Ensure pushing through token-authenticated remote
           git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
 
-      - name: Prepare subdirectory deployment
+      - name: Prepare root deployment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Remove old temp dir if present
-          rm -rf temp_deploy
-          # Create deployment directory containing the diagrammatic/ subfolder
-          mkdir -p temp_deploy/diagrammatic
-          # Copy build output into that subfolder
-          cp -r dist/* temp_deploy/diagrammatic/
-          # Create CNAME at the root of deploy folder so gh-pages branch root contains it
-          echo "diagrammatic.next-zen.dev" > temp_deploy/CNAME
+          # Create CNAME for custom domain
+          echo "diagrammatic.next-zen.dev" > dist/CNAME
+          # Create 404.html for client-side routing fallback
+          cp dist/index.html dist/404.html
           # (Optional) show structure for debugging in logs
-          echo "=== temp_deploy structure ==="
-          find temp_deploy -maxdepth 3 -type f -print || true
+          echo "=== dist structure ==="
+          find dist -maxdepth 2 -type f -print || true
 
-      - name: Deploy subdirectory to gh-pages
+      - name: Deploy to gh-pages
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Publish temp_deploy/ to gh-pages using gh-pages package
+          # Publish dist/ to gh-pages using gh-pages package
           # -r forces the authenticated remote (uses GH_TOKEN)
-          npx --yes gh-pages -d temp_deploy -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-
-      - name: Cleanup temp deploy folder
-        if: always()
-        run: rm -rf temp_deploy
+          npx --yes gh-pages -d dist -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
 
       - name: Deployment complete
-        run: echo "🚀 Deployment complete! Visit https://diagrammatic.next-zen.dev/diagrammatic/#/"
+        run: echo "🚀 Deployment complete! Visit https://diagrammatic.next-zen.dev"
