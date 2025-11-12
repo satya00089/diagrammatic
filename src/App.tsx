@@ -1,5 +1,5 @@
 import React from "react";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import CreateProblem from "./pages/CreateProblem";
@@ -15,7 +15,7 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <ChatBotProvider>
-        <HashRouter
+        <BrowserRouter
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <Routes>
@@ -26,7 +26,7 @@ const App: React.FC = () => {
             <Route path="/playground/:id" element={<SystemDesignPlayground />} />
             <Route path="*" element={<Home />} />
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </ChatBotProvider>
     </AuthProvider>
   );
