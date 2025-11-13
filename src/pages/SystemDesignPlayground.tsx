@@ -97,9 +97,9 @@ interface SystemDesignPlaygroundProps {
 }
 
 // Define edgeTypes outside component to prevent re-creation on every render
-const edgeTypes = { 
+const edgeTypes = {
   customEdge: CustomEdge,
-  erRelationship: ERRelationshipEdge 
+  erRelationship: ERRelationshipEdge,
 };
 
 // Create a wrapper component for CustomNode with onCopy prop
@@ -194,7 +194,9 @@ const createTableNodeWithCopyHandler = (
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
       nodesRef.current.find((n) => n.id === props.id)?.parentId !== undefined;
-    return <TableNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />;
+    return (
+      <TableNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />
+    );
   };
 };
 
@@ -206,7 +208,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
-  
+
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
 
@@ -217,14 +219,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Store current nodes in ref to avoid dependency issues
   const nodesRef = useRef<Node[]>([]);
-  
+
   // Track if we've shown the project intent dialog for this session
   const hasShownProjectIntentRef = useRef(false);
 
   // Get diagramId from query parameters
-  const searchParams = new URLSearchParams(
-    globalThis.location.hash.split("?")[1]
-  );
+  const searchParams = new URLSearchParams(globalThis.location.search);
   const diagramIdFromUrl = searchParams.get("diagramId");
 
   // State for problem data
@@ -378,12 +378,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useEffect(() => {
     if (idFromUrl === "free" && !loading) {
       // Check if this is a blank canvas (no diagram loaded, no nodes)
-      const isBlankCanvas = !currentDiagramId && !diagramIdFromUrl && nodes.length === 0;
-      
+      const isBlankCanvas =
+        !currentDiagramId && !diagramIdFromUrl && nodes.length === 0;
+
       if (isBlankCanvas && !hasShownProjectIntentRef.current) {
         // Reset chat bot for fresh start on blank canvas
         resetChatBot();
-        
+
         // Show dialog after a brief delay for better UX
         const timer = setTimeout(() => {
           setShowProjectIntentDialog(true);
@@ -395,7 +396,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         hasShownProjectIntentRef.current = false;
       }
     }
-  }, [idFromUrl, loading, currentDiagramId, diagramIdFromUrl, nodes.length, resetChatBot]);
+  }, [
+    idFromUrl,
+    loading,
+    currentDiagramId,
+    diagramIdFromUrl,
+    nodes.length,
+    resetChatBot,
+  ]);
 
   // State for download menu
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
@@ -470,9 +478,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // Load saved progress for problem-solving from database
       const loadAttempt = async () => {
         try {
-          const attempt = (await apiService.getAttemptByProblem(
-            idFromUrl
-          )) as {
+          const attempt = (await apiService.getAttemptByProblem(idFromUrl)) as {
             nodes: Node[];
             edges: Edge[];
             elapsedTime: number;
@@ -543,7 +549,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             // Ensure the diagram ID is stored for restoration on refresh
             const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
             localStorage.setItem(lastDiagramKey, currentDiagramId);
-          } else if (userIntent && (userIntent.title || userIntent.description)) {
+          } else if (
+            userIntent &&
+            (userIntent.title || userIntent.description)
+          ) {
             // First save - use chat bot's user intent for first save
             const newDiagram = await apiService.saveDiagram({
               title: userIntent.title || "Untitled Design",
@@ -553,7 +562,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             });
             setCurrentDiagramId(newDiagram.id);
             setCurrentDiagram(newDiagram);
-            
+
             // Store the diagram ID for restoration
             const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
             localStorage.setItem(lastDiagramKey, newDiagram.id);
@@ -566,7 +575,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         } else {
           // For Problem-solving: save progress to database
           if (!idFromUrl) return; // Safety check
-          
+
           await apiService.saveAttempt({
             problemId: idFromUrl,
             title: problem?.title || "Unknown Problem",
@@ -613,7 +622,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges, autoSaveEnabled, idFromUrl, currentDiagramId, user?.id, elapsedTime, problem, userIntent]);
+  }, [
+    nodes,
+    edges,
+    autoSaveEnabled,
+    idFromUrl,
+    currentDiagramId,
+    user?.id,
+    elapsedTime,
+    problem,
+    userIntent,
+  ]);
 
   // Apply undo/redo state to React Flow
   useEffect(() => {
@@ -642,10 +661,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useEffect(() => {
     // Skip if this change is from undo/redo
     if (isApplyingUndoRedo.current) return;
-    
+
     // Skip if nodes/edges are empty (initial state)
     if (nodes.length === 0 && edges.length === 0) return;
-    
+
     // Update canvas state for undo/redo tracking
     setCanvasState({ nodes, edges });
   }, [nodes, edges, setCanvasState]);
@@ -779,7 +798,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Determine if we're connecting ER nodes (tableNode or erNode types)
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
-    
+
     // Only use ER relationship edge for entity-to-entity connections
     // Exclude triggers, notes, and views - they should use default customEdge
     const isEntityNode = (node: Node | undefined) => {
@@ -788,12 +807,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     const isERConnection = isEntityNode(sourceNode) && isEntityNode(targetNode);
-    
+
     // Use ER relationship edge for ER diagrams, custom edge for others
     const newEdge = {
       ...connection,
       type: isERConnection ? "erRelationship" : "customEdge",
-      data: isERConnection 
+      data: isERConnection
         ? { label: "", hasLabel: false, cardinality: "one-to-many" }
         : { label: "", hasLabel: false },
     };
@@ -963,9 +982,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
-    
+
     // Determine node type: use component's nodeType if specified, otherwise default behavior
-    const nodeTypeToUse = comp?.nodeType || (isGroupComponent ? "group" : "custom");
+    const nodeTypeToUse =
+      comp?.nodeType || (isGroupComponent ? "group" : "custom");
 
     const newNode: Node = {
       id,
@@ -993,22 +1013,42 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         ...(nodeTypeToUse === "tableNode"
           ? {
               componentName: comp?.label || "Entity",
-              attributes: comp?.data?.attributes || [
-                { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: true },
-                { id: "attr-2", name: "name", type: "VARCHAR(100)", isNullable: false },
-                { id: "attr-3", name: "created_at", type: "TIMESTAMP", isNullable: false },
-              ] as TableAttribute[],
+              attributes:
+                comp?.data?.attributes ||
+                ([
+                  {
+                    id: "attr-1",
+                    name: "id",
+                    type: "UUID",
+                    isPrimaryKey: true,
+                  },
+                  {
+                    id: "attr-2",
+                    name: "name",
+                    type: "VARCHAR(100)",
+                    isNullable: false,
+                  },
+                  {
+                    id: "attr-3",
+                    name: "created_at",
+                    type: "TIMESTAMP",
+                    isNullable: false,
+                  },
+                ] as TableAttribute[]),
               renderConfig: comp?.renderConfig, // Pass the renderConfig from component
             }
           : {}),
         // For erNode types, add default property values
         ...(nodeTypeToUse === "erNode"
-          ? comp?.properties?.reduce((acc, prop) => {
-              if (prop.default !== undefined && prop.default !== "") {
-                acc[prop.key] = prop.default;
-              }
-              return acc;
-            }, {} as Record<string, string | number | boolean>)
+          ? comp?.properties?.reduce(
+              (acc, prop) => {
+                if (prop.default !== undefined && prop.default !== "") {
+                  acc[prop.key] = prop.default;
+                }
+                return acc;
+              },
+              {} as Record<string, string | number | boolean>
+            )
           : {}),
       },
     };
@@ -1121,9 +1161,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     Record<string, CustomProperty[]>
   >({});
   // which tab is active in the right sidebar: 'details' or 'inspector'
-  const [activeRightTab, setActiveRightTab] = useState<"details" | "inspector" | "assessment">(
-    "details"
-  );
+  const [activeRightTab, setActiveRightTab] = useState<
+    "details" | "inspector" | "assessment"
+  >("details");
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -1174,15 +1214,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     );
   }
 
-  function updateEdgeCardinality(
-    eds: Edge[],
-    id: string,
-    cardinality: string
-  ) {
+  function updateEdgeCardinality(eds: Edge[], id: string, cardinality: string) {
     return eds.map((edge) =>
-      edge.id === id
-        ? { ...edge, data: { ...edge.data, cardinality } }
-        : edge
+      edge.id === id ? { ...edge, data: { ...edge.data, cardinality } } : edge
     );
   }
 
@@ -1213,8 +1247,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   React.useEffect(() => {
     const listener = (e: Event) => edgeLabelChangeHandlerRef.current?.(e);
-    const cardinalityListener = (e: Event) => edgeCardinalityChangeHandlerRef.current?.(e);
-    
+    const cardinalityListener = (e: Event) =>
+      edgeCardinalityChangeHandlerRef.current?.(e);
+
     globalThis.addEventListener(
       "diagram:edge-label-change",
       listener as EventListener
@@ -1223,7 +1258,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       "diagram:edge-cardinality-change",
       cardinalityListener as EventListener
     );
-    
+
     return () => {
       globalThis.removeEventListener(
         "diagram:edge-label-change",
@@ -1301,7 +1336,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Table node attribute event handlers
   React.useEffect(() => {
     // Helper to parse attributes from node data
-    const parseAttributes = (attrs: TableAttribute[] | string | undefined): TableAttribute[] => {
+    const parseAttributes = (
+      attrs: TableAttribute[] | string | undefined
+    ): TableAttribute[] => {
       if (!attrs) return [];
       if (Array.isArray(attrs)) return attrs;
       if (typeof attrs === "string") {
@@ -1316,7 +1353,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     const addAttributeListener = (e: Event) => {
-      const evt = e as CustomEvent<{ nodeId: string; attribute: TableAttribute }>;
+      const evt = e as CustomEvent<{
+        nodeId: string;
+        attribute: TableAttribute;
+      }>;
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === evt.detail.nodeId) {
@@ -1358,7 +1398,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     const toggleAttributeListener = (e: Event) => {
-      const evt = e as CustomEvent<{ nodeId: string; attributeId: string; key: string }>;
+      const evt = e as CustomEvent<{
+        nodeId: string;
+        attributeId: string;
+        key: string;
+      }>;
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === evt.detail.nodeId) {
@@ -1370,7 +1414,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 ...data,
                 attributes: currentAttrs.map((attr) =>
                   attr.id === evt.detail.attributeId
-                    ? { ...attr, [evt.detail.key]: !attr[evt.detail.key as keyof TableAttribute] }
+                    ? {
+                        ...attr,
+                        [evt.detail.key]:
+                          !attr[evt.detail.key as keyof TableAttribute],
+                      }
                     : attr
                 ),
               },
@@ -1977,9 +2025,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
-    
+
     // Determine node type: use component's nodeType if specified, otherwise default behavior
-    const nodeTypeToUse = comp?.nodeType || (isGroupComponent ? "group" : "custom");
+    const nodeTypeToUse =
+      comp?.nodeType || (isGroupComponent ? "group" : "custom");
 
     const newNode: Node = {
       id: nodeId,
@@ -2319,7 +2368,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const nodeDimensions = new Map<string, { width: number; height: number }>();
 
     // Layout children within each group (keep groups in their current positions)
-    const childLayouts = new Map<string, Map<string, { x: number; y: number }>>();
+    const childLayouts = new Map<
+      string,
+      Map<string, { x: number; y: number }>
+    >();
 
     for (const groupNode of groupNodes) {
       const children = nodes.filter((n) => n.parentId === groupNode.id);
@@ -2365,7 +2417,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       for (const child of children) {
         const nodeWithPosition = childGraph.node(child.id);
         if (nodeWithPosition) {
-          const dims = nodeDimensions.get(child.id) || { width: 200, height: 80 };
+          const dims = nodeDimensions.get(child.id) || {
+            width: 200,
+            height: 80,
+          };
           // Position relative to parent, with padding
           positions.set(child.id, {
             x: nodeWithPosition.x - dims.width / 2 + paddingX,
@@ -2431,7 +2486,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         // Position regular nodes
         const nodeWithPosition = regularGraph.node(node.id);
         if (nodeWithPosition) {
-          const dims = nodeDimensions.get(node.id) || { width: 200, height: 80 };
+          const dims = nodeDimensions.get(node.id) || {
+            width: 200,
+            height: 80,
+          };
           return {
             ...node,
             position: {
@@ -3260,8 +3318,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Chat Bot - Only for free mode (Design Studio) */}
         {idFromUrl === "free" && (
-          <ChatBot 
-            canvasContext={canvasContext} 
+          <ChatBot
+            canvasContext={canvasContext}
             onAddComponent={addNodeFromPalette}
           />
         )}
