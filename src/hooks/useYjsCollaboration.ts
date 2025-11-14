@@ -106,6 +106,17 @@ export const useYjsCollaboration = ({
    */
   const initialize = useCallback(() => {
     try {
+      // Get Yjs URL - return early if not configured
+      const yjsUrl = getYjsUrl()
+      if (!yjsUrl) {
+        setState((prev) => ({
+          ...prev,
+          error: 'Yjs URL not configured',
+          isConnected: false,
+        }))
+        return
+      }
+
       // Create Yjs document
       const ydoc = new Y.Doc()
       ydocRef.current = ydoc
@@ -116,7 +127,7 @@ export const useYjsCollaboration = ({
 
       // Create WebSocket provider
       const provider = new WebsocketProvider(
-        getYjsUrl(),
+        yjsUrl,
         `diagram-${diagramId}`,
         ydoc,
         {
