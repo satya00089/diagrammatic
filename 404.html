@@ -130,8 +130,8 @@
             root.classList.add("dark");
           } else if (theme === "system") {
             const prefersDark =
-              window.matchMedia &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches;
+              globalThis.matchMedia &&
+              globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
             if (prefersDark) {
               root.classList.add("dark");
             }
@@ -141,8 +141,8 @@
         }
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-CJiD4V4t.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DaaOgfCJ.css">
+    <script type="module" crossorigin src="/assets/index-FETyCuyv.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DYi2idCK.css">
   </head>
   <body>
     <div id="root"></div>
