@@ -16,7 +16,7 @@ import { useState, useCallback } from 'react'
 import type { Node, Edge } from '@xyflow/react'
 import { useAuth } from './useAuth'
 import { isFeatureEnabled, FeatureFlags } from '../config/featureFlags'
-import { getEnvironment } from '../config/environment'
+import { getYjsUrl } from '../config/environment'
 import { useYjsCollaboration } from './useYjsCollaboration'
 import type { CollaboratorUser, CollaboratorCursor } from './useYjsCollaboration'
 import { useCollaboration as useWebSocketCollaboration } from './useCollaboration'
@@ -59,10 +59,11 @@ export const useUnifiedCollaboration = ({
   enabled,
 }: UnifiedCollaborationOptions): UnifiedCollaborationReturn => {
   const { user, token } = useAuth()
-  const environment = getEnvironment()
   
-  // Check if Yjs is enabled
-  const useYjs = isFeatureEnabled(FeatureFlags.YJS_COLLABORATION, environment)
+  // Check if Yjs is enabled via feature flag AND Yjs URL is configured
+  // If no VITE_YJS_URL is provided, automatically fall back to custom WebSocket
+  const yjsUrl = getYjsUrl()
+  const useYjs = yjsUrl && isFeatureEnabled(FeatureFlags.YJS_COLLABORATION)
   
   // Yjs collaboration
   const yjsCollaboration = useYjsCollaboration({
@@ -89,7 +90,7 @@ export const useUnifiedCollaboration = ({
         onNodesChange(data.nodes)
       }
       if (data.edges) {
-        onEdgesChange(data.edges as Edge[])
+        onEdgesChange(data.edges)
       }
     },
     onUserJoined: (user) => {
