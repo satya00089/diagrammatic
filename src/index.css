@@ -179,26 +179,30 @@ body {
 /* Themed scrollbar for component palette and ER nodes */
 .component-palette,
 .er-node-scroll,
-.table-node-scroll {
+.table-node-scroll,
+.chatbot-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 .component-palette::-webkit-scrollbar,
 .er-node-scroll::-webkit-scrollbar,
-.table-node-scroll::-webkit-scrollbar {
+.table-node-scroll::-webkit-scrollbar,
+.chatbot-scroll::-webkit-scrollbar {
   width: 10px;
 }
 
 .component-palette::-webkit-scrollbar-track,
 .er-node-scroll::-webkit-scrollbar-track,
-.table-node-scroll::-webkit-scrollbar-track {
+.table-node-scroll::-webkit-scrollbar-track,
+.chatbot-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .component-palette::-webkit-scrollbar-thumb,
 .er-node-scroll::-webkit-scrollbar-thumb,
-.table-node-scroll::-webkit-scrollbar-thumb {
+.table-node-scroll::-webkit-scrollbar-thumb,
+.chatbot-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
   border: 2px solid transparent;
@@ -208,13 +212,15 @@ body {
 /* Dark theme override */
 .dark .component-palette,
 .dark .er-node-scroll,
-.dark .table-node-scroll {
+.dark .table-node-scroll,
+.dark .chatbot-scroll {
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 .dark .component-palette::-webkit-scrollbar-thumb,
 .dark .er-node-scroll::-webkit-scrollbar-thumb,
-.dark .table-node-scroll::-webkit-scrollbar-thumb {
+.dark .table-node-scroll::-webkit-scrollbar-thumb,
+.dark .chatbot-scroll::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.12);
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdChat, MdClose } from 'react-icons/md';
+import type { Node, Edge } from '@xyflow/react';
 import { useChatBot } from "../hooks/useChatBot";
 import { useChatSuggestions } from "../hooks/useChatSuggestions";
 import { WelcomeDialog } from "./WelcomeDialog";
@@ -9,10 +10,12 @@ import type { CanvasContext, Suggestion } from "../types/chatBot";
 
 interface ChatBotProps {
   canvasContext?: CanvasContext;
+  nodes?: Node[];
+  edges?: Edge[];
   onAddComponent?: (componentId: string) => void;
 }
 
-export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, onAddComponent }) => {
+export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edges = [], onAddComponent }) => {
   const {
     isOpen,
     showWelcome,
@@ -21,7 +24,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, onAddComponent 
     updateCanvasContext,
   } = useChatBot();
 
-  const suggestions = useChatSuggestions(userIntent, canvasContext ?? null);
+  const suggestions = useChatSuggestions(userIntent, canvasContext ?? null, nodes, edges);
   const [addedSuggestionId, setAddedSuggestionId] = useState<string | null>(null);
 
   // Update canvas context when it changes
@@ -119,7 +122,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, onAddComponent 
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-5 bg-gradient-to-b from-transparent to-theme/5">
+            <div className="flex-1 overflow-y-auto p-5 bg-gradient-to-b from-transparent to-theme/5 chatbot-scroll">
               <AnimatePresence mode="wait">
                 {showWelcome ? (
                   <motion.div

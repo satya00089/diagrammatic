@@ -18,12 +18,15 @@ export interface Suggestion {
   description: string;
   action: () => void;
   icon?: string;
-  category: 'component' | 'pattern' | 'tip' | 'next-step';
+  category: 'component' | 'pattern' | 'tip' | 'next-step' | 'best-practice' | 'optimization';
   priority: number;
   // For actionable suggestions
   componentId?: string; // Single component to add
   componentIds?: string[]; // Multiple components for patterns
-  actionType?: 'add-component' | 'add-pattern' | 'info-only';
+  actionType?: 'add-component' | 'add-pattern' | 'info-only' | 'connect' | 'refactor';
+  // AI-powered fields
+  confidence?: number; // 0.0-1.0 confidence score from AI
+  reasoning?: string; // Why this recommendation is relevant
 }
 
 export interface ChatMessage {

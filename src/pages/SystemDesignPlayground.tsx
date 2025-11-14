@@ -50,7 +50,7 @@ import ComponentPalette from "../components/ComponentPalette";
 import DiagramCanvas from "../components/DiagramCanvas";
 import InspectorPanel from "../components/InspectorPanel";
 import CollaboratorsList from "../components/CollaboratorsList";
-import type { ComponentProperty } from "../types/canvas";
+import type { ComponentProperty, CanvasComponent } from "../types/canvas";
 import { useNavigate, useParams } from "react-router-dom";
 import SEO from "../components/SEO";
 import assessSolution from "../utils/assessor";
@@ -2009,8 +2009,44 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     );
   }
 
+  /**
+   * Intelligently finds the best matching component from COMPONENTS array.
+   * Uses multiple matching strategies for better accuracy.
+   */
+  function findBestMatchingComponent(componentIdOrLabel: string): CanvasComponent | null {
+    // Strategy 1: Exact ID match (highest priority)
+    const exactMatch = COMPONENTS.find((c) => c.id === componentIdOrLabel);
+    if (exactMatch) return exactMatch;
+
+    // Strategy 2: Case-insensitive ID match
+    const lowerInput = componentIdOrLabel.toLowerCase();
+    const caseInsensitiveMatch = COMPONENTS.find((c) => c.id.toLowerCase() === lowerInput);
+    if (caseInsensitiveMatch) return caseInsensitiveMatch;
+
+    // Strategy 3: Label match (case-insensitive)
+    const labelMatch = COMPONENTS.find((c) => c.label.toLowerCase() === lowerInput);
+    if (labelMatch) return labelMatch;
+
+    // Strategy 4: Tag match (for keywords like "cache", "database", "queue")
+    const tagMatch = COMPONENTS.find((c) => 
+      c.tags?.some((tag) => tag.toLowerCase().includes(lowerInput))
+    );
+    if (tagMatch) return tagMatch;
+
+    // Strategy 5: Partial label match (e.g., "load balancer" matches "Load Balancer")
+    const partialMatch = COMPONENTS.find((c) => 
+      c.label.toLowerCase().includes(lowerInput) || lowerInput.includes(c.label.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+
+    // No match found
+    return null;
+  }
+
   function addNodeFromPalette(id: string) {
-    const comp = COMPONENTS.find((c) => c.id === id);
+    // Intelligently find the best matching component
+    const comp = findBestMatchingComponent(id);
+    
     // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -2021,7 +2057,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       y: bounds.top + bounds.height / 2,
     });
 
-    const nodeId = `${id}-${Date.now()}`;
+    const nodeId = `${comp?.id || 'custom-component'}-${Date.now()}`;
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
@@ -2029,6 +2065,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Determine node type: use component's nodeType if specified, otherwise default behavior
     const nodeTypeToUse =
       comp?.nodeType || (isGroupComponent ? "group" : "custom");
+
+    // If no component found, create a custom component with the provided label
+    const finalLabel = comp?.label ?? id;
+    const finalIcon = comp?.icon ?? "📦"; // Default icon for custom components
+    const finalSubtitle = comp?.description ?? "Custom Component";
 
     const newNode: Node = {
       id: nodeId,
@@ -2042,10 +2083,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           }
         : undefined,
       data: {
-        label: comp?.label ?? id,
-        componentId: comp?.id, // Store the original component ID
-        icon: comp?.icon,
-        subtitle: comp?.description,
+        label: finalLabel,
+        componentId: comp?.id || 'custom-component', // Store the original component ID or custom
+        icon: finalIcon,
+        subtitle: finalSubtitle,
         backgroundColor: isGroupComponent
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
@@ -3320,6 +3361,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         {idFromUrl === "free" && (
           <ChatBot
             canvasContext={canvasContext}
+            nodes={nodes}
+            edges={edges}
             onAddComponent={addNodeFromPalette}
           />
         )}
