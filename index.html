@@ -130,8 +130,8 @@
             root.classList.add("dark");
           } else if (theme === "system") {
             const prefersDark =
-              window.matchMedia &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches;
+              globalThis.matchMedia &&
+              globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
             if (prefersDark) {
               root.classList.add("dark");
             }

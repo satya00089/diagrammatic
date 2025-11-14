@@ -7,6 +7,7 @@ import type {
   SaveDiagramPayload,
   Collaborator,
 } from "../types/auth";
+import type { CanvasContext, UserIntent } from "../types/chatBot";
 
 const API_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL || "";
 
@@ -303,6 +304,119 @@ class ApiService {
     if (!response.ok) {
       throw new Error("Failed to delete attempt");
     }
+  }
+
+  // Recommendations endpoint
+  async getRecommendations(payload: {
+    userIntent?: UserIntent | null;
+    canvasContext: CanvasContext;
+    components: Array<{
+      id: string;
+      type: string;
+      label: string;
+      hasDescription: boolean;
+      properties?: Record<string, unknown>;
+    }>;
+    connections: Array<{
+      source: string;
+      target: string;
+      type?: string;
+      hasLabel: boolean;
+    }>;
+    maxSuggestions?: number;
+  }): Promise<{
+    recommendations: Array<{
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      category: 'component' | 'pattern' | 'tip' | 'best-practice' | 'optimization';
+      priority: number;
+      confidence: number;
+      actionType: 'add-component' | 'add-pattern' | 'info-only' | 'connect' | 'refactor';
+      componentId?: string;
+      componentIds?: string[];
+      reasoning?: string;
+    }>;
+    totalCount: number;
+    filteredCount: number;
+    minConfidenceThreshold: number;
+    contextSummary?: string;
+    processingTimeMs?: number;
+  }> {
+    // Transform frontend types to backend format
+    const requestPayload = {
+      user_intent: payload.userIntent ? {
+        title: payload.userIntent.title,
+        description: payload.userIntent.description,
+      } : null,
+      canvas_context: {
+        node_count: payload.canvasContext.nodeCount,
+        edge_count: payload.canvasContext.edgeCount,
+        component_types: payload.canvasContext.componentTypes,
+        is_empty: payload.canvasContext.isEmpty,
+      },
+      components: payload.components.map(comp => ({
+        id: comp.id,
+        type: comp.type,
+        label: comp.label,
+        has_description: comp.hasDescription,
+        properties: comp.properties || {},
+      })),
+      connections: payload.connections.map(conn => ({
+        source: conn.source,
+        target: conn.target,
+        type: conn.type,
+        has_label: conn.hasLabel,
+      })),
+      max_suggestions: payload.maxSuggestions || 5,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/recommendations`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(requestPayload),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get recommendations");
+    }
+
+    const data = await response.json();
+
+    // Transform backend response to frontend format
+    return {
+      recommendations: data.recommendations.map((rec: {
+        id: string;
+        title: string;
+        description: string;
+        icon: string;
+        category: string;
+        priority: number;
+        confidence: number;
+        action_type: string;
+        component_id?: string;
+        component_ids?: string[];
+        reasoning?: string;
+      }) => ({
+        id: rec.id,
+        title: rec.title,
+        description: rec.description,
+        icon: rec.icon,
+        category: rec.category,
+        priority: rec.priority,
+        confidence: rec.confidence,
+        actionType: rec.action_type,
+        componentId: rec.component_id,
+        componentIds: rec.component_ids,
+        reasoning: rec.reasoning,
+      })),
+      totalCount: data.total_count,
+      filteredCount: data.filtered_count,
+      minConfidenceThreshold: data.min_confidence_threshold,
+      contextSummary: data.context_summary,
+      processingTimeMs: data.processing_time_ms,
+    };
   }
 }
 

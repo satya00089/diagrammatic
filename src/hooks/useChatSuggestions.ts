@@ -1,16 +1,137 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import type { Node, Edge } from '@xyflow/react';
 import type { UserIntent, CanvasContext, Suggestion } from '../types/chatBot';
 import { COMPONENTS } from '../config/components';
+import { apiService } from '../services/api';
 
+/**
+ * Hook for getting AI-powered chat suggestions.
+ * 
+ * Strategy:
+ * 1. Try AI-powered recommendations first (high precision)
+ * 2. Fall back to rule-based suggestions if AI fails
+ * 3. Cache results to avoid redundant API calls
+ */
 export const useChatSuggestions = (
   userIntent: UserIntent | null,
-  canvasContext: CanvasContext | null
+  canvasContext: CanvasContext | null,
+  nodes: Node[] = [],
+  edges: Edge[] = []
 ): Suggestion[] => {
-  return useMemo(() => {
-    const suggestions: Suggestion[] = [];
+  const [aiSuggestions, setAiSuggestions] = useState<Suggestion[] | null>(null);
+
+  // Fetch AI suggestions when context changes
+  useEffect(() => {
+    if (!canvasContext) {
+      setAiSuggestions(null);
+      return;
+    }
+
+    const fetchAISuggestions = async () => {
+      try {
+        // Transform nodes to component info with rich details
+        const components = nodes.map(node => {
+          const nodeData = node.data || {};
+          const hasDescription = Boolean(
+            nodeData.description || 
+            nodeData.subtitle || 
+            (nodeData.properties && Object.keys(nodeData.properties).length > 0)
+          );
+
+          // Gather all properties
+          const properties: Record<string, unknown> = {
+            description: nodeData.description || nodeData.subtitle || '',
+            componentId: nodeData.componentId,
+            icon: nodeData.icon,
+          };
+
+          // Add nodeData.properties if it exists and is an object
+          if (nodeData.properties && typeof nodeData.properties === 'object') {
+            Object.assign(properties, nodeData.properties);
+          }
+
+          // Include custom properties if they exist
+          if (nodeData._customProperties) {
+            properties.customProperties = nodeData._customProperties;
+          }
+
+          return {
+            id: node.id,
+            type: node.type || 'custom',
+            label: typeof nodeData.label === 'string' ? nodeData.label : node.id,
+            hasDescription,
+            properties,
+          };
+        });
+
+        // Transform edges to connection info with source/target details
+        const connections = edges.map(edge => {
+          const edgeData = edge.data || {};
+          
+          return {
+            source: edge.source,
+            target: edge.target,
+            type: (edge.type || edgeData.type) as string | undefined,
+            hasLabel: Boolean(edgeData.label || edgeData.hasLabel),
+          };
+        });
+
+        // Build request payload with RICH context
+        const response = await apiService.getRecommendations({
+          userIntent,
+          canvasContext: canvasContext || {
+            nodeCount: 0,
+            edgeCount: 0,
+            componentTypes: [],
+            isEmpty: true,
+          },
+          components,
+          connections,
+          maxSuggestions: 5,
+        });
+
+        // Transform AI recommendations to Suggestion format
+        const aiRecs: Suggestion[] = response.recommendations.map(rec => ({
+          id: rec.id,
+          title: rec.title,
+          description: rec.description,
+          icon: rec.icon,
+          category: rec.category,
+          priority: rec.priority,
+          componentId: rec.componentId,
+          componentIds: rec.componentIds,
+          actionType: rec.actionType,
+          confidence: rec.confidence,
+          reasoning: rec.reasoning,
+          action: () => {}, // Will be handled by parent component
+        }));
+
+        setAiSuggestions(aiRecs);
+        
+        // Log success for debugging
+        if (aiRecs.length > 0) {
+          console.log(`✅ AI Recommendations: ${aiRecs.length} suggestions (confidence >= ${response.minConfidenceThreshold})`);
+        }
+      } catch (error) {
+        console.log('ℹ️ Falling back to rule-based suggestions:', error instanceof Error ? error.message : 'Unknown error');
+        setAiSuggestions(null); // Fall back to rule-based
+      }
+    };
+
+    // Debounce API calls to avoid too many requests
+    const timeoutId = setTimeout(() => {
+      fetchAISuggestions();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [userIntent, canvasContext, nodes, edges]);
+
+  // Rule-based suggestions (fallback)
+  const ruleBasedSuggestions = useMemo(() => {
+    const fallbackSuggestions: Suggestion[] = [];
 
     if (!userIntent && !canvasContext) {
-      return suggestions;
+      return fallbackSuggestions;
     }
 
     // Pattern detection from user intent
@@ -20,7 +141,7 @@ export const useChatSuggestions = (
 
     // Database/ER patterns
     if (intentText.includes('database') || intentText.includes('schema') || intentText.includes('er ')) {
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'er-entity',
         title: 'Add Entity',
         description: 'Create a database entity with attributes',
@@ -31,7 +152,7 @@ export const useChatSuggestions = (
         componentId: 'er-entity',
         actionType: 'add-component',
       });
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'er-relationship',
         title: 'Add Relationship',
         description: 'Connect entities with relationships',
@@ -51,7 +172,7 @@ export const useChatSuggestions = (
       intentText.includes('oop') ||
       intentText.includes('object-oriented')
     ) {
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'uml-class',
         title: 'Add Class',
         description: 'Create a UML class with methods and properties',
@@ -62,7 +183,7 @@ export const useChatSuggestions = (
         componentId: 'uml-class',
         actionType: 'add-component',
       });
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'uml-interface',
         title: 'Add Interface',
         description: 'Define an interface for your design',
@@ -82,7 +203,7 @@ export const useChatSuggestions = (
       intentText.includes('microservice') ||
       intentText.includes('api')
     ) {
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'api-gateway',
         title: 'Add API Gateway',
         description: 'Central entry point for your services',
@@ -93,7 +214,7 @@ export const useChatSuggestions = (
         componentId: 'api-gateway',
         actionType: 'add-component',
       });
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'load-balancer',
         title: 'Add Load Balancer',
         description: 'Distribute traffic across servers',
@@ -104,7 +225,7 @@ export const useChatSuggestions = (
         componentId: 'loadbalancer',
         actionType: 'add-component',
       });
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'database',
         title: 'Add Database',
         description: 'Add a database to store your data',
@@ -119,7 +240,7 @@ export const useChatSuggestions = (
 
     // Cache patterns
     if (intentText.includes('cache') || intentText.includes('redis') || intentText.includes('performance')) {
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'cache',
         title: 'Add Cache Layer',
         description: 'Improve performance with caching',
@@ -139,7 +260,7 @@ export const useChatSuggestions = (
       intentText.includes('message') ||
       intentText.includes('event')
     ) {
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'message-queue',
         title: 'Add Message Queue',
         description: 'Enable asynchronous communication',
@@ -158,7 +279,7 @@ export const useChatSuggestions = (
 
       // Empty canvas suggestions
       if (isEmpty) {
-        suggestions.push({
+        fallbackSuggestions.push({
           id: 'tip-start',
           title: 'Start with a Component',
           description: 'Drag a component from the palette to begin your design',
@@ -172,7 +293,7 @@ export const useChatSuggestions = (
 
       // Has components but no connections
       if (nodeCount > 1 && componentTypes.length > 1) {
-        suggestions.push({
+        fallbackSuggestions.push({
           id: 'tip-connect',
           title: 'Connect Components',
           description: 'Click and drag from one component to another to create connections',
@@ -186,7 +307,7 @@ export const useChatSuggestions = (
 
       // Many components suggest grouping
       if (nodeCount > 5) {
-        suggestions.push({
+        fallbackSuggestions.push({
           id: 'group',
           title: 'Organize with Groups',
           description: 'Use group containers to organize related components',
@@ -201,7 +322,7 @@ export const useChatSuggestions = (
 
       // Has databases, suggest cache
       if (componentTypes.includes('database') && !componentTypes.includes('cache')) {
-        suggestions.push({
+        fallbackSuggestions.push({
           id: 'pattern-cache',
           title: 'Consider Adding Cache',
           description: 'Reduce database load with a caching layer',
@@ -219,7 +340,7 @@ export const useChatSuggestions = (
         (componentTypes.includes('api-gateway') || componentTypes.includes('server')) &&
         !componentTypes.includes('load-balancer')
       ) {
-        suggestions.push({
+        fallbackSuggestions.push({
           id: 'pattern-lb',
           title: 'Add Load Balancing',
           description: 'Scale your API with a load balancer',
@@ -234,8 +355,8 @@ export const useChatSuggestions = (
     }
 
     // General tips if no specific patterns matched
-    if (suggestions.length === 0) {
-      suggestions.push({
+    if (fallbackSuggestions.length === 0) {
+      fallbackSuggestions.push({
         id: 'tip-palette',
         title: 'Explore Components',
         description: `Browse ${COMPONENTS.length}+ components in the palette`,
@@ -245,7 +366,7 @@ export const useChatSuggestions = (
         priority: 5,
         actionType: 'info-only',
       });
-      suggestions.push({
+      fallbackSuggestions.push({
         id: 'tip-export',
         title: 'Export Your Design',
         description: 'Save your work as PNG or JSON',
@@ -258,6 +379,16 @@ export const useChatSuggestions = (
     }
 
     // Sort by priority
-    return suggestions.sort((a, b) => b.priority - a.priority).slice(0, 5);
+    return fallbackSuggestions.sort((a, b) => b.priority - a.priority).slice(0, 5);
   }, [userIntent, canvasContext]);
+
+  // Return AI suggestions if available, otherwise fallback to rule-based
+  // Prefer AI suggestions for higher precision and contextual relevance
+  if (aiSuggestions && aiSuggestions.length > 0) {
+    return aiSuggestions;
+  }
+
+  // Fallback to rule-based suggestions
+  // This also handles the case when AI is loading or errored
+  return ruleBasedSuggestions;
 };
