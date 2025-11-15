@@ -50,6 +50,7 @@ export interface UseYjsCollaborationParams {
   userName: string
   userEmail?: string
   userPictureUrl?: string
+  enabled?: boolean
   onUserJoined?: (user: CollaboratorUser) => void
   onUserLeft?: (user: CollaboratorUser) => void
 }
@@ -78,6 +79,7 @@ export const useYjsCollaboration = ({
   userName,
   userEmail,
   userPictureUrl,
+  enabled = true,
   onUserJoined,
   onUserLeft,
 }: UseYjsCollaborationParams): UseYjsCollaborationReturn => {
@@ -98,6 +100,24 @@ export const useYjsCollaboration = ({
   const [cursors, setCursors] = useState<CollaboratorCursor[]>([])
   const collaboratorsRef = useRef<CollaboratorUser[]>([])
 
+  // Store callbacks in refs to avoid re-initialization when they change
+  const onNodesChangeRef = useRef(onNodesChange)
+  const onEdgesChangeRef = useRef(onEdgesChange)
+  const onUserJoinedRef = useRef(onUserJoined)
+  const onUserLeftRef = useRef(onUserLeft)
+  const nodesRef = useRef(nodes)
+  const edgesRef = useRef(edges)
+  
+  // Update refs when callbacks or data change
+  useEffect(() => {
+    onNodesChangeRef.current = onNodesChange
+    onEdgesChangeRef.current = onEdgesChange
+    onUserJoinedRef.current = onUserJoined
+    onUserLeftRef.current = onUserLeft
+    nodesRef.current = nodes
+    edgesRef.current = edges
+  }, [onNodesChange, onEdgesChange, onUserJoined, onUserLeft, nodes, edges])
+
   // Flag to prevent sync loops
   const isLocalChangeRef = useRef(false)
 
@@ -105,6 +125,11 @@ export const useYjsCollaboration = ({
    * Initialize Yjs document and provider
    */
   const initialize = useCallback(() => {
+    // Don't initialize if not enabled
+    if (!enabled) {
+      return undefined
+    }
+
     try {
       // Get Yjs URL - return early if not configured
       const yjsUrl = getYjsUrl()
@@ -149,6 +174,7 @@ export const useYjsCollaboration = ({
 
       // Connection status handlers
       provider.on('status', ({ status }: { status: string }) => {
+        console.log('🔌 Yjs Connection Status:', status)
         setState((prev) => ({
           ...prev,
           isConnected: status === 'connected',
@@ -157,6 +183,7 @@ export const useYjsCollaboration = ({
       })
 
       provider.on('sync', (isSynced: boolean) => {
+        console.log('🔄 Yjs Sync Status:', isSynced)
         setState((prev) => ({
           ...prev,
           isSynced,
@@ -166,8 +193,8 @@ export const useYjsCollaboration = ({
         if (isSynced && yNodes.length === 0 && yEdges.length === 0) {
           isLocalChangeRef.current = true
           ydoc.transact(() => {
-            yNodes.push(nodes)
-            yEdges.push(edges)
+            yNodes.push(nodesRef.current)
+            yEdges.push(edgesRef.current)
           })
           isLocalChangeRef.current = false
         }
@@ -219,7 +246,7 @@ export const useYjsCollaboration = ({
           if (clientId === localClientId) return
           const state = states.get(clientId) as { user?: CollaboratorUser; cursor?: { x: number; y: number } } | undefined
           if (state?.user) {
-            onUserJoined?.(state.user)
+            onUserJoinedRef.current?.(state.user)
           }
         })
 
@@ -231,7 +258,7 @@ export const useYjsCollaboration = ({
             return !collaboratorsList.some((nc) => nc.id === c.id)
           })
           if (leftUser) {
-            onUserLeft?.(leftUser)
+            onUserLeftRef.current?.(leftUser)
           }
         })
       })
@@ -241,14 +268,14 @@ export const useYjsCollaboration = ({
         if (isLocalChangeRef.current) return
         
         const updatedNodes = yNodes.toArray()
-        onNodesChange(updatedNodes)
+        onNodesChangeRef.current(updatedNodes)
       }
 
       const edgesObserver = () => {
         if (isLocalChangeRef.current) return
         
         const updatedEdges = yEdges.toArray()
-        onEdgesChange(updatedEdges)
+        onEdgesChangeRef.current(updatedEdges)
       }
 
       yNodes.observe(nodesObserver)
@@ -269,7 +296,9 @@ export const useYjsCollaboration = ({
       console.error('Yjs initialization error:', error)
       return undefined
     }
-  }, [diagramId, userId, userName, userEmail, userPictureUrl, nodes, edges, onNodesChange, onEdgesChange, onUserJoined, onUserLeft])
+    // Only re-initialize if diagramId, user info, or enabled changes
+    // NOT when nodes/edges change - that's handled by the sync effect below
+  }, [diagramId, userId, userName, userEmail, userPictureUrl, enabled])  // Removed: nodes, edges, onNodesChange, onEdgesChange, onUserJoined, onUserLeft
 
   /**
    * Sync local changes to Yjs
