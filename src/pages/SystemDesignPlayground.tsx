@@ -71,7 +71,7 @@ import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
-import { useCollaboration } from "../hooks/useCollaboration";
+import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
 import { CollaborationStatus } from "../components/CollaborationStatus";
 import { CollaboratorCursor } from "../components/CollaboratorCursor";
 import { getCollaboratorColor } from "../utils/collaborationUtils";
@@ -1821,90 +1821,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }, [showShareModal, currentDiagramId, loadCollaborators]);
 
-  // Real-time collaboration integration
-  const token = localStorage.getItem("auth_token") || "";
+  // Real-time collaboration integration using unified collaboration hook
   const {
-    sendDiagramUpdate,
-    sendCursorPosition,
+    state: collaborationState,
     collaborators: onlineCollaborators,
     cursors,
-    isConnected: isCollaborationConnected,
-    isConnecting: isCollaborationConnecting,
-    reconnectAttempts: collaborationReconnectAttempts,
-  } = useCollaboration({
+    sendCursorPosition,
+  } = useUnifiedCollaboration({
     diagramId: currentDiagramId || "",
-    token,
-    // Only enable collaboration if user is authenticated, has a token, and has a diagram ID
-    enabled: !!currentDiagramId && isAuthenticated && !!token,
-    onDiagramUpdate: useCallback(
-      (
-        data: { nodes?: Node[]; edges?: Edge[]; title?: string },
-        userId: string
-      ) => {
-        console.log("Received diagram update from user:", userId);
-
-        // Apply remote changes without triggering our own update
-        if (data.nodes) {
-          setNodes(data.nodes);
-        }
-        if (data.edges) {
-          setEdges(data.edges);
-        }
-        if (data.title && currentDiagram) {
-          setCurrentDiagram({ ...currentDiagram, title: data.title });
-        }
-
-        toastRef.current.success("Diagram updated by collaborator");
-      },
-      [setNodes, setEdges, currentDiagram]
-    ),
-    onUserJoined: useCallback(
-      (user: {
-        id: string;
-        name: string;
-        email: string;
-        pictureUrl?: string;
-      }) => {
-        toastRef.current.success(`${user.name} joined the collaboration`);
-      },
-      []
-    ),
-    onUserLeft: useCallback(
-      (user: {
-        id: string;
-        name: string;
-        email: string;
-        pictureUrl?: string;
-      }) => {
-        toastRef.current.success(`${user.name} left the collaboration`);
-      },
-      []
-    ),
-    onError: useCallback((error: string) => {
-      toastRef.current.error(error);
-    }, []),
-  });
-
-  // Send diagram updates to collaborators when nodes or edges change
-  useEffect(() => {
-    if (!isCollaborationConnected) return;
-
-    const timeoutId = setTimeout(() => {
-      sendDiagramUpdate({
-        nodes,
-        edges,
-        title: currentDiagram?.title,
-      });
-    }, 500); // Debounce updates
-
-    return () => clearTimeout(timeoutId);
-  }, [
     nodes,
     edges,
-    currentDiagram?.title,
-    isCollaborationConnected,
-    sendDiagramUpdate,
-  ]);
+    onNodesChange: useCallback((updatedNodes: Node[]) => {
+      setNodes(updatedNodes);
+    }, [setNodes]),
+    onEdgesChange: useCallback((updatedEdges: Edge[]) => {
+      setEdges(updatedEdges);
+    }, [setEdges]),
+    enabled: !!currentDiagramId && isAuthenticated,
+  });
+
+  // Extract collaboration state for backward compatibility
+  const isCollaborationConnected = collaborationState.isConnected;
+  const isCollaborationConnecting = !collaborationState.isConnected && !collaborationState.error;
+  const collaborationReconnectAttempts = 0; // Unified hook doesn't expose this yet
+
+  // Note: Yjs automatically syncs nodes/edges changes, no manual sendDiagramUpdate needed
+  // For custom WebSocket fallback, sendUpdate is called but it's a no-op for Yjs
 
   // Track cursor position for collaboration
   // Use ReactFlow's onMouseMove which provides proper coordinates

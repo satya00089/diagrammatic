@@ -6,7 +6,7 @@ import { getCollaboratorColor } from '../utils/collaborationUtils';
 interface CollaboratorUser {
   id: string;
   name: string;
-  email: string;
+  email?: string; // Optional to support both Yjs and custom WebSocket
   pictureUrl?: string;
 }
 
@@ -62,22 +62,26 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
     <div className="flex items-center gap-2">
       {/* Connection Status - Only shown when there's a problem */}
       {shouldShowStatus && (
-        <div
-          className="relative"
+        <button
+          type="button"
+          className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-theme/10 ${getStatusColor()} transition-colors cursor-default`}
+          aria-label={getStatusText()}
+          aria-describedby={showTooltip ? 'connection-tooltip' : undefined}
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
+          onFocus={() => setShowTooltip(true)}
+          onBlur={() => setShowTooltip(false)}
+          tabIndex={0}
         >
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-theme/10 ${getStatusColor()} transition-colors`}
-          >
-            {getStatusIcon()}
-            <span className="text-xs font-medium">{getStatusText()}</span>
-          </div>
+          {getStatusIcon()}
+          <span className="text-xs font-medium">{getStatusText()}</span>
 
           {/* Tooltip */}
           <AnimatePresence>
             {showTooltip && (
               <motion.div
+                id="connection-tooltip"
+                role="tooltip"
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 5 }}
@@ -94,19 +98,25 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </button>
       )}
 
       {/* Collaborators List - Only shown when there are online collaborators */}
       {shouldShowCollaborators && (
-        <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface border border-theme/10">
-          <MdPeople className="h-4 w-4 text-theme" />
+        <div 
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface border border-theme/10"
+          role="group"
+          aria-label={`${collaborators.length} collaborator${collaborators.length > 1 ? 's' : ''} online`}
+        >
+          <MdPeople className="h-4 w-4 text-theme" aria-hidden="true" />
           <div className="flex -space-x-2">
             {collaborators.slice(0, 3).map((collaborator) => (
               <div
                 key={collaborator.id}
                 className="relative group"
-                data-tooltip={collaborator.name}
+                role="img"
+                aria-label={collaborator.name}
+                title={collaborator.name}
               >
                 {collaborator.pictureUrl ? (
                   <img
@@ -123,6 +133,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
                     style={{
                       backgroundColor: getCollaboratorColor(collaborator.id),
                     }}
+                    aria-label={collaborator.name}
                   >
                     {collaborator.name.charAt(0).toUpperCase()}
                   </div>
@@ -130,7 +141,11 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
               </div>
             ))}
             {collaborators.length > 3 && (
-              <div className="w-6 h-6 rounded-full bg-theme/10 border-2 border-surface flex items-center justify-center text-xs font-bold text-theme">
+              <div 
+                className="w-6 h-6 rounded-full bg-theme/10 border-2 border-surface flex items-center justify-center text-xs font-bold text-theme"
+                role="img"
+                aria-label={`${collaborators.length - 3} more collaborator${collaborators.length - 3 > 1 ? 's' : ''}`}
+              >
                 +{collaborators.length - 3}
               </div>
             )}
