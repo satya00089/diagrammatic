@@ -63,6 +63,7 @@ export const useUnifiedCollaboration = ({
   // Check if Yjs is enabled via feature flag AND Yjs URL is configured
   // If no VITE_YJS_URL is provided, automatically fall back to custom WebSocket
   const yjsUrl = getYjsUrl()
+  console.log('VITE_YJS_URL value:', yjsUrl ? `"${yjsUrl}"` : 'undefined (using WebSocket fallback)')
   const useYjs = !!yjsUrl && isFeatureEnabled(FeatureFlags.YJS_COLLABORATION)
   
   // Yjs collaboration
