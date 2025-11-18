@@ -63,7 +63,6 @@ export const useUnifiedCollaboration = ({
   // Check if Yjs is enabled via feature flag AND Yjs URL is configured
   // If no VITE_YJS_URL is provided, automatically fall back to custom WebSocket
   const yjsUrl = getYjsUrl()
-  console.log('VITE_YJS_URL value:', yjsUrl ? `"${yjsUrl}"` : 'undefined (using WebSocket fallback)')
   const useYjs = !!yjsUrl && isFeatureEnabled(FeatureFlags.YJS_COLLABORATION)
   
   // Yjs collaboration
@@ -132,15 +131,6 @@ export const useUnifiedCollaboration = ({
         collaboratorCount: wsCollaborators.length,
         error: wsCollaboration.isConnected ? null : 'Disconnected',
       }
-
-  // Debug: Log state changes
-  console.log('🔗 Unified Collaboration State:', {
-    useYjs,
-    enabled,
-    state,
-    yjsState: useYjs ? yjsCollaboration.state : null,
-    wsState: !useYjs ? { isConnected: wsCollaboration.isConnected } : null,
-  })
 
   // Unified collaborators and cursors
   const collaborators = useYjs ? yjsCollaboration.collaborators : wsCollaborators
