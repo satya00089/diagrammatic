@@ -41,9 +41,19 @@ jobs:
             echo "ERROR: VITE_ASSESSMENT_API_URL is not set!"
             exit 1
           fi
+          if [ -z "$VITE_YJS_URL" ]; then
+            echo "ERROR: VITE_YJS_URL is not set!"
+            exit 1
+          fi
+          if [ -z "$VITE_API_URL" ]; then
+            echo "ERROR: VITE_API_URL is not set!"
+            exit 1
+          fi
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
+          VITE_YJS_URL: ${{ secrets.VITE_YJS_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Build
         run: npm run build
@@ -51,6 +61,8 @@ jobs:
           CI: true
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
+          VITE_YJS_URL: ${{ secrets.VITE_YJS_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
       - name: Verify build output
         run: |
