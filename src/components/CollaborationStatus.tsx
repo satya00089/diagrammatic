@@ -104,7 +104,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
       {/* Collaborators List - Only shown when there are online collaborators */}
       {shouldShowCollaborators && (
         <div 
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface border border-theme/10"
+          className="flex items-center gap-1 px-3"
           role="group"
           aria-label={`${collaborators.length} collaborator${collaborators.length > 1 ? 's' : ''} online`}
         >
@@ -122,7 +122,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
                   <img
                     src={collaborator.pictureUrl}
                     alt={collaborator.name}
-                    className="w-6 h-6 rounded-full border-2 border-surface"
+                    className="w-8 h-8 rounded-full border-2 border-surface"
                     style={{
                       borderColor: getCollaboratorColor(collaborator.id),
                     }}
