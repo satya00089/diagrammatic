@@ -657,40 +657,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   }, [showTitleDialog, userIntent, dialogTitle, dialogDescription]);
 
-  // Sync nodes and edges changes to undo/redo history
-  useEffect(() => {
-    // Skip if this change is from undo/redo
-    if (isApplyingUndoRedo.current) return;
-
-    // Skip if nodes/edges are empty (initial state)
-    if (nodes.length === 0 && edges.length === 0) return;
-
-    // Update canvas state for undo/redo tracking
-    setCanvasState({ nodes, edges });
-  }, [nodes, edges, setCanvasState]);
-
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+Z or Cmd+Z for undo
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      }
-      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for redo
-      if (
-        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "z") ||
-        (e.ctrlKey && e.key === "y")
-      ) {
-        e.preventDefault();
-        redo();
-      }
-    };
-
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
-
   // Timer effect - runs continuously every second (only for problems, not free mode)
   useEffect(() => {
     if (idFromUrl === "free") return; // Don't run timer for Design Studio
@@ -1844,6 +1810,48 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const isCollaborationConnected = collaborationState.isConnected;
   const isCollaborationConnecting = !collaborationState.isConnected && !collaborationState.error;
   const collaborationReconnectAttempts = 0; // Unified hook doesn't expose this yet
+
+  // Sync nodes and edges changes to undo/redo history
+  // Skip during collaboration to prevent conflicts
+  useEffect(() => {
+    // Skip if this change is from undo/redo
+    if (isApplyingUndoRedo.current) return;
+
+    // Skip if nodes/edges are empty (initial state)
+    if (nodes.length === 0 && edges.length === 0) return;
+
+    // Skip during active collaboration to prevent undo/redo interfering with Yjs
+    if (isCollaborationConnected) return;
+
+    // Update canvas state for undo/redo tracking
+    setCanvasState({ nodes, edges });
+  }, [nodes, edges, setCanvasState, isCollaborationConnected]);
+
+  // Keyboard shortcuts for undo/redo
+  // Disable during collaboration to prevent conflicts with Yjs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable undo/redo during active collaboration
+      if (isCollaborationConnected) return;
+
+      // Ctrl+Z or Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y for redo
+      if (
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "z") ||
+        (e.ctrlKey && e.key === "y")
+      ) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => globalThis.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo, isCollaborationConnected]);
 
   // Note: Yjs automatically syncs nodes/edges changes, no manual sendDiagramUpdate needed
   // For custom WebSocket fallback, sendUpdate is called but it's a no-op for Yjs
