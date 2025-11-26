@@ -6,36 +6,56 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   
-  <!-- Home Page -->
+  <!-- Home Page - Main Landing -->
   <url>
-    <loc>https://satya00089.github.io/diagrammatic/</loc>
-    <lastmod>2025-10-30</lastmod>
+    <loc>https://diagrammatic.next-zen.dev/</loc>
+    <lastmod>2025-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://diagrammatic.next-zen.dev/logo.png</image:loc>
+      <image:title>Diagrammatic System Design Tool</image:title>
+    </image:image>
   </url>
   
-  <!-- Problems Dashboard -->
+  <!-- Free Playground - High priority entry point -->
   <url>
-    <loc>https://satya00089.github.io/diagrammatic/#/problems</loc>
-    <lastmod>2025-10-30</lastmod>
+    <loc>https://diagrammatic.next-zen.dev/#/playground/free</loc>
+    <lastmod>2025-11-26</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  
+  <!-- Problems Dashboard - Practice & Learning -->
+  <url>
+    <loc>https://diagrammatic.next-zen.dev/#/problems</loc>
+    <lastmod>2025-11-26</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   
-  <!-- Create Problem -->
+  <!-- My Designs - User Dashboard -->
   <url>
-    <loc>https://satya00089.github.io/diagrammatic/#/create-problem</loc>
-    <lastmod>2025-10-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://diagrammatic.next-zen.dev/#/diagrams</loc>
+    <lastmod>2025-11-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
   
-  <!-- Free Playground -->
+  <!-- Create Problem - Content Creation -->
   <url>
-    <loc>https://satya00089.github.io/diagrammatic/#/playground/free</loc>
-    <lastmod>2025-10-30</lastmod>
+    <loc>https://diagrammatic.next-zen.dev/#/create-problem</loc>
+    <lastmod>2025-11-26</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Fallback for GitHub Pages URL -->
+  <url>
+    <loc>https://satya00089.github.io/diagrammatic/</loc>
+    <lastmod>2025-11-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
   </url>
   
 </urlset>

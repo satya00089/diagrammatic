@@ -7,14 +7,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "postbuild": "node prerender.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
     "test": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "deploy": "gh-pages -d dist",
-    "tw:init": "tailwindcss init -p"
+    "deploy": "npm run build && gh-pages -d dist",
+    "tw:init": "tailwindcss init -p",
+    "seo:check": "node scripts/seo-check.js"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
@@ -58,6 +60,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "prettier": "^3.1.1",
+    "react-snap": "^1.23.0",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",

@@ -1,10 +1,17 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
+Allow: /#/
 
-# Disallow private or dynamic content if any
+# Disallow private or dynamic content
 Disallow: /api/
 Disallow: /__blobstorage__/
+Disallow: /admin/
+Disallow: /*.json$
+
+# Crawl delay for respectful crawling
+Crawl-delay: 1
 
 # Sitemap
+Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml
 Sitemap: https://satya00089.github.io/diagrammatic/sitemap.xml
