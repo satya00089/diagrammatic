@@ -86,37 +86,96 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Structured Data (JSON-LD) -->
+    <!-- Structured Data (JSON-LD) - WebApplication -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "Diagrammatic",
+        "alternateName": "Diagrammatic System Design Tool",
         "description": "Interactive system design playground for learning and prototyping scalable architectures with 45+ components and AI assessment",
         "url": "https://diagrammatic.next-zen.dev/",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "softwareVersion": "1.0.0",
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "USD"
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
         },
         "featureList": [
           "45+ System Design Components",
           "AI-Powered Assessment",
           "Interactive Canvas",
+          "Real-time Collaboration",
           "Practice Problems",
           "Dark Mode Support",
-          "Export & Share Designs"
+          "Export & Share Designs",
+          "Entity-Relationship Diagrams",
+          "Database Schema Design",
+          "Microservices Architecture"
         ],
         "screenshot": "https://diagrammatic.next-zen.dev/logo.png",
+        "image": "https://diagrammatic.next-zen.dev/logo.png",
         "aggregateRating": {
           "@type": "AggregateRating",
           "ratingValue": "4.8",
           "ratingCount": "1000",
           "bestRating": "5",
           "worstRating": "1"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Diagrammatic",
+          "url": "https://diagrammatic.next-zen.dev/"
         }
+      }
+    </script>
+
+    <!-- Structured Data (JSON-LD) - Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Diagrammatic",
+        "url": "https://diagrammatic.next-zen.dev/",
+        "logo": "https://diagrammatic.next-zen.dev/logo.png",
+        "sameAs": [],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "Customer Service",
+          "availableLanguage": "English"
+        }
+      }
+    </script>
+
+    <!-- Structured Data (JSON-LD) - BreadcrumbList -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://diagrammatic.next-zen.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Problems",
+            "item": "https://diagrammatic.next-zen.dev/#/problems"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Playground",
+            "item": "https://diagrammatic.next-zen.dev/#/playground/free"
+          }
+        ]
       }
     </script>
     <script>
@@ -141,10 +200,137 @@
         }
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-CCeZvD1E.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DYi2idCK.css">
+    <script type="module" crossorigin src="/assets/index-DJQT9Jpx.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Binfm7uo.css">
   </head>
   <body>
+    <!-- Semantic HTML content for crawlers (hidden from users, visible to search engines) -->
+    <noscript>
+      <div style="padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
+        <h1>Diagrammatic - Interactive System Design Playground</h1>
+        <p>
+          Master system design with our interactive playground. Learn to design scalable, 
+          production-ready architectures with 45+ components, AI-powered assessment, and 
+          real-world practice problems.
+        </p>
+        
+        <h2>Key Features</h2>
+        <ul>
+          <li><strong>45+ System Design Components</strong> - Load balancers, databases, caches, queues, and more</li>
+          <li><strong>AI-Powered Assessment</strong> - Get instant feedback on your architecture designs</li>
+          <li><strong>Practice Problems</strong> - Real-world system design challenges</li>
+          <li><strong>Free Design Studio</strong> - Create unlimited architecture diagrams</li>
+          <li><strong>Entity-Relationship Diagrams</strong> - Design database schemas visually</li>
+          <li><strong>Real-time Collaboration</strong> - Work together on designs with your team</li>
+          <li><strong>Export & Share</strong> - Download as PNG, JPEG, SVG, or JSON</li>
+        </ul>
+
+        <h2>Perfect For</h2>
+        <ul>
+          <li><strong>Software Engineers</strong> - Prepare for system design interviews</li>
+          <li><strong>Students</strong> - Learn distributed systems and scalable architecture</li>
+          <li><strong>Architects</strong> - Prototype and visualize system designs</li>
+          <li><strong>Educators</strong> - Teach system design concepts interactively</li>
+        </ul>
+
+        <h2>Popular System Design Patterns</h2>
+        <p>
+          Learn and practice designing:
+        </p>
+        <ul>
+          <li>Microservices Architecture</li>
+          <li>Event-Driven Systems</li>
+          <li>Distributed Caching</li>
+          <li>Load Balancing Strategies</li>
+          <li>Database Sharding & Replication</li>
+          <li>Message Queues & Pub/Sub</li>
+          <li>API Gateways & Service Mesh</li>
+          <li>CDN & Edge Computing</li>
+        </ul>
+
+        <p>
+          <strong>Start designing now:</strong> 
+          <a href="https://diagrammatic.next-zen.dev/#/playground/free">Free Playground</a> | 
+          <a href="https://diagrammatic.next-zen.dev/#/problems">Practice Problems</a>
+        </p>
+        
+        <p>
+          <em>This tool requires JavaScript to run. Please enable JavaScript in your browser.</em>
+        </p>
+      </div>
+    </noscript>
+
+    <!-- Hidden semantic content for SEO (visible to search engines, hidden from users) -->
+    <div id="seo-content" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"><article>
+      <h1>Diagrammatic - Interactive System Design Playground</h1>
+      <p>Master system design with our interactive playground. Learn to design scalable, production-ready architectures.</p>
+      <h2>Key Features</h2>
+      <ul>
+        <li>45+ System Design Components</li>
+        <li>AI-Powered Assessment</li>
+        <li>Practice Problems</li>
+        <li>Real-time Collaboration</li>
+      </ul>
+    
+        <h1>System Design Interview Preparation Tool</h1>
+        <p>
+          Diagrammatic is a comprehensive system design learning platform that helps software engineers, 
+          students, and architects master the art of designing scalable distributed systems. Our interactive 
+          playground provides hands-on experience with real-world architecture patterns.
+        </p>
+        
+        <section>
+          <h2>Learn System Design Through Practice</h2>
+          <p>
+            Practice makes perfect. Our curated collection of system design problems covers everything from 
+            basic CRUD applications to complex distributed systems serving millions of users. Each problem 
+            includes detailed requirements, constraints, and AI-powered feedback on your solution.
+          </p>
+        </section>
+
+        <section>
+          <h2>Components Library</h2>
+          <p>
+            Build realistic architectures using our extensive component library: API Gateway, Load Balancer, 
+            Reverse Proxy, Backend Server, Microservice, Database (SQL/NoSQL), Cache (Redis/Memcached), 
+            Message Queue, CDN, Object Storage, Search Engine, Analytics Engine, Monitoring System, and more.
+          </p>
+        </section>
+
+        <section>
+          <h3>Database Design & ER Diagrams</h3>
+          <p>
+            Design database schemas visually with our Entity-Relationship diagram tool. Create tables, 
+            define relationships (one-to-one, one-to-many, many-to-many), set primary keys, foreign keys, 
+            and constraints. Perfect for database design courses and SQL learning.
+          </p>
+        </section>
+
+        <section>
+          <h3>Free & Open Source</h3>
+          <p>
+            Diagrammatic is completely free to use. No signup required for the Design Studio. Create 
+            unlimited diagrams, export them in multiple formats, and share with your team or interview panel.
+          </p>
+        </section>
+
+        <nav aria-label="Main navigation">
+          <ul>
+            <li><a href="https://diagrammatic.next-zen.dev/">Home</a></li>
+            <li><a href="https://diagrammatic.next-zen.dev/#/playground/free">Free Design Studio</a></li>
+            <li><a href="https://diagrammatic.next-zen.dev/#/problems">Practice Problems</a></li>
+            <li><a href="https://diagrammatic.next-zen.dev/#/diagrams">My Designs</a></li>
+          </ul>
+        </nav>
+
+        <footer>
+          <p>Keywords: system design tool, architecture diagram, distributed systems, microservices, 
+          database design, ER diagram, system design interview, software architecture, scalable systems, 
+          cloud architecture, system design practice, technical interview preparation</p>
+        </footer>
+      </article>
+    </div>
+
     <div id="root"></div>
   </body>
 </html>
