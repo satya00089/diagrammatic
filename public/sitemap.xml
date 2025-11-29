@@ -49,13 +49,4 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-
-  <!-- Fallback for GitHub Pages URL -->
-  <url>
-    <loc>https://satya00089.github.io/diagrammatic/</loc>
-    <lastmod>2025-11-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-
 </urlset>
