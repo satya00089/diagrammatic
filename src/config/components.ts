@@ -1,10 +1,92 @@
 import type { CanvasComponent } from "../types/canvas";
+import {
+  FaArchive, FaBalanceScale, FaBolt, FaBook, FaBoxOpen,
+  FaBroadcastTower, FaChartBar, FaCircle,
+  FaCogs, FaCube, FaCubes,
+  FaDesktop, FaDraftingCompass, FaEye, FaFileAlt, FaFire,
+  FaFolder, FaGlobe, FaIdCard, FaList,
+  FaLock, FaObjectGroup,
+  FaPlug, FaRoute, FaSatellite,
+  FaServer, FaShieldAlt, FaStickyNote,
+  FaTable, FaTags, FaTrafficLight,
+  FaProjectDiagram, FaUserShield, FaClipboardList, FaLightbulb,
+  FaSitemap, FaCloudUploadAlt,
+  FaAtom
+} from "react-icons/fa";
+
+// Simple Icons for brand-specific technology logos
+import {
+  SiRedis, SiElasticsearch, SiPostgresql,
+  SiKubernetes, SiNginx,
+  SiPrometheus, SiApachekafka, SiRabbitmq, SiGrafana,
+  SiStripe, SiTwilio, SiVault,
+  SiCloudflare, SiSnowflake, SiApacheflink,
+  SiTensorflow, SiPytorch, SiOpenai,
+  SiJaeger, SiServerless
+} from "react-icons/si";
+
+// Material Design Icons for modern, clean aesthetics
+import {
+  MdStorage, MdCloud, MdSecurity, MdNotifications, MdEmail,
+  MdPhoneIphone, MdRouter,
+  MdLayers, MdDeviceHub, MdAccountTree
+} from "react-icons/md";
 
 /**
  * COMPREHENSIVE SYSTEM DESIGN COMPONENTS LIBRARY
- * Organized by architectural layers for scalable distributed systems
- * Last reviewed: Solution Architect Review
+ * Organized by usage frequency - most commonly used groups first
+ * 
+ * GROUP ORDER (Most Used → Least Used):
+ * 1. Compute - Backend servers, containers, workers (most essential)
+ * 2. Data Layer - Databases, caches, storage (critical infrastructure)
+ * 3. Services - APIs, auth, notifications (common microservices)
+ * 4. Networking - Load balancers, gateways, proxies (routing layer)
+ * 5. Frontend - Web, mobile, desktop apps (client layer)
+ * 6. Messaging - Queues, brokers, pub/sub (async communication)
+ * 7. Security - Firewalls, secrets, VPN (protection layer)
+ * 8. Observability - Monitoring, tracing (operations)
+ * 9. Delivery - CDN, edge servers (content delivery)
+ * 10. AI & ML - Models, training, inference (emerging)
+ * 11. Grouping - VPCs, zones, clusters (organizational)
+ * 12. DNS & Network - Name resolution (foundational but less frequently modified)
+ * 13. ER Diagram - Database design entities
+ * 14. UML - Class diagrams, interfaces
+ * 15. Custom - User-defined components
+ * 
+ * Last reviewed: UX Design Review - Sorted by usage frequency
  */
+
+// Group priority for sorting by usage frequency (lower number = higher priority)
+export const GROUP_PRIORITY: Record<string, number> = {
+  "Compute": 1,
+  "Data Layer": 2,
+  "Services": 3,
+  "Networking": 4,
+  "Frontend": 5,
+  "Messaging": 6,
+  "Security": 7,
+  "Observability": 8,
+  "Delivery": 9,
+  "AI & ML": 10,
+  "Grouping": 11,
+  "DNS & Network": 12,
+  "ER Diagram": 13,
+  "UML": 14,
+  "Custom": 15,
+};
+
+// Utility function to sort components by usage frequency
+export const sortComponentsByUsage = (components: CanvasComponent[]) => {
+  return [...components].sort((a, b) => {
+    const priorityA = GROUP_PRIORITY[a.group ?? "Custom"] ?? 999;
+    const priorityB = GROUP_PRIORITY[b.group ?? "Custom"] ?? 999;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+    // Within same group, sort alphabetically
+    return a.label.localeCompare(b.label);
+  });
+};
 
 export const COMPONENTS: CanvasComponent[] = [
   // ========================================
@@ -13,7 +95,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "web-app",
     group: "Frontend",
-    icon: "💻",
+    icon: FaDesktop,
     label: "Web App",
     description: "Browser-based client",
     tags: ["browser", "client", "frontend", "spa", "pwa", "web application"],
@@ -70,7 +152,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "mobile-app",
     group: "Frontend",
-    icon: "📱",
+    icon: MdPhoneIphone,
     label: "Mobile App",
     description: "iOS/Android client",
     tags: [
@@ -127,7 +209,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "desktop-app",
     group: "Frontend",
-    icon: "🖥️",
+    icon: FaGlobe,
     label: "Desktop App",
     description: "Native / Electron client",
     tags: ["desktop", "electron", "tauri", "native", "windows", "mac", "linux"],
@@ -172,7 +254,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "database",
     group: "Data Layer",
-    icon: "🗄️",
+    icon: SiPostgresql,
     label: "Database",
     description: "Relational/NoSQL data storage",
     tags: [
@@ -327,7 +409,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "loadbalancer",
     group: "Networking",
-    icon: "⚖️",
+    icon: FaBalanceScale,
     label: "Load Balancer",
     description: "Traffic distribution & high availability",
     tags: [
@@ -436,7 +518,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "cache",
     group: "Data Layer",
-    icon: "⚡",
+    icon: SiRedis,
     label: "Cache",
     description: "In-memory fast data access",
     tags: [
@@ -538,7 +620,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "webserver",
     group: "Compute",
-    icon: "🌐",
+    icon: FaServer,
     label: "Web Server",
     description: "HTTP requests",
     tags: ["http", "server", "nginx", "apache", "web", "requests"],
@@ -578,7 +660,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "message-broker",
     group: "Messaging",
-    icon: "📨",
+    icon: SiApachekafka,
     label: "Message Broker",
     description: "Pub/Sub message broker",
     tags: ["kafka", "rabbitmq", "pubsub", "messaging", "broker", "queue", "mq"],
@@ -621,7 +703,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "auth-service",
     group: "Services",
-    icon: "🔐",
+    icon: FaUserShield,
     label: "Auth Service",
     description: "Authentication & session management",
     tags: [
@@ -669,7 +751,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "cdn",
     group: "Delivery",
-    icon: "🚀",
+    icon: SiCloudflare,
     label: "CDN",
     description: "Content delivery network",
     tags: [
@@ -720,7 +802,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "search",
     group: "Services",
-    icon: "🔎",
+    icon: SiElasticsearch,
     label: "Search",
     description: "Search engine & indexing",
     tags: [
@@ -766,7 +848,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "queue",
     group: "Messaging",
-    icon: "📮",
+    icon: FaClipboardList,
     label: "Queue",
     description: "Task queue",
     tags: ["task queue", "job queue", "sqs", "celery", "worker queue", "async"],
@@ -810,7 +892,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "analytics",
     group: "Data Layer",
-    icon: "📊",
+    icon: FaChartBar,
     label: "Analytics",
     description: "Event analytics pipeline",
     tags: [
@@ -868,7 +950,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "root-nameserver",
     group: "DNS & Network",
-    icon: "🌍",
+    icon: FaGlobe,
     label: "Root Nameserver",
     description: "Top-level DNS resolver",
     tags: ["dns", "nameserver", "root", "resolver", "domain"],
@@ -904,7 +986,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "tld-nameserver",
     group: "DNS & Network",
-    icon: "🔗",
+    icon: FaSitemap,
     label: "TLD Nameserver",
     description: "Top-level domain nameserver",
     tags: ["dns", "tld", "top-level domain", "nameserver", ".com", ".org"],
@@ -941,7 +1023,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "authoritative-nameserver",
     group: "DNS & Network",
-    icon: "📡",
+    icon: FaSatellite,
     label: "Authoritative Nameserver",
     description: "Domain-specific DNS server",
     tags: ["dns", "authoritative", "nameserver", "domain", "records"],
@@ -983,7 +1065,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "isp",
     group: "DNS & Network",
-    icon: "🌐",
+    icon: FaGlobe,
     label: "ISP",
     description: "Internet Service Provider",
     tags: ["internet", "isp", "network", "provider", "connectivity"],
@@ -1021,7 +1103,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "api-gateway",
     group: "Networking",
-    icon: "🚪",
+    icon: MdRouter,
     label: "API Gateway",
     description: "Central API entry point",
     tags: [
@@ -1099,7 +1181,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "message-dispatcher",
     group: "Messaging",
-    icon: "📤",
+    icon: FaBroadcastTower,
     label: "Message Dispatcher",
     description: "Message routing & distribution",
     tags: ["message", "dispatcher", "routing", "distribution", "pub/sub"],
@@ -1144,7 +1226,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "id-generator",
     group: "Services",
-    icon: "🔢",
+    icon: FaIdCard,
     label: "ID Generator",
     description: "Distributed unique ID generation",
     tags: [
@@ -1195,7 +1277,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "distributed-lock",
     group: "Services",
-    icon: "🔒",
+    icon: FaLock,
     label: "Distributed Lock",
     description: "Resource locking & coordination",
     tags: [
@@ -1248,7 +1330,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "cold-storage",
     group: "Data Layer",
-    icon: "❄️",
+    icon: FaArchive,
     label: "Cold Storage",
     description: "Archive & backup storage",
     tags: [
@@ -1298,7 +1380,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "object-storage",
     group: "Data Layer",
-    icon: "🗃️",
+    icon: MdStorage,
     label: "Object Storage",
     description: "S3-compatible object store",
     tags: [
@@ -1357,7 +1439,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "processing-worker",
     group: "Compute",
-    icon: "⚙️",
+    icon: FaCogs,
     label: "Processing Worker",
     description: "Background job processor",
     tags: [
@@ -1414,7 +1496,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "notification-service",
     group: "Services",
-    icon: "🔔",
+    icon: MdNotifications,
     label: "Notification Service",
     description: "Push notifications & alerts",
     tags: ["notification", "push", "email", "sms", "alerts", "fcm", "apns"],
@@ -1457,7 +1539,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "recommendation-service",
     group: "Services",
-    icon: "🎯",
+    icon: FaLightbulb,
     label: "Recommendation",
     description: "ML-based recommendations",
     tags: [
@@ -1506,7 +1588,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "payment-service",
     group: "Services",
-    icon: "💳",
+    icon: SiStripe,
     label: "Payment Service",
     description: "Payment processing & gateway",
     tags: [
@@ -1563,7 +1645,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "log-processing",
     group: "Services",
-    icon: "📝",
+    icon: FaFileAlt,
     label: "Log Processing",
     description: "Log aggregation & analysis",
     tags: [
@@ -1614,7 +1696,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "pubsub",
     group: "Messaging",
-    icon: "📡",
+    icon: SiRabbitmq,
     label: "Pub/Sub",
     description: "Publish-subscribe messaging",
     tags: [
@@ -1672,7 +1754,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "frontend-server",
     group: "Compute",
-    icon: "🖥️",
+    icon: FaServer,
     label: "Frontend Server",
     description: "Client-facing server",
     tags: ["frontend", "server", "websocket", "connection", "client-facing"],
@@ -1722,7 +1804,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "backend-server",
     group: "Compute",
-    icon: "⚡",
+    icon: FaCogs,
     label: "Backend Server",
     description: "Application logic & microservices",
     tags: [
@@ -1786,7 +1868,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "edge-server",
     group: "Delivery",
-    icon: "🌍",
+    icon: MdCloud,
     label: "Edge Server",
     description: "Edge computing & caching",
     tags: ["edge", "edge computing", "edge network", "cdn", "streaming"],
@@ -1841,7 +1923,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "service-mesh",
     group: "Networking",
-    icon: "🕸️",
+    icon: FaRoute,
     label: "Service Mesh",
     description: "Microservices communication layer",
     tags: [
@@ -1911,7 +1993,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "container-orchestrator",
     group: "Compute",
-    icon: "🐳",
+    icon: SiKubernetes,
     label: "Container Orchestrator",
     description: "Container management & orchestration",
     tags: [
@@ -1976,7 +2058,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "serverless-function",
     group: "Compute",
-    icon: "λ",
+    icon: SiServerless,
     label: "Serverless Function",
     description: "Event-driven compute",
     tags: [
@@ -2041,7 +2123,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "reverse-proxy",
     group: "Networking",
-    icon: "🔀",
+    icon: SiNginx,
     label: "Reverse Proxy",
     description: "Request routing & caching",
     tags: ["reverse proxy", "nginx", "haproxy", "envoy", "traefik", "proxy"],
@@ -2098,7 +2180,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "stream-processor",
     group: "Data Layer",
-    icon: "🌊",
+    icon: SiApacheflink,
     label: "Stream Processor",
     description: "Real-time data processing",
     tags: [
@@ -2161,7 +2243,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "data-warehouse",
     group: "Data Layer",
-    icon: "🏭",
+    icon: SiSnowflake,
     label: "Data Warehouse",
     description: "OLAP & analytics storage",
     tags: [
@@ -2219,7 +2301,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "monitoring",
     group: "Observability",
-    icon: "📈",
+    icon: SiPrometheus,
     label: "Monitoring",
     description: "Metrics & alerting",
     tags: [
@@ -2278,7 +2360,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "tracing",
     group: "Observability",
-    icon: "🔍",
+    icon: SiJaeger,
     label: "Distributed Tracing",
     description: "Request flow tracking",
     tags: [
@@ -2330,7 +2412,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "rate-limiter",
     group: "Services",
-    icon: "🚦",
+    icon: FaTrafficLight,
     label: "Rate Limiter",
     description: "Request throttling service",
     tags: ["rate limit", "throttling", "rate limiter", "token bucket", "quota"],
@@ -2387,7 +2469,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "circuit-breaker",
     group: "Services",
-    icon: "⚡",
+    icon: FaBolt,
     label: "Circuit Breaker",
     description: "Fault tolerance & resilience",
     tags: [
@@ -2437,7 +2519,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "file-storage",
     group: "Data Layer",
-    icon: "📂",
+    icon: FaFolder,
     label: "File Storage",
     description: "Shared file system",
     tags: ["file storage", "nfs", "efs", "shared storage", "file system"],
@@ -2482,7 +2564,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "vpn-gateway",
     group: "Networking",
-    icon: "🔐",
+    icon: FaShieldAlt,
     label: "VPN Gateway",
     description: "Secure network connection",
     tags: [
@@ -2535,7 +2617,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "firewall",
     group: "Security",
-    icon: "🛡️",
+    icon: FaFire,
     label: "Firewall",
     description: "Network security & filtering",
     tags: [
@@ -2593,7 +2675,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "secrets-manager",
     group: "Security",
-    icon: "🔑",
+    icon: SiVault,
     label: "Secrets Manager",
     description: "Credentials & secrets storage",
     tags: [
@@ -2651,7 +2733,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "email-service",
     group: "Services",
-    icon: "📧",
+    icon: MdEmail,
     label: "Email Service",
     description: "Transactional email delivery",
     tags: [
@@ -2709,7 +2791,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "sms-service",
     group: "Services",
-    icon: "💬",
+    icon: SiTwilio,
     label: "SMS Service",
     description: "SMS notifications & OTP",
     tags: ["sms", "twilio", "sns", "text message", "otp", "vonage"],
@@ -2756,7 +2838,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "custom-component",
     group: "Custom",
-    icon: "📦",
+    icon: FaBoxOpen,
     label: "Custom Component",
     description: "Create your own custom component",
     tags: ["custom", "generic", "user-defined", "flexible", "other"],
@@ -2812,7 +2894,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "ml-model",
     group: "AI & ML",
-    icon: "🤖",
+    icon: SiTensorflow,
     label: "ML Model",
     description: "Machine Learning Model (inference/training)",
     tags: [
@@ -2881,7 +2963,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "model-training",
     group: "AI & ML",
-    icon: "🎓",
+    icon: SiPytorch,
     label: "Model Training",
     description: "ML model training pipeline",
     tags: [
@@ -2931,7 +3013,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "model-serving",
     group: "AI & ML",
-    icon: "🚀",
+    icon: FaCloudUploadAlt,
     label: "Model Serving",
     description: "ML model serving/inference API",
     tags: [
@@ -2988,7 +3070,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "feature-store",
     group: "AI & ML",
-    icon: "🗄️",
+    icon: FaArchive,
     label: "Feature Store",
     description: "Centralized feature storage for ML",
     tags: [
@@ -3032,7 +3114,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "data-labeling",
     group: "AI & ML",
-    icon: "🏷️",
+    icon: FaTags,
     label: "Data Labeling",
     description: "Data annotation and labeling service",
     tags: [
@@ -3076,7 +3158,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "mlops-pipeline",
     group: "AI & ML",
-    icon: "⚙️",
+    icon: FaProjectDiagram,
     label: "MLOps Pipeline",
     description: "End-to-end ML operations pipeline",
     tags: [
@@ -3128,7 +3210,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "model-registry",
     group: "AI & ML",
-    icon: "📚",
+    icon: FaBook,
     label: "Model Registry",
     description: "Centralized model versioning and registry",
     tags: [
@@ -3172,7 +3254,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "vector-database",
     group: "AI & ML",
-    icon: "🧮",
+    icon: FaCubes,
     label: "Vector Database",
     description: "Vector embeddings storage for similarity search",
     tags: [
@@ -3231,7 +3313,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "llm-api",
     group: "AI & ML",
-    icon: "💬",
+    icon: SiOpenai,
     label: "LLM API",
     description: "Large Language Model API endpoint",
     tags: ["llm", "gpt", "language model", "openai", "api", "chatbot", "ai"],
@@ -3282,7 +3364,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "gpu-cluster",
     group: "AI & ML",
-    icon: "🖥️",
+    icon: FaAtom,
     label: "GPU Cluster",
     description: "GPU computing cluster for ML workloads",
     tags: ["gpu", "compute", "cluster", "training", "nvidia", "cuda"],
@@ -3331,7 +3413,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "experiment-tracking",
     group: "AI & ML",
-    icon: "📊",
+    icon: SiGrafana,
     label: "Experiment Tracking",
     description: "ML experiment tracking and visualization",
     tags: [
@@ -3385,7 +3467,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "group-cluster",
     group: "Grouping",
-    icon: "📦",
+    icon: FaObjectGroup,
     label: "Cluster/Group",
     description: "Container for grouping multiple components",
     tags: ["group", "cluster", "container", "zone", "boundary", "region"],
@@ -3423,7 +3505,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "availability-zone",
     group: "Grouping",
-    icon: "🌐",
+    icon: MdLayers,
     label: "Availability Zone",
     description: "Isolated location within a region",
     tags: ["az", "availability zone", "fault isolation", "zone", "region"],
@@ -3461,7 +3543,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "vpc-network",
     group: "Grouping",
-    icon: "🔒",
+    icon: MdDeviceHub,
     label: "VPC/Network",
     description: "Virtual private cloud boundary",
     tags: ["vpc", "network", "subnet", "private", "isolated"],
@@ -3506,7 +3588,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "microservice-group",
     group: "Grouping",
-    icon: "🎯",
+    icon: MdAccountTree,
     label: "Microservice Group",
     description: "Related microservices cluster",
     tags: ["microservices", "service group", "domain", "bounded context"],
@@ -3544,7 +3626,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "security-boundary",
     group: "Grouping",
-    icon: "🛡️",
+    icon: MdSecurity,
     label: "Security Boundary",
     description: "Security zone/perimeter",
     tags: ["security", "dmz", "firewall", "boundary", "zone"],
@@ -3589,7 +3671,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "custom-group",
     group: "Grouping",
-    icon: "📦",
+    icon: FaBoxOpen,
     label: "Custom Group",
     description: "Create your own custom group/container",
     tags: [
@@ -3666,7 +3748,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "entity",
     group: "ER Diagram",
-    icon: "📋",
+    icon: FaTable,
     label: "Entity",
     description: "Database table/entity with attributes",
     nodeType: "tableNode",
@@ -3767,7 +3849,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "weak-entity",
     group: "ER Diagram",
-    icon: "📄",
+    icon: FaFileAlt,
     label: "Weak Entity",
     description: "Entity dependent on another entity for identification",
     nodeType: "tableNode",
@@ -3878,7 +3960,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "er-trigger",
     group: "ER Diagram",
     nodeType: "erNode",
-    icon: "⚡",
+    icon: FaBolt,
     label: "Trigger",
     description: "Database trigger for automated actions on events",
     tags: ["trigger", "automation", "event", "database", "erd"],
@@ -3953,7 +4035,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "er-note",
     group: "ER Diagram",
     nodeType: "erNode",
-    icon: "📝",
+    icon: FaStickyNote,
     label: "Note/Constraint",
     description: "Business rule, constraint, or annotation",
     tags: ["note", "constraint", "rule", "annotation", "comment", "documentation"],
@@ -4030,7 +4112,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "er-use-case",
     group: "ER Diagram",
     nodeType: "erNode",
-    icon: "⭕",
+    icon: FaCircle,
     label: "Use Case",
     description: "Use case or functional requirement for the system",
     tags: ["use case", "requirement", "functionality", "scenario", "note", "annotation"],
@@ -4075,7 +4157,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "er-view",
     group: "ER Diagram",
     nodeType: "tableNode",
-    icon: "👁️",
+    icon: FaEye,
     label: "View",
     description: "Database view or materialized view",
     tags: ["view", "query", "virtual table", "materialized", "aggregation"],
@@ -4195,7 +4277,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "uml-class",
     group: "UML",
-    icon: "📦",
+    icon: FaCube,
     label: "Class",
     description: "UML Class with attributes and methods",
     nodeType: "tableNode",
@@ -4273,7 +4355,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "uml-interface",
     group: "UML",
-    icon: "🔌",
+    icon: FaPlug,
     label: "Interface",
     description: "UML Interface definition",
     nodeType: "tableNode",
@@ -4337,7 +4419,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "uml-abstract-class",
     group: "UML",
-    icon: "📐",
+    icon: FaDraftingCompass,
     label: "Abstract Class",
     description: "Abstract class with abstract methods",
     nodeType: "tableNode",
@@ -4401,7 +4483,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "uml-enum",
     group: "UML",
-    icon: "📋",
+    icon: FaList,
     label: "Enum",
     description: "Enumeration type",
     nodeType: "tableNode",
@@ -4457,7 +4539,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "uml-use-case",
     group: "UML",
     nodeType: "erNode",
-    icon: "⭕",
+    icon: FaCircle,
     label: "Use Case",
     description: "System use case or functionality",
     tags: ["uml", "use case", "functionality", "requirement", "scenario", "er diagram", "note"],
@@ -4502,7 +4584,7 @@ export const COMPONENTS: CanvasComponent[] = [
     id: "uml-note",
     group: "UML",
     nodeType: "erNode",
-    icon: "📝",
+    icon: FaStickyNote,
     label: "Note/Comment",
     description: "Annotation or comment",
     tags: ["uml", "note", "comment", "annotation", "documentation"],

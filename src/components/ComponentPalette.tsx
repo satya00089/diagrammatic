@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import Fuse from "fuse.js";
 import type { CanvasComponent } from "../types/canvas";
+import { GROUP_PRIORITY } from "../config/components";
 import {
   PiCaretLeftBold,
   PiCaretRightBold,
@@ -61,7 +62,7 @@ export default function ComponentPalette({ components, onAdd }: Props) {
     return searchResults;
   }, [components, fuse, searchQuery]);
 
-  // Group components by their group property
+  // Group components by their group property and sort by usage frequency
   const grouped = React.useMemo(() => {
     const map = new Map<string, CanvasComponent[]>();
     for (const c of filteredComponents) {
@@ -69,7 +70,13 @@ export default function ComponentPalette({ components, onAdd }: Props) {
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(c);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Sort groups by usage frequency (most used first)
+    return Array.from(map.entries()).sort((a, b) => {
+      const priorityA = GROUP_PRIORITY[a[0]] ?? 999;
+      const priorityB = GROUP_PRIORITY[b[0]] ?? 999;
+      return priorityA - priorityB;
+    });
   }, [filteredComponents]);
 
   // Initialize all groups as expanded on first render
@@ -199,8 +206,15 @@ export default function ComponentPalette({ components, onAdd }: Props) {
                                 }}
                                 className="text-left p-2 border border-theme rounded-md cursor-grab select-none hover:border-[var(--brand)] hover:bg-[var(--bg-hover)] transition-all group/item"
                               >
-                                <div className="text-center mb-1">
-                                  <span className="text-2xl">{c.icon}</span>
+                                <div className="flex justify-center items-center">
+                                  <div className="w-10 h-10 mb-1 relative">
+                                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/15 to-[var(--brand)]/5 rounded-full"></div>
+                                  <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
+                                    <span className="inline-flex items-center justify-center w-full h-full">
+                                      {c.icon ? React.createElement(c.icon as React.ComponentType<{size?: number}>, { size: 24 }) : <span className="text-lg">?</span>}
+                                    </span>
+                                  </div>
+                                  </div>
                                 </div>
                                 <div className="text-xs font-medium text-theme text-center group-hover/item:text-[var(--brand)] transition-colors line-clamp-1">
                                   {c.label}
