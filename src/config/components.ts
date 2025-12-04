@@ -17,12 +17,12 @@ import {
 // Simple Icons for brand-specific technology logos
 import {
   SiRedis, SiElasticsearch, SiPostgresql,
-  SiKubernetes, SiDocker, SiNginx,
+  SiKubernetes, SiNginx,
   SiPrometheus, SiApachekafka, SiRabbitmq, SiGrafana,
   SiStripe, SiTwilio, SiVault,
   SiCloudflare, SiSnowflake, SiApacheflink,
   SiTensorflow, SiPytorch, SiOpenai,
-  SiJaeger
+  SiJaeger, SiServerless
 } from "react-icons/si";
 
 // Material Design Icons for modern, clean aesthetics
@@ -2058,7 +2058,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "serverless-function",
     group: "Compute",
-    icon: SiDocker,
+    icon: SiServerless,
     label: "Serverless Function",
     description: "Event-driven compute",
     tags: [
