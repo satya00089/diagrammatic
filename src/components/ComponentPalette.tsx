@@ -199,8 +199,15 @@ export default function ComponentPalette({ components, onAdd }: Props) {
                                 }}
                                 className="text-left p-2 border border-theme rounded-md cursor-grab select-none hover:border-[var(--brand)] hover:bg-[var(--bg-hover)] transition-all group/item"
                               >
-                                <div className="text-center mb-1">
-                                  <span className="text-2xl">{c.icon}</span>
+                                <div className="flex justify-center items-center">
+                                  <div className="w-10 h-10 mb-1 relative">
+                                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/15 to-[var(--brand)]/5 rounded-full"></div>
+                                  <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
+                                    <span className="inline-flex items-center justify-center w-full h-full">
+                                      {c.icon ? React.createElement(c.icon as React.ComponentType<{size?: number}>, { size: 24 }) : <span className="text-lg">?</span>}
+                                    </span>
+                                  </div>
+                                  </div>
                                 </div>
                                 <div className="text-xs font-medium text-theme text-center group-hover/item:text-[var(--brand)] transition-colors line-clamp-1">
                                   {c.label}

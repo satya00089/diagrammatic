@@ -1,3 +1,5 @@
+import React from "react";
+
 export type ComponentProperty = {
   key: string;
   label: string;
@@ -42,7 +44,7 @@ export type NodeRenderConfig = {
 
 export type CanvasComponent = {
   id: string;
-  icon?: string;
+  icon?: React.ComponentType;
   label: string;
   description?: string;
   group?: string;

@@ -8,10 +8,10 @@ import { FiUnlock } from "react-icons/fi";
 
 export type NodeData = {
   label: string;
-  icon?: string;
+  icon?: React.ComponentType;
   subtitle?: string;
   componentName?: string;
-  [key: string]: string | number | boolean | undefined; // Allow for additional dynamic properties
+  [key: string]: string | number | boolean | React.ComponentType | undefined; // Allow for additional dynamic properties
 };
 
 type Props = {
@@ -112,7 +112,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative"
+        className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
         onContextMenu={handleContextMenu}
       >
         <legend className="sr-only">{displayLabel}</legend>
@@ -179,8 +179,11 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
         {/* Main content */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[var(--bg-hover)] flex items-center justify-center text-xl">
-            {data.icon ?? "●"}
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[var(--brand)]/20 to-[var(--brand)]/5 flex items-center justify-center text-xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--brand)]/10 rounded-full"></div>
+            <div className="relative z-10 opacity-80">
+              {data.icon ? React.createElement(data.icon as React.ComponentType<{size?: number}>, { size: 24 }) : "●"}
+            </div>
           </div>
 
           <div className="min-w-0 w-full text-center">
