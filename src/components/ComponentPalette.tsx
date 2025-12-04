@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import Fuse from "fuse.js";
 import type { CanvasComponent } from "../types/canvas";
+import { GROUP_PRIORITY } from "../config/components";
 import {
   PiCaretLeftBold,
   PiCaretRightBold,
@@ -61,7 +62,7 @@ export default function ComponentPalette({ components, onAdd }: Props) {
     return searchResults;
   }, [components, fuse, searchQuery]);
 
-  // Group components by their group property
+  // Group components by their group property and sort by usage frequency
   const grouped = React.useMemo(() => {
     const map = new Map<string, CanvasComponent[]>();
     for (const c of filteredComponents) {
@@ -69,7 +70,13 @@ export default function ComponentPalette({ components, onAdd }: Props) {
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(c);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Sort groups by usage frequency (most used first)
+    return Array.from(map.entries()).sort((a, b) => {
+      const priorityA = GROUP_PRIORITY[a[0]] ?? 999;
+      const priorityB = GROUP_PRIORITY[b[0]] ?? 999;
+      return priorityA - priorityB;
+    });
   }, [filteredComponents]);
 
   // Initialize all groups as expanded on first render

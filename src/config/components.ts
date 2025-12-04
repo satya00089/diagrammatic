@@ -34,9 +34,59 @@ import {
 
 /**
  * COMPREHENSIVE SYSTEM DESIGN COMPONENTS LIBRARY
- * Organized by architectural layers for scalable distributed systems
- * Last reviewed: Solution Architect Review
+ * Organized by usage frequency - most commonly used groups first
+ * 
+ * GROUP ORDER (Most Used → Least Used):
+ * 1. Compute - Backend servers, containers, workers (most essential)
+ * 2. Data Layer - Databases, caches, storage (critical infrastructure)
+ * 3. Services - APIs, auth, notifications (common microservices)
+ * 4. Networking - Load balancers, gateways, proxies (routing layer)
+ * 5. Frontend - Web, mobile, desktop apps (client layer)
+ * 6. Messaging - Queues, brokers, pub/sub (async communication)
+ * 7. Security - Firewalls, secrets, VPN (protection layer)
+ * 8. Observability - Monitoring, tracing (operations)
+ * 9. Delivery - CDN, edge servers (content delivery)
+ * 10. AI & ML - Models, training, inference (emerging)
+ * 11. Grouping - VPCs, zones, clusters (organizational)
+ * 12. DNS & Network - Name resolution (foundational but less frequently modified)
+ * 13. ER Diagram - Database design entities
+ * 14. UML - Class diagrams, interfaces
+ * 15. Custom - User-defined components
+ * 
+ * Last reviewed: UX Design Review - Sorted by usage frequency
  */
+
+// Group priority for sorting by usage frequency (lower number = higher priority)
+export const GROUP_PRIORITY: Record<string, number> = {
+  "Compute": 1,
+  "Data Layer": 2,
+  "Services": 3,
+  "Networking": 4,
+  "Frontend": 5,
+  "Messaging": 6,
+  "Security": 7,
+  "Observability": 8,
+  "Delivery": 9,
+  "AI & ML": 10,
+  "Grouping": 11,
+  "DNS & Network": 12,
+  "ER Diagram": 13,
+  "UML": 14,
+  "Custom": 15,
+};
+
+// Utility function to sort components by usage frequency
+export const sortComponentsByUsage = (components: CanvasComponent[]) => {
+  return [...components].sort((a, b) => {
+    const priorityA = GROUP_PRIORITY[a.group ?? "Custom"] ?? 999;
+    const priorityB = GROUP_PRIORITY[b.group ?? "Custom"] ?? 999;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+    // Within same group, sort alphabetically
+    return a.label.localeCompare(b.label);
+  });
+};
 
 export const COMPONENTS: CanvasComponent[] = [
   // ========================================
