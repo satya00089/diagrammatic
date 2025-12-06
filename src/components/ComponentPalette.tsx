@@ -8,13 +8,22 @@ import {
   PiCaretRightBold,
   PiCaretDownBold,
 } from "react-icons/pi";
+import { ProviderSelectorGrid, DEFAULT_PROVIDERS, type ProviderOption } from './ProviderSelector';
+import { useProviderComponents } from '../hooks/useProviderComponents';
 
 interface Props {
   readonly components: readonly CanvasComponent[];
   readonly onAdd: (id: string) => void;
+  readonly enableProviderFilter?: boolean;
+  readonly customProviders?: ProviderOption[];
 }
 
-export default function ComponentPalette({ components, onAdd }: Props) {
+export default function ComponentPalette({ 
+  components: defaultComponents, 
+  onAdd,
+  enableProviderFilter = false,
+  customProviders
+}: Props) {
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
     new Set(),
@@ -25,6 +34,42 @@ export default function ComponentPalette({ components, onAdd }: Props) {
     rect: DOMRect;
   } | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedProvider, setSelectedProvider] = React.useState<string>('all');
+
+  // Use custom providers or default ones
+  const providers = React.useMemo(() => 
+    customProviders || DEFAULT_PROVIDERS.slice(0, 4), // Use first 4 by default (All, AWS, Azure, GCP)
+    [customProviders]
+  );
+
+  // Fetch provider components when provider filter is enabled
+  const { 
+    components: providerComponents, 
+    loading: providerLoading,
+    error: providerError 
+  } = useProviderComponents({ 
+    provider: selectedProvider, 
+    enabled: enableProviderFilter 
+  });
+
+  // Merge default components with provider components
+  const components = React.useMemo(() => {
+    if (!enableProviderFilter) {
+      return Array.from(defaultComponents);
+    }
+    
+    if (providerLoading) {
+      return Array.from(defaultComponents);
+    }
+
+    // If 'all' is selected, merge both
+    if (selectedProvider === 'all') {
+      return [...defaultComponents, ...providerComponents];
+    }
+    
+    // Otherwise show only provider components
+    return providerComponents;
+  }, [enableProviderFilter, providerLoading, selectedProvider, defaultComponents, providerComponents]);
 
   // Fuse.js instance for fuzzy search
   const fuse = React.useMemo(() => {
@@ -123,6 +168,33 @@ export default function ComponentPalette({ components, onAdd }: Props) {
             <h3 className="text-lg font-semibold text-theme mb-3">
               Components
             </h3>
+
+            {/* Provider Selector */}
+            {enableProviderFilter && (
+              <div className="mr-3">
+                <ProviderSelectorGrid
+                  providers={providers}
+                  selectedProvider={selectedProvider}
+                  onProviderChange={setSelectedProvider}
+                  label="Filter by Provider"
+                />
+              </div>
+            )}
+
+            {/* Loading State */}
+            {providerLoading && (
+              <div className="text-center py-4 text-muted text-sm flex items-center justify-center gap-2 mr-3">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--brand)] border-t-transparent"></div>
+                <span>Loading components...</span>
+              </div>
+            )}
+
+            {/* Error State */}
+            {providerError && (
+              <div className="mx-3 mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-500">
+                {providerError}
+              </div>
+            )}
 
             {/* Search Input */}
             <div className="mr-3 mb-3">

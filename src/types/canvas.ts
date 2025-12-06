@@ -45,9 +45,11 @@ export type NodeRenderConfig = {
 export type CanvasComponent = {
   id: string;
   icon?: React.ComponentType;
+  iconUrl?: string;
   label: string;
   description?: string;
   group?: string;
+  platform?: string;
   tags?: string[];
   properties?: ComponentProperty[];
   nodeType?: "custom" | "erNode" | "group" | "tableNode"; // Specify which node component to use
