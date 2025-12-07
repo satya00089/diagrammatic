@@ -12,7 +12,6 @@ import { DEFAULT_PROVIDERS, type ProviderOption } from "./ProviderSelector";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   fetchMinimalComponents,
-  fetchFullComponent,
   setSelectedProviders,
   toggleProvider,
   type MinimalComponent,
@@ -34,13 +33,8 @@ export default function ComponentPalette({
   const dispatch = useAppDispatch();
 
   // Redux state
-  const {
-    minimalComponents,
-    fullComponentsCache,
-    selectedProviders,
-    loading,
-    error,
-  } = useAppSelector((state) => state.components);
+  const { minimalComponents, selectedProviders, loading, error } =
+    useAppSelector((state) => state.components);
 
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
@@ -75,7 +69,11 @@ export default function ComponentPalette({
     setExpandedGroups(new Set());
 
     // Always fetch when specific providers are selected (not just 'all')
-    if (!selectedProviders.includes("all")) {
+    if (selectedProviders.includes("all")) {
+      // When 'all' is selected, expand Custom by default
+      setExpandedProviders(new Set(["Custom"]));
+      prevSelectedProvidersRef.current = [];
+    } else {
       dispatch(fetchMinimalComponents(selectedProviders));
 
       // Only expand newly added providers, preserve existing state
@@ -104,10 +102,6 @@ export default function ComponentPalette({
 
       // Update ref for next comparison
       prevSelectedProvidersRef.current = [...selectedProviders];
-    } else {
-      // When 'all' is selected, expand Custom by default
-      setExpandedProviders(new Set(["Custom"]));
-      prevSelectedProvidersRef.current = [];
     }
   }, [dispatch, selectedProviders]);
 
@@ -306,13 +300,21 @@ export default function ComponentPalette({
   };
 
   // Lazy load full component data when dragged
-  const handleDragStart = (e: React.DragEvent, componentId: string, component: CanvasComponent | MinimalComponent) => {
+  const handleDragStart = (
+    e: React.DragEvent,
+    componentId: string,
+    component: CanvasComponent | MinimalComponent
+  ) => {
     setHoveredComponent(null);
 
     // Use the button itself as drag image since it already has the loaded icon
     const targetButton = e.currentTarget as HTMLElement;
     if (e.dataTransfer) {
-      e.dataTransfer.setDragImage(targetButton, targetButton.offsetWidth / 2, targetButton.offsetHeight / 2);
+      e.dataTransfer.setDragImage(
+        targetButton,
+        targetButton.offsetWidth / 2,
+        targetButton.offsetHeight / 2
+      );
       e.dataTransfer.effectAllowed = "move";
     }
 
@@ -522,7 +524,7 @@ export default function ComponentPalette({
                           <div
                             className={
                               showProviderHeader
-                                ? "ml-2 mt-1 space-y-1"
+                                ? "mt-1 space-y-1"
                                 : "space-y-1"
                             }
                           >
@@ -679,7 +681,7 @@ export default function ComponentPalette({
       {hoveredComponent &&
         ReactDOM.createPortal(
           <div
-            className="fixed px-3 py-2 bg-[var(--bg)] border border-theme rounded shadow-lg text-xs z-[9999] min-w-max max-w-[20vw] pointer-events-none -translate-y-1/2"
+            className="fixed px-3 py-2 bg-[var(--bg)] border border-theme rounded shadow-lg text-xs z-[9999] max-w-[25vw] pointer-events-none -translate-y-1/2"
             style={
               {
                 left: `${hoveredComponent.rect.right + 8}px`,
