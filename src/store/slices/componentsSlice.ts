@@ -48,7 +48,7 @@ export const fetchMinimalComponents = createAsyncThunk(
   'components/fetchMinimal',
   async (providers: string[], { getState }) => {
     const state = getState() as { components: ComponentsState };
-    
+
     // If 'all' is in providers, fetch all
     if (providers.includes('all')) {
       if (state.components.minimalComponentsByProvider['all']) {
@@ -57,11 +57,11 @@ export const fetchMinimalComponents = createAsyncThunk(
       const response = await componentProviderService.getAllComponents({ limit: 500 });
       return { providers, items: response.items, fromCache: false };
     }
-    
+
     // Fetch multiple providers
     const allItems: any[] = [];
     const providersToFetch: string[] = [];
-    
+
     // Collect cached and identify what needs fetching
     for (const provider of providers) {
       if (state.components.minimalComponentsByProvider[provider]) {
@@ -70,7 +70,7 @@ export const fetchMinimalComponents = createAsyncThunk(
         providersToFetch.push(provider);
       }
     }
-    
+
     // Fetch uncached providers
     for (const provider of providersToFetch) {
       const response = await componentProviderService.getComponentsByProvider(
@@ -79,7 +79,7 @@ export const fetchMinimalComponents = createAsyncThunk(
       );
       allItems.push(...response.items);
     }
-    
+
     return { providers, items: allItems, fromCache: providersToFetch.length === 0 };
   }
 );
@@ -142,7 +142,7 @@ const componentsSlice = createSlice({
       .addCase(fetchMinimalComponents.fulfilled, (state, action) => {
         state.loading = false;
         const { providers, items, fromCache } = action.payload;
-        
+
         // Map to minimal format (exclude properties)
         const minimalItems = items.map((item: any) => ({
           id: item.id,
@@ -153,7 +153,7 @@ const componentsSlice = createSlice({
           iconUrl: item.iconUrl,
           tags: item.tags,
         }));
-        
+
         // Cache by provider if not already cached
         if (!fromCache) {
           if (providers.includes('all')) {
@@ -161,7 +161,7 @@ const componentsSlice = createSlice({
           } else {
             // Group items by provider and cache
             for (const provider of providers) {
-              const providerItems = minimalItems.filter((item: MinimalComponent) => 
+              const providerItems = minimalItems.filter((item: MinimalComponent) =>
                 item.platform?.toLowerCase() === provider.toLowerCase()
               );
               if (providerItems.length > 0) {
@@ -170,7 +170,7 @@ const componentsSlice = createSlice({
             }
           }
         }
-        
+
         // Update current display
         state.minimalComponents = minimalItems;
       })

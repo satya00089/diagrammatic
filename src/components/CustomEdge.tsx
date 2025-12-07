@@ -126,7 +126,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     setHasLabel(false);
     setValue("");
     // broadcast update
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new CustomEvent("diagram:edge-label-change", {
         detail: { id, label: "", hasLabel: false },
       }),
@@ -136,7 +136,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   const commit = () => {
     setEditing(false);
     // broadcast update — playground listens and updates edge state
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new CustomEvent("diagram:edge-label-change", {
         detail: {
           id,
