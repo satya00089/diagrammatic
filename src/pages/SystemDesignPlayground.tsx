@@ -68,6 +68,11 @@ import CustomPropertyInput, {
 } from "../components/CustomPropertyInput";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import {
+  fetchFullComponent,
+  type MinimalComponent,
+} from "../store/slices/componentsSlice";
 import { apiService } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { ToastContainer } from "../components/Toast";
@@ -208,6 +213,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+
+  // Get full components cache for iconUrl support
+  const dispatch = useAppDispatch();
+  const {
+    fullComponentsCache,
+    minimalComponents,
+    minimalComponentsByProvider,
+  } = useAppSelector((state) => state.components);
 
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
@@ -927,6 +940,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       event.dataTransfer?.getData("application/reactflow") ||
       event.dataTransfer?.getData("text/plain");
     let type = data;
+
     try {
       if (data) {
         const parsed = JSON.parse(data);
@@ -945,6 +959,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const id = `${type}-${Date.now()}`;
     const comp = COMPONENTS.find((c) => c.id === type);
+
+    // Try to find component in minimal components (from palette - has iconUrl)
+    let minimalComp: MinimalComponent | undefined = undefined;
+
+    // Search in all cached provider components
+    for (const providerComps of Object.values(minimalComponentsByProvider)) {
+      minimalComp = providerComps.find((c) => c.id === type);
+      if (minimalComp) break;
+    }
+
+    // Also check current minimalComponents array
+    if (!minimalComp) {
+      minimalComp = minimalComponents.find((c) => c.id === type);
+    }
+
+    // Get full component data from cache if available (has properties)
+    const fullComp = fullComponentsCache[type];
+
+    // If not in cache and it's not a local component, trigger fetch for next time
+    if (!fullComp && type && !comp && minimalComp) {
+      dispatch(fetchFullComponent(type));
+    }
+
+    // Use data with priority: minimalComp (from palette) > fullComp (full DB data) > comp (local config)
+    const iconUrl = minimalComp?.iconUrl || fullComp?.iconUrl || comp?.iconUrl;
+    const label = minimalComp?.label || fullComp?.label || comp?.label || type;
+    const description =
+      minimalComp?.description || fullComp?.description || comp?.description;
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
@@ -967,10 +1009,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         : undefined,
       // include icon so the custom node can render it
       data: {
-        label: comp?.label ?? type,
-        componentId: comp?.id, // Store the original component ID
+        label: label, // Use label from priority order
+        componentId: type, // Store the original component ID (the type from drag data)
         icon: comp?.icon,
-        subtitle: comp?.description,
+        iconUrl: iconUrl, // Use iconUrl with priority order
+        subtitle: description, // Use description from priority order
         backgroundColor: isGroupComponent
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
@@ -1687,8 +1730,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         ? COMPONENTS.find((c) => c.id === node.data.componentId)
         : COMPONENTS.find((c) => c.label === node.data.label);
 
-      if (comp?.properties) {
-        propertyElements = comp.properties.map((p: ComponentProperty) =>
+      // Check Redux cache for full component data (includes properties from API)
+      const componentId =
+        typeof node.data.componentId === "string"
+          ? node.data.componentId
+          : null;
+      const fullComp = componentId ? fullComponentsCache[componentId] : null;
+
+      // Use properties from Redux cache (priority) or local COMPONENTS
+      const properties = fullComp?.properties || comp?.properties;
+
+      if (properties && properties.length > 0) {
+        propertyElements = properties.map((p: ComponentProperty) =>
           renderProperty(p)
         );
       } else {
@@ -1797,18 +1850,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     diagramId: currentDiagramId || "",
     nodes,
     edges,
-    onNodesChange: useCallback((updatedNodes: Node[]) => {
-      setNodes(updatedNodes);
-    }, [setNodes]),
-    onEdgesChange: useCallback((updatedEdges: Edge[]) => {
-      setEdges(updatedEdges);
-    }, [setEdges]),
+    onNodesChange: useCallback(
+      (updatedNodes: Node[]) => {
+        setNodes(updatedNodes);
+      },
+      [setNodes]
+    ),
+    onEdgesChange: useCallback(
+      (updatedEdges: Edge[]) => {
+        setEdges(updatedEdges);
+      },
+      [setEdges]
+    ),
     enabled: !!currentDiagramId && isAuthenticated,
   });
 
   // Extract collaboration state for backward compatibility
   const isCollaborationConnected = collaborationState.isConnected;
-  const isCollaborationConnecting = !collaborationState.isConnected && !collaborationState.error;
+  const isCollaborationConnecting =
+    !collaborationState.isConnected && !collaborationState.error;
   const collaborationReconnectAttempts = 0; // Unified hook doesn't expose this yet
 
   // Sync nodes and edges changes to undo/redo history
@@ -1963,29 +2023,37 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
    * Intelligently finds the best matching component from COMPONENTS array.
    * Uses multiple matching strategies for better accuracy.
    */
-  function findBestMatchingComponent(componentIdOrLabel: string): CanvasComponent | null {
+  function findBestMatchingComponent(
+    componentIdOrLabel: string
+  ): CanvasComponent | null {
     // Strategy 1: Exact ID match (highest priority)
     const exactMatch = COMPONENTS.find((c) => c.id === componentIdOrLabel);
     if (exactMatch) return exactMatch;
 
     // Strategy 2: Case-insensitive ID match
     const lowerInput = componentIdOrLabel.toLowerCase();
-    const caseInsensitiveMatch = COMPONENTS.find((c) => c.id.toLowerCase() === lowerInput);
+    const caseInsensitiveMatch = COMPONENTS.find(
+      (c) => c.id.toLowerCase() === lowerInput
+    );
     if (caseInsensitiveMatch) return caseInsensitiveMatch;
 
     // Strategy 3: Label match (case-insensitive)
-    const labelMatch = COMPONENTS.find((c) => c.label.toLowerCase() === lowerInput);
+    const labelMatch = COMPONENTS.find(
+      (c) => c.label.toLowerCase() === lowerInput
+    );
     if (labelMatch) return labelMatch;
 
     // Strategy 4: Tag match (for keywords like "cache", "database", "queue")
-    const tagMatch = COMPONENTS.find((c) => 
+    const tagMatch = COMPONENTS.find((c) =>
       c.tags?.some((tag) => tag.toLowerCase().includes(lowerInput))
     );
     if (tagMatch) return tagMatch;
 
     // Strategy 5: Partial label match (e.g., "load balancer" matches "Load Balancer")
-    const partialMatch = COMPONENTS.find((c) => 
-      c.label.toLowerCase().includes(lowerInput) || lowerInput.includes(c.label.toLowerCase())
+    const partialMatch = COMPONENTS.find(
+      (c) =>
+        c.label.toLowerCase().includes(lowerInput) ||
+        lowerInput.includes(c.label.toLowerCase())
     );
     if (partialMatch) return partialMatch;
 
@@ -1996,7 +2064,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   function addNodeFromPalette(id: string) {
     // Intelligently find the best matching component
     const comp = findBestMatchingComponent(id);
-    
+
     // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -2007,7 +2075,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       y: bounds.top + bounds.height / 2,
     });
 
-    const nodeId = `${comp?.id || 'custom-component'}-${Date.now()}`;
+    const nodeId = `${comp?.id || "custom-component"}-${Date.now()}`;
 
     // Check if it's a group/cluster component
     const isGroupComponent = comp?.group === "Grouping";
@@ -2034,7 +2102,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         : undefined,
       data: {
         label: finalLabel,
-        componentId: comp?.id || 'custom-component', // Store the original component ID or custom
+        componentId: comp?.id || "custom-component", // Store the original component ID or custom
         icon: finalIcon,
         subtitle: finalSubtitle,
         backgroundColor: isGroupComponent

@@ -8,8 +8,15 @@ import {
   PiCaretRightBold,
   PiCaretDownBold,
 } from "react-icons/pi";
-import { ProviderSelectorGrid, DEFAULT_PROVIDERS, type ProviderOption } from './ProviderSelector';
-import { useProviderComponents } from '../hooks/useProviderComponents';
+import { DEFAULT_PROVIDERS, type ProviderOption } from "./ProviderSelector";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchMinimalComponents,
+  fetchFullComponent,
+  setSelectedProviders,
+  toggleProvider,
+  type MinimalComponent,
+} from "../store/slices/componentsSlice";
 
 interface Props {
   readonly components: readonly CanvasComponent[];
@@ -18,58 +25,171 @@ interface Props {
   readonly customProviders?: ProviderOption[];
 }
 
-export default function ComponentPalette({ 
-  components: defaultComponents, 
+export default function ComponentPalette({
+  components: defaultComponents,
   onAdd,
   enableProviderFilter = false,
-  customProviders
+  customProviders,
 }: Props) {
+  const dispatch = useAppDispatch();
+
+  // Redux state
+  const {
+    minimalComponents,
+    fullComponentsCache,
+    selectedProviders,
+    loading,
+    error,
+  } = useAppSelector((state) => state.components);
+
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
-    new Set(),
+    new Set()
   );
+  const [expandedProviders, setExpandedProviders] = React.useState<Set<string>>(
+    new Set(["Custom"]) // Start with Custom expanded
+  );
+  const prevSelectedProvidersRef = React.useRef<string[]>([]);
   const [hoveredComponent, setHoveredComponent] = React.useState<{
     label: string;
     description: string;
     rect: DOMRect;
   } | null>(null);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [selectedProvider, setSelectedProvider] = React.useState<string>('all');
+  const [showProviderDropdown, setShowProviderDropdown] = React.useState(false);
+  const [filteredProviders, setFilteredProviders] = React.useState<
+    ProviderOption[]
+  >([]);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Use custom providers or default ones
-  const providers = React.useMemo(() => 
-    customProviders || DEFAULT_PROVIDERS.slice(0, 4), // Use first 4 by default (All, AWS, Azure, GCP)
+  const providers = React.useMemo(
+    () => customProviders || DEFAULT_PROVIDERS.slice(0, 4),
     [customProviders]
   );
 
-  // Fetch provider components when provider filter is enabled
-  const { 
-    components: providerComponents, 
-    loading: providerLoading,
-    error: providerError 
-  } = useProviderComponents({ 
-    provider: selectedProvider, 
-    enabled: enableProviderFilter 
-  });
+  // Fetch components when providers change
+  React.useEffect(() => {
+    // Collapse all category groups when providers change
+    setExpandedGroups(new Set());
+
+    // Always fetch when specific providers are selected (not just 'all')
+    if (!selectedProviders.includes("all")) {
+      dispatch(fetchMinimalComponents(selectedProviders));
+
+      // Only expand newly added providers, preserve existing state
+      const prevProviders = prevSelectedProvidersRef.current;
+      const newProviders = selectedProviders.filter(
+        (p) => !prevProviders.includes(p)
+      );
+
+      setExpandedProviders((prev) => {
+        const next = new Set(prev);
+
+        // Expand newly added providers
+        for (const p of newProviders) {
+          next.add(p);
+        }
+
+        // Remove providers that are no longer selected
+        for (const p of Array.from(next)) {
+          if (!selectedProviders.includes(p) && p !== "Custom") {
+            next.delete(p);
+          }
+        }
+
+        return next;
+      });
+
+      // Update ref for next comparison
+      prevSelectedProvidersRef.current = [...selectedProviders];
+    } else {
+      // When 'all' is selected, expand Custom by default
+      setExpandedProviders(new Set(["Custom"]));
+      prevSelectedProvidersRef.current = [];
+    }
+  }, [dispatch, selectedProviders]);
+
+  // Filter providers based on search query
+  React.useEffect(() => {
+    if (!searchQuery.trim()) {
+      setShowProviderDropdown(false);
+      setFilteredProviders([]);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+
+    // Check if query matches any provider
+    const matches = providers.filter(
+      (p) =>
+        p.id.toLowerCase() !== "all" &&
+        (p.name.toLowerCase().includes(query) ||
+          p.id.toLowerCase().includes(query))
+    );
+
+    if (matches.length > 0) {
+      setFilteredProviders(matches);
+      setShowProviderDropdown(true);
+    } else {
+      setFilteredProviders([]);
+      setShowProviderDropdown(false);
+    }
+  }, [searchQuery, providers, enableProviderFilter]);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowProviderDropdown(false);
+      }
+    };
+
+    if (showProviderDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showProviderDropdown]);
 
   // Merge default components with provider components
-  const components = React.useMemo(() => {
-    if (!enableProviderFilter) {
-      return Array.from(defaultComponents);
-    }
-    
-    if (providerLoading) {
-      return Array.from(defaultComponents);
-    }
+  const components: (CanvasComponent | MinimalComponent)[] =
+    React.useMemo(() => {
+      // Always include default components (like Custom)
+      const baseComponents = Array.from(defaultComponents);
 
-    // If 'all' is selected, merge both
-    if (selectedProvider === 'all') {
-      return [...defaultComponents, ...providerComponents];
-    }
-    
-    // Otherwise show only provider components
-    return providerComponents;
-  }, [enableProviderFilter, providerLoading, selectedProvider, defaultComponents, providerComponents]);
+      // If specific providers are selected, add their components
+      if (!selectedProviders.includes("all")) {
+        return loading
+          ? baseComponents
+          : [...baseComponents, ...minimalComponents];
+      }
+
+      // If 'all' is selected or no provider filter, show default components
+      if (!enableProviderFilter) {
+        return baseComponents;
+      }
+
+      // If loading, show default components
+      if (loading) {
+        return baseComponents;
+      }
+
+      // 'all' selected with provider filter enabled - show only default components
+      return baseComponents;
+    }, [
+      selectedProviders,
+      loading,
+      minimalComponents,
+      enableProviderFilter,
+      defaultComponents,
+    ]);
 
   // Fuse.js instance for fuzzy search
   const fuse = React.useMemo(() => {
@@ -88,7 +208,11 @@ export default function ComponentPalette({
   // Filter components based on search
   const filteredComponents = React.useMemo(() => {
     const query = searchQuery.trim();
-    if (!query) return Array.from(components);
+
+    // If no query or provider dropdown is showing, return all components
+    if (!query || showProviderDropdown) {
+      return Array.from(components);
+    }
 
     const results = fuse.search(query);
     const searchResults = results.map((result) => result.item);
@@ -96,7 +220,7 @@ export default function ComponentPalette({
     // Always include Custom Component in search results
     const customComponent = components.find((c) => c.id === "custom-component");
     const hasCustomComponent = searchResults.some(
-      (c) => c.id === "custom-component",
+      (c) => c.id === "custom-component"
     );
 
     if (customComponent && !hasCustomComponent) {
@@ -105,31 +229,69 @@ export default function ComponentPalette({
     }
 
     return searchResults;
-  }, [components, fuse, searchQuery]);
+  }, [components, fuse, searchQuery, showProviderDropdown]);
 
-  // Group components by their group property and sort by usage frequency
-  const grouped = React.useMemo(() => {
-    const map = new Map<string, CanvasComponent[]>();
+  // Group components by provider first, then by category
+  const groupedByProvider = React.useMemo(() => {
+    // First group by provider
+    const providerMap = new Map<
+      string,
+      (CanvasComponent | MinimalComponent)[]
+    >();
+
     for (const c of filteredComponents) {
-      const g = c.group ?? "Other";
-      if (!map.has(g)) map.set(g, []);
-      map.get(g)!.push(c);
+      const provider = ("platform" in c ? c.platform : "Custom") || "Other";
+      if (!providerMap.has(provider)) providerMap.set(provider, []);
+      providerMap.get(provider)!.push(c);
     }
-    
-    // Sort groups by usage frequency (most used first)
-    return Array.from(map.entries()).sort((a, b) => {
-      const priorityA = GROUP_PRIORITY[a[0]] ?? 999;
-      const priorityB = GROUP_PRIORITY[b[0]] ?? 999;
-      return priorityA - priorityB;
-    });
+
+    // Then group each provider's components by category
+    const result = new Map<
+      string,
+      Map<string, (CanvasComponent | MinimalComponent)[]>
+    >();
+
+    for (const [provider, components] of providerMap.entries()) {
+      const categoryMap = new Map<
+        string,
+        (CanvasComponent | MinimalComponent)[]
+      >();
+
+      for (const c of components) {
+        const category = c.group ?? "Other";
+        if (!categoryMap.has(category)) categoryMap.set(category, []);
+        categoryMap.get(category)!.push(c);
+      }
+
+      // Sort categories by priority
+      const sortedCategories = new Map(
+        Array.from(categoryMap.entries()).sort((a, b) => {
+          const priorityA = GROUP_PRIORITY[a[0]] ?? 999;
+          const priorityB = GROUP_PRIORITY[b[0]] ?? 999;
+          return priorityA - priorityB;
+        })
+      );
+
+      result.set(provider, sortedCategories);
+    }
+
+    return result;
   }, [filteredComponents]);
 
-  // Initialize all groups as expanded on first render
-  React.useEffect(() => {
-    if (grouped.length > 0 && expandedGroups.size === 0) {
-      setExpandedGroups(new Set(grouped.map(([groupName]) => groupName)));
-    }
-  }, [grouped, expandedGroups.size]);
+  // Groups start collapsed by default (handled by useState initialization)
+  // User can expand groups they want to see
+
+  const toggleProviderExpansion = (provider: string) => {
+    setExpandedProviders((prev) => {
+      const next = new Set(prev);
+      if (next.has(provider)) {
+        next.delete(provider);
+      } else {
+        next.add(provider);
+      }
+      return next;
+    });
+  };
 
   const toggleGroup = (groupName: string) => {
     setExpandedGroups((prev) => {
@@ -141,6 +303,36 @@ export default function ComponentPalette({
       }
       return next;
     });
+  };
+
+  // Lazy load full component data when dragged
+  const handleDragStart = (e: React.DragEvent, componentId: string, component: CanvasComponent | MinimalComponent) => {
+    setHoveredComponent(null);
+
+    // Use the button itself as drag image since it already has the loaded icon
+    const targetButton = e.currentTarget as HTMLElement;
+    if (e.dataTransfer) {
+      e.dataTransfer.setDragImage(targetButton, targetButton.offsetWidth / 2, targetButton.offsetHeight / 2);
+      e.dataTransfer.effectAllowed = "move";
+    }
+
+    // Pass only component ID - full data will be fetched from Redux on drop
+    e.dataTransfer?.setData(
+      "application/reactflow",
+      JSON.stringify({ type: componentId })
+    );
+    e.dataTransfer?.setData("text/plain", componentId);
+  };
+
+  const handleProviderSelect = (provider: ProviderOption) => {
+    dispatch(toggleProvider(provider.id));
+    // Clear search query and close dropdown
+    setSearchQuery("");
+    setShowProviderDropdown(false);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   return (
@@ -165,24 +357,50 @@ export default function ComponentPalette({
       >
         {open ? (
           <>
-            <h3 className="text-lg font-semibold text-theme mb-3">
-              Components
-            </h3>
-
-            {/* Provider Selector */}
-            {enableProviderFilter && (
-              <div className="mr-3">
-                <ProviderSelectorGrid
-                  providers={providers}
-                  selectedProvider={selectedProvider}
-                  onProviderChange={setSelectedProvider}
-                  label="Filter by Provider"
-                />
-              </div>
-            )}
+            {/* Current Provider Badges */}
+            {!selectedProviders.includes("all") &&
+              selectedProviders.length > 0 && (
+                <div className="mr-3 mb-2 flex flex-wrap gap-1.5">
+                  {selectedProviders.map((providerId) => {
+                    const provider = providers.find((p) => p.id === providerId);
+                    if (!provider) return null;
+                    const Icon = provider.icon;
+                    return (
+                      <div
+                        key={providerId}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-[var(--brand)]/10 border border-[var(--brand)]/20 rounded text-xs"
+                      >
+                        {Icon && (
+                          <Icon size={12} style={{ color: provider.color }} />
+                        )}
+                        <span className="text-theme font-medium">
+                          {provider.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => dispatch(toggleProvider(providerId))}
+                          className="text-muted hover:text-theme"
+                          aria-label={`Remove ${provider.name} filter`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {selectedProviders.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => dispatch(setSelectedProviders(["all"]))}
+                      className="px-2 py-1 text-xs text-muted hover:text-theme underline"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+              )}
 
             {/* Loading State */}
-            {providerLoading && (
+            {loading && (
               <div className="text-center py-4 text-muted text-sm flex items-center justify-center gap-2 mr-3">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--brand)] border-t-transparent"></div>
                 <span>Loading components...</span>
@@ -190,115 +408,256 @@ export default function ComponentPalette({
             )}
 
             {/* Error State */}
-            {providerError && (
+            {error && (
               <div className="mx-3 mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-500">
-                {providerError}
+                {error}
               </div>
             )}
 
-            {/* Search Input */}
-            <div className="mr-3 mb-3">
+            {/* Unified Search Input with Provider Dropdown */}
+            <div className="mr-3 mb-3 relative">
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search components..."
+                placeholder="Search providers or components..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full px-3 py-1.5 text-sm border border-theme rounded bg-[var(--bg)] text-theme placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-[var(--brand)]"
               />
+
+              {/* Provider Dropdown */}
+              {showProviderDropdown && filteredProviders.length > 0 && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute z-50 mt-1 w-full bg-[var(--surface)] border border-theme rounded shadow-lg max-h-48 overflow-y-auto"
+                >
+                  <div className="px-2 py-1.5 text-xs text-muted border-b border-theme">
+                    Click to toggle providers
+                  </div>
+                  {filteredProviders.map((provider) => {
+                    const Icon = provider.icon;
+                    const isSelected = selectedProviders.includes(provider.id);
+                    return (
+                      <button
+                        key={provider.id}
+                        type="button"
+                        onClick={() => handleProviderSelect(provider)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-theme hover:bg-[var(--bg-hover)] transition-colors ${
+                          isSelected ? "bg-[var(--brand)]/5" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          className="pointer-events-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        {Icon && (
+                          <Icon size={16} style={{ color: provider.color }} />
+                        )}
+                        <span className="font-medium">{provider.name}</span>
+                        <span className="ml-auto text-xs text-muted">
+                          {provider.id}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1 flex-1 overflow-y-auto">
-              {grouped.length === 0 ? (
+              {groupedByProvider.size === 0 ? (
                 <div className="text-center py-8 text-muted text-sm">
                   No components found
                 </div>
               ) : (
-                grouped.map(([groupName, list]) => {
-                  const isExpanded = expandedGroups.has(groupName);
-                  return (
-                    <div key={groupName}>
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(groupName)}
-                        className="w-full flex items-center justify-between px-2 py-1.5 text-left hover:bg-[var(--bg-hover)] rounded transition-colors"
-                        aria-expanded={isExpanded}
-                        aria-controls={`group-${groupName}`}
-                      >
-                        <span className="text-xs font-medium uppercase tracking-wide text-muted">
-                          {groupName}
-                        </span>
-                        <PiCaretDownBold
-                          size={12}
-                          className={`text-muted transition-transform duration-150 ${
-                            isExpanded ? "rotate-0" : "-rotate-90"
-                          }`}
-                        />
-                      </button>
-                      {isExpanded && (
-                        <div
-                          id={`group-${groupName}`}
-                          className="mt-1 mb-3 px-1"
-                        >
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {list.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                draggable
-                                aria-label={`Add ${c.label} to canvas`}
-                                onMouseEnter={(e) => {
-                                  const rect =
-                                    e.currentTarget.getBoundingClientRect();
-                                  setHoveredComponent({
-                                    label: c.label,
-                                    description: c.description || "",
-                                    rect,
-                                  });
-                                }}
-                                onMouseLeave={() => setHoveredComponent(null)}
-                                onDragStart={(e) => {
-                                  setHoveredComponent(null);
-                                  e.dataTransfer?.setData(
-                                    "application/reactflow",
-                                    JSON.stringify({ type: c.id }),
-                                  );
-                                  e.dataTransfer?.setData("text/plain", c.id);
-                                  if (e.dataTransfer)
-                                    e.dataTransfer.effectAllowed = "move";
-                                }}
-                                onKeyDown={(e) => {
-                                  if (
-                                    (e as React.KeyboardEvent).key ===
-                                      "Enter" ||
-                                    (e as React.KeyboardEvent).key === " "
-                                  ) {
-                                    (e as React.KeyboardEvent).preventDefault();
-                                    onAdd(c.id);
-                                  }
-                                }}
-                                className="text-left p-2 border border-theme rounded-md cursor-grab select-none hover:border-[var(--brand)] hover:bg-[var(--bg-hover)] transition-all group/item"
-                              >
-                                <div className="flex justify-center items-center">
-                                  <div className="w-10 h-10 mb-1 relative">
-                                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/15 to-[var(--brand)]/5 rounded-full"></div>
-                                  <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
-                                    <span className="inline-flex items-center justify-center w-full h-full">
-                                      {c.icon ? React.createElement(c.icon as React.ComponentType<{size?: number}>, { size: 24 }) : <span className="text-lg">?</span>}
-                                    </span>
+                Array.from(groupedByProvider.entries()).map(
+                  ([providerName, categories]) => {
+                    const isProviderExpanded =
+                      expandedProviders.has(providerName);
+                    const totalComponents = Array.from(
+                      categories.values()
+                    ).reduce((sum, list) => sum + list.length, 0);
+
+                    // If only Custom provider and 'all' is selected, skip provider header
+                    const showProviderHeader = !(
+                      selectedProviders.includes("all") &&
+                      providerName === "Custom" &&
+                      groupedByProvider.size === 1
+                    );
+
+                    return (
+                      <div key={providerName} className="mb-2">
+                        {/* Provider Level */}
+                        {showProviderHeader && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              toggleProviderExpansion(providerName)
+                            }
+                            className="w-full flex items-center justify-between px-2 py-2 text-left hover:bg-[var(--bg-hover)] rounded transition-colors bg-[var(--brand)]/5 border border-[var(--brand)]/10"
+                            aria-expanded={isProviderExpanded}
+                          >
+                            <div className="flex items-center gap-2">
+                              <PiCaretDownBold
+                                size={12}
+                                className={`text-theme transition-transform duration-150 ${
+                                  isProviderExpanded ? "rotate-0" : "-rotate-90"
+                                }`}
+                              />
+                              <span className="text-sm font-semibold text-theme">
+                                {providerName}
+                              </span>
+                              <span className="text-xs text-muted">
+                                ({totalComponents})
+                              </span>
+                            </div>
+                          </button>
+                        )}
+
+                        {/* Categories within Provider */}
+                        {(isProviderExpanded || !showProviderHeader) && (
+                          <div
+                            className={
+                              showProviderHeader
+                                ? "ml-2 mt-1 space-y-1"
+                                : "space-y-1"
+                            }
+                          >
+                            {Array.from(categories.entries()).map(
+                              ([groupName, list]) => {
+                                const isExpanded = expandedGroups.has(
+                                  `${providerName}-${groupName}`
+                                );
+                                return (
+                                  <div key={groupName}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        toggleGroup(
+                                          `${providerName}-${groupName}`
+                                        )
+                                      }
+                                      className="w-full flex items-center justify-between px-2 py-1.5 text-left hover:bg-[var(--bg-hover)] rounded transition-colors"
+                                      aria-expanded={isExpanded}
+                                      aria-controls={`group-${providerName}-${groupName}`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <PiCaretDownBold
+                                          size={10}
+                                          className={`text-muted transition-transform duration-150 ${
+                                            isExpanded
+                                              ? "rotate-0"
+                                              : "-rotate-90"
+                                          }`}
+                                        />
+                                        <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                                          {groupName}
+                                        </span>
+                                        <span className="text-[10px] text-muted">
+                                          ({list.length})
+                                        </span>
+                                      </div>
+                                    </button>
+                                    {isExpanded && (
+                                      <div
+                                        id={`group-${groupName}`}
+                                        className="mt-1 mb-3 px-1"
+                                      >
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                          {list.map((c) => (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              draggable
+                                              aria-label={`Add ${c.label} to canvas`}
+                                              onMouseEnter={(e) => {
+                                                const rect =
+                                                  e.currentTarget.getBoundingClientRect();
+                                                setHoveredComponent({
+                                                  label: c.label,
+                                                  description:
+                                                    c.description || "",
+                                                  rect,
+                                                });
+                                              }}
+                                              onMouseLeave={() =>
+                                                setHoveredComponent(null)
+                                              }
+                                              onDragStart={(e) =>
+                                                handleDragStart(e, c.id, c)
+                                              }
+                                              onKeyDown={(e) => {
+                                                if (
+                                                  (e as React.KeyboardEvent)
+                                                    .key === "Enter" ||
+                                                  (e as React.KeyboardEvent)
+                                                    .key === " "
+                                                ) {
+                                                  (
+                                                    e as React.KeyboardEvent
+                                                  ).preventDefault();
+                                                  onAdd(c.id);
+                                                }
+                                              }}
+                                              className="text-left p-2 border border-theme rounded-md cursor-grab select-none hover:border-[var(--brand)] hover:bg-[var(--bg-hover)] transition-all group/item"
+                                            >
+                                              <div className="flex justify-center items-center">
+                                                {"iconUrl" in c && c.iconUrl ? (
+                                                  <div className="w-10 h-10 mb-1 relative">
+                                                    <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
+                                                      <span className="inline-flex items-center justify-center w-full h-full">
+                                                        <img
+                                                          src={c.iconUrl}
+                                                          alt={c.label}
+                                                          className="w-10 h-10 object-contain"
+                                                        />
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <div className="w-10 h-10 mb-1 relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand)]/15 to-[var(--brand)]/5 rounded-full"></div>
+                                                    <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
+                                                      <span className="inline-flex items-center justify-center w-full h-full">
+                                                        {"icon" in c &&
+                                                        c.icon ? (
+                                                          React.createElement(
+                                                            c.icon as React.ComponentType<{
+                                                              size?: number;
+                                                            }>,
+                                                            { size: 24 }
+                                                          )
+                                                        ) : (
+                                                          <span className="text-lg">
+                                                            ?
+                                                          </span>
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="text-xs font-medium text-theme text-center group-hover/item:text-[var(--brand)] transition-colors line-clamp-1">
+                                                {c.label}
+                                              </div>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                  </div>
-                                </div>
-                                <div className="text-xs font-medium text-theme text-center group-hover/item:text-[var(--brand)] transition-colors line-clamp-1">
-                                  {c.label}
-                                </div>
-                              </button>
-                            ))}
+                                );
+                              }
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
+                        )}
+                      </div>
+                    );
+                  }
+                )
               )}
 
               <div className="mt-4 px-2 py-2.5 rounded text-xs bg-[var(--bg-hover)]">
@@ -320,7 +679,7 @@ export default function ComponentPalette({
       {hoveredComponent &&
         ReactDOM.createPortal(
           <div
-            className="fixed px-3 py-2 bg-[var(--bg)] border border-theme rounded shadow-lg text-xs z-[9999] min-w-max max-w-xs pointer-events-none -translate-y-1/2"
+            className="fixed px-3 py-2 bg-[var(--bg)] border border-theme rounded shadow-lg text-xs z-[9999] min-w-max max-w-[20vw] pointer-events-none -translate-y-1/2"
             style={
               {
                 left: `${hoveredComponent.rect.right + 8}px`,
@@ -334,7 +693,7 @@ export default function ComponentPalette({
             <div className="text-muted">{hoveredComponent.description}</div>
             <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-[var(--bg)]"></div>
           </div>,
-          document.body,
+          document.body
         )}
     </div>
   );
