@@ -1,15 +1,6 @@
 import React from "react";
 import DOMPurify from "dompurify";
-
-type PropertyValue =
-  | string
-  | number
-  | boolean
-  | unknown[]
-  | Record<string, unknown>
-  | React.ComponentType
-  | undefined
-  | null;
+import type { PropertyValue } from "../types/canvas";
 
 interface NodePropertyDisplayProps {
   propertyKey: string;

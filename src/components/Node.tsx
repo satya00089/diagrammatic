@@ -15,8 +15,19 @@ export type NodeData = {
   iconUrl?: string;
   subtitle?: string;
   componentName?: string;
-  [key: string]: string | number | boolean | React.ComponentType | undefined; // Allow for additional dynamic properties
+  _customProperties?: CustomProperty[];
+  [key: string]: string | number | boolean | React.ComponentType | CustomProperty[] | undefined; // Allow for additional dynamic properties
 };
+
+import type { PropertyValue } from "../types/canvas";
+
+export interface CustomProperty {
+  id: string;
+  key: string;
+  label: string;
+  type: string;
+  value: PropertyValue;
+}
 
 type Props = {
   id: string;
@@ -130,7 +141,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
+        className="min-w-[200px] w-full max-w-[15vw] bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -290,7 +301,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   ([key]) => !excludeKeys.has(key)
                 );
 
-                if (properties.length === 0) {
+                if (properties.length === 0 && (!data._customProperties || !Array.isArray(data._customProperties) || data._customProperties.length === 0)) {
                   return (
                     <div className="text-muted text-center py-2">
                       No properties
@@ -298,13 +309,36 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   );
                 }
 
-                return properties.map(([key, value]) => (
-                  <NodePropertyDisplay
-                    key={key}
-                    propertyKey={key}
-                    value={value}
-                  />
-                ));
+                return (
+                  <>
+                    {properties.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">Standard Properties</div>
+                        {properties.map(([key, value]) => (
+                          <NodePropertyDisplay
+                            key={key}
+                            propertyKey={key}
+                            value={value}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Display custom properties last */}
+                    {data._customProperties && Array.isArray(data._customProperties) && data._customProperties.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">Custom Properties</div>
+                        {data._customProperties.map((customProp: CustomProperty) => (
+                          <NodePropertyDisplay
+                            key={customProp.id}
+                            propertyKey={customProp.label || customProp.key}
+                            value={customProp.value}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
               })()}
             </div>
           </motion.div>

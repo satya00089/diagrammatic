@@ -4118,12 +4118,6 @@ export const COMPONENTS: CanvasComponent[] = [
     tags: ["use case", "requirement", "functionality", "scenario", "note", "annotation"],
     properties: [
       {
-        key: "nodeType",
-        label: "Node Type",
-        type: "text",
-        default: "uml-use-case",
-      },
-      {
         key: "componentName",
         label: "Use Case Name",
         type: "text",

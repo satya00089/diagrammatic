@@ -1,5 +1,15 @@
 import React from "react";
 
+export type PropertyValue =
+  | string
+  | number
+  | boolean
+  | unknown[]
+  | Record<string, unknown>
+  | React.ComponentType
+  | undefined
+  | null;
+
 export type ComponentProperty = {
   key: string;
   label: string;
