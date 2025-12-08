@@ -56,7 +56,17 @@ export const fetchMinimalComponents = createAsyncThunk(
         return { providers, items: state.components.minimalComponentsByProvider['all'], fromCache: true };
       }
       const response = await componentProviderService.getAllComponents({ limit: 500 });
-      return { providers, items: response.items, fromCache: false };
+      // Map ComponentDB to MinimalComponent
+      const minimalComponents = response.items.map((item: ComponentDB) => ({
+        id: item.id,
+        platform: item.provider || 'Other', // Use item.provider, fallback to 'Other'
+        label: item.displayName || item.name,
+        description: item.description,
+        group: item.group,
+        iconUrl: item.iconUrl,
+        tags: item.tags,
+      }));
+      return { providers, items: minimalComponents, fromCache: false };
     }
 
     // Fetch multiple providers
@@ -81,7 +91,7 @@ export const fetchMinimalComponents = createAsyncThunk(
       // Map ComponentDB to MinimalComponent
       const minimalComponents = response.items.map((item: ComponentDB) => ({
         id: item.id,
-        platform: item.provider,
+        platform: provider, // Use the provider parameter since we know which provider this fetch is for
         label: item.displayName || item.name,
         description: item.description,
         group: item.group,
@@ -154,21 +164,8 @@ const componentsSlice = createSlice({
         state.loading = false;
         const { providers, items, fromCache } = action.payload;
 
-        // Map to minimal format if not from cache (exclude properties)
-        let minimalItems: MinimalComponent[];
-        if (fromCache) {
-          minimalItems = items as MinimalComponent[];
-        } else {
-          minimalItems = (items as ComponentDB[]).map((item: ComponentDB) => ({
-            id: item.id,
-            platform: item.provider,
-            label: item.displayName || item.name,
-            description: item.description,
-            group: item.group,
-            iconUrl: item.iconUrl,
-            tags: item.tags,
-          }));
-        }
+        // Items are already in minimal format
+        const minimalItems = items;
 
         // Cache by provider if not already cached
         if (!fromCache) {
