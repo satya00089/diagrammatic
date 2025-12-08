@@ -130,7 +130,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
-        className="min-w-[140px] w-full max-w-xs bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
+        className="min-w-[200px] w-full max-w-[15vw] bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
