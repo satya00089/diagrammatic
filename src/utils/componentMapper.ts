@@ -49,7 +49,7 @@ export function mapComponentToCanvas(dbComponent: ComponentDB): CanvasComponent 
 
   return {
     id: dbComponent.id,
-    label: dbComponent.displayName || dbComponent.name,
+    label: dbComponent.label,
     description: dbComponent.description,
     icon: typeof iconComponent === 'function' ? iconComponent : undefined,
     group: dbComponent.group,
