@@ -12,7 +12,7 @@ import type {
 } from '../types/componentProvider';
 
 export class ComponentProviderService {
-  private baseUrl: string;
+  private readonly baseUrl: string;
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -24,11 +24,13 @@ export class ComponentProviderService {
   async getComponentsByProvider(
     provider: ComponentProvider,
     limit = 100,
+    minimal = false,
   ): Promise<ComponentsResponse> {
     try {
       const params = new URLSearchParams({
         provider: provider.toLowerCase(),
         limit: limit.toString(),
+        minimal: minimal.toString(),
       });
 
       const response = await fetch(
@@ -89,7 +91,7 @@ export class ComponentProviderService {
   /**
    * Get all components (with pagination and filters)
    */
-  async getAllComponents(params?: QueryParams): Promise<ComponentsResponse> {
+  async getAllComponents(params?: QueryParams & { minimal?: boolean }): Promise<ComponentsResponse> {
     try {
       const queryParams = new URLSearchParams();
       
@@ -102,6 +104,7 @@ export class ComponentProviderService {
       if (params?.lastEvaluatedKey) {
         queryParams.set('lastEvaluatedKey', JSON.stringify(params.lastEvaluatedKey));
       }
+      if (params?.minimal) queryParams.set('minimal', params.minimal.toString());
 
       const response = await fetch(
         `${this.baseUrl}/api/components?${queryParams.toString()}`,
