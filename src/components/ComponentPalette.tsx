@@ -302,8 +302,7 @@ export default function ComponentPalette({
   // Lazy load full component data when dragged
   const handleDragStart = (
     e: React.DragEvent,
-    componentId: string,
-    component: CanvasComponent | MinimalComponent
+    componentId: string
   ) => {
     setHoveredComponent(null);
 
@@ -589,7 +588,7 @@ export default function ComponentPalette({
                                                 setHoveredComponent(null)
                                               }
                                               onDragStart={(e) =>
-                                                handleDragStart(e, c.id, c)
+                                                handleDragStart(e, c.id)
                                               }
                                               onKeyDown={(e) => {
                                                 if (
