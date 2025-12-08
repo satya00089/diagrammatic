@@ -55,12 +55,12 @@ export const fetchMinimalComponents = createAsyncThunk(
       if (state.components.minimalComponentsByProvider['all']) {
         return { providers, items: state.components.minimalComponentsByProvider['all'], fromCache: true };
       }
-      const response = await componentProviderService.getAllComponents({ limit: 500 });
+      const response = await componentProviderService.getAllComponents({ limit: 500, minimal: true });
       // Map ComponentDB to MinimalComponent
       const minimalComponents = response.items.map((item: ComponentDB) => ({
         id: item.id,
         platform: item.provider || 'Other', // Use item.provider, fallback to 'Other'
-        label: item.displayName || item.name,
+        label: item.label || item.id, // Fallback to id if label is missing
         description: item.description,
         group: item.group,
         iconUrl: item.iconUrl,
@@ -86,13 +86,14 @@ export const fetchMinimalComponents = createAsyncThunk(
     for (const provider of providersToFetch) {
       const response = await componentProviderService.getComponentsByProvider(
         provider,
-        500
+        500,
+        true // minimal=true
       );
       // Map ComponentDB to MinimalComponent
       const minimalComponents = response.items.map((item: ComponentDB) => ({
         id: item.id,
         platform: provider, // Use the provider parameter since we know which provider this fetch is for
-        label: item.displayName || item.name,
+        label: item.label || item.id, // Fallback to id if label is missing
         description: item.description,
         group: item.group,
         iconUrl: item.iconUrl,

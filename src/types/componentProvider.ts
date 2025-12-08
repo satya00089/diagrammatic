@@ -67,8 +67,7 @@ export interface ComponentDB {
   // Core Information
   provider: ComponentProvider;
   category: ComponentCategory;
-  name: string;
-  displayName: string;
+  label: string;
   description: string;
   
   // Visual
