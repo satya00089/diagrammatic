@@ -9,6 +9,7 @@ import { FiUnlock } from "react-icons/fi";
 export type NodeData = {
   label: string;
   icon?: React.ComponentType;
+  iconUrl?: string;
   subtitle?: string;
   componentName?: string;
   [key: string]: string | number | boolean | React.ComponentType | undefined; // Allow for additional dynamic properties
@@ -179,12 +180,22 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
         {/* Main content */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[var(--brand)]/20 to-[var(--brand)]/5 flex items-center justify-center text-xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--brand)]/10 rounded-full"></div>
-            <div className="relative z-10 opacity-80">
-              {data.icon ? React.createElement(data.icon as React.ComponentType<{size?: number}>, { size: 24 }) : "●"}
+          {data.iconUrl ? (
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+              <img 
+                src={data.iconUrl} 
+                alt={displayLabel}
+                className="w-12 h-12 object-contain"
+              />
             </div>
-          </div>
+          ) : (
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[var(--brand)]/20 to-[var(--brand)]/5 flex items-center justify-center text-xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--brand)]/10 rounded-full"></div>
+              <div className="relative z-10 opacity-80">
+                {data.icon ? React.createElement(data.icon as React.ComponentType<{size?: number}>, { size: 24 }) : "●"}
+              </div>
+            </div>
+          )}
 
           <div className="min-w-0 w-full text-center">
             <div className="truncate font-medium text-sm">{displayLabel}</div>

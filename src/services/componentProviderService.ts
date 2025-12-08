@@ -27,7 +27,7 @@ export class ComponentProviderService {
   ): Promise<ComponentsResponse> {
     try {
       const params = new URLSearchParams({
-        provider,
+        provider: provider.toLowerCase(),
         limit: limit.toString(),
       });
 
