@@ -5,6 +5,7 @@
 
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { CanvasComponent } from '../../types/canvas';
+import type { ComponentDB } from '../../types/componentProvider';
 import { componentProviderService } from '../../services/componentProviderService';
 import { mapComponentsToCanvas } from '../../utils/componentMapper';
 
@@ -59,7 +60,7 @@ export const fetchMinimalComponents = createAsyncThunk(
     }
 
     // Fetch multiple providers
-    const allItems: any[] = [];
+    const allItems: MinimalComponent[] = [];
     const providersToFetch: string[] = [];
 
     // Collect cached and identify what needs fetching
@@ -74,10 +75,20 @@ export const fetchMinimalComponents = createAsyncThunk(
     // Fetch uncached providers
     for (const provider of providersToFetch) {
       const response = await componentProviderService.getComponentsByProvider(
-        provider as any,
+        provider,
         500
       );
-      allItems.push(...response.items);
+      // Map ComponentDB to MinimalComponent
+      const minimalComponents = response.items.map((item: ComponentDB) => ({
+        id: item.id,
+        platform: item.provider,
+        label: item.displayName || item.name,
+        description: item.description,
+        group: item.group,
+        iconUrl: item.iconUrl,
+        tags: item.tags,
+      }));
+      allItems.push(...minimalComponents);
     }
 
     return { providers, items: allItems, fromCache: providersToFetch.length === 0 };
@@ -143,16 +154,21 @@ const componentsSlice = createSlice({
         state.loading = false;
         const { providers, items, fromCache } = action.payload;
 
-        // Map to minimal format (exclude properties)
-        const minimalItems = items.map((item: any) => ({
-          id: item.id,
-          platform: item.platform || 'Unknown',
-          label: item.label,
-          description: item.description,
-          group: item.group,
-          iconUrl: item.iconUrl,
-          tags: item.tags,
-        }));
+        // Map to minimal format if not from cache (exclude properties)
+        let minimalItems: MinimalComponent[];
+        if (fromCache) {
+          minimalItems = items as MinimalComponent[];
+        } else {
+          minimalItems = (items as ComponentDB[]).map((item: ComponentDB) => ({
+            id: item.id,
+            platform: item.provider,
+            label: item.displayName || item.name,
+            description: item.description,
+            group: item.group,
+            iconUrl: item.iconUrl,
+            tags: item.tags,
+          }));
+        }
 
         // Cache by provider if not already cached
         if (!fromCache) {
