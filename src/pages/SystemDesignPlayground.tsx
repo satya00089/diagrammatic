@@ -1507,7 +1507,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   React.useEffect(() => {
     if (!inspectedNodeId) return;
     const n = nodes.find((x) => x.id === inspectedNodeId);
-    setNodeProps((n?.data ?? {}) as NodeProps);
+
+    // Filter out numeric keys and _customProperties when loading nodeProps
+    const nodeData = (n?.data ?? {}) as NodeProps;
+    const filteredData = Object.fromEntries(
+      Object.entries(nodeData).filter(([key]) => {
+        return Number.isNaN(Number(key)) && key !== "_customProperties";
+      })
+    );
+
+    setNodeProps(filteredData);
   }, [inspectedNodeId, nodes]);
 
   // --- Helpers to reduce nested function depth in JSX ---
@@ -2571,10 +2580,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // persist nodeProps back into node data (manual save - now mainly for debugging)
   const handleSave = () => {
+    // Filter out numeric keys and _customProperties since they're managed separately
+    const filteredNodeProps = Object.fromEntries(
+      Object.entries(nodeProps).filter(([key]) => {
+        // Keep non-numeric keys and exclude _customProperties
+        return Number.isNaN(Number(key)) && key !== "_customProperties";
+      })
+    );
+
     setNodes((nds) =>
       nds.map((n) =>
         n.id === inspectedNodeId
-          ? { ...n, data: { ...n.data, ...nodeProps } }
+          ? { ...n, data: { ...n.data, ...filteredNodeProps } }
           : n
       )
     );
@@ -2585,7 +2602,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       console.log("Node properties saved:", {
         id: inspectedNodeId,
         data: node?.data,
-        nodeProps,
+        filteredNodeProps,
       });
     }
   };
