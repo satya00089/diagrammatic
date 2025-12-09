@@ -1,3 +1,4 @@
+// React core
 import React, {
   useRef,
   useState,
@@ -5,34 +6,8 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import {
-  MdAccessTime,
-  MdUpload,
-  MdUndo,
-  MdRedo,
-  MdClose,
-  MdDownload,
-  MdExpandMore,
-} from "react-icons/md";
-import { FcFlowChart } from "react-icons/fc";
-import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
-import {
-  AnimatedNumberInput,
-  AnimatedTextInput,
-  AnimatedTextarea,
-  AnimatedSelect,
-} from "../components/shared/AnimatedInputFields";
-import type {
-  SystemDesignProblem,
-  SystemDesignSolution,
-  ValidationResult,
-  ComponentType,
-  ConnectionType,
-} from "../types/systemDesign";
-import type { SavedDiagram, Collaborator } from "../types/auth";
-import ThemeSwitcher from "../components/ThemeSwitcher";
-import { useTheme } from "../hooks/useTheme";
-import { useUndoRedo } from "../hooks/useUndoRedo";
+
+// External libraries - React Flow
 import {
   useNodesState,
   useEdgesState,
@@ -43,42 +18,54 @@ import {
   getViewportForBounds,
 } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
+
+// External libraries - Other
 import { toPng, toJpeg, toSvg } from "html-to-image";
 import dagre from "dagre";
-import { COMPONENTS } from "../config/components";
-import ComponentPalette from "../components/ComponentPalette";
-import DiagramCanvas from "../components/DiagramCanvas";
-import InspectorPanel from "../components/InspectorPanel";
-import CollaboratorsList from "../components/CollaboratorsList";
-import type { ComponentProperty, CanvasComponent } from "../types/canvas";
+import {
+  MdAccessTime,
+  MdUpload,
+  MdUndo,
+  MdRedo,
+  MdClose,
+  MdDownload,
+  MdExpandMore,
+} from "react-icons/md";
+import { FcFlowChart } from "react-icons/fc";
+
+// Routing
 import { useNavigate, useParams } from "react-router-dom";
-import SEO from "../components/SEO";
-import assessSolution from "../utils/assessor";
-import CustomNode from "../components/Node";
-import type { NodeData } from "../components/Node";
-import ERNode from "../components/ERNode";
-import type { ERNodeData } from "../components/ERNode";
-import TableNode from "../components/TableNode";
-import type { TableNodeData, TableAttribute } from "../components/TableNode";
-import CustomEdge from "../components/CustomEdge";
-import ERRelationshipEdge from "../components/ERRelationshipEdge";
-import GroupNode from "../components/GroupNode";
-import CustomPropertyInput, {
-  type CustomProperty,
-} from "../components/CustomPropertyInput";
+
+// Type definitions
+import type {
+  SystemDesignProblem,
+  SystemDesignSolution,
+  ValidationResult,
+  ComponentType,
+  ConnectionType,
+} from "../types/systemDesign";
+import type { SavedDiagram, Collaborator } from "../types/auth";
+import type { ComponentProperty, CanvasComponent } from "../types/canvas";
+import type { CanvasContext, UserIntent } from "../types/chatBot";
+
+// Custom hooks
+import { useTheme } from "../hooks/useTheme";
+import { useUndoRedo } from "../hooks/useUndoRedo";
 import { useAuth } from "../hooks/useAuth";
-import { AuthModal } from "../components/AuthModal";
+import { useToast } from "../hooks/useToast";
+import { useChatBot } from "../hooks/useChatBot";
+import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
+
+// Redux store
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
   fetchFullComponent,
   type MinimalComponent,
 } from "../store/slices/componentsSlice";
+
+// Services and utilities
 import { apiService } from "../services/api";
-import { useToast } from "../hooks/useToast";
-import { ToastContainer } from "../components/Toast";
-import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
-import { CollaborationStatus } from "../components/CollaborationStatus";
-import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import assessSolution from "../utils/assessor";
 import { getCollaboratorColor } from "../utils/collaborationUtils";
 import {
   exportAsJSON,
@@ -88,10 +75,54 @@ import {
   downloadFile,
   readFileAsText,
 } from "../utils/exportImport";
+
+// Configuration
+import { COMPONENTS } from "../config/components";
+
+// UI Components - Shared
+import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
+import {
+  AnimatedNumberInput,
+  AnimatedTextInput,
+  AnimatedTextarea,
+  AnimatedSelect,
+} from "../components/shared/AnimatedInputFields";
+
+// UI Components - Layout
+import SEO from "../components/SEO";
+import ThemeSwitcher from "../components/ThemeSwitcher";
+import { ToastContainer } from "../components/Toast";
+import { AuthModal } from "../components/AuthModal";
+
+// UI Components - Diagram
+import DiagramCanvas from "../components/DiagramCanvas";
+import ComponentPalette from "../components/ComponentPalette";
+import InspectorPanel from "../components/InspectorPanel";
+
+// UI Components - Nodes
+import CustomNode from "../components/Node";
+import type { NodeData } from "../components/Node";
+import ERNode from "../components/ERNode";
+import type { ERNodeData } from "../components/ERNode";
+import TableNode from "../components/TableNode";
+import type { TableNodeData, TableAttribute } from "../components/TableNode";
+import GroupNode from "../components/GroupNode";
+
+// UI Components - Edges
+import CustomEdge from "../components/CustomEdge";
+import ERRelationshipEdge from "../components/ERRelationshipEdge";
+
+// UI Components - Collaboration
+import { CollaborationStatus } from "../components/CollaborationStatus";
+import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import CollaboratorsList from "../components/CollaboratorsList";
+
+// UI Components - Features
 import { ChatBot } from "../components/ChatBot";
-import type { CanvasContext, UserIntent } from "../types/chatBot";
-import { useChatBot } from "../hooks/useChatBot";
 import { ProjectIntentDialog } from "../components/ProjectIntentDialog";
+import CustomPropertyInput, {
+  type CustomProperty,
+} from "../components/CustomPropertyInput";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData;
