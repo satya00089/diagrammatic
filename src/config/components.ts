@@ -1,8 +1,8 @@
 import type { CanvasComponent } from "../types/canvas";
 import {
   FaArchive, FaBalanceScale, FaBolt, FaBook, FaBoxOpen,
-  FaBroadcastTower, FaChartBar, FaCircle,
-  FaCogs, FaCube, FaCubes,
+  FaBroadcastTower, FaChartBar, FaCheckCircle, FaCircle,
+  FaCogs, FaCode, FaCube, FaCubes,
   FaDesktop, FaDraftingCompass, FaEye, FaFileAlt, FaFire,
   FaFolder, FaGlobe, FaIdCard, FaList,
   FaLock, FaObjectGroup,
@@ -45,13 +45,14 @@ import {
  * 6. Messaging - Queues, brokers, pub/sub (async communication)
  * 7. Security - Firewalls, secrets, VPN (protection layer)
  * 8. Observability - Monitoring, tracing (operations)
- * 9. Delivery - CDN, edge servers (content delivery)
- * 10. AI & ML - Models, training, inference (emerging)
- * 11. Grouping - VPCs, zones, clusters (organizational)
- * 12. DNS & Network - Name resolution (foundational but less frequently modified)
- * 13. ER Diagram - Database design entities
- * 14. UML - Class diagrams, interfaces
- * 15. Custom - User-defined components
+ * 9. DevOps - CI/CD, deployment, automation (development workflows)
+ * 10. Delivery - CDN, edge servers (content delivery)
+ * 11. AI & ML - Models, training, inference (emerging)
+ * 12. Grouping - VPCs, zones, clusters (organizational)
+ * 13. DNS & Network - Name resolution (foundational but less frequently modified)
+ * 14. ER Diagram - Database design entities
+ * 15. UML - Class diagrams, interfaces
+ * 16. Custom - User-defined components
  * 
  * Last reviewed: UX Design Review - Sorted by usage frequency
  */
@@ -66,13 +67,14 @@ export const GROUP_PRIORITY: Record<string, number> = {
   "Messaging": 6,
   "Security": 7,
   "Observability": 8,
-  "Delivery": 9,
-  "AI & ML": 10,
-  "Grouping": 11,
-  "DNS & Network": 12,
-  "ER Diagram": 13,
-  "UML": 14,
-  "Custom": 15,
+  "DevOps": 9,
+  "Delivery": 10,
+  "AI & ML": 11,
+  "Grouping": 12,
+  "DNS & Network": 13,
+  "ER Diagram": 14,
+  "UML": 15,
+  "Custom": 16,
 };
 
 // Utility function to sort components by usage frequency
@@ -2404,6 +2406,492 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Retention (days)",
         type: "number",
         default: 7,
+      },
+    ],
+  },
+
+  // ========================================
+  // DEVOPS WORKFLOWS
+  // ========================================
+  {
+    id: "ci-cd-pipeline",
+    group: "DevOps",
+    icon: FaRoute,
+    label: "CI/CD Pipeline",
+    description: "Continuous integration and deployment pipeline",
+    tags: ["ci/cd", "pipeline", "automation", "deployment", "integration", "continuous"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Pipeline Name",
+        type: "text",
+        placeholder: "e.g., Main Pipeline, Feature Pipeline",
+        default: "CI/CD Pipeline",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the pipeline stages and purpose",
+        default: "",
+      },
+      {
+        key: "platform",
+        label: "Platform",
+        type: "select",
+        default: "GitHub Actions",
+        options: ["GitHub Actions", "Jenkins", "GitLab CI", "Azure DevOps", "CircleCI"],
+      },
+      {
+        key: "stages",
+        label: "Stages",
+        type: "text",
+        placeholder: "e.g., build -> test -> deploy",
+        default: "build -> test -> deploy",
+      },
+      {
+        key: "triggers",
+        label: "Triggers",
+        type: "select",
+        default: "Push to main",
+        options: ["Push", "Pull Request", "Schedule", "Manual", "Tag"],
+      },
+    ],
+  },
+  {
+    id: "build-server",
+    group: "DevOps",
+    icon: FaCogs,
+    label: "Build Server",
+    description: "Automated build and compilation server",
+    tags: ["build", "compilation", "server", "automation", "ci"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Build Server Name",
+        type: "text",
+        placeholder: "e.g., Build Agent, Compilation Server",
+        default: "Build Server",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the build process",
+        default: "",
+      },
+      {
+        key: "type",
+        label: "Build Type",
+        type: "select",
+        default: "Application",
+        options: ["Application", "Library", "Docker Image", "Package"],
+      },
+      {
+        key: "parallelJobs",
+        label: "Parallel Jobs",
+        type: "number",
+        default: 4,
+      },
+      {
+        key: "cacheEnabled",
+        label: "Build Cache",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "deployment-pipeline",
+    group: "DevOps",
+    icon: FaCloudUploadAlt,
+    label: "Deployment Pipeline",
+    description: "Application deployment and rollout process",
+    tags: ["deployment", "rollout", "release", "cd", "automation"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Deployment Name",
+        type: "text",
+        placeholder: "e.g., Blue-Green Deployment, Canary Release",
+        default: "Deployment Pipeline",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the deployment strategy",
+        default: "",
+      },
+      {
+        key: "strategy",
+        label: "Strategy",
+        type: "select",
+        default: "Rolling Update",
+        options: ["Rolling Update", "Blue-Green", "Canary", "A/B Testing", "Feature Flag"],
+      },
+      {
+        key: "environments",
+        label: "Environments",
+        type: "text",
+        placeholder: "e.g., dev, staging, prod",
+        default: "dev, staging, prod",
+      },
+      {
+        key: "rollbackEnabled",
+        label: "Rollback Support",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "infrastructure-as-code",
+    group: "DevOps",
+    icon: FaCode,
+    label: "Infrastructure as Code",
+    description: "Infrastructure defined and managed as code",
+    tags: ["iac", "terraform", "cloudformation", "ansible", "automation", "infrastructure"],
+    properties: [
+      {
+        key: "componentName",
+        label: "IaC Name",
+        type: "text",
+        placeholder: "e.g., Main Infrastructure, Network Setup",
+        default: "Infrastructure as Code",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the infrastructure components",
+        default: "",
+      },
+      {
+        key: "tool",
+        label: "Tool",
+        type: "select",
+        default: "Terraform",
+        options: ["Terraform", "CloudFormation", "ARM Templates", "Pulumi", "Ansible"],
+      },
+      {
+        key: "stateManagement",
+        label: "State Management",
+        type: "select",
+        default: "Remote",
+        options: ["Local", "Remote", "S3", "Azure Blob"],
+      },
+      {
+        key: "modules",
+        label: "Reusable Modules",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "artifact-repository",
+    group: "DevOps",
+    icon: FaArchive,
+    label: "Artifact Repository",
+    description: "Storage for build artifacts and packages",
+    tags: ["artifacts", "repository", "packages", "nexus", "artifactory", "storage"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Repository Name",
+        type: "text",
+        placeholder: "e.g., Maven Repo, Docker Registry",
+        default: "Artifact Repository",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the stored artifacts",
+        default: "",
+      },
+      {
+        key: "type",
+        label: "Repository Type",
+        type: "select",
+        default: "Package",
+        options: ["Package", "Docker", "Helm", "NPM", "Maven", "NuGet"],
+      },
+      {
+        key: "provider",
+        label: "Provider",
+        type: "select",
+        default: "Nexus",
+        options: ["Nexus", "Artifactory", "Azure Artifacts", "GitHub Packages"],
+      },
+      {
+        key: "retentionPolicy",
+        label: "Retention Policy",
+        type: "select",
+        default: "30 days",
+        options: ["7 days", "30 days", "90 days", "Indefinite"],
+      },
+    ],
+  },
+  {
+    id: "configuration-management",
+    group: "DevOps",
+    icon: FaCogs,
+    label: "Configuration Management",
+    description: "Application and environment configuration",
+    tags: ["config", "configuration", "management", "ansible", "chef", "puppet"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Config Name",
+        type: "text",
+        placeholder: "e.g., App Config, Environment Variables",
+        default: "Configuration Management",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the configuration scope",
+        default: "",
+      },
+      {
+        key: "tool",
+        label: "Tool",
+        type: "select",
+        default: "Ansible",
+        options: ["Ansible", "Chef", "Puppet", "SaltStack", "Custom"],
+      },
+      {
+        key: "secretsManagement",
+        label: "Secrets Integration",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "versionControl",
+        label: "Version Controlled",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "automated-testing",
+    group: "DevOps",
+    icon: FaCheckCircle,
+    label: "Automated Testing",
+    description: "Automated test execution in pipeline",
+    tags: ["testing", "automation", "ci", "unit tests", "integration tests", "qa"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Testing Suite",
+        type: "text",
+        placeholder: "e.g., Unit Tests, Integration Tests",
+        default: "Automated Testing",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the testing scope",
+        default: "",
+      },
+      {
+        key: "testTypes",
+        label: "Test Types",
+        type: "select",
+        default: "Unit + Integration",
+        options: ["Unit", "Integration", "E2E", "Performance", "Security", "All"],
+      },
+      {
+        key: "coverageThreshold",
+        label: "Coverage Threshold (%)",
+        type: "number",
+        default: 80,
+      },
+      {
+        key: "parallelExecution",
+        label: "Parallel Execution",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "code-quality",
+    group: "DevOps",
+    icon: FaLightbulb,
+    label: "Code Quality",
+    description: "Code analysis and quality gates",
+    tags: ["quality", "linting", "sonar", "analysis", "code review", "gates"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Quality Check",
+        type: "text",
+        placeholder: "e.g., Linting, Static Analysis",
+        default: "Code Quality",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the quality checks",
+        default: "",
+      },
+      {
+        key: "tools",
+        label: "Tools",
+        type: "select",
+        default: "SonarQube",
+        options: ["SonarQube", "ESLint", "Prettier", "CodeClimate", "Custom"],
+      },
+      {
+        key: "gates",
+        label: "Quality Gates",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "thresholds",
+        label: "Thresholds",
+        type: "text",
+        placeholder: "e.g., coverage > 80%, issues < 10",
+        default: "",
+      },
+    ],
+  },
+  {
+    id: "security-scanning",
+    group: "DevOps",
+    icon: FaShieldAlt,
+    label: "Security Scanning",
+    description: "Security vulnerability scanning",
+    tags: ["security", "scanning", "vulnerabilities", "sast", "dast", "devsecops"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Security Scan",
+        type: "text",
+        placeholder: "e.g., SAST, Container Scan",
+        default: "Security Scanning",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the security checks",
+        default: "",
+      },
+      {
+        key: "scanType",
+        label: "Scan Type",
+        type: "select",
+        default: "SAST",
+        options: ["SAST", "DAST", "SCA", "Container", "Infrastructure", "Secrets"],
+      },
+      {
+        key: "tool",
+        label: "Tool",
+        type: "select",
+        default: "SonarQube",
+        options: ["SonarQube", "Checkmarx", "Veracode", "Snyk", "Trivy"],
+      },
+      {
+        key: "failOnVulnerabilities",
+        label: "Fail on High Severity",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "release-management",
+    group: "DevOps",
+    icon: FaTags,
+    label: "Release Management",
+    description: "Version control and release coordination",
+    tags: ["release", "versioning", "management", "git", "tags", "changelog"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Release Process",
+        type: "text",
+        placeholder: "e.g., Semantic Versioning, Git Flow",
+        default: "Release Management",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the release strategy",
+        default: "",
+      },
+      {
+        key: "versioning",
+        label: "Versioning Scheme",
+        type: "select",
+        default: "Semantic",
+        options: ["Semantic", "Calendar", "Git Hash", "Custom"],
+      },
+      {
+        key: "automation",
+        label: "Automated Releases",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "changelog",
+        label: "Changelog Generation",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+  {
+    id: "environment-management",
+    group: "DevOps",
+    icon: MdLayers,
+    label: "Environment Management",
+    description: "Development, staging, and production environments",
+    tags: ["environment", "dev", "staging", "prod", "deployment", "isolation"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Environment Name",
+        type: "text",
+        placeholder: "e.g., Development, Staging, Production",
+        default: "Environment",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the environment purpose",
+        default: "",
+      },
+      {
+        key: "type",
+        label: "Environment Type",
+        type: "select",
+        default: "Staging",
+        options: ["Development", "Testing", "Staging", "Production", "DR"],
+      },
+      {
+        key: "isolation",
+        label: "Isolation Level",
+        type: "select",
+        default: "VPC",
+        options: ["Shared", "VPC", "Account", "Region"],
+      },
+      {
+        key: "autoCleanup",
+        label: "Auto Cleanup",
+        type: "boolean",
+        default: true,
       },
     ],
   },
