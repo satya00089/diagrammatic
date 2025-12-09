@@ -1,3 +1,4 @@
+// React core
 import React, {
   useRef,
   useState,
@@ -5,34 +6,8 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import {
-  MdAccessTime,
-  MdUpload,
-  MdUndo,
-  MdRedo,
-  MdClose,
-  MdDownload,
-  MdExpandMore,
-} from "react-icons/md";
-import { FcFlowChart } from "react-icons/fc";
-import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
-import {
-  AnimatedNumberInput,
-  AnimatedTextInput,
-  AnimatedTextarea,
-  AnimatedSelect,
-} from "../components/shared/AnimatedInputFields";
-import type {
-  SystemDesignProblem,
-  SystemDesignSolution,
-  ValidationResult,
-  ComponentType,
-  ConnectionType,
-} from "../types/systemDesign";
-import type { SavedDiagram, Collaborator } from "../types/auth";
-import ThemeSwitcher from "../components/ThemeSwitcher";
-import { useTheme } from "../hooks/useTheme";
-import { useUndoRedo } from "../hooks/useUndoRedo";
+
+// External libraries - React Flow
 import {
   useNodesState,
   useEdgesState,
@@ -43,42 +18,54 @@ import {
   getViewportForBounds,
 } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
+
+// External libraries - Other
 import { toPng, toJpeg, toSvg } from "html-to-image";
 import dagre from "dagre";
-import { COMPONENTS } from "../config/components";
-import ComponentPalette from "../components/ComponentPalette";
-import DiagramCanvas from "../components/DiagramCanvas";
-import InspectorPanel from "../components/InspectorPanel";
-import CollaboratorsList from "../components/CollaboratorsList";
-import type { ComponentProperty, CanvasComponent } from "../types/canvas";
+import {
+  MdAccessTime,
+  MdUpload,
+  MdUndo,
+  MdRedo,
+  MdClose,
+  MdDownload,
+  MdExpandMore,
+} from "react-icons/md";
+import { FcFlowChart } from "react-icons/fc";
+
+// Routing
 import { useNavigate, useParams } from "react-router-dom";
-import SEO from "../components/SEO";
-import assessSolution from "../utils/assessor";
-import CustomNode from "../components/Node";
-import type { NodeData } from "../components/Node";
-import ERNode from "../components/ERNode";
-import type { ERNodeData } from "../components/ERNode";
-import TableNode from "../components/TableNode";
-import type { TableNodeData, TableAttribute } from "../components/TableNode";
-import CustomEdge from "../components/CustomEdge";
-import ERRelationshipEdge from "../components/ERRelationshipEdge";
-import GroupNode from "../components/GroupNode";
-import CustomPropertyInput, {
-  type CustomProperty,
-} from "../components/CustomPropertyInput";
+
+// Type definitions
+import type {
+  SystemDesignProblem,
+  SystemDesignSolution,
+  ValidationResult,
+  ComponentType,
+  ConnectionType,
+} from "../types/systemDesign";
+import type { SavedDiagram, Collaborator } from "../types/auth";
+import type { ComponentProperty, CanvasComponent } from "../types/canvas";
+import type { CanvasContext, UserIntent } from "../types/chatBot";
+
+// Custom hooks
+import { useTheme } from "../hooks/useTheme";
+import { useUndoRedo } from "../hooks/useUndoRedo";
 import { useAuth } from "../hooks/useAuth";
-import { AuthModal } from "../components/AuthModal";
+import { useToast } from "../hooks/useToast";
+import { useChatBot } from "../hooks/useChatBot";
+import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
+
+// Redux store
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import {
   fetchFullComponent,
   type MinimalComponent,
 } from "../store/slices/componentsSlice";
+
+// Services and utilities
 import { apiService } from "../services/api";
-import { useToast } from "../hooks/useToast";
-import { ToastContainer } from "../components/Toast";
-import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
-import { CollaborationStatus } from "../components/CollaborationStatus";
-import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import assessSolution from "../utils/assessor";
 import { getCollaboratorColor } from "../utils/collaborationUtils";
 import {
   exportAsJSON,
@@ -88,10 +75,54 @@ import {
   downloadFile,
   readFileAsText,
 } from "../utils/exportImport";
+
+// Configuration
+import { COMPONENTS } from "../config/components";
+
+// UI Components - Shared
+import AnimatedCheckbox from "../components/shared/AnimatedCheckbox";
+import {
+  AnimatedNumberInput,
+  AnimatedTextInput,
+  AnimatedTextarea,
+  AnimatedSelect,
+} from "../components/shared/AnimatedInputFields";
+
+// UI Components - Layout
+import SEO from "../components/SEO";
+import ThemeSwitcher from "../components/ThemeSwitcher";
+import { ToastContainer } from "../components/Toast";
+import { AuthModal } from "../components/AuthModal";
+
+// UI Components - Diagram
+import DiagramCanvas from "../components/DiagramCanvas";
+import ComponentPalette from "../components/ComponentPalette";
+import InspectorPanel from "../components/InspectorPanel";
+
+// UI Components - Nodes
+import CustomNode from "../components/Node";
+import type { NodeData } from "../components/Node";
+import ERNode from "../components/ERNode";
+import type { ERNodeData } from "../components/ERNode";
+import TableNode from "../components/TableNode";
+import type { TableNodeData, TableAttribute } from "../components/TableNode";
+import GroupNode from "../components/GroupNode";
+
+// UI Components - Edges
+import CustomEdge from "../components/CustomEdge";
+import ERRelationshipEdge from "../components/ERRelationshipEdge";
+
+// UI Components - Collaboration
+import { CollaborationStatus } from "../components/CollaborationStatus";
+import { CollaboratorCursor } from "../components/CollaboratorCursor";
+import CollaboratorsList from "../components/CollaboratorsList";
+
+// UI Components - Features
 import { ChatBot } from "../components/ChatBot";
-import type { CanvasContext, UserIntent } from "../types/chatBot";
-import { useChatBot } from "../hooks/useChatBot";
 import { ProjectIntentDialog } from "../components/ProjectIntentDialog";
+import CustomPropertyInput, {
+  type CustomProperty,
+} from "../components/CustomPropertyInput";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData;
@@ -221,6 +252,37 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     minimalComponents,
     minimalComponentsByProvider,
   } = useAppSelector((state) => state.components);
+
+  // Utility function to restore React icon components for nodes loaded from storage/Yjs
+  const restoreNodeIcons = useCallback((nodesToRestore: Node[]): Node[] => {
+    return nodesToRestore.map((node) => {
+      const componentId = typeof node.data?.componentId === 'string' 
+        ? node.data.componentId 
+        : null;
+      
+      // Find matching component from local config
+      const localComp = componentId
+        ? COMPONENTS.find((c) => c.id === componentId)
+        : null;
+
+      // Restore icon from local component if available
+      const restoredIcon = localComp?.icon || node.data?.icon;
+
+      // Fetch full component data if it's a provider component (AWS, Azure, etc.)
+      if (componentId && !localComp && !fullComponentsCache[componentId]) {
+        dispatch(fetchFullComponent(componentId));
+      }
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          icon: restoredIcon, // Restore React icon component
+          iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
+        },
+      };
+    });
+  }, [fullComponentsCache, dispatch]);
 
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
@@ -439,13 +501,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           const loadedNodes = diagram.nodes as Node[];
           const loadedEdges = diagram.edges as Edge[];
 
-          setNodes(loadedNodes);
+          // Restore icon components and ensure we have full component data
+          const restoredNodes = restoreNodeIcons(loadedNodes);
+
+          setNodes(restoredNodes);
           setEdges(loadedEdges);
           setCurrentDiagramId(diagram.id);
           setCurrentDiagram(diagram);
 
           // Immediately update canvas state to prevent undo/redo from clearing the loaded data
-          setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+          setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
         } catch (err) {
           console.error("Failed to load diagram:", err);
           toast.error(
@@ -468,13 +533,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const loadedNodes = diagram.nodes as Node[];
             const loadedEdges = diagram.edges as Edge[];
 
-            setNodes(loadedNodes);
+            // Restore icon components and ensure we have full component data
+            const restoredNodes = restoreNodeIcons(loadedNodes);
+
+            setNodes(restoredNodes);
             setEdges(loadedEdges);
             setCurrentDiagramId(diagram.id);
             setCurrentDiagram(diagram);
 
             // Immediately update canvas state to prevent undo/redo from clearing the loaded data
-            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+            setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
 
             toast.success("Design restored from previous session");
           } catch (err) {
@@ -504,7 +572,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
 
-            setNodes(loadedNodes);
+            // Restore icon components and ensure we have full component data
+            const restoredNodes = restoreNodeIcons(loadedNodes);
+
+            setNodes(restoredNodes);
             setEdges(loadedEdges);
 
             // Restore timer progress if available
@@ -521,7 +592,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             }
 
             // Immediately update canvas state
-            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+            setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
 
             toast.success("Progress restored from previous session");
           }
@@ -1861,9 +1932,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     edges,
     onNodesChange: useCallback(
       (updatedNodes: Node[]) => {
-        setNodes(updatedNodes);
+        // Restore icon components when receiving nodes from Yjs/collaboration
+        const restoredNodes = restoreNodeIcons(updatedNodes);
+        setNodes(restoredNodes);
       },
-      [setNodes]
+      [setNodes, restoreNodeIcons]
     ),
     onEdgesChange: useCallback(
       (updatedEdges: Edge[]) => {
@@ -2263,8 +2336,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         }
       }
 
+      // Restore icon components and ensure we have full component data
+      const restoredNodes = restoreNodeIcons(importedData.nodes);
+
       // Apply imported data
-      setNodes(importedData.nodes);
+      setNodes(restoredNodes);
       setEdges(importedData.edges);
 
       // Clear current diagram ID since this is now a new/imported diagram

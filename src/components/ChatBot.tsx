@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MdChat, MdClose } from 'react-icons/md';
+import { MdChat, MdClose, MdRefresh } from 'react-icons/md';
 import type { Node, Edge } from '@xyflow/react';
 import { useChatBot } from "../hooks/useChatBot";
 import { useChatSuggestions } from "../hooks/useChatSuggestions";
+import { useAuth } from '../hooks/useAuth';
 import { WelcomeDialog } from "./WelcomeDialog";
 import SuggestionCard from "./SuggestionCard";
 import type { CanvasContext, Suggestion } from "../types/chatBot";
@@ -16,6 +17,7 @@ interface ChatBotProps {
 }
 
 export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edges = [], onAddComponent }) => {
+  const { isAuthenticated } = useAuth();
   const {
     isOpen,
     showWelcome,
@@ -24,7 +26,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
     updateCanvasContext,
   } = useChatBot();
 
-  const suggestions = useChatSuggestions(userIntent, canvasContext ?? null, nodes, edges);
+  const { suggestions, refreshAISuggestions, isLoadingAI, lastAIRefresh } = useChatSuggestions(userIntent, canvasContext ?? null, nodes, edges);
   const [addedSuggestionId, setAddedSuggestionId] = useState<string | null>(null);
 
   // Update canvas context when it changes
@@ -173,11 +175,50 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                           <h4 className="text-sm font-bold text-theme">
                             Suggestions for you
                           </h4>
-                          <span className="ml-auto text-xs px-2 py-1 bg-accent/10 
+                          <span className="ml-auto text-xs px-2 py-1 bg-accent/10
                             text-accent rounded-full font-medium">
                             {suggestions.length}
                           </span>
                         </div>
+
+                        {/* AI Refresh Button - Only show for authenticated users with 5+ nodes */}
+                        {isAuthenticated && canvasContext && canvasContext.nodeCount >= 5 && (
+                          <div className="flex items-center justify-between mb-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                💡 Get AI-powered recommendations
+                              </p>
+                              <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                                {lastAIRefresh
+                                  ? `Last updated: ${lastAIRefresh.toLocaleTimeString()}`
+                                  : 'Click refresh for personalized suggestions'
+                                }
+                              </p>
+                            </div>
+                            <button
+                              onClick={refreshAISuggestions}
+                              disabled={isLoadingAI}
+                              className="ml-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400
+                                text-white rounded-lg transition-colors duration-200
+                                flex items-center gap-1 text-xs font-medium
+                                disabled:cursor-not-allowed"
+                              title="Get AI recommendations"
+                            >
+                              {isLoadingAI ? (
+                                <>
+                                  <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                                  <span>Loading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <MdRefresh className="w-3 h-3" />
+                                  <span>AI Suggest</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+
                         <div className="space-y-2">
                           {suggestions.map((suggestion, index) => (
                             <motion.div
