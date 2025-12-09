@@ -22,7 +22,8 @@ import {
   SiStripe, SiTwilio, SiVault,
   SiCloudflare, SiSnowflake, SiApacheflink,
   SiTensorflow, SiPytorch, SiOpenai,
-  SiJaeger, SiServerless
+  SiJaeger, SiServerless,
+  SiDocker, SiGithub, SiGitlab
 } from "react-icons/si";
 
 // Material Design Icons for modern, clean aesthetics
@@ -2890,6 +2891,208 @@ export const COMPONENTS: CanvasComponent[] = [
       {
         key: "autoCleanup",
         label: "Auto Cleanup",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // Docker Platform
+  {
+    id: "docker",
+    group: "DevOps",
+    icon: SiDocker,
+    label: "Docker",
+    description: "Containerization platform",
+    tags: ["docker", "container", "containerization", "images", "registry", "dockerfile"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Docker Service",
+        type: "text",
+        placeholder: "e.g., Docker Engine, Docker Desktop",
+        default: "Docker",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the Docker setup and purpose",
+        default: "",
+      },
+      {
+        key: "version",
+        label: "Docker Version",
+        type: "text",
+        placeholder: "e.g., 24.0.5, latest",
+        default: "latest",
+      },
+      {
+        key: "registry",
+        label: "Container Registry",
+        type: "select",
+        default: "Docker Hub",
+        options: ["Docker Hub", "AWS ECR", "GCR", "ACR", "Harbor", "Self-hosted"],
+      },
+      {
+        key: "orchestration",
+        label: "Orchestration",
+        type: "select",
+        default: "Standalone",
+        options: ["Standalone", "Docker Compose", "Kubernetes", "Docker Swarm"],
+      },
+    ],
+  },
+
+  // Kubernetes Platform
+  {
+    id: "kubernetes",
+    group: "DevOps",
+    icon: SiKubernetes,
+    label: "Kubernetes",
+    description: "Container orchestration platform",
+    tags: ["kubernetes", "k8s", "orchestration", "containers", "microservices", "cluster"],
+    properties: [
+      {
+        key: "componentName",
+        label: "Kubernetes Cluster",
+        type: "text",
+        placeholder: "e.g., Production Cluster, Dev Cluster",
+        default: "Kubernetes",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the Kubernetes deployment",
+        default: "",
+      },
+      {
+        key: "version",
+        label: "Kubernetes Version",
+        type: "text",
+        placeholder: "e.g., 1.28.0, latest",
+        default: "latest",
+      },
+      {
+        key: "distribution",
+        label: "Distribution",
+        type: "select",
+        default: "Vanilla",
+        options: ["Vanilla", "EKS", "GKE", "AKS", "OpenShift", "Rancher"],
+      },
+      {
+        key: "nodes",
+        label: "Node Count",
+        type: "number",
+        default: 3,
+      },
+      {
+        key: "managed",
+        label: "Managed Service",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // GitHub Platform
+  {
+    id: "github",
+    group: "DevOps",
+    icon: SiGithub,
+    label: "GitHub",
+    description: "Version control and collaboration platform",
+    tags: ["github", "git", "version control", "repository", "collaboration", "ci/cd"],
+    properties: [
+      {
+        key: "componentName",
+        label: "GitHub Service",
+        type: "text",
+        placeholder: "e.g., GitHub.com, GitHub Enterprise",
+        default: "GitHub",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the GitHub setup and usage",
+        default: "",
+      },
+      {
+        key: "plan",
+        label: "Plan Type",
+        type: "select",
+        default: "Free",
+        options: ["Free", "Team", "Enterprise", "GitHub Enterprise Cloud"],
+      },
+      {
+        key: "repositories",
+        label: "Repository Count",
+        type: "number",
+        default: 10,
+      },
+      {
+        key: "actions",
+        label: "GitHub Actions",
+        type: "boolean",
+        default: true,
+      },
+      {
+        key: "packages",
+        label: "GitHub Packages",
+        type: "boolean",
+        default: true,
+      },
+    ],
+  },
+
+  // GitLab Platform
+  {
+    id: "gitlab",
+    group: "DevOps",
+    icon: SiGitlab,
+    label: "GitLab",
+    description: "Complete DevOps platform",
+    tags: ["gitlab", "git", "devops", "ci/cd", "version control", "containers"],
+    properties: [
+      {
+        key: "componentName",
+        label: "GitLab Service",
+        type: "text",
+        placeholder: "e.g., GitLab.com, Self-hosted GitLab",
+        default: "GitLab",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Describe the GitLab deployment",
+        default: "",
+      },
+      {
+        key: "edition",
+        label: "Edition",
+        type: "select",
+        default: "Community",
+        options: ["Community", "Enterprise", "Ultimate"],
+      },
+      {
+        key: "hosting",
+        label: "Hosting Type",
+        type: "select",
+        default: "SaaS",
+        options: ["SaaS", "Self-hosted", "GitLab Dedicated"],
+      },
+      {
+        key: "runners",
+        label: "CI/CD Runners",
+        type: "number",
+        default: 5,
+      },
+      {
+        key: "registry",
+        label: "Container Registry",
         type: "boolean",
         default: true,
       },

@@ -222,6 +222,37 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     minimalComponentsByProvider,
   } = useAppSelector((state) => state.components);
 
+  // Utility function to restore React icon components for nodes loaded from storage/Yjs
+  const restoreNodeIcons = useCallback((nodesToRestore: Node[]): Node[] => {
+    return nodesToRestore.map((node) => {
+      const componentId = typeof node.data?.componentId === 'string' 
+        ? node.data.componentId 
+        : null;
+      
+      // Find matching component from local config
+      const localComp = componentId
+        ? COMPONENTS.find((c) => c.id === componentId)
+        : null;
+
+      // Restore icon from local component if available
+      const restoredIcon = localComp?.icon || node.data?.icon;
+
+      // Fetch full component data if it's a provider component (AWS, Azure, etc.)
+      if (componentId && !localComp && !fullComponentsCache[componentId]) {
+        dispatch(fetchFullComponent(componentId));
+      }
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          icon: restoredIcon, // Restore React icon component
+          iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
+        },
+      };
+    });
+  }, [fullComponentsCache, dispatch]);
+
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
 
@@ -439,13 +470,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           const loadedNodes = diagram.nodes as Node[];
           const loadedEdges = diagram.edges as Edge[];
 
-          setNodes(loadedNodes);
+          // Restore icon components and ensure we have full component data
+          const restoredNodes = restoreNodeIcons(loadedNodes);
+
+          setNodes(restoredNodes);
           setEdges(loadedEdges);
           setCurrentDiagramId(diagram.id);
           setCurrentDiagram(diagram);
 
           // Immediately update canvas state to prevent undo/redo from clearing the loaded data
-          setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+          setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
         } catch (err) {
           console.error("Failed to load diagram:", err);
           toast.error(
@@ -468,13 +502,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const loadedNodes = diagram.nodes as Node[];
             const loadedEdges = diagram.edges as Edge[];
 
-            setNodes(loadedNodes);
+            // Restore icon components and ensure we have full component data
+            const restoredNodes = restoreNodeIcons(loadedNodes);
+
+            setNodes(restoredNodes);
             setEdges(loadedEdges);
             setCurrentDiagramId(diagram.id);
             setCurrentDiagram(diagram);
 
             // Immediately update canvas state to prevent undo/redo from clearing the loaded data
-            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+            setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
 
             toast.success("Design restored from previous session");
           } catch (err) {
@@ -504,7 +541,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
 
-            setNodes(loadedNodes);
+            // Restore icon components and ensure we have full component data
+            const restoredNodes = restoreNodeIcons(loadedNodes);
+
+            setNodes(restoredNodes);
             setEdges(loadedEdges);
 
             // Restore timer progress if available
@@ -521,7 +561,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             }
 
             // Immediately update canvas state
-            setCanvasState({ nodes: loadedNodes, edges: loadedEdges });
+            setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
 
             toast.success("Progress restored from previous session");
           }
@@ -1861,9 +1901,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     edges,
     onNodesChange: useCallback(
       (updatedNodes: Node[]) => {
-        setNodes(updatedNodes);
+        // Restore icon components when receiving nodes from Yjs/collaboration
+        const restoredNodes = restoreNodeIcons(updatedNodes);
+        setNodes(restoredNodes);
       },
-      [setNodes]
+      [setNodes, restoreNodeIcons]
     ),
     onEdgesChange: useCallback(
       (updatedEdges: Edge[]) => {
@@ -2263,8 +2305,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         }
       }
 
+      // Restore icon components and ensure we have full component data
+      const restoredNodes = restoreNodeIcons(importedData.nodes);
+
       // Apply imported data
-      setNodes(importedData.nodes);
+      setNodes(restoredNodes);
       setEdges(importedData.edges);
 
       // Clear current diagram ID since this is now a new/imported diagram

@@ -1,132 +1,137 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import type { UserIntent, CanvasContext, Suggestion } from '../types/chatBot';
 import { COMPONENTS } from '../config/components';
 import { apiService } from '../services/api';
 
 /**
- * Hook for getting AI-powered chat suggestions.
- * 
+ * Hook for getting AI-powered chat suggestions with manual refresh control.
+ *
  * Strategy:
- * 1. Try AI-powered recommendations first (high precision)
- * 2. Fall back to rule-based suggestions if AI fails
- * 3. Cache results to avoid redundant API calls
+ * 1. Only fetch AI suggestions when explicitly requested (manual refresh)
+ * 2. Require minimum 5 nodes before allowing AI suggestions
+ * 3. Fall back to rule-based suggestions for immediate feedback
+ * 4. Cache results to avoid redundant API calls
  */
 export const useChatSuggestions = (
   userIntent: UserIntent | null,
   canvasContext: CanvasContext | null,
   nodes: Node[] = [],
   edges: Edge[] = []
-): Suggestion[] => {
+): {
+  suggestions: Suggestion[];
+  refreshAISuggestions: () => Promise<void>;
+  isLoadingAI: boolean;
+  lastAIRefresh: Date | null;
+} => {
   const [aiSuggestions, setAiSuggestions] = useState<Suggestion[] | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [lastAIRefresh, setLastAIRefresh] = useState<Date | null>(null);
 
-  // Fetch AI suggestions when context changes
-  useEffect(() => {
-    if (!canvasContext) {
-      setAiSuggestions(null);
+  // Manual refresh function for AI suggestions
+  const refreshAISuggestions = useCallback(async () => {
+    if (!canvasContext || canvasContext.nodeCount < 5) {
+      console.log('❌ AI suggestions require at least 5 nodes on the canvas');
       return;
     }
 
-    const fetchAISuggestions = async () => {
-      try {
-        // Transform nodes to component info with rich details
-        const components = nodes.map(node => {
-          const nodeData = node.data || {};
-          const hasDescription = Boolean(
-            nodeData.description || 
-            nodeData.subtitle || 
-            (nodeData.properties && Object.keys(nodeData.properties).length > 0)
-          );
+    setIsLoadingAI(true);
+    try {
+      // Transform nodes to component info with rich details
+      const components = nodes.map(node => {
+        const nodeData = node.data || {};
+        const hasDescription = Boolean(
+          nodeData.description ||
+          nodeData.subtitle ||
+          (nodeData.properties && Object.keys(nodeData.properties).length > 0)
+        );
 
-          // Gather all properties
-          const properties: Record<string, unknown> = {
-            description: nodeData.description || nodeData.subtitle || '',
-            componentId: nodeData.componentId,
-            icon: nodeData.icon,
-          };
+        // Gather all properties
+        const properties: Record<string, unknown> = {
+          description: nodeData.description || nodeData.subtitle || '',
+          componentId: nodeData.componentId,
+          icon: nodeData.icon,
+        };
 
-          // Add nodeData.properties if it exists and is an object
-          if (nodeData.properties && typeof nodeData.properties === 'object') {
-            Object.assign(properties, nodeData.properties);
-          }
-
-          // Include custom properties if they exist
-          if (nodeData._customProperties) {
-            properties.customProperties = nodeData._customProperties;
-          }
-
-          return {
-            id: node.id,
-            type: node.type || 'custom',
-            label: typeof nodeData.label === 'string' ? nodeData.label : node.id,
-            hasDescription,
-            properties,
-          };
-        });
-
-        // Transform edges to connection info with source/target details
-        const connections = edges.map(edge => {
-          const edgeData = edge.data || {};
-          
-          return {
-            source: edge.source,
-            target: edge.target,
-            type: (edge.type || edgeData.type) as string | undefined,
-            hasLabel: Boolean(edgeData.label || edgeData.hasLabel),
-          };
-        });
-
-        // Build request payload with RICH context
-        const response = await apiService.getRecommendations({
-          userIntent,
-          canvasContext: canvasContext || {
-            nodeCount: 0,
-            edgeCount: 0,
-            componentTypes: [],
-            isEmpty: true,
-          },
-          components,
-          connections,
-          maxSuggestions: 5,
-        });
-
-        // Transform AI recommendations to Suggestion format
-        const aiRecs: Suggestion[] = response.recommendations.map(rec => ({
-          id: rec.id,
-          title: rec.title,
-          description: rec.description,
-          icon: rec.icon,
-          category: rec.category,
-          priority: rec.priority,
-          componentId: rec.componentId,
-          componentIds: rec.componentIds,
-          actionType: rec.actionType,
-          confidence: rec.confidence,
-          reasoning: rec.reasoning,
-          action: () => {}, // Will be handled by parent component
-        }));
-
-        setAiSuggestions(aiRecs);
-        
-        // Log success for debugging
-        if (aiRecs.length > 0) {
-          console.log(`✅ AI Recommendations: ${aiRecs.length} suggestions (confidence >= ${response.minConfidenceThreshold})`);
+        // Add nodeData.properties if it exists and is an object
+        if (nodeData.properties && typeof nodeData.properties === 'object') {
+          Object.assign(properties, nodeData.properties);
         }
-      } catch (error) {
-        console.log('ℹ️ Falling back to rule-based suggestions:', error instanceof Error ? error.message : 'Unknown error');
-        setAiSuggestions(null); // Fall back to rule-based
+
+        // Include custom properties if they exist
+        if (nodeData._customProperties) {
+          properties.customProperties = nodeData._customProperties;
+        }
+
+        return {
+          id: node.id,
+          type: node.type || 'custom',
+          label: typeof nodeData.label === 'string' ? nodeData.label : node.id,
+          hasDescription,
+          properties,
+        };
+      });
+
+      // Transform edges to connection info with source/target details
+      const connections = edges.map(edge => {
+        const edgeData = edge.data || {};
+
+        return {
+          source: edge.source,
+          target: edge.target,
+          type: (edge.type || edgeData.type) as string | undefined,
+          hasLabel: Boolean(edgeData.label || edgeData.hasLabel),
+        };
+      });
+
+      // Build request payload with RICH context
+      const response = await apiService.getRecommendations({
+        userIntent,
+        canvasContext: canvasContext || {
+          nodeCount: 0,
+          edgeCount: 0,
+          componentTypes: [],
+          isEmpty: true,
+        },
+        components,
+        connections,
+        maxSuggestions: 5,
+      });
+
+      // Transform AI recommendations to Suggestion format
+      const aiRecs: Suggestion[] = response.recommendations.map(rec => ({
+        id: rec.id,
+        title: rec.title,
+        description: rec.description,
+        icon: rec.icon,
+        category: rec.category,
+        priority: rec.priority,
+        componentId: rec.componentId,
+        componentIds: rec.componentIds,
+        actionType: rec.actionType,
+        confidence: rec.confidence,
+        reasoning: rec.reasoning,
+        action: () => {}, // Will be handled by parent component
+      }));
+
+      setAiSuggestions(aiRecs);
+      setLastAIRefresh(new Date());
+
+      // Log success for debugging
+      if (aiRecs.length > 0) {
+        console.log(`✅ AI Recommendations: ${aiRecs.length} suggestions (confidence >= ${response.minConfidenceThreshold})`);
+      } else {
+        console.log('ℹ️ No AI recommendations available for current canvas state');
       }
-    };
-
-    // Debounce API calls to avoid too many requests
-    const timeoutId = setTimeout(() => {
-      fetchAISuggestions();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
+    } catch (error) {
+      console.log('ℹ️ AI suggestions failed, falling back to rule-based:', error instanceof Error ? error.message : 'Unknown error');
+      setAiSuggestions(null);
+    } finally {
+      setIsLoadingAI(false);
+    }
   }, [userIntent, canvasContext, nodes, edges]);
 
-  // Rule-based suggestions (fallback)
+  // Rule-based suggestions (always available as fallback)
   const ruleBasedSuggestions = useMemo(() => {
     const fallbackSuggestions: Suggestion[] = [];
 
@@ -384,11 +389,12 @@ export const useChatSuggestions = (
 
   // Return AI suggestions if available, otherwise fallback to rule-based
   // Prefer AI suggestions for higher precision and contextual relevance
-  if (aiSuggestions && aiSuggestions.length > 0) {
-    return aiSuggestions;
-  }
+  const suggestions = aiSuggestions && aiSuggestions.length > 0 ? aiSuggestions : ruleBasedSuggestions;
 
-  // Fallback to rule-based suggestions
-  // This also handles the case when AI is loading or errored
-  return ruleBasedSuggestions;
+  return {
+    suggestions,
+    refreshAISuggestions,
+    isLoadingAI,
+    lastAIRefresh,
+  };
 };
