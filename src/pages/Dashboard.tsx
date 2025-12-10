@@ -1,6 +1,12 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Fuse from "fuse.js";
+import {
+  MdPublic,
+  MdBusiness,
+  MdPhoneAndroid,
+  MdSettings,
+} from "react-icons/md";
 
 import type { SystemDesignProblem } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
@@ -15,15 +21,24 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedDomain, setSelectedDomain] = useState<string>("All");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [problems, setProblems] = useState<SystemDesignProblem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [attemptedProblems, setAttemptedProblems] = useState<Set<string>>(new Set());
-  const { user, isAuthenticated: isAuth, login, signup, googleLogin, logout } =
-    useAuth();
+  const [attemptedProblems, setAttemptedProblems] = useState<Set<string>>(
+    new Set()
+  );
+  const {
+    user,
+    isAuthenticated: isAuth,
+    login,
+    signup,
+    googleLogin,
+    logout,
+  } = useAuth();
 
   // Fetch problems from API
   useEffect(() => {
@@ -37,7 +52,7 @@ const Dashboard: React.FC = () => {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch problems: ${response.status} ${response.statusText}`,
+            `Failed to fetch problems: ${response.status} ${response.statusText}`
           );
         }
 
@@ -47,7 +62,7 @@ const Dashboard: React.FC = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching problems",
+            : "An error occurred while fetching problems"
         );
         console.error("Error fetching problems:", err);
       } finally {
@@ -102,7 +117,9 @@ const Dashboard: React.FC = () => {
         problem.difficulty === selectedDifficulty;
       const matchesCategory =
         selectedCategory === "All" || problem.category === selectedCategory;
-      return matchesDifficulty && matchesCategory;
+      const matchesDomain =
+        selectedDomain === "All" || problem.domain === selectedDomain;
+      return matchesDifficulty && matchesCategory && matchesDomain;
     });
 
     // Sort: attempted problems first, then by original order
@@ -111,15 +128,52 @@ const Dashboard: React.FC = () => {
       const bAttempted = attemptedProblems.has(b.id) ? 1 : 0;
       return bAttempted - aAttempted; // Attempted (1) comes before not attempted (0)
     });
-  }, [selectedDifficulty, selectedCategory, searchTerm, problems, attemptedProblems]);
+  }, [
+    selectedDifficulty,
+    selectedCategory,
+    selectedDomain,
+    searchTerm,
+    problems,
+    attemptedProblems,
+  ]);
 
   const categories = [
     "All",
     ...Array.from(
-      new Set(problems.map((p: SystemDesignProblem) => p.category)),
+      new Set(problems.map((p: SystemDesignProblem) => p.category))
     ),
   ];
+  const domains = [
+    "All",
+    ...Array.from(new Set(problems.map((p: SystemDesignProblem) => p.domain))),
+  ];
   const difficulties = ["All", "Easy", "Medium", "Hard", "Very Hard"];
+
+  const getDomainIcon = (domain: string) => {
+    switch (domain) {
+      case "All":
+        return <MdPublic className="inline mr-2" />;
+      case "infra":
+        return <MdBusiness className="inline mr-2" />;
+      case "application":
+        return <MdPhoneAndroid className="inline mr-2" />;
+      default:
+        return <MdSettings className="inline mr-2" />;
+    }
+  };
+
+  const getDomainText = (domain: string) => {
+    switch (domain) {
+      case "All":
+        return "All";
+      case "infra":
+        return "Infrastructure";
+      case "application":
+        return "Application";
+      default:
+        return domain;
+    }
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -310,8 +364,8 @@ const Dashboard: React.FC = () => {
             {/* Filters - Only show when not loading and no error */}
             {!loading && !error && (
               <>
-                <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     {/* Search */}
                     <div>
                       <label
@@ -373,6 +427,32 @@ const Dashboard: React.FC = () => {
                         ))}
                       </select>
                     </div>
+                  </div>
+                </div>
+
+                {/* Domain Filter - Below the other filters */}
+                <div className="mb-4">
+                  <div className="text-sm font-semibold text-theme mb-2">
+                    🌐 Domain
+                  </div>
+                  <div className="flex flex-wrap gap-2 p-1 rounded-xl">
+                    {domains.map((domain) => (
+                      <button
+                        key={domain}
+                        type="button"
+                        onClick={() => setSelectedDomain(domain)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                          selectedDomain === domain
+                            ? "bg-[var(--brand)] text-white shadow-md transform scale-105"
+                            : "bg-[var(--bg-hover)] text-theme hover:bg-[var(--brand)]/10 hover:text-[var(--brand)]"
+                        }`}
+                      >
+                        {getDomainIcon(domain)}
+                        <span className="hidden sm:inline">
+                          {getDomainText(domain)}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -450,11 +530,25 @@ const Dashboard: React.FC = () => {
                         >
                           <span className="flex items-center justify-center gap-2">
                             {isAuth && attemptedProblems.has(problem.id) && (
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               </svg>
                             )}
-                            {isAuth && attemptedProblems.has(problem.id) ? "Continue Problem" : "Start Problem"} →
+                            {isAuth && attemptedProblems.has(problem.id)
+                              ? "Continue Problem"
+                              : "Start Problem"}{" "}
+                            →
                           </span>
                         </button>
                       </div>

@@ -363,6 +363,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         description: "Create your own system design from scratch",
         difficulty: "Medium",
         category: "Custom",
+        domain: "application",
         estimated_time: "Unlimited",
         requirements: [],
         constraints: [],
