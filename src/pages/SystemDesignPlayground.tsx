@@ -3051,15 +3051,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   )}
 
                 {problem?.id !== "free" && (
-                  <button
-                    type="button"
-                    onClick={runAssessment}
-                    disabled={isAssessing}
-                    className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    data-tooltip="Run assessment on current design"
+                  <div
+                    data-tooltip={
+                      isAuthenticated
+                        ? isAssessing
+                          ? "Assessment in progress..."
+                          : "Run assessment on current design"
+                        : "Please sign in to run assessment"
+                    }
                   >
-                    {isAssessing ? "Assessing..." : "Run Assessment"}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={runAssessment}
+                      disabled={isAssessing || !isAuthenticated}
+                      className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      {isAssessing ? "Assessing..." : "Run Assessment"}
+                    </button>
+                  </div>
                 )}
                 <ThemeSwitcher />
                 {/* User Profile / Auth Button */}
