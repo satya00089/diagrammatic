@@ -2,8 +2,9 @@ export interface SystemDesignProblem {
   id: string;
   title: string;
   description: string;
-  difficulty: "Easy" | "Medium" | "Hard";
+  difficulty: "Easy" | "Medium" | "Hard" | "Very Hard";
   category: string;
+  domain: string;
   estimated_time: string;
   requirements: string[];
   constraints: string[];
