@@ -1,5 +1,4 @@
 import React from "react";
-import { AnimatePresence, motion } from "motion/react";
 
 export interface AnimatedCheckboxProps {
   id: string;
@@ -38,20 +37,11 @@ export const AnimatedCheckbox: React.FC<AnimatedCheckboxProps> = ({
           onChange={(e) => onChange(e.target.checked)}
           className="peer w-4 h-4 cursor-pointer appearance-none rounded border border-theme bg-[var(--surface)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-1 transition-colors disabled:cursor-not-allowed"
         />
-        <AnimatePresence>
-          {checked && (
-            <motion.span
-              key="check"
-              initial={{ scale: 0, opacity: 0, rotate: -45 }}
-              animate={{ scale: 1, opacity: 1, rotate: 0 }}
-              exit={{ scale: 0.4, opacity: 0, rotate: 45 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="pointer-events-none absolute w-3 h-3 flex items-center justify-center text-[10px] font-semibold text-white bg-[var(--brand)] rounded-sm shadow-sm"
-            >
-              ✓
-            </motion.span>
-          )}
-        </AnimatePresence>
+        {checked && (
+          <span className="pointer-events-none absolute w-3 h-3 flex items-center justify-center text-[10px] font-semibold text-white bg-[var(--brand)] rounded-sm shadow-sm">
+            ✓
+          </span>
+        )}
       </span>
       {label && <span className="text-sm text-theme">{label}</span>}
     </label>
