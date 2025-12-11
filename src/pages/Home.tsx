@@ -737,7 +737,7 @@ const Home: React.FC = () => {
                     className="group relative px-8 py-4 bg-white text-[var(--brand)] text-lg font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      Get Started Free{" "}
+                      Design Studio{" "}
                       <span className="group-hover:translate-x-1 transition-transform">
                         →
                       </span>
