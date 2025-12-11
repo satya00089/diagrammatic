@@ -4,17 +4,19 @@
 
 import { configureStore } from '@reduxjs/toolkit';
 import componentsReducer from './slices/componentsSlice';
+import problemsReducer from './slices/problemsSlice';
 
 export const store = configureStore({
   reducer: {
     components: componentsReducer,
+    problems: problemsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these paths in the state for serialization checks
         ignoredActions: ['components/setComponents'],
-        ignoredPaths: ['components.items'],
+        ignoredPaths: ['components.items', 'problems.attemptedProblems'],
       },
     }),
 });
