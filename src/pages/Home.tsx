@@ -94,7 +94,7 @@ const Home: React.FC = () => {
   const capabilities = [
     {
       icon: "🧩",
-      title: "75+ Components",
+      title: "1k+ Components",
       description: "System design, ER diagrams, UML diagrams, and more",
     },
     {
@@ -130,7 +130,7 @@ const Home: React.FC = () => {
   ];
 
   const stats = [
-    { value: "75+", label: "Components", icon: "🧩" },
+    { value: "1k+", label: "Components", icon: "🧩" },
     { value: "50+", label: "Cloud Problems", icon: "☁️" },
     { value: "1000+", label: "Users", icon: "👥" },
     { value: "∞", label: "Possibilities", icon: "✨" },
@@ -159,7 +159,7 @@ const Home: React.FC = () => {
     <>
       <SEO
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
-        description="Master system design with Diagrammatic - an interactive playground featuring 78+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and cloud infrastructure practice problems. Free system architecture tool for students, professionals, and educators."
+        description="Master system design with Diagrammatic - an interactive playground featuring 1k+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and cloud infrastructure practice problems. Free system architecture tool for students, professionals, and educators."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
         url="https://satya00089.github.io/diagrammatic/"
       />
@@ -370,13 +370,13 @@ const Home: React.FC = () => {
 
           {/* Component nodes - Top layer */}
           <div className="absolute top-[15%] left-[10%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-            <FaAws className="text-orange-500" />
+            <FaAws />
           </div>
           <div className="absolute top-[15%] left-[25%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
-            <SiMicrosoftazure className="text-blue-500" />
+            <SiMicrosoftazure />
           </div>
           <div className="absolute top-[25%] left-[40%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
-            <SiGooglecloud className="text-green-500" />
+            <SiGooglecloud />
           </div>
           <div className="absolute top-[20%] left-[60%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
             🌐
@@ -656,7 +656,7 @@ const Home: React.FC = () => {
               >
                 <div className="inline-block mb-6">
                   <span className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full shadow-lg">
-                    ✨ Now with 75+ Components, UML & ER Diagrams, AI Assessment
+                    ✨ Now with 1k+ Components, UML & ER Diagrams, AI Assessment
                   </span>
                 </div>
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
