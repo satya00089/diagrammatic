@@ -119,11 +119,6 @@ const Home: React.FC = () => {
       description: "Get feedback on your designs",
     },
     {
-      icon: "🌓",
-      title: "Dark Mode",
-      description: "Beautiful themes for any preference",
-    },
-    {
       icon: "💾",
       title: "Export & Share",
       description: "Save and share your designs",
@@ -370,15 +365,6 @@ const Home: React.FC = () => {
           </svg>
 
           {/* Component nodes - Top layer */}
-          <div className="absolute top-[15%] left-[10%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-            <FaAws />
-          </div>
-          <div className="absolute top-[15%] left-[25%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
-            <SiMicrosoftazure />
-          </div>
-          <div className="absolute top-[25%] left-[40%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
-            <SiGooglecloud />
-          </div>
           <div className="absolute top-[20%] left-[60%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
             🌐
           </div>
@@ -624,6 +610,15 @@ const Home: React.FC = () => {
               </svg>
 
               {/* Component nodes */}
+              <div className="absolute top-[10%] left-[30%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+                <FaAws size={48} />
+              </div>
+              <div className="absolute top-[55%] left-[20%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
+                <SiMicrosoftazure size={48} />
+              </div>
+              <div className="absolute top-[60%] left-[80%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
+                <SiGooglecloud size={48} />
+              </div>
               <div className="absolute top-[20%] left-[10%] w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
                 🗄️
               </div>
@@ -1279,11 +1274,11 @@ const Home: React.FC = () => {
           50% { transform: translateY(-20px) rotate(5deg); }
         }
         .animate-float {
-          animation: float 6s ease-in-out infinite;
+          animation: float 24s ease-in-out infinite;
         }
         .animate-float-delayed {
-          animation: float 8s ease-in-out infinite;
-          animation-delay: 1s;
+          animation: float 32s ease-in-out infinite;
+          animation-delay: 4s;
         }
       `}</style>
 
