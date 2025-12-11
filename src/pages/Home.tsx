@@ -695,8 +695,8 @@ const Home: React.FC = () => {
               >
                 <div className="inline-block mb-6">
                   <span className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full shadow-lg">
-                    ✨ Now with 1k+ Components, cloud, UML & ER Diagrams, AI
-                    Assessment
+                    ✨ Now with 1k+ Components, Cloud Providers, UML & ER
+                    Diagrams, AI Assessment
                   </span>
                 </div>
                 <h1 className="text-5xl font-bold mb-6 leading-tight text-white">
@@ -1045,9 +1045,12 @@ const Home: React.FC = () => {
                   <div
                     key={feature.title}
                     className={`group relative backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-[1.02] cursor-pointer overflow-hidden transition-all duration-500 elevated-card-bg ${getFeatureDelayClass()}`}
-                    onClick={() => handleNavigate(feature.route, feature.requiresAuth)}
+                    onClick={() =>
+                      handleNavigate(feature.route, feature.requiresAuth)
+                    }
                     onKeyDown={(e) =>
-                      e.key === "Enter" && handleNavigate(feature.route, feature.requiresAuth)
+                      e.key === "Enter" &&
+                      handleNavigate(feature.route, feature.requiresAuth)
                     }
                     role="button"
                     tabIndex={0}
