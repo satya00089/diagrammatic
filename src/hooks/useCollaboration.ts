@@ -116,6 +116,11 @@ export const useCollaboration = ({
           const user = message.user as CollaboratorUser;
           const data = message.data as DiagramUpdateData;
 
+          // Ignore updates if we haven't received welcome yet
+          if (!currentUserIdRef.current) {
+            return;
+          }
+
           // Ignore our own updates
           if (user.id === currentUserIdRef.current) {
             return;

@@ -1600,6 +1600,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     key: string,
     value: string | number | boolean,
   ) => {
+    // Prevent unnecessary updates
+    if (nodeProps[key] === value) return;
+
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
     if (inspectedNodeId) {
