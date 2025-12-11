@@ -254,35 +254,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   } = useAppSelector((state) => state.components);
 
   // Utility function to restore React icon components for nodes loaded from storage/Yjs
-  const restoreNodeIcons = useCallback((nodesToRestore: Node[]): Node[] => {
-    return nodesToRestore.map((node) => {
-      const componentId = typeof node.data?.componentId === 'string' 
-        ? node.data.componentId 
-        : null;
-      
-      // Find matching component from local config
-      const localComp = componentId
-        ? COMPONENTS.find((c) => c.id === componentId)
-        : null;
+  const restoreNodeIcons = useCallback(
+    (nodesToRestore: Node[]): Node[] => {
+      return nodesToRestore.map((node) => {
+        const componentId =
+          typeof node.data?.componentId === "string"
+            ? node.data.componentId
+            : null;
 
-      // Restore icon from local component if available
-      const restoredIcon = localComp?.icon || node.data?.icon;
+        // Find matching component from local config
+        const localComp = componentId
+          ? COMPONENTS.find((c) => c.id === componentId)
+          : null;
 
-      // Fetch full component data if it's a provider component (AWS, Azure, etc.)
-      if (componentId && !localComp && !fullComponentsCache[componentId]) {
-        dispatch(fetchFullComponent(componentId));
-      }
+        // Restore icon from local component if available
+        const restoredIcon = localComp?.icon || node.data?.icon;
 
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          icon: restoredIcon, // Restore React icon component
-          iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
-        },
-      };
-    });
-  }, [fullComponentsCache, dispatch]);
+        // Fetch full component data if it's a provider component (AWS, Azure, etc.)
+        if (componentId && !localComp && !fullComponentsCache[componentId]) {
+          dispatch(fetchFullComponent(componentId));
+        }
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            icon: restoredIcon, // Restore React icon component
+            iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
+          },
+        };
+      });
+    },
+    [fullComponentsCache, dispatch]
+  );
 
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();

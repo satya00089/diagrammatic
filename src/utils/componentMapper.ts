@@ -60,7 +60,7 @@ export function mapComponentToCanvas(
     group: dbComponent.group,
     tags: dbComponent.tags || [],
     nodeType: dbComponent.metadata?.nodeType,
-    properties: convertPropertiesToCanvasFormat(dbComponent.properties || {}),
+    properties: convertPropertiesToCanvasFormat(dbComponent.properties || []),
     data: {
       provider: dbComponent.provider,
       category: dbComponent.category,
@@ -78,10 +78,7 @@ export function mapComponentToCanvas(
  * Convert database property definitions to canvas property format
  */
 function convertPropertiesToCanvasFormat(
-  dbProperties: Record<
-    string,
-    import("../types/componentProvider").ComponentProperty
-  >
+  dbProperties: import("../types/componentProvider").ComponentProperty[]
 ): Array<{
   key: string;
   label: string;
@@ -90,8 +87,9 @@ function convertPropertiesToCanvasFormat(
   placeholder?: string;
   options?: string[];
 }> {
-  return Object.entries(dbProperties).map(([key, prop]) => ({
-    key,
+  // Properties are already in array format from API, just map to ensure correct type
+  return dbProperties.map((prop) => ({
+    key: prop.key,
     label: prop.label,
     type: prop.type as "text" | "number" | "boolean" | "select" | "textarea",
     default: prop.default as string | number | boolean | undefined,

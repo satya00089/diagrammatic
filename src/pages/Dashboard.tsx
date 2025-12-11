@@ -152,13 +152,13 @@ const Dashboard: React.FC = () => {
   const getDomainIcon = (domain: string) => {
     switch (domain) {
       case "All":
-        return <MdPublic className="inline mr-2" />;
+        return <MdPublic className="inline" />;
       case "infra":
-        return <MdBusiness className="inline mr-2" />;
+        return <MdBusiness className="inline" />;
       case "application":
-        return <MdPhoneAndroid className="inline mr-2" />;
+        return <MdPhoneAndroid className="inline" />;
       default:
-        return <MdSettings className="inline mr-2" />;
+        return <MdSettings className="inline" />;
     }
   };
 
@@ -503,7 +503,7 @@ const Dashboard: React.FC = () => {
                           {problem.tags.slice(0, 3).map((tag) => (
                             <span
                               key={tag}
-                              className="px-3 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
+                              className="px-3 py-1 capitalize bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
                             >
                               {tag}
                             </span>
