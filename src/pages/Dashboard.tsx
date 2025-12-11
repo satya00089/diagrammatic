@@ -454,6 +454,10 @@ const Dashboard: React.FC = () => {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (!isAuth) {
+                              setShowAuthModal(true);
+                              return;
+                            }
                             navigate(`/playground/${problem.id}`);
                           }}
                           aria-label={`Start ${problem.title}`}

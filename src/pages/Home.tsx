@@ -30,6 +30,14 @@ const Home: React.FC = () => {
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
 
+  const handleNavigate = (route: string, requiresAuth = true) => {
+    if (requiresAuth && !isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+    navigate(route);
+  };
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
@@ -66,7 +74,7 @@ const Home: React.FC = () => {
   }, [isAuthenticated]);
 
   const handleOpenDiagram = (diagramId: string) => {
-    navigate(`/playground/free?diagramId=${diagramId}`);
+    handleNavigate(`/playground/free?diagramId=${diagramId}`);
   };
 
   const features = [
@@ -78,6 +86,7 @@ const Home: React.FC = () => {
       action: "Browse Problems",
       route: "/problems",
       gradient: "from-blue-500 to-cyan-500",
+      requiresAuth: false,
     },
     {
       icon: "🎨",
@@ -87,6 +96,7 @@ const Home: React.FC = () => {
       action: "Start Designing",
       route: "/playground/free",
       gradient: "from-purple-500 to-pink-500",
+      requiresAuth: true,
     },
     {
       icon: "📝",
@@ -96,6 +106,7 @@ const Home: React.FC = () => {
       action: "Create Problem",
       route: "/create-problem",
       gradient: "from-orange-500 to-red-500",
+      requiresAuth: true,
     },
   ];
 
@@ -435,7 +446,7 @@ const Home: React.FC = () => {
             <div className="flex items-center justify-between h-16">
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={() => handleNavigate("/", false)}
                 className="flex items-center space-x-3 group cursor-pointer"
               >
                 <img
@@ -450,7 +461,7 @@ const Home: React.FC = () => {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => navigate("/problems")}
+                  onClick={() => handleNavigate("/problems", false)}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                 >
                   Problems
@@ -458,7 +469,7 @@ const Home: React.FC = () => {
                 {isAuthenticated && (
                   <button
                     type="button"
-                    onClick={() => navigate("/diagrams")}
+                    onClick={() => handleNavigate("/diagrams")}
                     className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                   >
                     My Designs
@@ -733,7 +744,7 @@ const Home: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                   <button
                     type="button"
-                    onClick={() => navigate("/playground/free")}
+                    onClick={() => handleNavigate("/playground/free")}
                     className="group relative px-8 py-4 bg-white text-[var(--brand)] text-lg font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     <span className="relative z-10 flex items-center gap-2">
@@ -746,7 +757,7 @@ const Home: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => navigate("/problems")}
+                    onClick={() => handleNavigate("/problems", false)}
                     className="group px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white text-lg font-semibold rounded-xl hover:bg-white/20 hover:border-white/50 hover:scale-105 transition-all duration-300 cursor-pointer"
                   >
                     Explore Problems{" "}
@@ -782,7 +793,7 @@ const Home: React.FC = () => {
                   {savedDiagrams.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => navigate("/diagrams")}
+                      onClick={() => handleNavigate("/diagrams")}
                       className="px-5 py-2.5 text-sm font-medium text-theme hover:text-[var(--brand)] transition-colors"
                     >
                       View All
@@ -790,7 +801,7 @@ const Home: React.FC = () => {
                   )}
                   <button
                     type="button"
-                    onClick={() => navigate("/playground/free")}
+                    onClick={() => handleNavigate("/playground/free")}
                     className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:brightness-95 transition-all flex items-center gap-2"
                   >
                     <svg
@@ -1034,9 +1045,9 @@ const Home: React.FC = () => {
                   <div
                     key={feature.title}
                     className={`group relative backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-8 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)] hover:scale-[1.02] cursor-pointer overflow-hidden transition-all duration-500 elevated-card-bg ${getFeatureDelayClass()}`}
-                    onClick={() => navigate(feature.route)}
+                    onClick={() => handleNavigate(feature.route, feature.requiresAuth)}
                     onKeyDown={(e) =>
-                      e.key === "Enter" && navigate(feature.route)
+                      e.key === "Enter" && handleNavigate(feature.route, feature.requiresAuth)
                     }
                     role="button"
                     tabIndex={0}
@@ -1269,7 +1280,7 @@ const Home: React.FC = () => {
               </p>
               <button
                 type="button"
-                onClick={() => navigate("/playground/free")}
+                onClick={() => handleNavigate("/playground/free")}
                 className="px-8 py-4 bg-white text-[var(--brand)] text-lg font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
               >
                 Launch Free Canvas
