@@ -3,19 +3,20 @@
  * Handles API calls to fetch components from DynamoDB
  */
 
-import type { 
-  ComponentProvider, 
-  ComponentCategory, 
-  ComponentDB, 
+import type {
+  ComponentProvider,
+  ComponentCategory,
+  ComponentDB,
   ComponentsResponse,
-  QueryParams 
-} from '../types/componentProvider';
+  QueryParams,
+} from "../types/componentProvider";
 
 export class ComponentProviderService {
   private readonly baseUrl: string;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    this.baseUrl =
+      baseUrl || import.meta.env.VITE_API_URL || "http://localhost:3000";
   }
 
   /**
@@ -36,9 +37,9 @@ export class ComponentProviderService {
       const response = await fetch(
         `${this.baseUrl}/api/components?${params.toString()}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         },
       );
@@ -49,7 +50,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching components by provider:', error);
+      console.error("Error fetching components by provider:", error);
       throw error;
     }
   }
@@ -70,9 +71,9 @@ export class ComponentProviderService {
       const response = await fetch(
         `${this.baseUrl}/api/components?${params.toString()}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         },
       );
@@ -83,7 +84,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching components by category:', error);
+      console.error("Error fetching components by category:", error);
       throw error;
     }
   }
@@ -91,27 +92,33 @@ export class ComponentProviderService {
   /**
    * Get all components (with pagination and filters)
    */
-  async getAllComponents(params?: QueryParams & { minimal?: boolean }): Promise<ComponentsResponse> {
+  async getAllComponents(
+    params?: QueryParams & { minimal?: boolean },
+  ): Promise<ComponentsResponse> {
     try {
       const queryParams = new URLSearchParams();
-      
-      if (params?.provider) queryParams.set('provider', params.provider);
-      if (params?.category) queryParams.set('category', params.category);
-      if (params?.group) queryParams.set('group', params.group);
-      if (params?.search) queryParams.set('search', params.search);
-      if (params?.tags) queryParams.set('tags', params.tags.join(','));
-      if (params?.limit) queryParams.set('limit', params.limit.toString());
+
+      if (params?.provider) queryParams.set("provider", params.provider);
+      if (params?.category) queryParams.set("category", params.category);
+      if (params?.group) queryParams.set("group", params.group);
+      if (params?.search) queryParams.set("search", params.search);
+      if (params?.tags) queryParams.set("tags", params.tags.join(","));
+      if (params?.limit) queryParams.set("limit", params.limit.toString());
       if (params?.lastEvaluatedKey) {
-        queryParams.set('lastEvaluatedKey', JSON.stringify(params.lastEvaluatedKey));
+        queryParams.set(
+          "lastEvaluatedKey",
+          JSON.stringify(params.lastEvaluatedKey),
+        );
       }
-      if (params?.minimal) queryParams.set('minimal', params.minimal.toString());
+      if (params?.minimal)
+        queryParams.set("minimal", params.minimal.toString());
 
       const response = await fetch(
         `${this.baseUrl}/api/components?${queryParams.toString()}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         },
       );
@@ -122,7 +129,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching all components:', error);
+      console.error("Error fetching all components:", error);
       throw error;
     }
   }
@@ -137,15 +144,15 @@ export class ComponentProviderService {
   ): Promise<ComponentsResponse> {
     try {
       const params = new URLSearchParams({ search: query });
-      if (provider) params.set('provider', provider);
-      if (category) params.set('category', category);
+      if (provider) params.set("provider", provider);
+      if (category) params.set("category", category);
 
       const response = await fetch(
         `${this.baseUrl}/api/components/search?${params.toString()}`,
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         },
       );
@@ -156,7 +163,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error searching components:', error);
+      console.error("Error searching components:", error);
       throw error;
     }
   }
@@ -167,9 +174,9 @@ export class ComponentProviderService {
   async getComponentById(id: string): Promise<ComponentDB> {
     try {
       const response = await fetch(`${this.baseUrl}/api/components/${id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -179,7 +186,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching component by ID:', error);
+      console.error("Error fetching component by ID:", error);
       throw error;
     }
   }
@@ -190,13 +197,13 @@ export class ComponentProviderService {
   async incrementUsageCount(id: string): Promise<void> {
     try {
       await fetch(`${this.baseUrl}/api/components/${id}/usage`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
     } catch (error) {
-      console.error('Error incrementing usage count:', error);
+      console.error("Error incrementing usage count:", error);
       // Don't throw - usage tracking is non-critical
     }
   }
@@ -207,9 +214,9 @@ export class ComponentProviderService {
   async getProviders(): Promise<string[]> {
     try {
       const response = await fetch(`${this.baseUrl}/api/components/providers`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -219,7 +226,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching providers:', error);
+      console.error("Error fetching providers:", error);
       throw error;
     }
   }
@@ -229,12 +236,15 @@ export class ComponentProviderService {
    */
   async getCategories(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/components/categories`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${this.baseUrl}/api/components/categories`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -242,7 +252,7 @@ export class ComponentProviderService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
       throw error;
     }
   }

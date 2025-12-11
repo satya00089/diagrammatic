@@ -18,12 +18,23 @@ export interface Suggestion {
   description: string;
   action: () => void;
   icon?: string;
-  category: 'component' | 'pattern' | 'tip' | 'next-step' | 'best-practice' | 'optimization';
+  category:
+    | "component"
+    | "pattern"
+    | "tip"
+    | "next-step"
+    | "best-practice"
+    | "optimization";
   priority: number;
   // For actionable suggestions
   componentId?: string; // Single component to add
   componentIds?: string[]; // Multiple components for patterns
-  actionType?: 'add-component' | 'add-pattern' | 'info-only' | 'connect' | 'refactor';
+  actionType?:
+    | "add-component"
+    | "add-pattern"
+    | "info-only"
+    | "connect"
+    | "refactor";
   // AI-powered fields
   confidence?: number; // 0.0-1.0 confidence score from AI
   reasoning?: string; // Why this recommendation is relevant
@@ -31,7 +42,7 @@ export interface Suggestion {
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'bot' | 'suggestion';
+  type: "user" | "bot" | "suggestion";
   content: string;
   timestamp: Date;
   suggestions?: Suggestion[];
@@ -50,7 +61,7 @@ export interface ChatBotContextType extends ChatBotState {
   toggleChatBot: () => void;
   setUserIntent: (intent: UserIntent) => void;
   updateCanvasContext: (context: CanvasContext) => void;
-  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
+  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
   dismissWelcome: () => void;
   resetChatBot: () => void;
 }

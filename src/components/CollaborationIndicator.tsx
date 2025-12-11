@@ -1,61 +1,61 @@
 /**
  * Collaboration Indicator Component
  * Displays real-time collaboration status
- * 
+ *
  * Responsibilities (Single Responsibility Principle):
  * - Show connection status
  * - Display collaborator count
  * - Provide reconnection controls
  */
 
-import { motion, AnimatePresence } from 'framer-motion'
-import { FiWifi, FiWifiOff, FiUsers } from 'react-icons/fi'
-import type { CollaborationState } from '../hooks/useYjsCollaboration'
+import { motion, AnimatePresence } from "framer-motion";
+import { FiWifi, FiWifiOff, FiUsers } from "react-icons/fi";
+import type { CollaborationState } from "../hooks/useYjsCollaboration";
 
 interface CollaborationIndicatorProps {
-  state: CollaborationState
-  onReconnect?: () => void
+  state: CollaborationState;
+  onReconnect?: () => void;
 }
 
 export const CollaborationIndicator = ({
   state,
   onReconnect,
 }: CollaborationIndicatorProps) => {
-  const { isConnected, isSynced, error, collaboratorCount } = state
+  const { isConnected, isSynced, error, collaboratorCount } = state;
 
   // Determine status color and icon
   const getStatusConfig = () => {
     if (error) {
       return {
-        color: 'text-red-500',
-        bg: 'bg-red-50 dark:bg-red-900/20',
-        border: 'border-red-200 dark:border-red-800',
+        color: "text-red-500",
+        bg: "bg-red-50 dark:bg-red-900/20",
+        border: "border-red-200 dark:border-red-800",
         icon: FiWifiOff,
-        label: 'Disconnected',
-      }
+        label: "Disconnected",
+      };
     }
 
     if (isConnected && isSynced) {
       return {
-        color: 'text-green-500',
-        bg: 'bg-green-50 dark:bg-green-900/20',
-        border: 'border-green-200 dark:border-green-800',
+        color: "text-green-500",
+        bg: "bg-green-50 dark:bg-green-900/20",
+        border: "border-green-200 dark:border-green-800",
         icon: FiWifi,
-        label: 'Connected',
-      }
+        label: "Connected",
+      };
     }
 
     return {
-      color: 'text-yellow-500',
-      bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-      border: 'border-yellow-200 dark:border-yellow-800',
+      color: "text-yellow-500",
+      bg: "bg-yellow-50 dark:bg-yellow-900/20",
+      border: "border-yellow-200 dark:border-yellow-800",
       icon: FiWifi,
-      label: 'Connecting...',
-    }
-  }
+      label: "Connecting...",
+    };
+  };
 
-  const config = getStatusConfig()
-  const StatusIcon = config.icon
+  const config = getStatusConfig();
+  const StatusIcon = config.icon;
 
   return (
     <motion.div
@@ -71,11 +71,12 @@ export const CollaborationIndicator = ({
       {/* Status Icon */}
       <motion.div
         animate={
-          isConnected && isSynced
-            ? { scale: [1, 1.2, 1] }
-            : { scale: 1 }
+          isConnected && isSynced ? { scale: [1, 1.2, 1] } : { scale: 1 }
         }
-        transition={{ repeat: isConnected && isSynced ? Infinity : 0, duration: 2 }}
+        transition={{
+          repeat: isConnected && isSynced ? Infinity : 0,
+          duration: 2,
+        }}
       >
         <StatusIcon className={config.color} size={16} />
       </motion.div>
@@ -120,5 +121,5 @@ export const CollaborationIndicator = ({
         )}
       </AnimatePresence>
     </motion.div>
-  )
-}
+  );
+};

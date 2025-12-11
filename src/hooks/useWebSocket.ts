@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from "react";
 
 export interface WebSocketMessage {
   type: string;
@@ -42,7 +42,7 @@ export const useWebSocket = ({
   const reconnectAttemptsRef = useRef<number>(0);
   const shouldReconnectRef = useRef<boolean>(true);
   const attemptReconnectRef = useRef<(() => void) | null>(null);
-  
+
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -57,12 +57,12 @@ export const useWebSocket = ({
   const disconnect = useCallback(() => {
     shouldReconnectRef.current = false;
     cleanup();
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    
+
     setIsConnected(false);
     setIsConnecting(false);
     reconnectAttemptsRef.current = 0;
@@ -70,8 +70,10 @@ export const useWebSocket = ({
   }, [cleanup]);
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN || 
-        wsRef.current?.readyState === WebSocket.CONNECTING) {
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      wsRef.current?.readyState === WebSocket.CONNECTING
+    ) {
       return;
     }
 
@@ -80,7 +82,7 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         setIsConnected(true);
         setIsConnecting(false);
         reconnectAttemptsRef.current = 0;
@@ -93,31 +95,39 @@ export const useWebSocket = ({
           const message = JSON.parse(event.data) as WebSocketMessage;
           onMessage?.(message);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          console.error("Failed to parse WebSocket message:", error);
         }
       };
 
       wsRef.current.onclose = (event) => {
-        console.log('WebSocket disconnected', event.code, event.reason);
+        console.log("WebSocket disconnected", event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null;
         onClose?.();
 
-        if (shouldReconnectRef.current && reconnect && attemptReconnectRef.current) {
+        if (
+          shouldReconnectRef.current &&
+          reconnect &&
+          attemptReconnectRef.current
+        ) {
           attemptReconnectRef.current();
         }
       };
 
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error("WebSocket error:", error);
         onError?.(error);
       };
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      console.error("Failed to create WebSocket connection:", error);
       setIsConnecting(false);
-      
-      if (shouldReconnectRef.current && reconnect && attemptReconnectRef.current) {
+
+      if (
+        shouldReconnectRef.current &&
+        reconnect &&
+        attemptReconnectRef.current
+      ) {
         attemptReconnectRef.current();
       }
     }
@@ -125,20 +135,23 @@ export const useWebSocket = ({
 
   const attemptReconnect = useCallback(() => {
     if (!reconnect || !shouldReconnectRef.current) return;
-    
+
     if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
       setIsConnecting(false);
       return;
     }
 
     cleanup();
-    
-    const backoffDelay = reconnectInterval * Math.pow(2, reconnectAttemptsRef.current);
+
+    const backoffDelay =
+      reconnectInterval * Math.pow(2, reconnectAttemptsRef.current);
     const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
     const delay = Math.min(backoffDelay + jitter, 30000); // Cap at 30 seconds
 
-    console.log(`Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+    console.log(
+      `Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`,
+    );
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptsRef.current++;
@@ -157,10 +170,10 @@ export const useWebSocket = ({
       try {
         wsRef.current.send(JSON.stringify(message));
       } catch (error) {
-        console.error('Failed to send WebSocket message:', error);
+        console.error("Failed to send WebSocket message:", error);
       }
     } else {
-      console.warn('WebSocket is not connected. Message not sent:', message);
+      console.warn("WebSocket is not connected. Message not sent:", message);
     }
   }, []);
 

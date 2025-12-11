@@ -3,9 +3,13 @@
  * Manages system design problems with search, filtering, and caching
  */
 
-import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { SystemDesignProblem } from '../../types/systemDesign';
-import { apiService } from '../../services/api';
+import {
+  createSlice,
+  createAsyncThunk,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
+import type { SystemDesignProblem } from "../../types/systemDesign";
+import { apiService } from "../../services/api";
 
 interface ProblemsState {
   // All problems cache
@@ -29,10 +33,10 @@ const initialState: ProblemsState = {
   problems: [],
   filteredProblems: [],
   attemptedProblems: new Set(),
-  selectedDifficulty: 'All',
-  selectedCategory: 'All',
-  selectedDomain: 'All',
-  searchQuery: '',
+  selectedDifficulty: "All",
+  selectedCategory: "All",
+  selectedDomain: "All",
+  searchQuery: "",
   loading: false,
   error: null,
   lastFetched: null,
@@ -40,44 +44,46 @@ const initialState: ProblemsState = {
 
 // Fetch all problems from API
 export const fetchProblems = createAsyncThunk(
-  'problems/fetchAll',
+  "problems/fetchAll",
   async (_, { getState }) => {
     const state = getState() as { problems: ProblemsState };
-    
+
     // Check if we have cached data (cache for 5 minutes)
     const now = Date.now();
     const cacheExpiry = 5 * 60 * 1000; // 5 minutes
-    if (state.problems.lastFetched && (now - state.problems.lastFetched) < cacheExpiry) {
+    if (
+      state.problems.lastFetched &&
+      now - state.problems.lastFetched < cacheExpiry
+    ) {
       return { problems: state.problems.problems, fromCache: true };
     }
 
-    const apiUrl = import.meta.env.VITE_ASSESSMENT_API_URL || 'http://localhost:8000';
+    const apiUrl =
+      import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
     const response = await fetch(`${apiUrl}/api/v1/all-problems`);
 
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch problems: ${response.status} ${response.statusText}`
+        `Failed to fetch problems: ${response.status} ${response.statusText}`,
       );
     }
 
     const data: SystemDesignProblem[] = await response.json();
     return { problems: data, fromCache: false };
-  }
+  },
 );
 
 // Fetch attempted problems for authenticated user
 export const fetchAttemptedProblems = createAsyncThunk(
-  'problems/fetchAttempted',
+  "problems/fetchAttempted",
   async () => {
     const data = await apiService.getAttemptedProblems();
     return data;
-  }
+  },
 );
 
-
-
 const problemsSlice = createSlice({
-  name: 'problems',
+  name: "problems",
   initialState,
   reducers: {
     setSelectedDifficulty: (state, action: PayloadAction<string>) => {
@@ -93,10 +99,10 @@ const problemsSlice = createSlice({
       state.searchQuery = action.payload;
     },
     clearFilters: (state) => {
-      state.selectedDifficulty = 'All';
-      state.selectedCategory = 'All';
-      state.selectedDomain = 'All';
-      state.searchQuery = '';
+      state.selectedDifficulty = "All";
+      state.selectedCategory = "All";
+      state.selectedDomain = "All";
+      state.searchQuery = "";
     },
     clearError: (state) => {
       state.error = null;
@@ -119,24 +125,27 @@ const problemsSlice = createSlice({
       .addCase(fetchProblems.fulfilled, (state, action) => {
         state.loading = false;
         const { problems, fromCache } = action.payload;
-        
+
         state.problems = problems;
         state.filteredProblems = problems;
-        
+
         if (!fromCache) {
           state.lastFetched = Date.now();
         }
       })
       .addCase(fetchProblems.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch problems';
+        state.error = action.error.message || "Failed to fetch problems";
       })
       // Fetch attempted problems
       .addCase(fetchAttemptedProblems.fulfilled, (state, action) => {
         state.attemptedProblems = new Set(action.payload);
       })
       .addCase(fetchAttemptedProblems.rejected, (_state, action) => {
-        console.error('Failed to fetch attempted problems:', action.error.message);
+        console.error(
+          "Failed to fetch attempted problems:",
+          action.error.message,
+        );
         // Silently fail - attempted problems is a nice-to-have feature
       });
   },

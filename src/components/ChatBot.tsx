@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MdChat, MdClose, MdRefresh } from 'react-icons/md';
-import type { Node, Edge } from '@xyflow/react';
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MdChat, MdClose, MdRefresh } from "react-icons/md";
+import type { Node, Edge } from "@xyflow/react";
 import { useChatBot } from "../hooks/useChatBot";
 import { useChatSuggestions } from "../hooks/useChatSuggestions";
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from "../hooks/useAuth";
 import { WelcomeDialog } from "./WelcomeDialog";
 import SuggestionCard from "./SuggestionCard";
 import type { CanvasContext, Suggestion } from "../types/chatBot";
@@ -16,7 +16,12 @@ interface ChatBotProps {
   onAddComponent?: (componentId: string) => void;
 }
 
-export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edges = [], onAddComponent }) => {
+export const ChatBot: React.FC<ChatBotProps> = ({
+  canvasContext,
+  nodes = [],
+  edges = [],
+  onAddComponent,
+}) => {
   const { isAuthenticated } = useAuth();
   const {
     isOpen,
@@ -26,8 +31,11 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
     updateCanvasContext,
   } = useChatBot();
 
-  const { suggestions, refreshAISuggestions, isLoadingAI, lastAIRefresh } = useChatSuggestions(userIntent, canvasContext ?? null, nodes, edges);
-  const [addedSuggestionId, setAddedSuggestionId] = useState<string | null>(null);
+  const { suggestions, refreshAISuggestions, isLoadingAI, lastAIRefresh } =
+    useChatSuggestions(userIntent, canvasContext ?? null, nodes, edges);
+  const [addedSuggestionId, setAddedSuggestionId] = useState<string | null>(
+    null,
+  );
 
   // Update canvas context when it changes
   useEffect(() => {
@@ -38,12 +46,20 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: Suggestion) => {
-    if (suggestion.actionType === 'add-component' && suggestion.componentId && onAddComponent) {
+    if (
+      suggestion.actionType === "add-component" &&
+      suggestion.componentId &&
+      onAddComponent
+    ) {
       onAddComponent(suggestion.componentId);
       // Show success feedback
       setAddedSuggestionId(suggestion.id);
       setTimeout(() => setAddedSuggestionId(null), 2000);
-    } else if (suggestion.actionType === 'add-pattern' && suggestion.componentIds && onAddComponent) {
+    } else if (
+      suggestion.actionType === "add-pattern" &&
+      suggestion.componentIds &&
+      onAddComponent
+    ) {
       // Add multiple components for patterns
       for (const componentId of suggestion.componentIds) {
         onAddComponent(componentId);
@@ -97,8 +113,10 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
               flex flex-col z-50 overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 
-              bg-gradient-to-r from-[var(--brand)] to-[var(--accent)]">
+            <div
+              className="flex items-center justify-between px-5 py-4 
+              bg-gradient-to-r from-[var(--brand)] to-[var(--accent)]"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                   <span className="text-2xl">🤖</span>
@@ -145,7 +163,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                   >
                     {/* User Intent Summary */}
                     {userIntent && (
-                      <motion.div 
+                      <motion.div
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className="bg-gradient-to-br from-accent/10 to-accent/5 
@@ -155,7 +173,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                           <span className="text-2xl">🎯</span>
                           <div className="flex-1">
                             <h4 className="font-bold text-theme text-base mb-1">
-                              {userIntent.title || 'Your Project'}
+                              {userIntent.title || "Your Project"}
                             </h4>
                             {userIntent.description && (
                               <p className="text-sm text-muted leading-relaxed">
@@ -175,49 +193,52 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                           <h4 className="text-sm font-bold text-theme">
                             Suggestions for you
                           </h4>
-                          <span className="ml-auto text-xs px-2 py-1 bg-accent/10
-                            text-accent rounded-full font-medium">
+                          <span
+                            className="ml-auto text-xs px-2 py-1 bg-accent/10
+                            text-accent rounded-full font-medium"
+                          >
                             {suggestions.length}
                           </span>
                         </div>
 
                         {/* AI Refresh Button - Only show for authenticated users with 5+ nodes */}
-                        {isAuthenticated && canvasContext && canvasContext.nodeCount >= 5 && (
-                          <div className="flex items-center justify-between mb-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
-                            <div className="flex-1">
-                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
-                                💡 Get AI-powered recommendations
-                              </p>
-                              <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
-                                {lastAIRefresh
-                                  ? `Last updated: ${lastAIRefresh.toLocaleTimeString()}`
-                                  : 'Click refresh for personalized suggestions'
-                                }
-                              </p>
-                            </div>
-                            <button
-                              onClick={refreshAISuggestions}
-                              disabled={isLoadingAI}
-                              className="ml-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400
+                        {isAuthenticated &&
+                          canvasContext &&
+                          canvasContext.nodeCount >= 5 && (
+                            <div className="flex items-center justify-between mb-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                              <div className="flex-1">
+                                <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                  💡 Get AI-powered recommendations
+                                </p>
+                                <p className="text-xs text-blue-600/80 dark:text-blue-400/80">
+                                  {lastAIRefresh
+                                    ? `Last updated: ${lastAIRefresh.toLocaleTimeString()}`
+                                    : "Click refresh for personalized suggestions"}
+                                </p>
+                              </div>
+                              <button
+                                onClick={refreshAISuggestions}
+                                disabled={isLoadingAI}
+                                className="ml-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400
                                 text-white rounded-lg transition-colors duration-200
                                 flex items-center gap-1 text-xs font-medium
                                 disabled:cursor-not-allowed"
-                              title="Get AI recommendations"
-                            >
-                              {isLoadingAI ? (
-                                <>
-                                  <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
-                                  <span>Loading...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <MdRefresh className="w-3 h-3" />
-                                  <span>AI Suggest</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        )}
+                                title="Get AI recommendations"
+                              >
+                                {isLoadingAI ? (
+                                  <>
+                                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span>Loading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <MdRefresh className="w-3 h-3" />
+                                    <span>AI Suggest</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
 
                         <div className="space-y-2">
                           {suggestions.map((suggestion, index) => (
@@ -237,13 +258,15 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                         </div>
                       </>
                     ) : (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="text-center py-12"
                       >
-                        <div className="w-16 h-16 mx-auto mb-4 bg-theme/5 rounded-full 
-                          flex items-center justify-center">
+                        <div
+                          className="w-16 h-16 mx-auto mb-4 bg-theme/5 rounded-full 
+                          flex items-center justify-center"
+                        >
                           <span className="text-4xl opacity-50">🎨</span>
                         </div>
                         <p className="text-muted text-sm">
@@ -257,7 +280,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
 
                     {/* Canvas Stats */}
                     {canvasContext && !canvasContext.isEmpty && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mt-5 pt-4 border-t border-theme/10"
@@ -267,19 +290,27 @@ export const ChatBot: React.FC<ChatBotProps> = ({ canvasContext, nodes = [], edg
                           <span>Canvas Overview</span>
                         </h5>
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 
-                            border border-blue-500/20 rounded-lg p-3 text-center">
+                          <div
+                            className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 
+                            border border-blue-500/20 rounded-lg p-3 text-center"
+                          >
                             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                               {canvasContext.nodeCount}
                             </div>
-                            <div className="text-xs text-muted mt-1">Components</div>
+                            <div className="text-xs text-muted mt-1">
+                              Components
+                            </div>
                           </div>
-                          <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 
-                            border border-purple-500/20 rounded-lg p-3 text-center">
+                          <div
+                            className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 
+                            border border-purple-500/20 rounded-lg p-3 text-center"
+                          >
                             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                               {canvasContext.edgeCount}
                             </div>
-                            <div className="text-xs text-muted mt-1">Connections</div>
+                            <div className="text-xs text-muted mt-1">
+                              Connections
+                            </div>
                           </div>
                         </div>
                       </motion.div>

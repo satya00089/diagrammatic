@@ -3,33 +3,33 @@ import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
 import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
 
 // Cardinality types for ER relationships
-export type ERCardinality = 
+export type ERCardinality =
   // Basic cardinalities
-  | "one-to-one"           // 1:1
-  | "one-to-many"          // 1:N
-  | "many-to-one"          // N:1
-  | "many-to-many"         // N:M
-  
+  | "one-to-one" // 1:1
+  | "one-to-many" // 1:N
+  | "many-to-one" // N:1
+  | "many-to-many" // N:M
+
   // Mandatory participation (must participate)
-  | "mandatory-one-to-one"      // 1:1 (both sides mandatory)
-  | "mandatory-one-to-many"     // 1:N (both sides mandatory)
-  | "mandatory-many-to-many"    // M:N (both sides mandatory)
-  
+  | "mandatory-one-to-one" // 1:1 (both sides mandatory)
+  | "mandatory-one-to-many" // 1:N (both sides mandatory)
+  | "mandatory-many-to-many" // M:N (both sides mandatory)
+
   // Optional participation (may or may not participate)
-  | "optional-zero-to-one"      // 0:1 (optional on both sides)
-  | "optional-zero-to-many"     // 0:N (optional zero or many)
-  | "optional-many-to-many"     // 0:M to 0:N (optional on both)
-  
+  | "optional-zero-to-one" // 0:1 (optional on both sides)
+  | "optional-zero-to-many" // 0:N (optional zero or many)
+  | "optional-many-to-many" // 0:M to 0:N (optional on both)
+
   // Mixed participation
-  | "one-mandatory-many-optional"  // 1 to 0..N (one side mandatory, other optional)
-  | "zero-to-one"                  // 0..1 (zero or one)
-  | "zero-to-many"                 // 0..N (zero or many)
-  | "one-or-many"                  // 1..N (one or many - at least one)
-  
+  | "one-mandatory-many-optional" // 1 to 0..N (one side mandatory, other optional)
+  | "zero-to-one" // 0..1 (zero or one)
+  | "zero-to-many" // 0..N (zero or many)
+  | "one-or-many" // 1..N (one or many - at least one)
+
   // Recursive relationships (self-referencing)
-  | "recursive-one-to-one"      // Self 1:1
-  | "recursive-one-to-many"     // Self 1:N
-  | "recursive-many-to-many";   // Self M:N
+  | "recursive-one-to-one" // Self 1:1
+  | "recursive-one-to-many" // Self 1:N
+  | "recursive-many-to-many"; // Self M:N
 
 // Helper function for creating curved paths for bi-directional edges
 const getSpecialPath = (
@@ -93,25 +93,25 @@ const getSourceMarker = (cardinality: ERCardinality) => {
     case "one-mandatory-many-optional":
     case "one-or-many":
       return "one";
-    
+
     // Many/crow's foot at source
     case "many-to-one":
     case "many-to-many":
     case "mandatory-many-to-many":
     case "optional-many-to-many":
       return "many";
-    
+
     // Mandatory (double line) at source
     case "mandatory-one-to-one":
     case "mandatory-one-to-many":
       return "mandatory-one";
-    
+
     // Optional (circle + line) at source
     case "optional-zero-to-one":
     case "optional-zero-to-many":
     case "zero-to-many":
       return "optional-zero";
-    
+
     // Recursive relationships
     case "recursive-one-to-one":
       return "one";
@@ -119,7 +119,7 @@ const getSourceMarker = (cardinality: ERCardinality) => {
       return "one";
     case "recursive-many-to-many":
       return "many";
-    
+
     default:
       return "one";
   }
@@ -132,7 +132,7 @@ const getTargetMarker = (cardinality: ERCardinality) => {
     case "many-to-one":
     case "zero-to-one":
       return "one";
-    
+
     // Many/crow's foot at target
     case "one-to-many":
     case "many-to-many":
@@ -140,21 +140,21 @@ const getTargetMarker = (cardinality: ERCardinality) => {
     case "one-mandatory-many-optional":
     case "one-or-many":
       return "many";
-    
+
     // Mandatory (double line) at target
     case "mandatory-one-to-one":
       return "mandatory-one";
     case "mandatory-one-to-many":
     case "mandatory-many-to-many":
       return "mandatory-many";
-    
+
     // Optional (circle + crow's foot) at target
     case "optional-zero-to-one":
       return "optional-one";
     case "optional-zero-to-many":
     case "optional-many-to-many":
       return "optional-many";
-    
+
     // Recursive relationships
     case "recursive-one-to-one":
       return "one";
@@ -162,7 +162,7 @@ const getTargetMarker = (cardinality: ERCardinality) => {
       return "many";
     case "recursive-many-to-many":
       return "many";
-    
+
     default:
       return "many";
   }
@@ -188,23 +188,20 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
     data,
     selected,
   } = props;
-  
+
   const edgeData = (data as EREdgeData) || {};
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState<string>(edgeData.label ?? "");
   const [hasLabel, setHasLabel] = useState<boolean>(edgeData.hasLabel ?? false);
   const [cardinality, setCardinality] = useState<ERCardinality>(
-    edgeData.cardinality ?? "one-to-many"
+    edgeData.cardinality ?? "one-to-many",
   );
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Detect if there's a bi-directional connection
   const isBiDirectionEdge = useStore((s: ReactFlowState) => {
     const edgeExists = s.edges.some(
-      (e) =>
-        e.id !== id &&
-        e.source === target &&
-        e.target === source,
+      (e) => e.id !== id && e.source === target && e.target === source,
     );
     return edgeExists;
   });
@@ -285,7 +282,14 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="8"
           orient="auto"
         >
-          <line x1="0" y1="0" x2="0" y2="10" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Many (crow's foot) marker */}
@@ -299,9 +303,30 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           orient="auto"
         >
           {/* Crow's foot - three lines spreading out */}
-          <line x1="0" y1="10" x2="15" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="15" y1="10" x2="20" y2="5" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="15" y1="10" x2="20" y2="15" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="0"
+            y1="10"
+            x2="15"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="15"
+            y1="10"
+            x2="20"
+            y2="5"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="15"
+            y1="10"
+            x2="20"
+            y2="15"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Mandatory One (double line) marker */}
@@ -314,8 +339,22 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="8"
           orient="auto"
         >
-          <line x1="0" y1="0" x2="0" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="3" y1="0" x2="3" y2="10" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="3"
+            y1="0"
+            x2="3"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Mandatory Many (double line + crow's foot) marker */}
@@ -329,11 +368,39 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           orient="auto"
         >
           {/* Double lines for mandatory */}
-          <line x1="0" y1="10" x2="12" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="3" y1="8" x2="3" y2="12" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="0"
+            y1="10"
+            x2="12"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="3"
+            y1="8"
+            x2="3"
+            y2="12"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
           {/* Crow's foot for many */}
-          <line x1="12" y1="10" x2="20" y2="5" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="12" y1="10" x2="20" y2="15" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="12"
+            y1="10"
+            x2="20"
+            y2="5"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="12"
+            y1="10"
+            x2="20"
+            y2="15"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Optional Zero (circle) marker */}
@@ -346,7 +413,14 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="10"
           orient="auto"
         >
-          <circle cx="6" cy="6" r="3" fill="none" stroke="var(--brand)" strokeWidth="2" />
+          <circle
+            cx="6"
+            cy="6"
+            r="3"
+            fill="none"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Optional One (circle + line) marker */}
@@ -359,8 +433,22 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="10"
           orient="auto"
         >
-          <circle cx="4" cy="6" r="3" fill="none" stroke="var(--brand)" strokeWidth="1.5" />
-          <line x1="10" y1="0" x2="10" y2="12" stroke="var(--brand)" strokeWidth="2" />
+          <circle
+            cx="4"
+            cy="6"
+            r="3"
+            fill="none"
+            stroke="var(--brand)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="10"
+            y1="0"
+            x2="10"
+            y2="12"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Optional Many (circle + crow's foot) marker */}
@@ -373,10 +461,38 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="12"
           orient="auto"
         >
-          <circle cx="4" cy="10" r="3" fill="none" stroke="var(--brand)" strokeWidth="1.5" />
-          <line x1="10" y1="10" x2="18" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="18" y1="10" x2="25" y2="5" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="18" y1="10" x2="25" y2="15" stroke="var(--brand)" strokeWidth="2" />
+          <circle
+            cx="4"
+            cy="10"
+            r="3"
+            fill="none"
+            stroke="var(--brand)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="10"
+            y1="10"
+            x2="18"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="18"
+            y1="10"
+            x2="25"
+            y2="5"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="18"
+            y1="10"
+            x2="25"
+            y2="15"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         {/* Source markers (pointing backwards) */}
@@ -389,7 +505,14 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="8"
           orient="auto"
         >
-          <line x1="10" y1="0" x2="10" y2="10" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="10"
+            y1="0"
+            x2="10"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         <marker
@@ -402,9 +525,30 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           orient="auto"
         >
           {/* Crow's foot - three lines spreading out (reversed) */}
-          <line x1="20" y1="10" x2="5" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="5" y1="10" x2="0" y2="5" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="5" y1="10" x2="0" y2="15" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="20"
+            y1="10"
+            x2="5"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="5"
+            y1="10"
+            x2="0"
+            y2="5"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="5"
+            y1="10"
+            x2="0"
+            y2="15"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         <marker
@@ -416,8 +560,22 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="8"
           orient="auto"
         >
-          <line x1="10" y1="0" x2="10" y2="10" stroke="var(--brand)" strokeWidth="2" />
-          <line x1="7" y1="0" x2="7" y2="10" stroke="var(--brand)" strokeWidth="2" />
+          <line
+            x1="10"
+            y1="0"
+            x2="10"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
+          <line
+            x1="7"
+            y1="0"
+            x2="7"
+            y2="10"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
 
         <marker
@@ -429,7 +587,14 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="10"
           orient="auto"
         >
-          <circle cx="6" cy="6" r="3" fill="none" stroke="var(--brand)" strokeWidth="2" />
+          <circle
+            cx="6"
+            cy="6"
+            r="3"
+            fill="none"
+            stroke="var(--brand)"
+            strokeWidth="2"
+          />
         </marker>
       </defs>
 
@@ -515,7 +680,9 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
             <div className="flex items-center gap-1 bg-[var(--surface)] border border-[var(--brand)] rounded px-2 py-1">
               <select
                 value={cardinality}
-                onChange={(e) => handleCardinalityChange(e.target.value as ERCardinality)}
+                onChange={(e) =>
+                  handleCardinalityChange(e.target.value as ERCardinality)
+                }
                 className="text-xs bg-transparent text-theme focus:outline-none cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -525,30 +692,52 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                   <option value="many-to-one">N:1 (Many to One)</option>
                   <option value="many-to-many">N:M (Many to Many)</option>
                 </optgroup>
-                
+
                 <optgroup label="─── Mandatory (Must Participate) ───">
-                  <option value="mandatory-one-to-one">1:1 Mandatory (Both must exist)</option>
-                  <option value="mandatory-one-to-many">1:N Mandatory (Both must exist)</option>
-                  <option value="mandatory-many-to-many">M:N Mandatory (Both must exist)</option>
+                  <option value="mandatory-one-to-one">
+                    1:1 Mandatory (Both must exist)
+                  </option>
+                  <option value="mandatory-one-to-many">
+                    1:N Mandatory (Both must exist)
+                  </option>
+                  <option value="mandatory-many-to-many">
+                    M:N Mandatory (Both must exist)
+                  </option>
                 </optgroup>
-                
+
                 <optgroup label="─── Optional (May Participate) ───">
-                  <option value="optional-zero-to-one">0:1 Optional (Zero or One)</option>
-                  <option value="optional-zero-to-many">0:N Optional (Zero or Many)</option>
-                  <option value="optional-many-to-many">0:M to 0:N Optional (Both optional)</option>
+                  <option value="optional-zero-to-one">
+                    0:1 Optional (Zero or One)
+                  </option>
+                  <option value="optional-zero-to-many">
+                    0:N Optional (Zero or Many)
+                  </option>
+                  <option value="optional-many-to-many">
+                    0:M to 0:N Optional (Both optional)
+                  </option>
                 </optgroup>
-                
+
                 <optgroup label="─── Mixed Participation ───">
-                  <option value="one-mandatory-many-optional">1 to 0..N (One mandatory, many optional)</option>
+                  <option value="one-mandatory-many-optional">
+                    1 to 0..N (One mandatory, many optional)
+                  </option>
                   <option value="zero-to-one">0..1 (Zero or One)</option>
                   <option value="zero-to-many">0..N (Zero or Many)</option>
-                  <option value="one-or-many">1..N (One or Many - at least one)</option>
+                  <option value="one-or-many">
+                    1..N (One or Many - at least one)
+                  </option>
                 </optgroup>
-                
+
                 <optgroup label="─── Recursive (Self-Referencing) ───">
-                  <option value="recursive-one-to-one">Self 1:1 (Recursive One-to-One)</option>
-                  <option value="recursive-one-to-many">Self 1:N (Recursive One-to-Many)</option>
-                  <option value="recursive-many-to-many">Self M:N (Recursive Many-to-Many)</option>
+                  <option value="recursive-one-to-one">
+                    Self 1:1 (Recursive One-to-One)
+                  </option>
+                  <option value="recursive-one-to-many">
+                    Self 1:N (Recursive One-to-Many)
+                  </option>
+                  <option value="recursive-many-to-many">
+                    Self M:N (Recursive Many-to-Many)
+                  </option>
                 </optgroup>
               </select>
             </div>

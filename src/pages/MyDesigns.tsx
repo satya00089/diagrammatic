@@ -15,13 +15,15 @@ const MyDesigns: React.FC = () => {
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
-    "updated"
+    "updated",
   );
   const [filterBy, setFilterBy] = useState<"all" | "owned" | "shared">("all");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(null);
+  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(
+    null,
+  );
   const {
     user,
     isAuthenticated: isAuth,
@@ -64,10 +66,10 @@ const MyDesigns: React.FC = () => {
 
   const handleDeleteDiagram = async (
     diagram: SavedDiagram,
-    e: React.MouseEvent
+    e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-    
+
     // Only owners can delete
     if (!diagram.isOwner) {
       return;
@@ -82,7 +84,9 @@ const MyDesigns: React.FC = () => {
 
     try {
       await apiService.deleteDiagram(diagramToDelete.id);
-      setSavedDiagrams((prev) => prev.filter((d) => d.id !== diagramToDelete.id));
+      setSavedDiagrams((prev) =>
+        prev.filter((d) => d.id !== diagramToDelete.id),
+      );
       setShowDeleteDialog(false);
       setDiagramToDelete(null);
     } catch (error) {
@@ -130,8 +134,8 @@ const MyDesigns: React.FC = () => {
     });
 
   // Count owned and shared diagrams
-  const ownedCount = savedDiagrams.filter(d => d.isOwner).length;
-  const sharedCount = savedDiagrams.filter(d => !d.isOwner).length;
+  const ownedCount = savedDiagrams.filter((d) => d.isOwner).length;
+  const sharedCount = savedDiagrams.filter((d) => !d.isOwner).length;
 
   return (
     <>
@@ -351,7 +355,7 @@ const MyDesigns: React.FC = () => {
                         value={sortBy}
                         onChange={(e) =>
                           setSortBy(
-                            e.target.value as "updated" | "created" | "title"
+                            e.target.value as "updated" | "created" | "title",
                           )
                         }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
@@ -381,15 +385,11 @@ const MyDesigns: React.FC = () => {
                 {!loadingDiagrams && filteredDiagrams.length === 0 && (
                   <div className="text-center py-20">
                     <div className="text-7xl mb-6">
-                      {searchTerm 
-                        ? "🔍" 
-                        : filterBy === "shared" 
-                          ? "🤝" 
-                          : "🎨"}
+                      {searchTerm ? "🔍" : filterBy === "shared" ? "🤝" : "🎨"}
                     </div>
                     <div className="text-theme text-2xl font-bold mb-2">
-                      {searchTerm 
-                        ? "No designs found" 
+                      {searchTerm
+                        ? "No designs found"
                         : filterBy === "shared"
                           ? "No shared designs yet"
                           : filterBy === "owned"
@@ -471,7 +471,7 @@ const MyDesigns: React.FC = () => {
                                     {diagram.title}
                                   </h3>
                                 </div>
-                                
+
                                 {/* Enhanced Ownership & Permission Section */}
                                 {!diagram.isOwner && (
                                   <div className="mb-2 flex items-center gap-2 flex-wrap">
@@ -479,7 +479,7 @@ const MyDesigns: React.FC = () => {
                                     <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
                                       {/* Animated gradient background */}
                                       <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
-                                      
+
                                       <div className="relative flex items-center gap-1.5">
                                         {/* Avatar */}
                                         <div className="relative flex-shrink-0">
@@ -497,11 +497,22 @@ const MyDesigns: React.FC = () => {
                                           {/* Online indicator */}
                                           <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
                                         </div>
-                                        
+
                                         {/* Owner Name */}
                                         <div className="flex items-center gap-1">
-                                          <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={3}
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                                            />
                                           </svg>
                                           <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
                                             {diagram.owner.name}
@@ -509,25 +520,46 @@ const MyDesigns: React.FC = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    
+
                                     {/* Permission Badge */}
-                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
-                                      diagram.permission === 'edit'
-                                        ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30'
-                                        : 'bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30'
-                                    }`}>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                        {diagram.permission === 'edit' ? (
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <div
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
+                                        diagram.permission === "edit"
+                                          ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30"
+                                          : "bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30"
+                                      }`}
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-3.5 w-3.5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2.5}
+                                      >
+                                        {diagram.permission === "edit" ? (
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                          />
                                         ) : (
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                          />
                                         )}
                                       </svg>
-                                      <span>{diagram.permission === 'edit' ? 'Can Edit' : 'View Only'}</span>
+                                      <span>
+                                        {diagram.permission === "edit"
+                                          ? "Can Edit"
+                                          : "View Only"}
+                                      </span>
                                     </div>
                                   </div>
                                 )}
-                                
+
                                 {diagram.description && (
                                   <p className="text-muted text-sm line-clamp-2 leading-relaxed">
                                     {diagram.description}
@@ -585,7 +617,7 @@ const MyDesigns: React.FC = () => {
                                     month: "short",
                                     day: "numeric",
                                     year: "numeric",
-                                  }
+                                  },
                                 )}
                               </span>
                               <span>
@@ -595,7 +627,7 @@ const MyDesigns: React.FC = () => {
                                   {
                                     month: "short",
                                     day: "numeric",
-                                  }
+                                  },
                                 )}
                               </span>
                             </div>
@@ -670,8 +702,9 @@ const MyDesigns: React.FC = () => {
               </div>
             </div>
             <p className="text-muted mb-6">
-              Are you sure you want to delete <strong>"{diagramToDelete.title}"</strong>?
-              This will permanently remove the design and all its data.
+              Are you sure you want to delete{" "}
+              <strong>"{diagramToDelete.title}"</strong>? This will permanently
+              remove the design and all its data.
             </p>
             <div className="flex space-x-3">
               <button

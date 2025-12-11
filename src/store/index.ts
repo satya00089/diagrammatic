@@ -2,9 +2,9 @@
  * Redux Store Configuration
  */
 
-import { configureStore } from '@reduxjs/toolkit';
-import componentsReducer from './slices/componentsSlice';
-import problemsReducer from './slices/problemsSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import componentsReducer from "./slices/componentsSlice";
+import problemsReducer from "./slices/problemsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -15,8 +15,8 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these paths in the state for serialization checks
-        ignoredActions: ['components/setComponents'],
-        ignoredPaths: ['components.items', 'problems.attemptedProblems'],
+        ignoredActions: ["components/setComponents"],
+        ignoredPaths: ["components.items", "problems.attemptedProblems"],
       },
     }),
 });

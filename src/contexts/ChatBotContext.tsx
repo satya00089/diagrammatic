@@ -1,11 +1,11 @@
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useMemo } from "react";
 import type {
   ChatBotState,
   ChatBotContextType,
   UserIntent,
   CanvasContext,
   ChatMessage,
-} from '../types/chatBot';
+} from "../types/chatBot";
 
 const initialState: ChatBotState = {
   isOpen: false,
@@ -17,9 +17,13 @@ const initialState: ChatBotState = {
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const ChatBotContext = createContext<ChatBotContextType | undefined>(undefined);
+export const ChatBotContext = createContext<ChatBotContextType | undefined>(
+  undefined,
+);
 
-export const ChatBotProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ChatBotProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [state, setState] = useState<ChatBotState>(initialState);
 
   const toggleChatBot = useCallback(() => {
@@ -38,17 +42,20 @@ export const ChatBotProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setState((prev) => ({ ...prev, canvasContext: context }));
   }, []);
 
-  const addMessage = useCallback((message: Omit<ChatMessage, 'id' | 'timestamp'>) => {
-    const newMessage: ChatMessage = {
-      ...message,
-      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-      timestamp: new Date(),
-    };
-    setState((prev) => ({
-      ...prev,
-      messages: [...prev.messages, newMessage],
-    }));
-  }, []);
+  const addMessage = useCallback(
+    (message: Omit<ChatMessage, "id" | "timestamp">) => {
+      const newMessage: ChatMessage = {
+        ...message,
+        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        timestamp: new Date(),
+      };
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, newMessage],
+      }));
+    },
+    [],
+  );
 
   const dismissWelcome = useCallback(() => {
     setState((prev) => ({ ...prev, showWelcome: false }));
@@ -68,8 +75,18 @@ export const ChatBotProvider: React.FC<{ children: React.ReactNode }> = ({ child
       dismissWelcome,
       resetChatBot,
     }),
-    [state, toggleChatBot, setUserIntent, updateCanvasContext, addMessage, dismissWelcome, resetChatBot]
+    [
+      state,
+      toggleChatBot,
+      setUserIntent,
+      updateCanvasContext,
+      addMessage,
+      dismissWelcome,
+      resetChatBot,
+    ],
   );
 
-  return <ChatBotContext.Provider value={value}>{children}</ChatBotContext.Provider>;
+  return (
+    <ChatBotContext.Provider value={value}>{children}</ChatBotContext.Provider>
+  );
 };

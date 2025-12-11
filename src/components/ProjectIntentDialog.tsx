@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import type { UserIntent } from '../types/chatBot';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import type { UserIntent } from "../types/chatBot";
 
 interface ProjectIntentDialogProps {
   onSubmit: (intent: UserIntent) => void;
@@ -11,8 +11,8 @@ export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
   onSubmit,
   onSkip,
 }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,8 +91,9 @@ export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
 
             <div className="bg-accent/10 border border-accent/20 rounded-lg p-3">
               <p className="text-xs text-theme">
-                💡 <strong>Tip:</strong> This information will be used for auto-save and to provide
-                you with smart, context-aware suggestions while you design.
+                💡 <strong>Tip:</strong> This information will be used for
+                auto-save and to provide you with smart, context-aware
+                suggestions while you design.
               </p>
             </div>
           </div>

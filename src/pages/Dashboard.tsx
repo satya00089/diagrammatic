@@ -39,11 +39,11 @@ const Dashboard: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  
+
   // Local UI state
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+
   // Redux state
   const filteredProblems = useAppSelector(selectFilteredProblems);
   const loading = useAppSelector(selectProblemsLoading);
@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
   const selectedDomain = useAppSelector(selectSelectedDomain);
   const searchQuery = useAppSelector(selectSearchQuery);
   const attemptedProblems = useAppSelector(selectAttemptedProblems);
-  
+
   const {
     user,
     isAuthenticated: isAuth,
@@ -308,7 +308,9 @@ const Dashboard: React.FC = () => {
                         type="text"
                         placeholder="Search problems..."
                         value={searchQuery}
-                        onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                        onChange={(e) =>
+                          dispatch(setSearchQuery(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
                       />
                     </div>
@@ -324,7 +326,9 @@ const Dashboard: React.FC = () => {
                       <select
                         id="difficulty-select"
                         value={selectedDifficulty}
-                        onChange={(e) => dispatch(setSelectedDifficulty(e.target.value))}
+                        onChange={(e) =>
+                          dispatch(setSelectedDifficulty(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                       >
                         {difficulties.map((difficulty) => (
@@ -346,7 +350,9 @@ const Dashboard: React.FC = () => {
                       <select
                         id="category-select"
                         value={selectedCategory}
-                        onChange={(e) => dispatch(setSelectedCategory(e.target.value))}
+                        onChange={(e) =>
+                          dispatch(setSelectedCategory(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                       >
                         {categories.map((category) => (

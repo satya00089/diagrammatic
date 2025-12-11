@@ -49,14 +49,14 @@ export interface SavedDiagram {
   collaborators?: Collaborator[];
   // New fields from backend enhancement
   isOwner: boolean;
-  permission: 'owner' | 'edit' | 'read';
+  permission: "owner" | "edit" | "read";
   owner: DiagramOwner;
 }
 
 export interface Collaborator {
   id: string;
   email: string;
-  permission: 'read' | 'edit';
+  permission: "read" | "edit";
   addedAt: string;
 }
 

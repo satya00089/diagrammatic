@@ -23,7 +23,10 @@ const App: React.FC = () => {
             <Route path="/problems" element={<Dashboard />} />
             <Route path="/create-problem" element={<CreateProblem />} />
             <Route path="/diagrams" element={<MyDesigns />} />
-            <Route path="/playground/:id" element={<SystemDesignPlayground />} />
+            <Route
+              path="/playground/:id"
+              element={<SystemDesignPlayground />}
+            />
             <Route path="*" element={<Home />} />
           </Routes>
         </BrowserRouter>

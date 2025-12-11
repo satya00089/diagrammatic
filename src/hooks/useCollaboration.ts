@@ -60,7 +60,7 @@ const getWebSocketUrl = (apiUrl: string): string => {
 };
 
 const WS_BASE_URL = getWebSocketUrl(
-  import.meta.env.VITE_ASSESSMENT_API_URL || ""
+  import.meta.env.VITE_ASSESSMENT_API_URL || "",
 );
 
 export const useCollaboration = ({
@@ -179,7 +179,7 @@ export const useCollaboration = ({
           console.warn("Unknown WebSocket message type:", messageType);
       }
     },
-    [onDiagramUpdate, onUserJoined, onUserLeft, onError]
+    [onDiagramUpdate, onUserJoined, onUserLeft, onError],
   );
 
   const handleOpen = useCallback(() => {
@@ -197,7 +197,7 @@ export const useCollaboration = ({
       console.error("Collaboration WebSocket error:", error);
       onError?.("Connection error. Retrying...");
     },
-    [onError]
+    [onError],
   );
 
   const {
@@ -235,7 +235,7 @@ export const useCollaboration = ({
         });
       }, 300); // 300ms debounce
     },
-    [enabled, isConnected, sendMessage]
+    [enabled, isConnected, sendMessage],
   );
 
   const sendCursorPosition = useCallback(
@@ -248,7 +248,7 @@ export const useCollaboration = ({
         timestamp: new Date().toISOString(),
       });
     },
-    [enabled, isConnected, sendMessage]
+    [enabled, isConnected, sendMessage],
   );
 
   // Cleanup debounce timeout on unmount

@@ -16,7 +16,13 @@ export type NodeData = {
   subtitle?: string;
   componentName?: string;
   _customProperties?: CustomProperty[];
-  [key: string]: string | number | boolean | React.ComponentType | CustomProperty[] | undefined; // Allow for additional dynamic properties
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | React.ComponentType
+    | CustomProperty[]
+    | undefined; // Allow for additional dynamic properties
 };
 
 import type { PropertyValue } from "../types/canvas";
@@ -52,20 +58,20 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
     (e: React.MouseEvent) => {
       e.stopPropagation();
       globalThis.dispatchEvent(
-        new CustomEvent("diagram:node-delete", { detail: { id } })
+        new CustomEvent("diagram:node-delete", { detail: { id } }),
       );
     },
-    [id]
+    [id],
   );
 
   const onToggle = React.useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       globalThis.dispatchEvent(
-        new CustomEvent("diagram:node-toggle", { detail: { id } })
+        new CustomEvent("diagram:node-toggle", { detail: { id } }),
       );
     },
-    [id]
+    [id],
   );
 
   const handleCopy = React.useCallback(
@@ -73,17 +79,17 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
       e.stopPropagation();
       onCopy?.(id, data);
     },
-    [id, data, onCopy]
+    [id, data, onCopy],
   );
 
   const handleDetach = React.useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       globalThis.dispatchEvent(
-        new CustomEvent("diagram:node-detach", { detail: { id } })
+        new CustomEvent("diagram:node-detach", { detail: { id } }),
       );
     },
-    [id]
+    [id],
   );
 
   const handleContextMenu = React.useCallback((e: React.MouseEvent) => {
@@ -259,7 +265,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 {data.icon
                   ? React.createElement(
                       data.icon as React.ComponentType<{ size?: number }>,
-                      { size: 24 }
+                      { size: 24 },
                     )
                   : "●"}
               </div>
@@ -298,10 +304,15 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   "borderColor",
                 ]);
                 const properties = Object.entries(data).filter(
-                  ([key]) => !excludeKeys.has(key)
+                  ([key]) => !excludeKeys.has(key),
                 );
 
-                if (properties.length === 0 && (!data._customProperties || !Array.isArray(data._customProperties) || data._customProperties.length === 0)) {
+                if (
+                  properties.length === 0 &&
+                  (!data._customProperties ||
+                    !Array.isArray(data._customProperties) ||
+                    data._customProperties.length === 0)
+                ) {
                   return (
                     <div className="text-muted text-center py-2">
                       No properties
@@ -313,7 +324,9 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   <>
                     {properties.length > 0 && (
                       <div className="space-y-2">
-                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">Standard Properties</div>
+                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                          Standard Properties
+                        </div>
                         {properties.map(([key, value]) => (
                           <NodePropertyDisplay
                             key={key}
@@ -323,20 +336,26 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Display custom properties last */}
-                    {data._customProperties && Array.isArray(data._customProperties) && data._customProperties.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">Custom Properties</div>
-                        {data._customProperties.map((customProp: CustomProperty) => (
-                          <NodePropertyDisplay
-                            key={customProp.id}
-                            propertyKey={customProp.label || customProp.key}
-                            value={customProp.value}
-                          />
-                        ))}
-                      </div>
-                    )}
+                    {data._customProperties &&
+                      Array.isArray(data._customProperties) &&
+                      data._customProperties.length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                            Custom Properties
+                          </div>
+                          {data._customProperties.map(
+                            (customProp: CustomProperty) => (
+                              <NodePropertyDisplay
+                                key={customProp.id}
+                                propertyKey={customProp.label || customProp.key}
+                                value={customProp.value}
+                              />
+                            ),
+                          )}
+                        </div>
+                      )}
                   </>
                 );
               })()}
@@ -412,7 +431,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
               Delete
             </button>
           </motion.div>,
-          document.body
+          document.body,
         )}
     </>
   );

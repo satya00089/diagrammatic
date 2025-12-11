@@ -24,7 +24,7 @@ const iconLibraries = {
  * Get icon component from icon name or emoji
  */
 function getIconComponent(
-  component: ComponentDB
+  component: ComponentDB,
 ): IconType | string | undefined {
   // Try React icon first
   if (component.icon) {
@@ -48,7 +48,7 @@ function getIconComponent(
  * Map database component to canvas component
  */
 export function mapComponentToCanvas(
-  dbComponent: ComponentDB
+  dbComponent: ComponentDB,
 ): CanvasComponent {
   const iconComponent = getIconComponent(dbComponent);
 
@@ -78,7 +78,7 @@ export function mapComponentToCanvas(
  * Convert database property definitions to canvas property format
  */
 function convertPropertiesToCanvasFormat(
-  dbProperties: import("../types/componentProvider").ComponentProperty[]
+  dbProperties: import("../types/componentProvider").ComponentProperty[],
 ): Array<{
   key: string;
   label: string;
@@ -102,7 +102,7 @@ function convertPropertiesToCanvasFormat(
  * Map multiple database components to canvas components
  */
 export function mapComponentsToCanvas(
-  dbComponents: ComponentDB[]
+  dbComponents: ComponentDB[],
 ): CanvasComponent[] {
   return dbComponents
     .filter((comp) => comp.isActive) // Only include active components
@@ -113,7 +113,7 @@ export function mapComponentsToCanvas(
  * Group components by provider
  */
 export function groupByProvider(
-  components: ComponentDB[]
+  components: ComponentDB[],
 ): Map<string, ComponentDB[]> {
   const grouped = new Map<string, ComponentDB[]>();
 
@@ -132,7 +132,7 @@ export function groupByProvider(
  * Group components by category
  */
 export function groupByCategory(
-  components: ComponentDB[]
+  components: ComponentDB[],
 ): Map<string, ComponentDB[]> {
   const grouped = new Map<string, ComponentDB[]>();
 

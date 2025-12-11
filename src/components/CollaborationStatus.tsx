@@ -1,7 +1,7 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MdWifiOff, MdPeople, MdSync } from 'react-icons/md';
-import { getCollaboratorColor } from '../utils/collaborationUtils';
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MdWifiOff, MdPeople, MdSync } from "react-icons/md";
+import { getCollaboratorColor } from "../utils/collaborationUtils";
 
 interface CollaboratorUser {
   id: string;
@@ -31,7 +31,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
   // This matches Figma's behavior - seamless when working, visible when there's a problem
   const shouldShowStatus = isConnecting || !isConnected;
   const shouldShowCollaborators = showCollaborators && collaborators.length > 0;
-  
+
   // Don't render anything if connection is fine and no collaborators
   if (!shouldShowStatus && !shouldShowCollaborators) {
     return null;
@@ -41,9 +41,9 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
     if (isConnecting) {
       return reconnectAttempts > 0
         ? `Reconnecting... (${reconnectAttempts})`
-        : 'Connecting...';
+        : "Connecting...";
     }
-    return 'Connection lost';
+    return "Connection lost";
   };
 
   const getStatusIcon = () => {
@@ -54,8 +54,8 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
   };
 
   const getStatusColor = () => {
-    if (isConnecting) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (isConnecting) return "text-yellow-600 dark:text-yellow-400";
+    return "text-red-600 dark:text-red-400";
   };
 
   return (
@@ -66,7 +66,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
           type="button"
           className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface border border-theme/10 ${getStatusColor()} transition-colors cursor-default`}
           aria-label={getStatusText()}
-          aria-describedby={showTooltip ? 'connection-tooltip' : undefined}
+          aria-describedby={showTooltip ? "connection-tooltip" : undefined}
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
           onFocus={() => setShowTooltip(true)}
@@ -91,8 +91,8 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
                   <div className="font-semibold mb-1">Connection Status</div>
                   <div className="text-muted">
                     {isConnecting
-                      ? 'Establishing connection...'
-                      : 'Collaboration unavailable'}
+                      ? "Establishing connection..."
+                      : "Collaboration unavailable"}
                   </div>
                 </div>
               </motion.div>
@@ -103,10 +103,10 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
 
       {/* Collaborators List - Only shown when there are online collaborators */}
       {shouldShowCollaborators && (
-        <div 
+        <div
           className="flex items-center gap-1 px-3"
           role="group"
-          aria-label={`${collaborators.length} collaborator${collaborators.length > 1 ? 's' : ''} online`}
+          aria-label={`${collaborators.length} collaborator${collaborators.length > 1 ? "s" : ""} online`}
         >
           <MdPeople className="h-4 w-4 text-theme" aria-hidden="true" />
           <div className="flex -space-x-2">
@@ -141,10 +141,10 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
               </div>
             ))}
             {collaborators.length > 3 && (
-              <div 
+              <div
                 className="w-6 h-6 rounded-full bg-theme/10 border-2 border-surface flex items-center justify-center text-xs font-bold text-theme"
                 role="img"
-                aria-label={`${collaborators.length - 3} more collaborator${collaborators.length - 3 > 1 ? 's' : ''}`}
+                aria-label={`${collaborators.length - 3} more collaborator${collaborators.length - 3 > 1 ? "s" : ""}`}
               >
                 +{collaborators.length - 3}
               </div>

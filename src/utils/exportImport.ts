@@ -19,7 +19,7 @@ export const exportAsJSON = (
   nodes: Node[],
   edges: Edge[],
   title?: string,
-  description?: string
+  description?: string,
 ): string => {
   const data: DiagramData = {
     version: "1.0",
@@ -43,7 +43,7 @@ export const exportAsXML = (
   nodes: Node[],
   edges: Edge[],
   title?: string,
-  description?: string
+  description?: string,
 ): string => {
   const escapeXml = (unsafe: string): string => {
     return unsafe
@@ -131,7 +131,7 @@ export const exportAsXML = (
  * Import diagram from JSON
  */
 export const importFromJSON = (
-  jsonString: string
+  jsonString: string,
 ): { nodes: Node[]; edges: Edge[] } => {
   try {
     const data = JSON.parse(jsonString) as DiagramData;
@@ -153,7 +153,7 @@ export const importFromJSON = (
     throw new Error(
       error instanceof Error
         ? `Failed to import JSON: ${error.message}`
-        : "Failed to import JSON: Invalid format"
+        : "Failed to import JSON: Invalid format",
     );
   }
 };
@@ -162,7 +162,7 @@ export const importFromJSON = (
  * Import diagram from XML (basic draw.io format parsing)
  */
 export const importFromXML = (
-  xmlString: string
+  xmlString: string,
 ): { nodes: Node[]; edges: Edge[] } => {
   try {
     const parser = new DOMParser();
@@ -190,7 +190,7 @@ export const importFromXML = (
       const y = Number.parseFloat(geometry?.getAttribute("y") || "0");
       const width = Number.parseFloat(geometry?.getAttribute("width") || "200");
       const height = Number.parseFloat(
-        geometry?.getAttribute("height") || "80"
+        geometry?.getAttribute("height") || "80",
       );
 
       const nodeId = `imported-node-${Date.now()}-${nodeIndex}`;
@@ -282,7 +282,7 @@ export const importFromXML = (
     throw new Error(
       error instanceof Error
         ? `Failed to import XML: ${error.message}`
-        : "Failed to import XML: Invalid format"
+        : "Failed to import XML: Invalid format",
     );
   }
 };
@@ -293,7 +293,7 @@ export const importFromXML = (
 export const downloadFile = (
   content: string,
   filename: string,
-  mimeType: string
+  mimeType: string,
 ) => {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);

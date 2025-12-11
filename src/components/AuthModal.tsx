@@ -28,8 +28,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Detect theme changes
   useEffect(() => {
     const updateTheme = () => {
-      const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches ||
-                      document.documentElement.classList.contains('dark');
+      const darkMode =
+        window.matchMedia("(prefers-color-scheme: dark)").matches ||
+        document.documentElement.classList.contains("dark");
       setIsDarkMode(darkMode);
     };
 
@@ -37,17 +38,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     updateTheme();
 
     // Listen for theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const observer = new MutationObserver(updateTheme);
-    
-    mediaQuery.addEventListener('change', updateTheme);
+
+    mediaQuery.addEventListener("change", updateTheme);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class'],
+      attributeFilter: ["class"],
     });
 
     return () => {
-      mediaQuery.removeEventListener('change', updateTheme);
+      mediaQuery.removeEventListener("change", updateTheme);
       observer.disconnect();
     };
   }, []);

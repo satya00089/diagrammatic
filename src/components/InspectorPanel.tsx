@@ -56,7 +56,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     if (!resizingRef.current) return;
     const next = Math.min(
       Math.max(window.innerWidth - e.clientX, minWidth),
-      maxWidth
+      maxWidth,
     );
     setWidth(next);
   }, []);
@@ -107,7 +107,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
     if (!assessmentResult) return;
     try {
       await navigator.clipboard.writeText(
-        JSON.stringify(assessmentResult, null, 2)
+        JSON.stringify(assessmentResult, null, 2),
       );
     } catch {
       // fallback: create temporary textarea

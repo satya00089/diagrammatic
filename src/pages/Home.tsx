@@ -100,7 +100,8 @@ const Home: React.FC = () => {
     {
       icon: "☁️",
       title: "Cloud Provider Support",
-      description: "AWS, Azure & GCP components for cloud infrastructure design",
+      description:
+        "AWS, Azure & GCP components for cloud infrastructure design",
     },
     {
       icon: "🔗",
@@ -667,7 +668,9 @@ const Home: React.FC = () => {
                   <span className="text-white/95">Visually, Intuitively</span>
                 </h1>
                 <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8 leading-relaxed">
-                  The interactive playground for system design, ER diagrams, and UML — featuring AWS, Azure & GCP cloud components, cloud infrastructure problems, and AI-powered assessment
+                  The interactive playground for system design, ER diagrams, and
+                  UML — featuring AWS, Azure & GCP cloud components, cloud
+                  infrastructure problems, and AI-powered assessment
                 </p>
 
                 {/* Stats Bar */}
@@ -691,7 +694,9 @@ const Home: React.FC = () => {
                         <div className="text-3xl font-bold text-white">
                           {stat.value}
                         </div>
-                        <div className="text-sm text-white/80">{stat.label}</div>
+                        <div className="text-sm text-white/80">
+                          {stat.label}
+                        </div>
                       </div>
                     );
                   })}
@@ -724,7 +729,8 @@ const Home: React.FC = () => {
                 </div>
 
                 <p className="mt-6 text-sm text-white/80">
-                  Trusted by 1000+ developers • AI-powered feedback • Open source
+                  Trusted by 1000+ developers • AI-powered feedback • Open
+                  source
                 </p>
               </div>
             </div>
@@ -786,7 +792,7 @@ const Home: React.FC = () => {
                     </div>
                   );
                 }
-                
+
                 if (savedDiagrams.length === 0) {
                   return (
                     <div className="text-center py-20 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-12 elevated-card-bg">
@@ -810,136 +816,168 @@ const Home: React.FC = () => {
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {savedDiagrams.slice(0, 6).map((diagram) => (
-                    <div
-                      key={diagram.id}
-                      onClick={() => handleOpenDiagram(diagram.id)}
-                      className="group backdrop-blur-md rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-pointer elevated-card-bg"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-theme group-hover:text-[var(--brand)] transition-colors mb-1 line-clamp-1">
-                            {diagram.title}
-                          </h3>
-                          
-                          {/* Owner Info & Permission Badges */}
-                          {!diagram.isOwner && (
-                            <div className="mb-2 flex items-center gap-2 flex-wrap">
-                              {/* Owner Info Badge */}
-                              <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
-                                {/* Animated gradient background */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
-                                
-                                <div className="relative flex items-center gap-1.5">
-                                  {/* Avatar */}
-                                  <div className="relative flex-shrink-0">
-                                    {diagram.owner.pictureUrl ? (
-                                      <img
-                                        src={diagram.owner.pictureUrl}
-                                        alt={diagram.owner.name}
-                                        className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
-                                      />
-                                    ) : (
-                                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
-                                        {diagram.owner.name[0]?.toUpperCase()}
-                                      </div>
-                                    )}
-                                    {/* Online indicator */}
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
-                                  </div>
-                                  
-                                  {/* Owner Name */}
-                                  <div className="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                    <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
-                                      {diagram.owner.name}
-                                    </span>
+                    {savedDiagrams.slice(0, 6).map((diagram) => (
+                      <div
+                        key={diagram.id}
+                        onClick={() => handleOpenDiagram(diagram.id)}
+                        className="group backdrop-blur-md rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-pointer elevated-card-bg"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-theme group-hover:text-[var(--brand)] transition-colors mb-1 line-clamp-1">
+                              {diagram.title}
+                            </h3>
+
+                            {/* Owner Info & Permission Badges */}
+                            {!diagram.isOwner && (
+                              <div className="mb-2 flex items-center gap-2 flex-wrap">
+                                {/* Owner Info Badge */}
+                                <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
+                                  {/* Animated gradient background */}
+                                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
+
+                                  <div className="relative flex items-center gap-1.5">
+                                    {/* Avatar */}
+                                    <div className="relative flex-shrink-0">
+                                      {diagram.owner.pictureUrl ? (
+                                        <img
+                                          src={diagram.owner.pictureUrl}
+                                          alt={diagram.owner.name}
+                                          className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
+                                        />
+                                      ) : (
+                                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
+                                          {diagram.owner.name[0]?.toUpperCase()}
+                                        </div>
+                                      )}
+                                      {/* Online indicator */}
+                                      <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
+                                    </div>
+
+                                    {/* Owner Name */}
+                                    <div className="flex items-center gap-1">
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={3}
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                                        />
+                                      </svg>
+                                      <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
+                                        {diagram.owner.name}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+
+                                {/* Permission Badge */}
+                                <div
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
+                                    diagram.permission === "edit"
+                                      ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30"
+                                      : "bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30"
+                                  }`}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2.5}
+                                  >
+                                    {diagram.permission === "edit" ? (
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    ) : (
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    )}
+                                  </svg>
+                                  <span>
+                                    {diagram.permission === "edit"
+                                      ? "Can Edit"
+                                      : "View Only"}
+                                  </span>
+                                </div>
                               </div>
-                              
-                              {/* Permission Badge */}
-                              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
-                                diagram.permission === 'edit'
-                                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30'
-                                  : 'bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30'
-                              }`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                  {diagram.permission === 'edit' ? (
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  ) : (
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  )}
-                                </svg>
-                                <span>{diagram.permission === 'edit' ? 'Can Edit' : 'View Only'}</span>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {diagram.description && (
-                            <p className="text-sm text-muted line-clamp-2">
-                              {diagram.description}
-                            </p>
+                            )}
+
+                            {diagram.description && (
+                              <p className="text-sm text-muted line-clamp-2">
+                                {diagram.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-3xl ml-2">📐</div>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm text-muted mb-4">
+                          <span className="flex items-center gap-1">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                              />
+                            </svg>
+                            {diagram.nodes.length} node
+                            {diagram.nodes.length !== 1 ? "s" : ""}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                              />
+                            </svg>
+                            {diagram.edges.length} connection
+                            {diagram.edges.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-muted">
+                          Updated{" "}
+                          {new Date(diagram.updatedAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
                           )}
                         </div>
-                        <div className="text-3xl ml-2">📐</div>
                       </div>
-
-                      <div className="flex items-center gap-4 text-sm text-muted mb-4">
-                        <span className="flex items-center gap-1">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-                            />
-                          </svg>
-                          {diagram.nodes.length} node
-                          {diagram.nodes.length !== 1 ? "s" : ""}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                            />
-                          </svg>
-                          {diagram.edges.length} connection
-                          {diagram.edges.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-muted">
-                        Updated{" "}
-                        {new Date(diagram.updatedAt).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          }
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
                 );
               })()}
             </div>
@@ -975,32 +1013,32 @@ const Home: React.FC = () => {
                     role="button"
                     tabIndex={0}
                   >
-                  {/* Animated gradient background */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500`}
-                  />
+                    {/* Animated gradient background */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500`}
+                    />
 
-                  {/* Glow effect */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+                    {/* Glow effect */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
 
-                  <div className="relative z-10">
-                    <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                      {feature.icon}
-                    </div>
-                    <h3 className="text-2xl font-bold mb-4 text-theme group-hover:text-[var(--brand)] transition-colors duration-300">
-                      {feature.title}
-                    </h3>
-                    <p className="text-muted mb-8 leading-relaxed text-[15px]">
-                      {feature.description}
-                    </p>
-                    <div className="inline-flex items-center gap-2 text-[var(--brand)] font-semibold text-sm group-hover:gap-3 transition-all duration-300">
-                      {feature.action}
-                      <span className="text-lg group-hover:translate-x-1 transition-transform duration-300">
-                        →
-                      </span>
+                    <div className="relative z-10">
+                      <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-2xl font-bold mb-4 text-theme group-hover:text-[var(--brand)] transition-colors duration-300">
+                        {feature.title}
+                      </h3>
+                      <p className="text-muted mb-8 leading-relaxed text-[15px]">
+                        {feature.description}
+                      </p>
+                      <div className="inline-flex items-center gap-2 text-[var(--brand)] font-semibold text-sm group-hover:gap-3 transition-all duration-300">
+                        {feature.action}
+                        <span className="text-lg group-hover:translate-x-1 transition-transform duration-300">
+                          →
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -1020,7 +1058,14 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {capabilities.map((capability, capIndex) => {
                 const getCapabilityDelayClass = () => {
-                  const delays = ["delay-0", "delay-[50ms]", "delay-[100ms]", "delay-[150ms]", "delay-[200ms]", "delay-[250ms]"];
+                  const delays = [
+                    "delay-0",
+                    "delay-[50ms]",
+                    "delay-[100ms]",
+                    "delay-[150ms]",
+                    "delay-[200ms]",
+                    "delay-[250ms]",
+                  ];
                   return delays[capIndex] || "delay-[250ms]";
                 };
 
