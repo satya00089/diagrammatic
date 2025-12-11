@@ -438,7 +438,7 @@ const Dashboard: React.FC = () => {
                           {problem.tags.slice(0, 3).map((tag) => (
                             <span
                               key={tag}
-                              className="px-3 py-1 capitalize bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
+                              className="px-3 py-1 uppercase bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
                             >
                               {tag}
                             </span>
