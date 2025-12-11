@@ -7,7 +7,15 @@ import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
-import { SiMicrosoftazure, SiGooglecloud } from "react-icons/si";
+import { VscAzureDevops } from "react-icons/vsc";
+import {
+  SiMicrosoftazure,
+  SiGooglecloud,
+  SiAmazonec2,
+  SiAwselasticloadbalancing,
+  SiAwslambda,
+  SiAwsamplify,
+} from "react-icons/si";
 import { FaAws } from "react-icons/fa6";
 
 const Home: React.FC = () => {
@@ -127,7 +135,7 @@ const Home: React.FC = () => {
 
   const stats = [
     { value: "1k+", label: "Components", icon: "🧩" },
-    { value: "50+", label: "Cloud Problems", icon: "☁️" },
+    { value: "90+", label: "Problems", icon: "📝" },
     { value: "1000+", label: "Users", icon: "👥" },
     { value: "∞", label: "Possibilities", icon: "✨" },
   ];
@@ -365,6 +373,15 @@ const Home: React.FC = () => {
           </svg>
 
           {/* Component nodes - Top layer */}
+          <div className="absolute top-[15%] left-[10%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+            🗄️
+          </div>
+          <div className="absolute top-[15%] left-[25%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
+            🔐
+          </div>
+          <div className="absolute top-[25%] left-[40%] w-16 h-16 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
+            ⚡
+          </div>
           <div className="absolute top-[20%] left-[60%] w-20 h-20 bg-[var(--theme)]/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
             🌐
           </div>
@@ -610,14 +627,29 @@ const Home: React.FC = () => {
               </svg>
 
               {/* Component nodes */}
-              <div className="absolute top-[10%] left-[30%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+              <div className="absolute top-[5%] left-[75%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
                 <FaAws size={48} />
               </div>
-              <div className="absolute top-[55%] left-[20%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
+              <div className="absolute top-[55%] left-[20%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
                 <SiMicrosoftazure size={48} />
               </div>
-              <div className="absolute top-[60%] left-[80%] w-20 h-20 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
+              <div className="absolute top-[60%] left-[80%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
                 <SiGooglecloud size={48} />
+              </div>
+              <div className="absolute top-[5%] left-[20%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
+                <SiAmazonec2 size={48} />
+              </div>
+              <div className="absolute top-[40%] left-[5%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
+                <SiAwselasticloadbalancing size={48} />
+              </div>
+              <div className="absolute top-[85%] left-[8%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+                <SiAwslambda size={48} />
+              </div>
+              <div className="absolute top-[88%] left-[68%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+                <VscAzureDevops size={48} />
+              </div>
+              <div className="absolute top-[85%] left-[88%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
+                <SiAwsamplify size={48} />
               </div>
               <div className="absolute top-[20%] left-[10%] w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
                 🗄️
@@ -652,10 +684,11 @@ const Home: React.FC = () => {
               >
                 <div className="inline-block mb-6">
                   <span className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full shadow-lg">
-                    ✨ Now with 1k+ Components, UML & ER Diagrams, AI Assessment
+                    ✨ Now with 1k+ Components, cloud, UML & ER Diagrams, AI
+                    Assessment
                   </span>
                 </div>
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
+                <h1 className="text-5xl font-bold mb-6 leading-tight text-white">
                   <span className="inline-block animate-gradient bg-gradient-to-r from-white via-white/90 to-white bg-clip-text">
                     System Design
                   </span>
@@ -967,7 +1000,7 @@ const Home: React.FC = () => {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            },
+                            }
                           )}
                         </div>
                       </div>
