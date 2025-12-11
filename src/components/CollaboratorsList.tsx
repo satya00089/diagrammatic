@@ -10,7 +10,10 @@ interface Collaborator {
 interface CollaboratorsListProps {
   isLoading: boolean;
   collaborators: Collaborator[];
-  onUpdatePermission: (collaboratorId: string, permission: "read" | "edit") => void;
+  onUpdatePermission: (
+    collaboratorId: string,
+    permission: "read" | "edit",
+  ) => void;
   onRemove: (collaboratorId: string) => void;
 }
 
@@ -33,7 +36,9 @@ const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
     return (
       <div className="text-center py-4 text-muted">
         <p className="text-sm">No collaborators yet</p>
-        <p className="text-xs mt-1">Share this diagram to start collaborating</p>
+        <p className="text-xs mt-1">
+          Share this diagram to start collaborating
+        </p>
       </div>
     );
   }
@@ -66,7 +71,7 @@ const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
               onChange={(e) =>
                 onUpdatePermission(
                   collaborator.id,
-                  e.target.value as "read" | "edit"
+                  e.target.value as "read" | "edit",
                 )
               }
               className="text-xs px-2 py-1 border border-theme/20 rounded bg-theme text-theme"

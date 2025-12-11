@@ -40,8 +40,10 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   const renderStatusBadge = () => {
     if (isClickable && !wasAdded) {
       return (
-        <span className="text-xs px-2 py-1 bg-accent/10 text-accent rounded-full 
-          font-medium border border-accent/20">
+        <span
+          className="text-xs px-2 py-1 bg-accent/10 text-accent rounded-full 
+          font-medium border border-accent/20"
+        >
           Click to add
         </span>
       );
@@ -49,7 +51,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
     if (wasAdded) {
       return (
-        <motion.span 
+        <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="text-xs px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 
@@ -72,8 +74,10 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
     >
       <div className="flex items-start gap-3">
         {suggestion.icon && (
-          <div className="w-8 h-8 flex-shrink-0 bg-accent/10 rounded-lg 
-            flex items-center justify-center">
+          <div
+            className="w-8 h-8 flex-shrink-0 bg-accent/10 rounded-lg 
+            flex items-center justify-center"
+          >
             <span className="text-lg">{suggestion.icon}</span>
           </div>
         )}

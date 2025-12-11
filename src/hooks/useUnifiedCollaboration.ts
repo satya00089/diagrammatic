@@ -1,50 +1,53 @@
 /**
  * Unified Collaboration Hook
  * Provides a single interface for collaboration regardless of underlying implementation
- * 
+ *
  * Responsibilities (Single Responsibility Principle):
  * - Abstract collaboration implementation details
  * - Switch between Yjs and WebSocket based on feature flags
  * - Maintain consistent API for components
- * 
+ *
  * Open/Closed Principle:
  * - Open for new collaboration backends
  * - Closed for modification of existing implementations
  */
 
-import { useState, useCallback } from 'react'
-import type { Node, Edge } from '@xyflow/react'
-import { useAuth } from './useAuth'
-import { isFeatureEnabled, FeatureFlags } from '../config/featureFlags'
-import { getYjsUrl } from '../config/environment'
-import { useYjsCollaboration } from './useYjsCollaboration'
-import type { CollaboratorUser, CollaboratorCursor } from './useYjsCollaboration'
-import { useCollaboration as useWebSocketCollaboration } from './useCollaboration'
+import { useState, useCallback } from "react";
+import type { Node, Edge } from "@xyflow/react";
+import { useAuth } from "./useAuth";
+import { isFeatureEnabled, FeatureFlags } from "../config/featureFlags";
+import { getYjsUrl } from "../config/environment";
+import { useYjsCollaboration } from "./useYjsCollaboration";
+import type {
+  CollaboratorUser,
+  CollaboratorCursor,
+} from "./useYjsCollaboration";
+import { useCollaboration as useWebSocketCollaboration } from "./useCollaboration";
 
 export interface UnifiedCollaborationState {
-  isConnected: boolean
-  isSynced: boolean
-  collaboratorCount: number
-  error: string | null
+  isConnected: boolean;
+  isSynced: boolean;
+  collaboratorCount: number;
+  error: string | null;
 }
 
 export interface UnifiedCollaborationOptions {
-  diagramId: string
-  nodes: Node[]
-  edges: Edge[]
-  onNodesChange: (nodes: Node[]) => void
-  onEdgesChange: (edges: Edge[]) => void
-  enabled: boolean
+  diagramId: string;
+  nodes: Node[];
+  edges: Edge[];
+  onNodesChange: (nodes: Node[]) => void;
+  onEdgesChange: (edges: Edge[]) => void;
+  enabled: boolean;
 }
 
 export interface UnifiedCollaborationReturn {
-  state: UnifiedCollaborationState
-  collaborators: CollaboratorUser[]
-  cursors: CollaboratorCursor[]
-  sendUpdate: (data: { nodes?: Node[]; edges?: Edge[] }) => void
-  sendCursorPosition: (position: { x: number; y: number }) => void
-  disconnect: () => void
-  reconnect: () => void
+  state: UnifiedCollaborationState;
+  collaborators: CollaboratorUser[];
+  cursors: CollaboratorCursor[];
+  sendUpdate: (data: { nodes?: Node[]; edges?: Edge[] }) => void;
+  sendCursorPosition: (position: { x: number; y: number }) => void;
+  disconnect: () => void;
+  reconnect: () => void;
 }
 
 /**
@@ -58,13 +61,13 @@ export const useUnifiedCollaboration = ({
   onEdgesChange,
   enabled,
 }: UnifiedCollaborationOptions): UnifiedCollaborationReturn => {
-  const { user, token } = useAuth()
-  
+  const { user, token } = useAuth();
+
   // Check if Yjs is enabled via feature flag AND Yjs URL is configured
   // If no VITE_YJS_URL is provided, automatically fall back to custom WebSocket
-  const yjsUrl = getYjsUrl()
-  const useYjs = !!yjsUrl && isFeatureEnabled(FeatureFlags.YJS_COLLABORATION)
-  
+  const yjsUrl = getYjsUrl();
+  const useYjs = !!yjsUrl && isFeatureEnabled(FeatureFlags.YJS_COLLABORATION);
+
   // Yjs collaboration
   const yjsCollaboration = useYjsCollaboration({
     diagramId,
@@ -72,49 +75,53 @@ export const useUnifiedCollaboration = ({
     edges,
     onNodesChange,
     onEdgesChange,
-    userId: user?.id || 'anonymous',
-    userName: user?.name || 'Anonymous',
+    userId: user?.id || "anonymous",
+    userName: user?.name || "Anonymous",
     userEmail: user?.email,
     userPictureUrl: user?.picture || undefined,
     enabled: useYjs && enabled,
-  })
+  });
 
   // WebSocket collaboration
-  const [wsCollaborators, setWsCollaborators] = useState<CollaboratorUser[]>([])
-  const [wsCursors, setWsCursors] = useState<CollaboratorCursor[]>([])
+  const [wsCollaborators, setWsCollaborators] = useState<CollaboratorUser[]>(
+    [],
+  );
+  const [wsCursors, setWsCursors] = useState<CollaboratorCursor[]>([]);
   const wsCollaboration = useWebSocketCollaboration({
     diagramId,
-    token: token || '',
+    token: token || "",
     enabled: !useYjs && enabled,
     onDiagramUpdate: (data) => {
       if (data.nodes) {
-        onNodesChange(data.nodes)
+        onNodesChange(data.nodes);
       }
       if (data.edges) {
-        onEdgesChange(data.edges)
+        onEdgesChange(data.edges);
       }
     },
     onUserJoined: (user) => {
       setWsCollaborators((prev) => {
-        if (prev.some((c) => c.id === user.id)) return prev
-        return [...prev, user]
-      })
+        if (prev.some((c) => c.id === user.id)) return prev;
+        return [...prev, user];
+      });
     },
     onUserLeft: (user) => {
-      setWsCollaborators((prev) => prev.filter((c) => c.id !== user.id))
-      setWsCursors((prev) => prev.filter((c) => c.userId !== user.id))
+      setWsCollaborators((prev) => prev.filter((c) => c.id !== user.id));
+      setWsCursors((prev) => prev.filter((c) => c.userId !== user.id));
     },
-  })
+  });
 
   // Update WebSocket cursors from the hook
-  const wsCursorsFromHook = wsCollaboration.cursors
+  const wsCursorsFromHook = wsCollaboration.cursors;
   if (wsCursorsFromHook && wsCursorsFromHook.length !== wsCursors.length) {
-    setWsCursors(wsCursorsFromHook.map(c => ({
-      userId: c.userId,
-      user: c.user,
-      position: c.position,
-      timestamp: c.timestamp,
-    })))
+    setWsCursors(
+      wsCursorsFromHook.map((c) => ({
+        userId: c.userId,
+        user: c.user,
+        position: c.position,
+        timestamp: c.timestamp,
+      })),
+    );
   }
 
   // Unified state
@@ -129,53 +136,55 @@ export const useUnifiedCollaboration = ({
         isConnected: wsCollaboration.isConnected,
         isSynced: wsCollaboration.isConnected, // WebSocket doesn't have separate sync state
         collaboratorCount: wsCollaborators.length,
-        error: wsCollaboration.isConnected ? null : 'Disconnected',
-      }
+        error: wsCollaboration.isConnected ? null : "Disconnected",
+      };
 
   // Unified collaborators and cursors
-  const collaborators = useYjs ? yjsCollaboration.collaborators : wsCollaborators
-  const cursors = useYjs ? yjsCollaboration.cursors : wsCursors
+  const collaborators = useYjs
+    ? yjsCollaboration.collaborators
+    : wsCollaborators;
+  const cursors = useYjs ? yjsCollaboration.cursors : wsCursors;
 
   // Unified send function
   const sendUpdate = useCallback(
     (data: { nodes?: Node[]; edges?: Edge[] }) => {
       if (!useYjs) {
         // WebSocket backend handles updates automatically via debouncing
-        wsCollaboration.sendDiagramUpdate(data)
+        wsCollaboration.sendDiagramUpdate(data);
       }
       // Yjs handles updates automatically via observer pattern
     },
-    [useYjs, wsCollaboration]
-  )
+    [useYjs, wsCollaboration],
+  );
 
   // Unified send cursor position
   const sendCursorPosition = useCallback(
     (position: { x: number; y: number }) => {
       if (useYjs) {
-        yjsCollaboration.sendCursorPosition(position)
+        yjsCollaboration.sendCursorPosition(position);
       } else {
-        wsCollaboration.sendCursorPosition(position)
+        wsCollaboration.sendCursorPosition(position);
       }
     },
-    [useYjs, yjsCollaboration, wsCollaboration]
-  )
+    [useYjs, yjsCollaboration, wsCollaboration],
+  );
 
   // Unified disconnect function
   const disconnect = useCallback(() => {
     if (useYjs) {
-      yjsCollaboration.disconnect()
+      yjsCollaboration.disconnect();
     } else {
-      wsCollaboration.disconnect()
+      wsCollaboration.disconnect();
     }
-  }, [useYjs, yjsCollaboration, wsCollaboration])
+  }, [useYjs, yjsCollaboration, wsCollaboration]);
 
   // Unified reconnect function
   const reconnect = useCallback(() => {
     if (useYjs) {
-      yjsCollaboration.reconnect()
+      yjsCollaboration.reconnect();
     }
     // WebSocket hook auto-reconnects, no manual reconnect needed
-  }, [useYjs, yjsCollaboration])
+  }, [useYjs, yjsCollaboration]);
 
   return {
     state,
@@ -185,5 +194,5 @@ export const useUnifiedCollaboration = ({
     sendCursorPosition,
     disconnect,
     reconnect,
-  }
-}
+  };
+};

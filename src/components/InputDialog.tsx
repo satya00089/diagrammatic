@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 
 interface InputDialogProps {
   isOpen: boolean;
@@ -8,7 +8,7 @@ interface InputDialogProps {
   label: string;
   placeholder?: string;
   defaultValue?: string;
-  type?: 'text' | 'textarea';
+  type?: "text" | "textarea";
   required?: boolean;
 }
 
@@ -19,8 +19,8 @@ export const InputDialog: React.FC<InputDialogProps> = ({
   title,
   label,
   placeholder,
-  defaultValue = '',
-  type = 'text',
+  defaultValue = "",
+  type = "text",
   required = false,
 }) => {
   const [value, setValue] = useState(defaultValue);
@@ -44,7 +44,7 @@ export const InputDialog: React.FC<InputDialogProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       onClose();
     }
   };
@@ -53,7 +53,7 @@ export const InputDialog: React.FC<InputDialogProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div 
+      <div
         className="bg-surface rounded-lg shadow-xl border border-theme/10 w-full max-w-md mx-4"
         role="dialog"
         aria-labelledby="dialog-title"
@@ -69,11 +69,14 @@ export const InputDialog: React.FC<InputDialogProps> = ({
 
           {/* Content */}
           <div className="px-6 py-4">
-            <label htmlFor="dialog-input" className="block text-sm font-medium text-theme mb-2">
+            <label
+              htmlFor="dialog-input"
+              className="block text-sm font-medium text-theme mb-2"
+            >
               {label}
               {required && <span className="text-red-500 ml-1">*</span>}
             </label>
-            {type === 'textarea' ? (
+            {type === "textarea" ? (
               <textarea
                 ref={inputRef as React.RefObject<HTMLTextAreaElement>}
                 id="dialog-input"

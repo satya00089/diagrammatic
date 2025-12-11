@@ -155,7 +155,7 @@ const NodeWithCopy = React.memo(
         isInGroup={props.isInGroup}
       />
     );
-  }
+  },
 );
 
 // Create a wrapper component for ERNode with onCopy prop
@@ -175,7 +175,7 @@ const ERNodeWithCopy = React.memo(
         isInGroup={props.isInGroup}
       />
     );
-  }
+  },
 );
 
 // Create a wrapper component for TableNode with onCopy prop
@@ -195,13 +195,13 @@ const TableNodeWithCopy = React.memo(
         isInGroup={props.isInGroup}
       />
     );
-  }
+  },
 );
 
 // Factory function to create node component with copy handler and group detection
 const createNodeWithCopyHandler = (
   onCopy: (id: string, data: AnyNodeData) => void,
-  nodesRef: React.RefObject<Node[]>
+  nodesRef: React.RefObject<Node[]>,
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
@@ -213,7 +213,7 @@ const createNodeWithCopyHandler = (
 // Factory function to create ER node component with copy handler and group detection
 const createERNodeWithCopyHandler = (
   onCopy: (id: string, data: AnyNodeData) => void,
-  nodesRef: React.RefObject<Node[]>
+  nodesRef: React.RefObject<Node[]>,
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
@@ -225,7 +225,7 @@ const createERNodeWithCopyHandler = (
 // Factory function to create table node component with copy handler and group detection
 const createTableNodeWithCopyHandler = (
   onCopy: (id: string, data: AnyNodeData) => void,
-  nodesRef: React.RefObject<Node[]>
+  nodesRef: React.RefObject<Node[]>,
 ) => {
   return (props: { id: string; data: unknown }) => {
     const isInGroup =
@@ -254,35 +254,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   } = useAppSelector((state) => state.components);
 
   // Utility function to restore React icon components for nodes loaded from storage/Yjs
-  const restoreNodeIcons = useCallback((nodesToRestore: Node[]): Node[] => {
-    return nodesToRestore.map((node) => {
-      const componentId = typeof node.data?.componentId === 'string' 
-        ? node.data.componentId 
-        : null;
-      
-      // Find matching component from local config
-      const localComp = componentId
-        ? COMPONENTS.find((c) => c.id === componentId)
-        : null;
+  const restoreNodeIcons = useCallback(
+    (nodesToRestore: Node[]): Node[] => {
+      return nodesToRestore.map((node) => {
+        const componentId =
+          typeof node.data?.componentId === "string"
+            ? node.data.componentId
+            : null;
 
-      // Restore icon from local component if available
-      const restoredIcon = localComp?.icon || node.data?.icon;
+        // Find matching component from local config
+        const localComp = componentId
+          ? COMPONENTS.find((c) => c.id === componentId)
+          : null;
 
-      // Fetch full component data if it's a provider component (AWS, Azure, etc.)
-      if (componentId && !localComp && !fullComponentsCache[componentId]) {
-        dispatch(fetchFullComponent(componentId));
-      }
+        // Restore icon from local component if available
+        const restoredIcon = localComp?.icon || node.data?.icon;
 
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          icon: restoredIcon, // Restore React icon component
-          iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
-        },
-      };
-    });
-  }, [fullComponentsCache, dispatch]);
+        // Fetch full component data if it's a provider component (AWS, Azure, etc.)
+        if (componentId && !localComp && !fullComponentsCache[componentId]) {
+          dispatch(fetchFullComponent(componentId));
+        }
+
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            icon: restoredIcon, // Restore React icon component
+            iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
+          },
+        };
+      });
+    },
+    [fullComponentsCache, dispatch],
+  );
 
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
@@ -311,7 +315,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentDiagramId, setCurrentDiagramId] = useState<string | null>(null);
   const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(
-    null
+    null,
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -327,7 +331,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
   const [sharePermission, setSharePermission] = useState<"read" | "edit">(
-    "read"
+    "read",
   );
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [isSharing, setIsSharing] = useState(false);
@@ -377,7 +381,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Check if it's a custom problem from localStorage
     if (idFromUrl.startsWith("custom-")) {
       const customProblemData = localStorage.getItem(
-        `custom-problem-${idFromUrl}`
+        `custom-problem-${idFromUrl}`,
       );
       if (customProblemData) {
         setProblem(JSON.parse(customProblemData));
@@ -396,7 +400,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         if (!response.ok) {
           throw new Error(
-            `Failed to fetch problem: ${response.status} ${response.statusText}`
+            `Failed to fetch problem: ${response.status} ${response.statusText}`,
           );
         }
 
@@ -406,7 +410,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching the problem"
+            : "An error occurred while fetching the problem",
         );
         console.error("Error fetching problem:", err);
       } finally {
@@ -515,7 +519,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         } catch (err) {
           console.error("Failed to load diagram:", err);
           toast.error(
-            "Failed to load diagram. It may have been deleted or you don't have access to it."
+            "Failed to load diagram. It may have been deleted or you don't have access to it.",
           );
         }
       };
@@ -686,7 +690,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           toast.success(
             idFromUrl === "free"
               ? "Design auto-saved successfully!"
-              : "Progress auto-saved successfully!"
+              : "Progress auto-saved successfully!",
           );
           localStorage.setItem("lastAutoSaveToast", now.toString());
         }
@@ -789,7 +793,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const formatSavedTime = (savedAt: Date): string => {
     const now = new Date();
     const diffInSeconds = Math.floor(
-      (now.getTime() - savedAt.getTime()) / 1000
+      (now.getTime() - savedAt.getTime()) / 1000,
     );
 
     if (diffInSeconds < 60) {
@@ -872,7 +876,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // --- Assessment state & runner (hooks must be top-level before any returns) ---
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
-    null
+    null,
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
@@ -1128,7 +1132,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 }
                 return acc;
               },
-              {} as Record<string, string | number | boolean>
+              {} as Record<string, string | number | boolean>,
             )
           : {}),
       },
@@ -1198,7 +1202,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        })
+        }),
       );
     }
   };
@@ -1229,7 +1233,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           };
         }
         return n;
-      })
+      }),
     );
   }, [setNodes]);
 
@@ -1256,7 +1260,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // handlers moved outside the effect to reduce nesting depth. Use refs to keep stable references.
   const handleDiagramNodeDeleteRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeDeleteRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -1269,7 +1273,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleDiagramNodeToggleRef = useRef<((e: Event) => void) | undefined>(
-    undefined
+    undefined,
   );
   handleDiagramNodeToggleRef.current = (e: Event) => {
     const ce = e as CustomEvent;
@@ -1286,18 +1290,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     eds: Edge[],
     id: string,
     label: string,
-    hasLabel: boolean
+    hasLabel: boolean,
   ) {
     return eds.map((edge) =>
       edge.id === id
         ? { ...edge, data: { ...edge.data, label, hasLabel }, label }
-        : edge
+        : edge,
     );
   }
 
   function updateEdgeCardinality(eds: Edge[], id: string, cardinality: string) {
     return eds.map((edge) =>
-      edge.id === id ? { ...edge, data: { ...edge.data, cardinality } } : edge
+      edge.id === id ? { ...edge, data: { ...edge.data, cardinality } } : edge,
     );
   }
 
@@ -1333,21 +1337,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     globalThis.addEventListener(
       "diagram:edge-label-change",
-      listener as EventListener
+      listener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:edge-cardinality-change",
-      cardinalityListener as EventListener
+      cardinalityListener as EventListener,
     );
 
     return () => {
       globalThis.removeEventListener(
         "diagram:edge-label-change",
-        listener as EventListener
+        listener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:edge-cardinality-change",
-        cardinalityListener as EventListener
+        cardinalityListener as EventListener,
       );
     };
   }, []);
@@ -1382,34 +1386,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        })
+        }),
       );
     };
 
     globalThis.addEventListener(
       "diagram:node-delete",
-      deleteListener as EventListener
+      deleteListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-toggle",
-      toggleListener as EventListener
+      toggleListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-detach",
-      detachListener as EventListener
+      detachListener as EventListener,
     );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
-        deleteListener as EventListener
+        deleteListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-toggle",
-        toggleListener as EventListener
+        toggleListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-detach",
-        detachListener as EventListener
+        detachListener as EventListener,
       );
     };
   }, [setNodes]);
@@ -1418,7 +1422,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   React.useEffect(() => {
     // Helper to parse attributes from node data
     const parseAttributes = (
-      attrs: TableAttribute[] | string | undefined
+      attrs: TableAttribute[] | string | undefined,
     ): TableAttribute[] => {
       if (!attrs) return [];
       if (Array.isArray(attrs)) return attrs;
@@ -1452,7 +1456,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
-        })
+        }),
       );
     };
 
@@ -1468,13 +1472,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               data: {
                 ...data,
                 attributes: currentAttrs.filter(
-                  (attr) => attr.id !== evt.detail.attributeId
+                  (attr) => attr.id !== evt.detail.attributeId,
                 ),
               },
             };
           }
           return n;
-        })
+        }),
       );
     };
 
@@ -1500,13 +1504,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                         [evt.detail.key]:
                           !attr[evt.detail.key as keyof TableAttribute],
                       }
-                    : attr
+                    : attr,
                 ),
               },
             };
           }
           return n;
-        })
+        }),
       );
     };
 
@@ -1529,49 +1533,49 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 attributes: currentAttrs.map((attr) =>
                   attr.id === evt.detail.attributeId
                     ? { ...attr, name: evt.detail.name, type: evt.detail.type }
-                    : attr
+                    : attr,
                 ),
               },
             };
           }
           return n;
-        })
+        }),
       );
     };
 
     globalThis.addEventListener(
       "diagram:table-attribute-add",
-      addAttributeListener as EventListener
+      addAttributeListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:table-attribute-delete",
-      deleteAttributeListener as EventListener
+      deleteAttributeListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:table-attribute-toggle",
-      toggleAttributeListener as EventListener
+      toggleAttributeListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:table-attribute-update",
-      updateAttributeListener as EventListener
+      updateAttributeListener as EventListener,
     );
 
     return () => {
       globalThis.removeEventListener(
         "diagram:table-attribute-add",
-        addAttributeListener as EventListener
+        addAttributeListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:table-attribute-delete",
-        deleteAttributeListener as EventListener
+        deleteAttributeListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:table-attribute-toggle",
-        toggleAttributeListener as EventListener
+        toggleAttributeListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:table-attribute-update",
-        updateAttributeListener as EventListener
+        updateAttributeListener as EventListener,
       );
     };
   }, [setNodes]);
@@ -1585,7 +1589,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const filteredData = Object.fromEntries(
       Object.entries(nodeData).filter(([key]) => {
         return Number.isNaN(Number(key)) && key !== "_customProperties";
-      })
+      }),
     );
 
     setNodeProps(filteredData);
@@ -1594,7 +1598,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // --- Helpers to reduce nested function depth in JSX ---
   const updateNodeProperty = (
     key: string,
-    value: string | number | boolean
+    value: string | number | boolean,
   ) => {
     setNodeProps((s) => ({ ...s, [key]: value }));
     // Auto-save property changes to node data
@@ -1603,8 +1607,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, [key]: value } }
-            : n
-        )
+            : n,
+        ),
       );
     }
   };
@@ -1647,8 +1651,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   _customProperties: updated[inspectedNodeId],
                 },
               }
-            : n
-        )
+            : n,
+        ),
       );
 
       return updated;
@@ -1657,14 +1661,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const handleUpdateCustomProperty = (
     id: string,
-    updates: Partial<CustomProperty>
+    updates: Partial<CustomProperty>,
   ) => {
     if (!inspectedNodeId) return;
 
     setCustomProperties((prev) => {
       const nodeCustomProps = prev[inspectedNodeId] || [];
       const updated = nodeCustomProps.map((prop) =>
-        prop.id === id ? { ...prop, ...updates } : prop
+        prop.id === id ? { ...prop, ...updates } : prop,
       );
 
       // Save to node data
@@ -1672,8 +1676,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: updated } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -1695,8 +1699,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         nds.map((n) =>
           n.id === inspectedNodeId
             ? { ...n, data: { ...n.data, _customProperties: filtered } }
-            : n
-        )
+            : n,
+        ),
       );
 
       return {
@@ -1823,7 +1827,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       if (properties && properties.length > 0) {
         propertyElements = properties.map((p: ComponentProperty) =>
-          renderProperty(p)
+          renderProperty(p),
         );
       } else {
         propertyElements = (
@@ -1880,7 +1884,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes]
+    [setNodes],
   );
 
   // Register node types (memoized to prevent unnecessary re-renders)
@@ -1891,7 +1895,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       tableNode: createTableNodeWithCopyHandler(handleNodeCopy, nodesRef),
       group: GroupNode,
     }),
-    [handleNodeCopy]
+    [handleNodeCopy],
   );
 
   // Load collaborators for current diagram
@@ -1937,13 +1941,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const restoredNodes = restoreNodeIcons(updatedNodes);
         setNodes(restoredNodes);
       },
-      [setNodes, restoreNodeIcons]
+      [setNodes, restoreNodeIcons],
     ),
     onEdgesChange: useCallback(
       (updatedEdges: Edge[]) => {
         setEdges(updatedEdges);
       },
-      [setEdges]
+      [setEdges],
     ),
     enabled: !!currentDiagramId && isAuthenticated,
   });
@@ -2017,7 +2021,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       sendCursorPosition(position);
     },
-    [isCollaborationConnected, sendCursorPosition, screenToFlowPosition]
+    [isCollaborationConnected, sendCursorPosition, screenToFlowPosition],
   );
 
   // Calculate canvas context for chat bot (only for free mode)
@@ -2107,7 +2111,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
    * Uses multiple matching strategies for better accuracy.
    */
   function findBestMatchingComponent(
-    componentIdOrLabel: string
+    componentIdOrLabel: string,
   ): CanvasComponent | null {
     // Strategy 1: Exact ID match (highest priority)
     const exactMatch = COMPONENTS.find((c) => c.id === componentIdOrLabel);
@@ -2116,19 +2120,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Strategy 2: Case-insensitive ID match
     const lowerInput = componentIdOrLabel.toLowerCase();
     const caseInsensitiveMatch = COMPONENTS.find(
-      (c) => c.id.toLowerCase() === lowerInput
+      (c) => c.id.toLowerCase() === lowerInput,
     );
     if (caseInsensitiveMatch) return caseInsensitiveMatch;
 
     // Strategy 3: Label match (case-insensitive)
     const labelMatch = COMPONENTS.find(
-      (c) => c.label.toLowerCase() === lowerInput
+      (c) => c.label.toLowerCase() === lowerInput,
     );
     if (labelMatch) return labelMatch;
 
     // Strategy 4: Tag match (for keywords like "cache", "database", "queue")
     const tagMatch = COMPONENTS.find((c) =>
-      c.tags?.some((tag) => tag.toLowerCase().includes(lowerInput))
+      c.tags?.some((tag) => tag.toLowerCase().includes(lowerInput)),
     );
     if (tagMatch) return tagMatch;
 
@@ -2136,7 +2140,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const partialMatch = COMPONENTS.find(
       (c) =>
         c.label.toLowerCase().includes(lowerInput) ||
-        lowerInput.includes(c.label.toLowerCase())
+        lowerInput.includes(c.label.toLowerCase()),
     );
     if (partialMatch) return partialMatch;
 
@@ -2224,7 +2228,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const viewport = getViewportForBounds(nodesBounds, 1024, 768, 0.5, 2, 0.2);
 
     const viewportElement = document.querySelector(
-      ".react-flow__viewport"
+      ".react-flow__viewport",
     ) as HTMLElement;
 
     if (!viewportElement) {
@@ -2260,7 +2264,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const a = document.createElement("a");
         a.setAttribute(
           "download",
-          `system-design-${Date.now()}.${fileExtension}`
+          `system-design-${Date.now()}.${fileExtension}`,
         );
         a.setAttribute("href", dataUrl);
         a.click();
@@ -2302,7 +2306,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Import diagram from file
   const handleImportFile = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -2332,7 +2336,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           toast.success("Design imported from XML successfully!");
         } else {
           throw new Error(
-            "Unsupported file format. Please use JSON or XML/DrawIO files."
+            "Unsupported file format. Please use JSON or XML/DrawIO files.",
           );
         }
       }
@@ -2354,7 +2358,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     } catch (error) {
       console.error("Import error:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to import diagram"
+        error instanceof Error ? error.message : "Failed to import diagram",
       );
     } finally {
       // Reset file input
@@ -2378,10 +2382,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       await apiService.addCollaborator(
         currentDiagramId,
         shareEmail.trim(),
-        sharePermission
+        sharePermission,
       );
       toastRef.current.success(
-        `Diagram shared with ${shareEmail} successfully!`
+        `Diagram shared with ${shareEmail} successfully!`,
       );
       setShareEmail("");
       setSharePermission("read");
@@ -2398,7 +2402,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Update collaborator permission
   const handleUpdateCollaboratorPermission = async (
     collaboratorId: string,
-    permission: "read" | "edit"
+    permission: "read" | "edit",
   ) => {
     if (!currentDiagramId) return;
 
@@ -2406,7 +2410,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       await apiService.updateCollaborator(
         currentDiagramId,
         collaboratorId,
-        permission
+        permission,
       );
       toastRef.current.success("Permission updated successfully!");
       // Reload collaborators
@@ -2492,7 +2496,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Separate groups and regular nodes
     const groupNodes = nodes.filter((node) => node.type === "group");
     const regularNodes = nodes.filter(
-      (node) => node.type !== "group" && !node.parentId
+      (node) => node.type !== "group" && !node.parentId,
     );
 
     // Function to get node dimensions based on type
@@ -2543,7 +2547,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const childEdges = edges.filter(
         (edge) =>
           children.some((c) => c.id === edge.source) &&
-          children.some((c) => c.id === edge.target)
+          children.some((c) => c.id === edge.target),
       );
       for (const edge of childEdges) {
         childGraph.setEdge(edge.source, edge.target);
@@ -2596,7 +2600,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const regularEdges = edges.filter(
       (edge) =>
         regularNodes.some((n) => n.id === edge.source) &&
-        regularNodes.some((n) => n.id === edge.target)
+        regularNodes.some((n) => n.id === edge.target),
     );
     for (const edge of regularEdges) {
       regularGraph.setEdge(edge.source, edge.target);
@@ -2662,15 +2666,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       Object.entries(nodeProps).filter(([key]) => {
         // Keep non-numeric keys and exclude _customProperties
         return Number.isNaN(Number(key)) && key !== "_customProperties";
-      })
+      }),
     );
 
     setNodes((nds) =>
       nds.map((n) =>
         n.id === inspectedNodeId
           ? { ...n, data: { ...n.data, ...filteredNodeProps } }
-          : n
-      )
+          : n,
+      ),
     );
 
     // Log current node data for debugging
@@ -2691,7 +2695,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const pageDescription =
     idFromUrl === "free"
-      ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 45+ components."
+      ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 1k+ components."
       : `Solve the ${problem?.title || "system design"} challenge. ${problem?.description?.substring(0, 150) || "Practice system design skills"}...`;
 
   return (
@@ -3456,7 +3460,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          `${globalThis.location.origin}/#/playground/free?diagramId=${currentDiagramId}`
+                          `${globalThis.location.origin}/#/playground/free?diagramId=${currentDiagramId}`,
                         );
                         toast.success("Link copied to clipboard!");
                       }}

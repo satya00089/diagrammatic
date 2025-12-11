@@ -1,42 +1,92 @@
 import type { CanvasComponent } from "../types/canvas";
 import {
-  FaArchive, FaBalanceScale, FaBolt, FaBook, FaBoxOpen,
-  FaBroadcastTower, FaChartBar, FaCheckCircle, FaCircle,
-  FaCogs, FaCode, FaCube, FaCubes,
-  FaDesktop, FaDraftingCompass, FaEye, FaFileAlt, FaFire,
-  FaFolder, FaGlobe, FaIdCard, FaList,
-  FaLock, FaObjectGroup,
-  FaPlug, FaRoute, FaSatellite,
-  FaServer, FaShieldAlt, FaStickyNote,
-  FaTable, FaTags, FaTrafficLight,
-  FaProjectDiagram, FaUserShield, FaClipboardList, FaLightbulb,
-  FaSitemap, FaCloudUploadAlt,
-  FaAtom
+  FaArchive,
+  FaBalanceScale,
+  FaBolt,
+  FaBook,
+  FaBoxOpen,
+  FaBroadcastTower,
+  FaChartBar,
+  FaCheckCircle,
+  FaCircle,
+  FaCogs,
+  FaCode,
+  FaCube,
+  FaCubes,
+  FaDesktop,
+  FaDraftingCompass,
+  FaEye,
+  FaFileAlt,
+  FaFire,
+  FaFolder,
+  FaGlobe,
+  FaIdCard,
+  FaList,
+  FaLock,
+  FaObjectGroup,
+  FaPlug,
+  FaRoute,
+  FaSatellite,
+  FaServer,
+  FaShieldAlt,
+  FaStickyNote,
+  FaTable,
+  FaTags,
+  FaTrafficLight,
+  FaProjectDiagram,
+  FaUserShield,
+  FaClipboardList,
+  FaLightbulb,
+  FaSitemap,
+  FaCloudUploadAlt,
+  FaAtom,
 } from "react-icons/fa";
 
 // Simple Icons for brand-specific technology logos
 import {
-  SiRedis, SiElasticsearch, SiPostgresql,
-  SiKubernetes, SiNginx,
-  SiPrometheus, SiApachekafka, SiRabbitmq, SiGrafana,
-  SiStripe, SiTwilio, SiVault,
-  SiCloudflare, SiSnowflake, SiApacheflink,
-  SiTensorflow, SiPytorch, SiOpenai,
-  SiJaeger, SiServerless,
-  SiDocker, SiGithub, SiGitlab
+  SiRedis,
+  SiElasticsearch,
+  SiPostgresql,
+  SiKubernetes,
+  SiNginx,
+  SiPrometheus,
+  SiApachekafka,
+  SiRabbitmq,
+  SiGrafana,
+  SiStripe,
+  SiTwilio,
+  SiVault,
+  SiCloudflare,
+  SiSnowflake,
+  SiApacheflink,
+  SiTensorflow,
+  SiPytorch,
+  SiOpenai,
+  SiJaeger,
+  SiServerless,
+  SiDocker,
+  SiGithub,
+  SiGitlab,
 } from "react-icons/si";
 
 // Material Design Icons for modern, clean aesthetics
 import {
-  MdStorage, MdCloud, MdSecurity, MdNotifications, MdEmail,
-  MdPhoneIphone, MdRouter,
-  MdLayers, MdDeviceHub, MdAccountTree
+  MdStorage,
+  MdCloud,
+  MdSecurity,
+  MdNotifications,
+  MdEmail,
+  MdPhoneIphone,
+  MdRouter,
+  MdLayers,
+  MdDeviceHub,
+  MdAccountTree,
 } from "react-icons/md";
 
 /**
  * COMPREHENSIVE SYSTEM DESIGN COMPONENTS LIBRARY
  * Organized by usage frequency - most commonly used groups first
- * 
+ *
  * GROUP ORDER (Most Used → Least Used):
  * 1. Compute - Backend servers, containers, workers (most essential)
  * 2. Data Layer - Databases, caches, storage (critical infrastructure)
@@ -54,28 +104,28 @@ import {
  * 14. ER Diagram - Database design entities
  * 15. UML - Class diagrams, interfaces
  * 16. Custom - User-defined components
- * 
+ *
  * Last reviewed: UX Design Review - Sorted by usage frequency
  */
 
 // Group priority for sorting by usage frequency (lower number = higher priority)
 export const GROUP_PRIORITY: Record<string, number> = {
-  "Compute": 1,
+  Compute: 1,
   "Data Layer": 2,
-  "Services": 3,
-  "Networking": 4,
-  "Frontend": 5,
-  "Messaging": 6,
-  "Security": 7,
-  "Observability": 8,
-  "DevOps": 9,
-  "Delivery": 10,
+  Services: 3,
+  Networking: 4,
+  Frontend: 5,
+  Messaging: 6,
+  Security: 7,
+  Observability: 8,
+  DevOps: 9,
+  Delivery: 10,
   "AI & ML": 11,
-  "Grouping": 12,
+  Grouping: 12,
   "DNS & Network": 13,
   "ER Diagram": 14,
-  "UML": 15,
-  "Custom": 16,
+  UML: 15,
+  Custom: 16,
 };
 
 // Utility function to sort components by usage frequency
@@ -2420,7 +2470,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaRoute,
     label: "CI/CD Pipeline",
     description: "Continuous integration and deployment pipeline",
-    tags: ["ci/cd", "pipeline", "automation", "deployment", "integration", "continuous"],
+    tags: [
+      "ci/cd",
+      "pipeline",
+      "automation",
+      "deployment",
+      "integration",
+      "continuous",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2441,7 +2498,13 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Platform",
         type: "select",
         default: "GitHub Actions",
-        options: ["GitHub Actions", "Jenkins", "GitLab CI", "Azure DevOps", "CircleCI"],
+        options: [
+          "GitHub Actions",
+          "Jenkins",
+          "GitLab CI",
+          "Azure DevOps",
+          "CircleCI",
+        ],
       },
       {
         key: "stages",
@@ -2529,7 +2592,13 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Strategy",
         type: "select",
         default: "Rolling Update",
-        options: ["Rolling Update", "Blue-Green", "Canary", "A/B Testing", "Feature Flag"],
+        options: [
+          "Rolling Update",
+          "Blue-Green",
+          "Canary",
+          "A/B Testing",
+          "Feature Flag",
+        ],
       },
       {
         key: "environments",
@@ -2552,7 +2621,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCode,
     label: "Infrastructure as Code",
     description: "Infrastructure defined and managed as code",
-    tags: ["iac", "terraform", "cloudformation", "ansible", "automation", "infrastructure"],
+    tags: [
+      "iac",
+      "terraform",
+      "cloudformation",
+      "ansible",
+      "automation",
+      "infrastructure",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2573,7 +2649,13 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Tool",
         type: "select",
         default: "Terraform",
-        options: ["Terraform", "CloudFormation", "ARM Templates", "Pulumi", "Ansible"],
+        options: [
+          "Terraform",
+          "CloudFormation",
+          "ARM Templates",
+          "Pulumi",
+          "Ansible",
+        ],
       },
       {
         key: "stateManagement",
@@ -2596,7 +2678,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaArchive,
     label: "Artifact Repository",
     description: "Storage for build artifacts and packages",
-    tags: ["artifacts", "repository", "packages", "nexus", "artifactory", "storage"],
+    tags: [
+      "artifacts",
+      "repository",
+      "packages",
+      "nexus",
+      "artifactory",
+      "storage",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2641,7 +2730,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCogs,
     label: "Configuration Management",
     description: "Application and environment configuration",
-    tags: ["config", "configuration", "management", "ansible", "chef", "puppet"],
+    tags: [
+      "config",
+      "configuration",
+      "management",
+      "ansible",
+      "chef",
+      "puppet",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2684,7 +2780,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCheckCircle,
     label: "Automated Testing",
     description: "Automated test execution in pipeline",
-    tags: ["testing", "automation", "ci", "unit tests", "integration tests", "qa"],
+    tags: [
+      "testing",
+      "automation",
+      "ci",
+      "unit tests",
+      "integration tests",
+      "qa",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2705,7 +2808,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Test Types",
         type: "select",
         default: "Unit + Integration",
-        options: ["Unit", "Integration", "E2E", "Performance", "Security", "All"],
+        options: [
+          "Unit",
+          "Integration",
+          "E2E",
+          "Performance",
+          "Security",
+          "All",
+        ],
       },
       {
         key: "coverageThreshold",
@@ -2771,7 +2881,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaShieldAlt,
     label: "Security Scanning",
     description: "Security vulnerability scanning",
-    tags: ["security", "scanning", "vulnerabilities", "sast", "dast", "devsecops"],
+    tags: [
+      "security",
+      "scanning",
+      "vulnerabilities",
+      "sast",
+      "dast",
+      "devsecops",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2792,7 +2909,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Scan Type",
         type: "select",
         default: "SAST",
-        options: ["SAST", "DAST", "SCA", "Container", "Infrastructure", "Secrets"],
+        options: [
+          "SAST",
+          "DAST",
+          "SCA",
+          "Container",
+          "Infrastructure",
+          "Secrets",
+        ],
       },
       {
         key: "tool",
@@ -2904,7 +3028,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: SiDocker,
     label: "Docker",
     description: "Containerization platform",
-    tags: ["docker", "container", "containerization", "images", "registry", "dockerfile"],
+    tags: [
+      "docker",
+      "container",
+      "containerization",
+      "images",
+      "registry",
+      "dockerfile",
+    ],
     properties: [
       {
         key: "componentName",
@@ -2932,7 +3063,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Container Registry",
         type: "select",
         default: "Docker Hub",
-        options: ["Docker Hub", "AWS ECR", "GCR", "ACR", "Harbor", "Self-hosted"],
+        options: [
+          "Docker Hub",
+          "AWS ECR",
+          "GCR",
+          "ACR",
+          "Harbor",
+          "Self-hosted",
+        ],
       },
       {
         key: "orchestration",
@@ -2951,7 +3089,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: SiKubernetes,
     label: "Kubernetes",
     description: "Container orchestration platform",
-    tags: ["kubernetes", "k8s", "orchestration", "containers", "microservices", "cluster"],
+    tags: [
+      "kubernetes",
+      "k8s",
+      "orchestration",
+      "containers",
+      "microservices",
+      "cluster",
+    ],
     properties: [
       {
         key: "componentName",
@@ -3003,7 +3148,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: SiGithub,
     label: "GitHub",
     description: "Version control and collaboration platform",
-    tags: ["github", "git", "version control", "repository", "collaboration", "ci/cd"],
+    tags: [
+      "github",
+      "git",
+      "version control",
+      "repository",
+      "collaboration",
+      "ci/cd",
+    ],
     properties: [
       {
         key: "componentName",
@@ -3764,14 +3916,7 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaArchive,
     label: "Feature Store",
     description: "Centralized feature storage for ML",
-    tags: [
-      "features",
-      "ml",
-      "data",
-      "store",
-      "feast",
-      "feature engineering",
-    ],
+    tags: ["features", "ml", "data", "store", "feast", "feature engineering"],
     properties: [
       {
         key: "componentName",
@@ -3835,7 +3980,12 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Labeling Type",
         type: "select",
         default: "Manual",
-        options: ["Manual", "Semi-automated", "Active Learning", "Crowdsourced"],
+        options: [
+          "Manual",
+          "Semi-automated",
+          "Active Learning",
+          "Crowdsourced",
+        ],
       },
       {
         key: "dataType",
@@ -3948,14 +4098,7 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCubes,
     label: "Vector Database",
     description: "Vector embeddings storage for similarity search",
-    tags: [
-      "vector",
-      "embeddings",
-      "similarity",
-      "search",
-      "rag",
-      "retrieval",
-    ],
+    tags: ["vector", "embeddings", "similarity", "search", "rag", "retrieval"],
     properties: [
       {
         key: "componentName",
@@ -4464,14 +4607,32 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Table Type",
         type: "select",
         default: "Regular",
-        options: ["Regular", "Junction", "Audit", "Archive", "View", "Materialized View"],
+        options: [
+          "Regular",
+          "Junction",
+          "Audit",
+          "Archive",
+          "View",
+          "Materialized View",
+        ],
       },
     ],
     data: {
       attributes: [
-        { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: true, isNullable: false },
+        {
+          id: "attr-1",
+          name: "id",
+          type: "UUID",
+          isPrimaryKey: true,
+          isNullable: false,
+        },
         { id: "attr-2", name: "name", type: "VARCHAR(100)", isNullable: false },
-        { id: "attr-3", name: "created_at", type: "TIMESTAMP", isNullable: false },
+        {
+          id: "attr-3",
+          name: "created_at",
+          type: "TIMESTAMP",
+          isNullable: false,
+        },
       ],
     },
     renderConfig: {
@@ -4481,58 +4642,70 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "isPrimaryKey", 
-          label: "PK", 
-          width: "w-6", 
+        {
+          key: "isPrimaryKey",
+          label: "PK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔑", inactive: "" },
-          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-yellow-600 dark:text-yellow-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "name", 
-          label: "Column Name", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Column Name",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-semibold" }
+          color: { active: "font-semibold" },
         },
-        { 
-          key: "type", 
-          label: "Data Type", 
-          width: "w-24", 
+        {
+          key: "type",
+          label: "Data Type",
+          width: "w-24",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "isForeignKey", 
-          label: "FK", 
-          width: "w-6", 
+        {
+          key: "isForeignKey",
+          label: "FK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔗", inactive: "" },
-          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-blue-600 dark:text-blue-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isUnique", 
-          label: "UQ", 
-          width: "w-6", 
+        {
+          key: "isUnique",
+          label: "UQ",
+          width: "w-6",
           type: "boolean",
           icon: { active: "★", inactive: "" },
-          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-purple-600 dark:text-purple-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isNullable", 
-          label: "NULL", 
-          width: "w-8", 
+        {
+          key: "isNullable",
+          label: "NULL",
+          width: "w-8",
           type: "boolean",
           icon: { active: "✓", inactive: "✗" },
-          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+          color: {
+            active: "text-gray-400",
+            inactive: "text-red-600 dark:text-red-400",
+          },
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
     },
@@ -4577,8 +4750,20 @@ export const COMPONENTS: CanvasComponent[] = [
     ],
     data: {
       attributes: [
-        { id: "attr-1", name: "owner_id", type: "UUID", isForeignKey: true, isNullable: false },
-        { id: "attr-2", name: "sequence_number", type: "INT", isPrimaryKey: true, isNullable: false },
+        {
+          id: "attr-1",
+          name: "owner_id",
+          type: "UUID",
+          isForeignKey: true,
+          isNullable: false,
+        },
+        {
+          id: "attr-2",
+          name: "sequence_number",
+          type: "INT",
+          isPrimaryKey: true,
+          isNullable: false,
+        },
         { id: "attr-3", name: "data", type: "VARCHAR(255)", isNullable: false },
       ],
     },
@@ -4589,58 +4774,70 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "isPrimaryKey", 
-          label: "PK", 
-          width: "w-6", 
+        {
+          key: "isPrimaryKey",
+          label: "PK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔑", inactive: "" },
-          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-yellow-600 dark:text-yellow-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "name", 
-          label: "Column Name", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Column Name",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-semibold" }
+          color: { active: "font-semibold" },
         },
-        { 
-          key: "type", 
-          label: "Data Type", 
-          width: "w-24", 
+        {
+          key: "type",
+          label: "Data Type",
+          width: "w-24",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "isForeignKey", 
-          label: "FK", 
-          width: "w-6", 
+        {
+          key: "isForeignKey",
+          label: "FK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔗", inactive: "" },
-          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-blue-600 dark:text-blue-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isUnique", 
-          label: "UQ", 
-          width: "w-6", 
+        {
+          key: "isUnique",
+          label: "UQ",
+          width: "w-6",
           type: "boolean",
           icon: { active: "★", inactive: "" },
-          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-purple-600 dark:text-purple-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isNullable", 
-          label: "NULL", 
-          width: "w-8", 
+        {
+          key: "isNullable",
+          label: "NULL",
+          width: "w-8",
           type: "boolean",
           icon: { active: "✓", inactive: "✗" },
-          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+          color: {
+            active: "text-gray-400",
+            inactive: "text-red-600 dark:text-red-400",
+          },
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
       borderStyle: "double",
@@ -4674,7 +4871,8 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Description",
         type: "textarea",
         placeholder: "Describe what this trigger does",
-        default: "Automatically updates the updated_at timestamp when a row is modified",
+        default:
+          "Automatically updates the updated_at timestamp when a row is modified",
       },
       {
         key: "targetTable",
@@ -4729,7 +4927,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaStickyNote,
     label: "Note/Constraint",
     description: "Business rule, constraint, or annotation",
-    tags: ["note", "constraint", "rule", "annotation", "comment", "documentation"],
+    tags: [
+      "note",
+      "constraint",
+      "rule",
+      "annotation",
+      "comment",
+      "documentation",
+    ],
     properties: [
       {
         key: "nodeType",
@@ -4748,7 +4953,8 @@ export const COMPONENTS: CanvasComponent[] = [
         key: "description",
         label: "Note Content",
         type: "textarea",
-        placeholder: "Describe the rule, constraint, or important note\ne.g., Email must be unique across all users\nOrders can only be placed by verified customers",
+        placeholder:
+          "Describe the rule, constraint, or important note\ne.g., Email must be unique across all users\nOrders can only be placed by verified customers",
         default: "Email addresses must be unique across all user accounts",
       },
       {
@@ -4784,7 +4990,8 @@ export const COMPONENTS: CanvasComponent[] = [
         key: "sqlConstraint",
         label: "SQL Constraint",
         type: "textarea",
-        placeholder: "SQL code for this constraint\ne.g., CHECK (price > 0)\nCHECK (start_date < end_date)",
+        placeholder:
+          "SQL code for this constraint\ne.g., CHECK (price > 0)\nCHECK (start_date < end_date)",
         default: "",
       },
     ],
@@ -4806,7 +5013,14 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCircle,
     label: "Use Case",
     description: "Use case or functional requirement for the system",
-    tags: ["use case", "requirement", "functionality", "scenario", "note", "annotation"],
+    tags: [
+      "use case",
+      "requirement",
+      "functionality",
+      "scenario",
+      "note",
+      "annotation",
+    ],
     properties: [
       {
         key: "componentName",
@@ -4866,7 +5080,12 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "View Type",
         type: "select",
         default: "Standard View",
-        options: ["Standard View", "Materialized View", "Indexed View", "Updateable View"],
+        options: [
+          "Standard View",
+          "Materialized View",
+          "Indexed View",
+          "Updateable View",
+        ],
       },
       {
         key: "baseTables",
@@ -4885,9 +5104,25 @@ export const COMPONENTS: CanvasComponent[] = [
     ],
     data: {
       attributes: [
-        { id: "attr-1", name: "id", type: "UUID", isPrimaryKey: false, isNullable: false },
-        { id: "attr-2", name: "computed_field", type: "VARCHAR(100)", isNullable: true },
-        { id: "attr-3", name: "aggregate_value", type: "INT", isNullable: true },
+        {
+          id: "attr-1",
+          name: "id",
+          type: "UUID",
+          isPrimaryKey: false,
+          isNullable: false,
+        },
+        {
+          id: "attr-2",
+          name: "computed_field",
+          type: "VARCHAR(100)",
+          isNullable: true,
+        },
+        {
+          id: "attr-3",
+          name: "aggregate_value",
+          type: "INT",
+          isNullable: true,
+        },
       ],
     },
     renderConfig: {
@@ -4897,58 +5132,70 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "isPrimaryKey", 
-          label: "PK", 
-          width: "w-6", 
+        {
+          key: "isPrimaryKey",
+          label: "PK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔑", inactive: "" },
-          color: { active: "text-yellow-600 dark:text-yellow-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-yellow-600 dark:text-yellow-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "name", 
-          label: "Column Name", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Column Name",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-semibold" }
+          color: { active: "font-semibold" },
         },
-        { 
-          key: "type", 
-          label: "Data Type", 
-          width: "w-24", 
+        {
+          key: "type",
+          label: "Data Type",
+          width: "w-24",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "isForeignKey", 
-          label: "FK", 
-          width: "w-6", 
+        {
+          key: "isForeignKey",
+          label: "FK",
+          width: "w-6",
           type: "boolean",
           icon: { active: "🔗", inactive: "" },
-          color: { active: "text-blue-600 dark:text-blue-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-blue-600 dark:text-blue-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isUnique", 
-          label: "UQ", 
-          width: "w-6", 
+        {
+          key: "isUnique",
+          label: "UQ",
+          width: "w-6",
           type: "boolean",
           icon: { active: "★", inactive: "" },
-          color: { active: "text-purple-600 dark:text-purple-400", inactive: "text-gray-400" }
+          color: {
+            active: "text-purple-600 dark:text-purple-400",
+            inactive: "text-gray-400",
+          },
         },
-        { 
-          key: "isNullable", 
-          label: "NULL", 
-          width: "w-8", 
+        {
+          key: "isNullable",
+          label: "NULL",
+          width: "w-8",
           type: "boolean",
           icon: { active: "✓", inactive: "✗" },
-          color: { active: "text-gray-400", inactive: "text-red-600 dark:text-red-400" }
+          color: {
+            active: "text-gray-400",
+            inactive: "text-red-600 dark:text-red-400",
+          },
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
       borderStyle: "dashed",
@@ -4966,7 +5213,14 @@ export const COMPONENTS: CanvasComponent[] = [
     label: "Class",
     description: "UML Class with attributes and methods",
     nodeType: "tableNode",
-    tags: ["uml", "class", "object-oriented", "oop", "class diagram", "blueprint"],
+    tags: [
+      "uml",
+      "class",
+      "object-oriented",
+      "oop",
+      "class diagram",
+      "blueprint",
+    ],
     properties: [
       {
         key: "componentName",
@@ -4987,7 +5241,15 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Stereotype",
         type: "select",
         default: "None",
-        options: ["None", "<<abstract>>", "<<interface>>", "<<entity>>", "<<controller>>", "<<service>>", "<<repository>>"],
+        options: [
+          "None",
+          "<<abstract>>",
+          "<<interface>>",
+          "<<entity>>",
+          "<<controller>>",
+          "<<service>>",
+          "<<repository>>",
+        ],
       },
       {
         key: "visibility",
@@ -4999,11 +5261,27 @@ export const COMPONENTS: CanvasComponent[] = [
     ],
     data: {
       attributes: [
-        { id: "attr-1", name: "- id", type: "String", isPrimaryKey: false, isNullable: false },
+        {
+          id: "attr-1",
+          name: "- id",
+          type: "String",
+          isPrimaryKey: false,
+          isNullable: false,
+        },
         { id: "attr-2", name: "+ name", type: "String", isNullable: false },
         { id: "attr-3", name: "# createdAt", type: "Date", isNullable: false },
-        { id: "attr-4", name: "+ getName()", type: "String", isNullable: false },
-        { id: "attr-5", name: "+ setName(name: String)", type: "void", isNullable: false },
+        {
+          id: "attr-4",
+          name: "+ getName()",
+          type: "String",
+          isNullable: false,
+        },
+        {
+          id: "attr-5",
+          name: "+ setName(name: String)",
+          type: "void",
+          isNullable: false,
+        },
       ],
     },
     renderConfig: {
@@ -5013,26 +5291,26 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "name", 
-          label: "Member", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Member",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-mono text-sm" }
+          color: { active: "font-mono text-sm" },
         },
-        { 
-          key: "type", 
-          label: "Type", 
-          width: "w-32", 
+        {
+          key: "type",
+          label: "Type",
+          width: "w-32",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
     },
@@ -5065,7 +5343,12 @@ export const COMPONENTS: CanvasComponent[] = [
       attributes: [
         { id: "attr-1", name: "+ save()", type: "void", isNullable: false },
         { id: "attr-2", name: "+ delete()", type: "void", isNullable: false },
-        { id: "attr-3", name: "+ findById(id: String)", type: "Object", isNullable: false },
+        {
+          id: "attr-3",
+          name: "+ findById(id: String)",
+          type: "Object",
+          isNullable: false,
+        },
       ],
     },
     renderConfig: {
@@ -5075,26 +5358,26 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "name", 
-          label: "Method", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Method",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-mono text-sm italic" }
+          color: { active: "font-mono text-sm italic" },
         },
-        { 
-          key: "type", 
-          label: "Return Type", 
-          width: "w-32", 
+        {
+          key: "type",
+          label: "Return Type",
+          width: "w-32",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
       borderStyle: "dashed",
@@ -5129,7 +5412,12 @@ export const COMPONENTS: CanvasComponent[] = [
       attributes: [
         { id: "attr-1", name: "# data", type: "Object", isNullable: false },
         { id: "attr-2", name: "+ process()", type: "void", isNullable: false },
-        { id: "attr-3", name: "+ validate()", type: "boolean", isNullable: false },
+        {
+          id: "attr-3",
+          name: "+ validate()",
+          type: "boolean",
+          isNullable: false,
+        },
       ],
     },
     renderConfig: {
@@ -5139,26 +5427,26 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "name", 
-          label: "Member", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Member",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-mono text-sm" }
+          color: { active: "font-mono text-sm" },
         },
-        { 
-          key: "type", 
-          label: "Type", 
-          width: "w-32", 
+        {
+          key: "type",
+          label: "Type",
+          width: "w-32",
           type: "text",
-          editable: true
+          editable: true,
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
       borderStyle: "solid",
@@ -5203,19 +5491,19 @@ export const COMPONENTS: CanvasComponent[] = [
         { type: "attributes", editable: true },
       ],
       columns: [
-        { 
-          key: "name", 
-          label: "Value", 
-          width: "flex-1", 
+        {
+          key: "name",
+          label: "Value",
+          width: "flex-1",
           type: "text",
           editable: true,
-          color: { active: "font-mono text-sm uppercase" }
+          color: { active: "font-mono text-sm uppercase" },
         },
-        { 
-          key: "actions", 
-          label: "", 
-          width: "w-8", 
-          type: "readonly"
+        {
+          key: "actions",
+          label: "",
+          width: "w-8",
+          type: "readonly",
         },
       ],
     },
@@ -5227,7 +5515,15 @@ export const COMPONENTS: CanvasComponent[] = [
     icon: FaCircle,
     label: "Use Case",
     description: "System use case or functionality",
-    tags: ["uml", "use case", "functionality", "requirement", "scenario", "er diagram", "note"],
+    tags: [
+      "uml",
+      "use case",
+      "functionality",
+      "requirement",
+      "scenario",
+      "er diagram",
+      "note",
+    ],
     properties: [
       {
         key: "nodeType",
@@ -5297,5 +5593,3 @@ export const COMPONENTS: CanvasComponent[] = [
     ],
   },
 ];
-
-

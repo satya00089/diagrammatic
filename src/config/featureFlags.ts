@@ -1,7 +1,7 @@
 /**
  * Feature Flags Configuration
  * Allows gradual rollout of new features
- * 
+ *
  * Responsibilities (Single Responsibility Principle):
  * - Define feature flags
  * - Check if features are enabled
@@ -12,12 +12,12 @@
  * Available feature flags
  */
 export const FeatureFlags = {
-  YJS_COLLABORATION: 'yjs-collaboration',
-  AUTO_SAVE: 'auto-save',
-  OFFLINE_MODE: 'offline-mode',
-} as const
+  YJS_COLLABORATION: "yjs-collaboration",
+  AUTO_SAVE: "auto-save",
+  OFFLINE_MODE: "offline-mode",
+} as const;
 
-export type FeatureFlag = (typeof FeatureFlags)[keyof typeof FeatureFlags]
+export type FeatureFlag = (typeof FeatureFlags)[keyof typeof FeatureFlags];
 
 /**
  * Default feature flag values per environment
@@ -38,54 +38,59 @@ const DEFAULT_FLAGS: Record<string, Record<FeatureFlag, boolean>> = {
     [FeatureFlags.AUTO_SAVE]: true,
     [FeatureFlags.OFFLINE_MODE]: false,
   },
-}
+};
 
 /**
  * Check if a feature flag is enabled
  * Priority: localStorage override > environment default
  */
-export const isFeatureEnabled = (flag: FeatureFlag, environment: string = 'development'): boolean => {
+export const isFeatureEnabled = (
+  flag: FeatureFlag,
+  environment: string = "development",
+): boolean => {
   // Check localStorage override first
-  const storageKey = `feature-flag-${flag}`
-  const override = localStorage.getItem(storageKey)
-  
+  const storageKey = `feature-flag-${flag}`;
+  const override = localStorage.getItem(storageKey);
+
   if (override !== null) {
-    return override === 'true'
+    return override === "true";
   }
 
   // Fall back to environment default
-  const envDefaults = DEFAULT_FLAGS[environment] || DEFAULT_FLAGS.development
-  return envDefaults[flag] ?? false
-}
+  const envDefaults = DEFAULT_FLAGS[environment] || DEFAULT_FLAGS.development;
+  return envDefaults[flag] ?? false;
+};
 
 /**
  * Enable a feature flag via localStorage
  */
 export const enableFeature = (flag: FeatureFlag): void => {
-  localStorage.setItem(`feature-flag-${flag}`, 'true')
-}
+  localStorage.setItem(`feature-flag-${flag}`, "true");
+};
 
 /**
  * Disable a feature flag via localStorage
  */
 export const disableFeature = (flag: FeatureFlag): void => {
-  localStorage.setItem(`feature-flag-${flag}`, 'false')
-}
+  localStorage.setItem(`feature-flag-${flag}`, "false");
+};
 
 /**
  * Clear feature flag override (revert to environment default)
  */
 export const clearFeatureOverride = (flag: FeatureFlag): void => {
-  localStorage.removeItem(`feature-flag-${flag}`)
-}
+  localStorage.removeItem(`feature-flag-${flag}`);
+};
 
 /**
  * Get all feature flags status for debugging
  */
-export const getFeatureFlagsStatus = (environment: string = 'development'): Record<string, boolean> => {
-  const status: Record<string, boolean> = {}
+export const getFeatureFlagsStatus = (
+  environment: string = "development",
+): Record<string, boolean> => {
+  const status: Record<string, boolean> = {};
   for (const flag of Object.values(FeatureFlags)) {
-    status[flag] = isFeatureEnabled(flag, environment)
+    status[flag] = isFeatureEnabled(flag, environment);
   }
-  return status
-}
+  return status;
+};

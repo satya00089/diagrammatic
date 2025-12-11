@@ -13,7 +13,7 @@ const DEFAULT_SEO = {
   title:
     "Diagrammatic — Interactive System Design Playground | Learn Architecture Design",
   description:
-    "Master system design with Diagrammatic - an interactive playground featuring 45+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators.",
+    "Master system design with Diagrammatic - an interactive playground featuring 1k+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators.",
   keywords:
     "system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture",
   image: "https://satya00089.github.io/diagrammatic/logo.png",

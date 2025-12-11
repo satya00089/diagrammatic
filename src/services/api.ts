@@ -147,9 +147,12 @@ class ApiService {
   }
 
   async getPublicDiagram(id: string): Promise<SavedDiagram> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${id}/public`, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${id}/public`,
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch diagram");
@@ -170,12 +173,19 @@ class ApiService {
   }
 
   // Collaborator management endpoints
-  async addCollaborator(diagramId: string, email: string, permission: 'read' | 'edit'): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/share`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ email, permission }),
-    });
+  async addCollaborator(
+    diagramId: string,
+    email: string,
+    permission: "read" | "edit",
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${diagramId}/share`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ email, permission }),
+      },
+    );
 
     if (!response.ok) {
       const error = await response
@@ -186,9 +196,12 @@ class ApiService {
   }
 
   async getCollaborators(diagramId: string): Promise<Collaborator[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators`,
+      {
+        headers: this.getAuthHeaders(),
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch collaborators");
@@ -197,12 +210,19 @@ class ApiService {
     return response.json();
   }
 
-  async updateCollaborator(diagramId: string, collaboratorId: string, permission: 'read' | 'edit'): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`, {
-      method: "PUT",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ permission }),
-    });
+  async updateCollaborator(
+    diagramId: string,
+    collaboratorId: string,
+    permission: "read" | "edit",
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`,
+      {
+        method: "PUT",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ permission }),
+      },
+    );
 
     if (!response.ok) {
       const error = await response
@@ -212,11 +232,17 @@ class ApiService {
     }
   }
 
-  async removeCollaborator(diagramId: string, collaboratorId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`, {
-      method: "DELETE",
-      headers: this.getAuthHeaders(),
-    });
+  async removeCollaborator(
+    diagramId: string,
+    collaboratorId: string,
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${diagramId}/collaborators/${collaboratorId}`,
+      {
+        method: "DELETE",
+        headers: this.getAuthHeaders(),
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to remove collaborator");
@@ -281,7 +307,7 @@ class ApiService {
       `${API_BASE_URL}/api/v1/attempts/problem/${problemId}`,
       {
         headers: this.getAuthHeaders(),
-      }
+      },
     );
 
     if (response.status === 404) {
@@ -296,10 +322,13 @@ class ApiService {
   }
 
   async deleteAttempt(problemId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/problem/${problemId}`, {
-      method: "DELETE",
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/attempts/problem/${problemId}`,
+      {
+        method: "DELETE",
+        headers: this.getAuthHeaders(),
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to delete attempt");
@@ -330,10 +359,20 @@ class ApiService {
       title: string;
       description: string;
       icon: string;
-      category: 'component' | 'pattern' | 'tip' | 'best-practice' | 'optimization';
+      category:
+        | "component"
+        | "pattern"
+        | "tip"
+        | "best-practice"
+        | "optimization";
       priority: number;
       confidence: number;
-      actionType: 'add-component' | 'add-pattern' | 'info-only' | 'connect' | 'refactor';
+      actionType:
+        | "add-component"
+        | "add-pattern"
+        | "info-only"
+        | "connect"
+        | "refactor";
       componentId?: string;
       componentIds?: string[];
       reasoning?: string;
@@ -346,24 +385,26 @@ class ApiService {
   }> {
     // Transform frontend types to backend format
     const requestPayload = {
-      user_intent: payload.userIntent ? {
-        title: payload.userIntent.title,
-        description: payload.userIntent.description,
-      } : null,
+      user_intent: payload.userIntent
+        ? {
+            title: payload.userIntent.title,
+            description: payload.userIntent.description,
+          }
+        : null,
       canvas_context: {
         node_count: payload.canvasContext.nodeCount,
         edge_count: payload.canvasContext.edgeCount,
         component_types: payload.canvasContext.componentTypes,
         is_empty: payload.canvasContext.isEmpty,
       },
-      components: payload.components.map(comp => ({
+      components: payload.components.map((comp) => ({
         id: comp.id,
         type: comp.type,
         label: comp.label,
         has_description: comp.hasDescription,
         properties: comp.properties || {},
       })),
-      connections: payload.connections.map(conn => ({
+      connections: payload.connections.map((conn) => ({
         source: conn.source,
         target: conn.target,
         type: conn.type,
@@ -386,31 +427,33 @@ class ApiService {
 
     // Transform backend response to frontend format
     return {
-      recommendations: data.recommendations.map((rec: {
-        id: string;
-        title: string;
-        description: string;
-        icon: string;
-        category: string;
-        priority: number;
-        confidence: number;
-        action_type: string;
-        component_id?: string;
-        component_ids?: string[];
-        reasoning?: string;
-      }) => ({
-        id: rec.id,
-        title: rec.title,
-        description: rec.description,
-        icon: rec.icon,
-        category: rec.category,
-        priority: rec.priority,
-        confidence: rec.confidence,
-        actionType: rec.action_type,
-        componentId: rec.component_id,
-        componentIds: rec.component_ids,
-        reasoning: rec.reasoning,
-      })),
+      recommendations: data.recommendations.map(
+        (rec: {
+          id: string;
+          title: string;
+          description: string;
+          icon: string;
+          category: string;
+          priority: number;
+          confidence: number;
+          action_type: string;
+          component_id?: string;
+          component_ids?: string[];
+          reasoning?: string;
+        }) => ({
+          id: rec.id,
+          title: rec.title,
+          description: rec.description,
+          icon: rec.icon,
+          category: rec.category,
+          priority: rec.priority,
+          confidence: rec.confidence,
+          actionType: rec.action_type,
+          componentId: rec.component_id,
+          componentIds: rec.component_ids,
+          reasoning: rec.reasoning,
+        }),
+      ),
       totalCount: data.total_count,
       filteredCount: data.filtered_count,
       minConfidenceThreshold: data.min_confidence_threshold,

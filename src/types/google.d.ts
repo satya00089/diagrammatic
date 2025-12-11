@@ -32,7 +32,9 @@ interface GoogleIdConfiguration {
 interface GoogleAccounts {
   id: {
     initialize: (config: GoogleIdConfiguration) => void;
-    prompt: (momentListener?: (notification: PromptMomentNotification) => void) => void;
+    prompt: (
+      momentListener?: (notification: PromptMomentNotification) => void,
+    ) => void;
     renderButton: (
       parent: HTMLElement | null,
       options: GoogleButtonConfig,
@@ -43,7 +45,10 @@ interface GoogleAccounts {
       callback?: () => void,
     ) => void;
     cancel: () => void;
-    revoke: (hint: string, callback?: (done: RevokeDoneResponse) => void) => void;
+    revoke: (
+      hint: string,
+      callback?: (done: RevokeDoneResponse) => void,
+    ) => void;
   };
 }
 

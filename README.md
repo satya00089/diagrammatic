@@ -106,6 +106,7 @@ Each component comes with **comprehensive configurable properties** for realisti
 Create professional **Entity-Relationship diagrams** with advanced features:
 
 ### 📋 ER Components
+
 - **Entity & Weak Entity** - Interactive tables with inline attribute editing
 - **View, Trigger, Note** - Supporting ER elements with rich descriptions
 - **Relationship Edges** - 18+ cardinality types with crow's foot notation
@@ -115,23 +116,29 @@ Create professional **Entity-Relationship diagrams** with advanced features:
 Choose from **18 relationship types** organized in 5 categories:
 
 **Basic Cardinality:**
+
 - 1:1, 1:N, N:1, N:M
 
 **Mandatory Participation** (both must exist):
+
 - 1:1 Mandatory, 1:N Mandatory, M:N Mandatory
 
 **Optional Participation** (may or may not exist):
+
 - 0:1, 0:N, 0:M to 0:N
 
 **Mixed Participation:**
+
 - 1 to 0..N, 0..1, 0..N, 1..N
 
 **Recursive Relationships** (self-referencing):
+
 - Self 1:1, Self 1:N, Self M:N
 
 📖 **[View Complete ER Relationship Guide →](docs/ER_RELATIONSHIP_GUIDE.md)**
 
 ### ✨ ER Features
+
 - **Interactive Tables** - Double-click to edit attributes, mark primary keys, set nullable
 - **Visual Markers** - Crow's foot notation with mandatory/optional indicators
 - **Smart Edge Detection** - Automatically uses ER edges when connecting ER nodes
@@ -248,7 +255,7 @@ npm run build
 - **Delete**: Press `Delete` or `Backspace` to remove selected items
 - **Multi-select**: Hold `Shift` and click multiple items
 - **Export Image**: Click "Download" button to save as PNG, JPEG, or SVG
-- **Export/Import**: 
+- **Export/Import**:
   - Click "Export" to download as JSON or XML/DrawIO format
   - Click "Import" to load diagrams from JSON or XML files
   - See [Export/Import Guide](docs/EXPORT_IMPORT.md) for details

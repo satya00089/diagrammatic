@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { useChatBot } from '../hooks/useChatBot';
+import React from "react";
+import { motion } from "framer-motion";
+import { useChatBot } from "../hooks/useChatBot";
 
 export const WelcomeDialog: React.FC = () => {
   const { dismissWelcome } = useChatBot();
@@ -18,8 +18,9 @@ export const WelcomeDialog: React.FC = () => {
           Welcome to Design Assistant!
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          I'm here to help you with smart suggestions based on what you're building.
-          Start adding components to your canvas, and I'll provide contextual tips!
+          I'm here to help you with smart suggestions based on what you're
+          building. Start adding components to your canvas, and I'll provide
+          contextual tips!
         </p>
         <button
           onClick={dismissWelcome}

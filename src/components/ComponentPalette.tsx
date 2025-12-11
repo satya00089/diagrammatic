@@ -38,10 +38,10 @@ export default function ComponentPalette({
 
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [expandedProviders, setExpandedProviders] = React.useState<Set<string>>(
-    new Set(["Custom"]) // Start with Custom expanded
+    new Set(["Custom"]), // Start with Custom expanded
   );
   const prevSelectedProvidersRef = React.useRef<string[]>([]);
   const [hoveredComponent, setHoveredComponent] = React.useState<{
@@ -60,7 +60,7 @@ export default function ComponentPalette({
   // Use custom providers or default ones
   const providers = React.useMemo(
     () => customProviders || DEFAULT_PROVIDERS.slice(0, 4),
-    [customProviders]
+    [customProviders],
   );
 
   // Fetch components when providers change
@@ -79,7 +79,7 @@ export default function ComponentPalette({
       // Only expand newly added providers, preserve existing state
       const prevProviders = prevSelectedProvidersRef.current;
       const newProviders = selectedProviders.filter(
-        (p) => !prevProviders.includes(p)
+        (p) => !prevProviders.includes(p),
       );
 
       setExpandedProviders((prev) => {
@@ -120,7 +120,7 @@ export default function ComponentPalette({
       (p) =>
         p.id.toLowerCase() !== "all" &&
         (p.name.toLowerCase().includes(query) ||
-          p.id.toLowerCase().includes(query))
+          p.id.toLowerCase().includes(query)),
     );
 
     if (matches.length > 0) {
@@ -214,7 +214,7 @@ export default function ComponentPalette({
     // Always include Custom Component in search results
     const customComponent = components.find((c) => c.id === "custom-component");
     const hasCustomComponent = searchResults.some(
-      (c) => c.id === "custom-component"
+      (c) => c.id === "custom-component",
     );
 
     if (customComponent && !hasCustomComponent) {
@@ -263,7 +263,7 @@ export default function ComponentPalette({
           const priorityA = GROUP_PRIORITY[a[0]] ?? 999;
           const priorityB = GROUP_PRIORITY[b[0]] ?? 999;
           return priorityA - priorityB;
-        })
+        }),
       );
 
       result.set(provider, sortedCategories);
@@ -300,10 +300,7 @@ export default function ComponentPalette({
   };
 
   // Lazy load full component data when dragged
-  const handleDragStart = (
-    e: React.DragEvent,
-    componentId: string
-  ) => {
+  const handleDragStart = (e: React.DragEvent, componentId: string) => {
     setHoveredComponent(null);
 
     // Use the button itself as drag image since it already has the loaded icon
@@ -312,7 +309,7 @@ export default function ComponentPalette({
       e.dataTransfer.setDragImage(
         targetButton,
         targetButton.offsetWidth / 2,
-        targetButton.offsetHeight / 2
+        targetButton.offsetHeight / 2,
       );
       e.dataTransfer.effectAllowed = "move";
     }
@@ -320,7 +317,7 @@ export default function ComponentPalette({
     // Pass only component ID - full data will be fetched from Redux on drop
     e.dataTransfer?.setData(
       "application/reactflow",
-      JSON.stringify({ type: componentId })
+      JSON.stringify({ type: componentId }),
     );
     e.dataTransfer?.setData("text/plain", componentId);
   };
@@ -479,7 +476,7 @@ export default function ComponentPalette({
                     const isProviderExpanded =
                       expandedProviders.has(providerName);
                     const totalComponents = Array.from(
-                      categories.values()
+                      categories.values(),
                     ).reduce((sum, list) => sum + list.length, 0);
 
                     // If only Custom provider and 'all' is selected, skip provider header
@@ -530,7 +527,7 @@ export default function ComponentPalette({
                             {Array.from(categories.entries()).map(
                               ([groupName, list]) => {
                                 const isExpanded = expandedGroups.has(
-                                  `${providerName}-${groupName}`
+                                  `${providerName}-${groupName}`,
                                 );
                                 return (
                                   <div key={groupName}>
@@ -538,7 +535,7 @@ export default function ComponentPalette({
                                       type="button"
                                       onClick={() =>
                                         toggleGroup(
-                                          `${providerName}-${groupName}`
+                                          `${providerName}-${groupName}`,
                                         )
                                       }
                                       className="w-full flex items-center justify-between px-2 py-1.5 text-left hover:bg-[var(--bg-hover)] rounded transition-colors"
@@ -629,7 +626,7 @@ export default function ComponentPalette({
                                                             c.icon as React.ComponentType<{
                                                               size?: number;
                                                             }>,
-                                                            { size: 24 }
+                                                            { size: 24 },
                                                           )
                                                         ) : (
                                                           <span className="text-lg">
@@ -651,13 +648,13 @@ export default function ComponentPalette({
                                     )}
                                   </div>
                                 );
-                              }
+                              },
                             )}
                           </div>
                         )}
                       </div>
                     );
-                  }
+                  },
                 )
               )}
 
@@ -694,7 +691,7 @@ export default function ComponentPalette({
             <div className="text-muted">{hoveredComponent.description}</div>
             <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-[var(--bg)]"></div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

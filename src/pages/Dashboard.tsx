@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Fuse from "fuse.js";
 import {
   MdPublic,
   MdBusiness,
@@ -8,29 +7,56 @@ import {
   MdSettings,
 } from "react-icons/md";
 
-import type { SystemDesignProblem } from "../types/systemDesign";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
 import SEO from "../components/SEO";
-import { apiService } from "../services/api";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchProblems,
+  fetchAttemptedProblems,
+  setSelectedDifficulty,
+  setSelectedCategory,
+  setSelectedDomain,
+  setSearchQuery,
+} from "../store/slices/problemsSlice";
+import {
+  selectFilteredProblems,
+  selectProblemsLoading,
+  selectProblemsError,
+  selectCategories,
+  selectDomains,
+  selectDifficulties,
+  selectSelectedDifficulty,
+  selectSelectedCategory,
+  selectSelectedDomain,
+  selectSearchQuery,
+  selectAttemptedProblems,
+} from "../store/slices/problemsSelectors";
 
 const Dashboard: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [selectedDomain, setSelectedDomain] = useState<string>("All");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [problems, setProblems] = useState<SystemDesignProblem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+
+  // Local UI state
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [attemptedProblems, setAttemptedProblems] = useState<Set<string>>(
-    new Set()
-  );
+
+  // Redux state
+  const filteredProblems = useAppSelector(selectFilteredProblems);
+  const loading = useAppSelector(selectProblemsLoading);
+  const error = useAppSelector(selectProblemsError);
+  const categories = useAppSelector(selectCategories);
+  const domains = useAppSelector(selectDomains);
+  const difficulties = selectDifficulties();
+  const selectedDifficulty = useAppSelector(selectSelectedDifficulty);
+  const selectedCategory = useAppSelector(selectSelectedCategory);
+  const selectedDomain = useAppSelector(selectSelectedDomain);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const attemptedProblems = useAppSelector(selectAttemptedProblems);
+
   const {
     user,
     isAuthenticated: isAuth,
@@ -40,125 +66,28 @@ const Dashboard: React.FC = () => {
     logout,
   } = useAuth();
 
-  // Fetch problems from API
+  // Fetch problems from API on mount
   useEffect(() => {
-    const fetchProblems = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const apiUrl =
-          import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
-        const response = await fetch(`${apiUrl}/api/v1/all-problems`);
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch problems: ${response.status} ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
-        setProblems(data);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "An error occurred while fetching problems"
-        );
-        console.error("Error fetching problems:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProblems();
-  }, []);
+    dispatch(fetchProblems());
+  }, [dispatch]);
 
   // Fetch attempted problems when user is authenticated
   useEffect(() => {
-    const fetchAttemptedProblems = async () => {
-      if (!isAuth) {
-        setAttemptedProblems(new Set());
-        return;
-      }
-
-      try {
-        const attempted = await apiService.getAttemptedProblems();
-        setAttemptedProblems(new Set(attempted));
-      } catch (err) {
-        console.error("Failed to fetch attempted problems:", err);
-        // Silently fail - attempted problems is a nice-to-have feature
-      }
-    };
-
-    fetchAttemptedProblems();
-  }, [isAuth]);
-
-  const filteredProblems = useMemo(() => {
-    const q = searchTerm?.trim() ?? "";
-    let results = problems;
-
-    if (q.length > 0) {
-      const fuse = new Fuse(problems, {
-        keys: [
-          { name: "title", weight: 0.6 },
-          { name: "description", weight: 0.25 },
-          { name: "tags", weight: 0.15 },
-        ],
-        includeScore: true,
-        threshold: 0.45,
-      });
-
-      results = fuse.search(q).map((r) => r.item);
+    if (isAuth) {
+      dispatch(fetchAttemptedProblems());
     }
-
-    const filtered = results.filter((problem: SystemDesignProblem) => {
-      const matchesDifficulty =
-        selectedDifficulty === "All" ||
-        problem.difficulty === selectedDifficulty;
-      const matchesCategory =
-        selectedCategory === "All" || problem.category === selectedCategory;
-      const matchesDomain =
-        selectedDomain === "All" || problem.domain === selectedDomain;
-      return matchesDifficulty && matchesCategory && matchesDomain;
-    });
-
-    // Sort: attempted problems first, then by original order
-    return filtered.sort((a, b) => {
-      const aAttempted = attemptedProblems.has(a.id) ? 1 : 0;
-      const bAttempted = attemptedProblems.has(b.id) ? 1 : 0;
-      return bAttempted - aAttempted; // Attempted (1) comes before not attempted (0)
-    });
-  }, [
-    selectedDifficulty,
-    selectedCategory,
-    selectedDomain,
-    searchTerm,
-    problems,
-    attemptedProblems,
-  ]);
-
-  const categories = [
-    "All",
-    ...Array.from(
-      new Set(problems.map((p: SystemDesignProblem) => p.category))
-    ),
-  ];
-  const domains = [
-    "All",
-    ...Array.from(new Set(problems.map((p: SystemDesignProblem) => p.domain))),
-  ];
-  const difficulties = ["All", "Easy", "Medium", "Hard", "Very Hard"];
+  }, [isAuth, dispatch]);
 
   const getDomainIcon = (domain: string) => {
     switch (domain) {
       case "All":
-        return <MdPublic className="inline mr-2" />;
+        return <MdPublic className="inline" />;
       case "infra":
-        return <MdBusiness className="inline mr-2" />;
+        return <MdBusiness className="inline" />;
       case "application":
-        return <MdPhoneAndroid className="inline mr-2" />;
+        return <MdPhoneAndroid className="inline" />;
       default:
-        return <MdSettings className="inline mr-2" />;
+        return <MdSettings className="inline" />;
     }
   };
 
@@ -378,8 +307,10 @@ const Dashboard: React.FC = () => {
                         id="search-input"
                         type="text"
                         placeholder="Search problems..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={searchQuery}
+                        onChange={(e) =>
+                          dispatch(setSearchQuery(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
                       />
                     </div>
@@ -395,7 +326,9 @@ const Dashboard: React.FC = () => {
                       <select
                         id="difficulty-select"
                         value={selectedDifficulty}
-                        onChange={(e) => setSelectedDifficulty(e.target.value)}
+                        onChange={(e) =>
+                          dispatch(setSelectedDifficulty(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                       >
                         {difficulties.map((difficulty) => (
@@ -417,7 +350,9 @@ const Dashboard: React.FC = () => {
                       <select
                         id="category-select"
                         value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        onChange={(e) =>
+                          dispatch(setSelectedCategory(e.target.value))
+                        }
                         className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
                       >
                         {categories.map((category) => (
@@ -440,7 +375,7 @@ const Dashboard: React.FC = () => {
                       <button
                         key={domain}
                         type="button"
-                        onClick={() => setSelectedDomain(domain)}
+                        onClick={() => dispatch(setSelectedDomain(domain))}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                           selectedDomain === domain
                             ? "bg-[var(--brand)] text-white shadow-md transform scale-105"
@@ -503,7 +438,7 @@ const Dashboard: React.FC = () => {
                           {problem.tags.slice(0, 3).map((tag) => (
                             <span
                               key={tag}
-                              className="px-3 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
+                              className="px-3 py-1 capitalize bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
                             >
                               {tag}
                             </span>
