@@ -78,6 +78,8 @@ export interface ComponentDB {
   label: string;
   description: string;
 
+  nodeType?: "custom" | "erNode" | "group" | "tableNode"; // Specify which node component to use
+
   // Visual
   icon?: string; // React icon name like "SiAmazons3"
   iconUrl?: string; // URL to custom icon

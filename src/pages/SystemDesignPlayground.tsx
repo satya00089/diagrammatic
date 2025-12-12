@@ -1046,9 +1046,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     // Also check current minimalComponents array
-    if (!minimalComp) {
-      minimalComp = minimalComponents.find((c) => c.id === type);
-    }
+    minimalComp ??= minimalComponents.find((c) => c.id === type);
 
     // Get full component data from cache if available (has properties)
     const fullComp = fullComponentsCache[type];
@@ -1065,7 +1063,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       minimalComp?.description || fullComp?.description || comp?.description;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.nodeType === "group";
+    const isGroupComponent = comp?.nodeType === "group" || minimalComp?.nodeType === "group";
 
     // Determine node type: use component's nodeType if specified, otherwise default behavior
     const nodeTypeToUse =

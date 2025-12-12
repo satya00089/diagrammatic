@@ -22,6 +22,7 @@ export interface MinimalComponent {
   group?: string;
   iconUrl?: string;
   tags?: string[];
+  nodeType?: "custom" | "group" | "tableNode" | "erNode";
 }
 
 interface ComponentsState {
@@ -110,6 +111,7 @@ export const fetchMinimalComponents = createAsyncThunk(
         description: item.description,
         group: item.group,
         iconUrl: item.iconUrl,
+        nodeType: item.nodeType || "custom",
         tags: item.tags,
       }));
       allItems.push(...minimalComponents);

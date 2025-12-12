@@ -2,10 +2,12 @@ import React from "react";
 import { Handle, Position, NodeResizer } from "@xyflow/react";
 import { MdSettings, MdDelete } from "react-icons/md";
 import { motion } from "framer-motion";
+import type { IconType } from "react-icons";
 
 export interface GroupNodeData {
   label: string;
-  icon?: string;
+  icon?: IconType;
+  iconUrl?: string;
   subtitle?: string;
   backgroundColor?: string;
   borderColor?: string;
@@ -122,7 +124,10 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
-        {data.icon && <span>{data.icon}</span>}
+        {data.icon && React.createElement(data.icon, { size: 16 })}
+        {data.iconUrl && !data.icon && (
+          <img src={data.iconUrl} alt="" style={{ width: '16px', height: '16px' }} />
+        )}
         <span>{data.label}</span>
       </div>
 
