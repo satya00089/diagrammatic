@@ -1065,7 +1065,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       minimalComp?.description || fullComp?.description || comp?.description;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.group === "Grouping";
+    const isGroupComponent = comp?.nodeType === "group";
 
     // Determine node type: use component's nodeType if specified, otherwise default behavior
     const nodeTypeToUse =
