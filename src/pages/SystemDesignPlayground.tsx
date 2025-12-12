@@ -2296,7 +2296,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const title = problem?.title || "System Design";
       const description = problem?.description;
       const xmlContent = exportAsXML(nodes, edges, title, description);
-      const filename = `${title.replaceAll(/\s+/g, "-").toLowerCase()}-${Date.now()}.drawio`;
+      const filename = `${title.replaceAll(/\s+/g, "-").toLowerCase()}-${Date.now()}.xml`;
       downloadFile(xmlContent, filename, "application/xml");
       toast.success("Design exported as XML successfully!");
     } catch (error) {
@@ -2320,7 +2320,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       if (file.name.endsWith(".json")) {
         importedData = importFromJSON(content);
         toast.success("Design imported from JSON successfully!");
-      } else if (file.name.endsWith(".xml") || file.name.endsWith(".drawio")) {
+      } else if (file.name.endsWith(".xml")) {
         importedData = importFromXML(content);
         toast.success("Design imported from XML successfully!");
       } else {
@@ -2337,7 +2337,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           toast.success("Design imported from XML successfully!");
         } else {
           throw new Error(
-            "Unsupported file format. Please use JSON or XML/DrawIO files.",
+            "Unsupported file format. Please use JSON or XML files.",
           );
         }
       }
@@ -2894,7 +2894,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".json,.xml,.drawio"
+                      accept=".json,.xml"
                       onChange={handleImportFile}
                       className="hidden"
                       aria-label="Import diagram file"
@@ -2974,7 +2974,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
                       >
-                        XML/DrawIO
+                        XML Format
                       </button>
                     </div>
                   )}
