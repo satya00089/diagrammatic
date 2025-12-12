@@ -32,6 +32,7 @@ const routes = {
         <li>AWS, Azure & GCP Cloud Components</li>
         <li>AI-Powered Assessment & Recommendations</li>
         <li>90+ Practice Problems</li>
+        <li>35+ Cloud Infrastructure Design Challenges</li>
         <li>Real-time Collaboration</li>
         <li>UML & ER Diagrams</li>
         <li>Export as PNG, JPEG, SVG, JSON, XML</li>
