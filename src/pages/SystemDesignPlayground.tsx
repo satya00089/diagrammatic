@@ -15,7 +15,6 @@ import {
   useReactFlow,
   ReactFlowProvider,
   getNodesBounds,
-  getViewportForBounds,
 } from "@xyflow/react";
 import type { Node, Edge, Connection } from "@xyflow/react";
 
@@ -2226,7 +2225,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Download canvas as image
   const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
     const nodesBounds = getNodesBounds(getNodes());
-    const viewport = getViewportForBounds(nodesBounds, 1024, 768, 0.5, 2, 0.2);
+    
+    // Add padding to prevent cropping (100px on each side)
+    const padding = 100;
+    const imageWidth = nodesBounds.width + padding * 2;
+    const imageHeight = nodesBounds.height + padding * 2;
 
     const viewportElement = document.querySelector(
       ".react-flow__viewport",
@@ -2253,12 +2256,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     downloadFunc(viewportElement, {
       backgroundColor: format === "png" ? "transparent" : "#ffffff",
-      width: 1024,
-      height: 768,
+      width: imageWidth,
+      height: imageHeight,
       style: {
-        width: `${1024}px`,
-        height: `${768}px`,
-        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${-nodesBounds.x + padding}px, ${-nodesBounds.y + padding}px) scale(1)`,
       },
     })
       .then((dataUrl) => {
