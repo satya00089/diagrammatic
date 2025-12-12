@@ -4,9 +4,9 @@
  * Run after build: node prerender.js
  */
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,41 +20,45 @@ const routes = {
     title:
       "Diagrammatic — Interactive System Design Playground | Learn Architecture Design",
     description:
-      "Master system design with Diagrammatic - an interactive playground featuring 45+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators.",
+      "Master system design with Diagrammatic - an interactive playground featuring 1k+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and 90+ practice problems. Free system architecture tool for students, professionals, and educators.",
     keywords:
-      "system design, architecture diagram, system design interview, software architecture, distributed systems",
+      "system design, architecture diagram, system design interview, software architecture, distributed systems, AWS architecture, Azure architecture, GCP architecture, cloud design, ER diagram, UML diagram",
     content: `
       <h1>Diagrammatic - Interactive System Design Playground</h1>
-      <p>Master system design with our interactive playground. Learn to design scalable, production-ready architectures.</p>
+      <p>Master system design with our interactive playground. Learn to design scalable, production-ready architectures with cloud provider support.</p>
       <h2>Key Features</h2>
       <ul>
-        <li>45+ System Design Components</li>
-        <li>AI-Powered Assessment</li>
-        <li>Practice Problems</li>
+        <li>1k+ System Design Components</li>
+        <li>AWS, Azure & GCP Cloud Components</li>
+        <li>AI-Powered Assessment & Recommendations</li>
+        <li>90+ Practice Problems</li>
         <li>Real-time Collaboration</li>
+        <li>UML & ER Diagrams</li>
+        <li>Export as PNG, JPEG, SVG, JSON, XML</li>
+        <li>Smart Component Search</li>
       </ul>
     `,
   },
   "/#/playground/free": {
     title: "Free Design Studio | Diagrammatic",
     description:
-      "Create unlimited system architecture diagrams for free. 45+ components including load balancers, databases, caches, queues, and more. No signup required.",
+      "Create unlimited system architecture diagrams for free. 1k+ components including AWS, Azure, GCP cloud components, load balancers, databases, caches, queues, and more. Export as PNG, JPEG, SVG, JSON, or XML. No signup required.",
     keywords:
-      "free system design tool, architecture diagram maker, cloud architecture, microservices design",
+      "free system design tool, architecture diagram maker, cloud architecture, microservices design, AWS diagram, Azure diagram, GCP diagram, ER diagram, UML diagram",
     content: `
       <h1>Free Design Studio</h1>
-      <p>Create unlimited architecture diagrams with 45+ professional components. No signup required.</p>
+      <p>Create unlimited architecture diagrams with 1k+ professional components including AWS, Azure & GCP cloud services. Export in multiple formats. No signup required.</p>
     `,
   },
   "/#/problems": {
     title: "Practice Problems | Diagrammatic",
     description:
-      "Practice system design with real-world challenges. Get AI-powered feedback on your architecture designs. Perfect for interview preparation.",
+      "Practice system design with 90+ real-world challenges. Get AI-powered feedback and recommendations on your architecture designs. Perfect for FAANG interview preparation.",
     keywords:
-      "system design interview, system design practice, distributed systems problems, scalable architecture",
+      "system design interview, system design practice, distributed systems problems, scalable architecture, FAANG interview, tech interview prep",
     content: `
       <h1>System Design Practice Problems</h1>
-      <p>Practice with real-world system design challenges. Get instant AI feedback on your solutions.</p>
+      <p>Practice with 90+ real-world system design challenges. Get instant AI-powered assessment and smart recommendations on your solutions.</p>
     `,
   },
 };
@@ -122,10 +126,3 @@ Object.entries(routes).forEach(([route, data]) => {
   fs.writeFileSync(outputPath, html, "utf-8");
   console.log(`✅ Generated: ${route} -> ${path.basename(outputPath)}`);
 });
-
-console.log("\n🎉 Prerendering complete!\n");
-console.log("📝 Tips for better SEO:");
-console.log("  1. Submit sitemap.xml to Google Search Console");
-console.log("  2. Add backlinks from Reddit, Hacker News, Product Hunt");
-console.log("  3. Consider moving to Next.js for true SSR/SSG");
-console.log("  4. Add a blog with regular content updates\n");
