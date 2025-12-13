@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateProblem from "./pages/CreateProblem";
 import MyDesigns from "./pages/MyDesigns";
 import SystemDesignPlayground from "./pages/SystemDesignPlayground";
+import LearningDashboard from "./pages/LearningDashboard";
+import LearningModule from "./pages/LearningModule";
 import { useTheme } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
@@ -26,6 +28,11 @@ const App: React.FC = () => {
             <Route
               path="/playground/:id"
               element={<SystemDesignPlayground />}
+            />
+            <Route path="/learn" element={<LearningDashboard />} />
+            <Route
+              path="/learn/:moduleId/:lessonSlug"
+              element={<LearningModule />}
             />
             <Route path="*" element={<Home />} />
           </Routes>

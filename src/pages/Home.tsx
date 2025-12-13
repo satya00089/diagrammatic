@@ -79,6 +79,16 @@ const Home: React.FC = () => {
 
   const features = [
     {
+      icon: "📚",
+      title: "Learn System Design",
+      description:
+        "Master system design from basics to advanced with interactive lessons and hands-on exercises",
+      action: "Start Learning",
+      route: "/learn",
+      gradient: "from-green-500 to-emerald-500",
+      requiresAuth: false,
+    },
+    {
       icon: "🎯",
       title: "Practice Problems",
       description:
