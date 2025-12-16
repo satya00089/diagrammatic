@@ -11,6 +11,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     // port: 5173,
+    fs: {
+      // Allow serving files from public directory
+      allow: [".."],
+    },
     // Proxy is optional - you can use VITE_ASSESSMENT_API_URL directly
     // Uncomment below if you need CORS proxying in development
     // proxy: {

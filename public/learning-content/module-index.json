@@ -1,0 +1,212 @@
+{
+  "modules": [
+    {
+      "id": "system-design-basics",
+      "title": "System Design Basics",
+      "description": "Learn the fundamental concepts of system design including scalability, reliability, and performance.",
+      "level": "beginner",
+      "estimatedTime": "2 hours",
+      "order": 1,
+      "prerequisites": [],
+      "tags": ["fundamentals", "scalability", "architecture"],
+      "icon": "🏗️",
+      "lessons": [
+        {
+          "id": "what-is-system-design",
+          "moduleId": "system-design-basics",
+          "title": "What is System Design?",
+          "slug": "what-is-system-design",
+          "order": 1,
+          "type": "theory",
+          "estimatedTime": "15 min",
+          "contentUrl": "/learning-content/system-design-basics/what-is-system-design.md",
+          "content": "Introduction to system design principles"
+        },
+        {
+          "id": "scalability-concepts",
+          "moduleId": "system-design-basics",
+          "title": "Scalability Concepts",
+          "slug": "scalability-concepts",
+          "order": 2,
+          "type": "theory",
+          "estimatedTime": "20 min",
+          "contentUrl": "/learning-content/system-design-basics/scalability-concepts.md",
+          "content": "Understanding horizontal and vertical scaling"
+        },
+        {
+          "id": "reliability-availability",
+          "moduleId": "system-design-basics",
+          "title": "Reliability & Availability",
+          "slug": "reliability-availability",
+          "order": 3,
+          "type": "theory",
+          "estimatedTime": "25 min",
+          "contentUrl": "/learning-content/system-design-basics/reliability-availability.md",
+          "content": "Ensuring systems stay up and running"
+        }
+      ]
+    },
+    {
+      "id": "load-balancing",
+      "title": "Load Balancing",
+      "description": "Master load balancing techniques and algorithms for distributing traffic across servers.",
+      "level": "intermediate",
+      "estimatedTime": "1.5 hours",
+      "order": 2,
+      "prerequisites": ["system-design-basics"],
+      "tags": ["load-balancing", "traffic", "distribution"],
+      "icon": "⚖️",
+      "lessons": [
+        {
+          "id": "load-balancer-types",
+          "moduleId": "load-balancing",
+          "title": "Load Balancer Types",
+          "slug": "load-balancer-types",
+          "order": 1,
+          "type": "theory",
+          "estimatedTime": "20 min",
+          "contentUrl": "/learning-content/load-balancing/load-balancer-types.md",
+          "content": "Hardware, software, and cloud load balancers"
+        },
+        {
+          "id": "balancing-algorithms",
+          "moduleId": "load-balancing",
+          "title": "Balancing Algorithms",
+          "slug": "balancing-algorithms",
+          "order": 2,
+          "type": "interactive",
+          "estimatedTime": "25 min",
+          "contentUrl": "/learning-content/load-balancing/balancing-algorithms.md",
+          "content": "Round-robin, least connections, and weighted algorithms"
+        }
+      ]
+    },
+    {
+      "id": "database-design",
+      "title": "Database Design & Scaling",
+      "description": "Design efficient database schemas and learn scaling strategies for high-traffic applications.",
+      "level": "intermediate",
+      "estimatedTime": "2.5 hours",
+      "order": 3,
+      "prerequisites": ["system-design-basics"],
+      "tags": ["database", "scaling", "schema"],
+      "icon": "🗄️",
+      "lessons": [
+        {
+          "id": "relational-databases",
+          "moduleId": "database-design",
+          "title": "Relational Database Design",
+          "slug": "relational-databases",
+          "order": 1,
+          "type": "theory",
+          "estimatedTime": "25 min",
+          "contentUrl": "/learning-content/database-design/relational-databases.md",
+          "content": "Normalization, indexing, and query optimization"
+        },
+        {
+          "id": "nosql-databases",
+          "moduleId": "database-design",
+          "title": "NoSQL Database Patterns",
+          "slug": "nosql-databases",
+          "order": 2,
+          "type": "theory",
+          "estimatedTime": "30 min",
+          "contentUrl": "/learning-content/database-design/nosql-databases.md",
+          "content": "When and how to use NoSQL databases"
+        },
+        {
+          "id": "database-sharding",
+          "moduleId": "database-design",
+          "title": "Database Sharding",
+          "slug": "database-sharding",
+          "order": 3,
+          "type": "interactive",
+          "estimatedTime": "35 min",
+          "contentUrl": "/learning-content/database-design/database-sharding.md",
+          "content": "Horizontal partitioning strategies"
+        }
+      ]
+    },
+    {
+      "id": "caching-strategies",
+      "title": "Caching Strategies",
+      "description": "Implement effective caching strategies to improve application performance and reduce database load.",
+      "level": "intermediate",
+      "estimatedTime": "1.5 hours",
+      "order": 4,
+      "prerequisites": ["system-design-basics"],
+      "tags": ["caching", "performance", "redis"],
+      "icon": "🚀",
+      "lessons": [
+        {
+          "id": "cache-types",
+          "moduleId": "caching-strategies",
+          "title": "Types of Caches",
+          "slug": "cache-types",
+          "order": 1,
+          "type": "theory",
+          "estimatedTime": "20 min",
+          "contentUrl": "/learning-content/caching-strategies/cache-types.md",
+          "content": "Client-side, server-side, and distributed caching"
+        },
+        {
+          "id": "cache-invalidation",
+          "moduleId": "caching-strategies",
+          "title": "Cache Invalidation Strategies",
+          "slug": "cache-invalidation",
+          "order": 2,
+          "type": "interactive",
+          "estimatedTime": "25 min",
+          "contentUrl": "/learning-content/caching-strategies/cache-invalidation.md",
+          "content": "Write-through, write-behind, and TTL strategies"
+        }
+      ]
+    },
+    {
+      "id": "microservices-architecture",
+      "title": "Microservices Architecture",
+      "description": "Design and implement microservices-based systems with proper communication patterns.",
+      "level": "advanced",
+      "estimatedTime": "3 hours",
+      "order": 5,
+      "prerequisites": ["load-balancing", "database-design"],
+      "tags": ["microservices", "architecture", "communication"],
+      "icon": "🔧",
+      "lessons": [
+        {
+          "id": "microservices-principles",
+          "moduleId": "microservices-architecture",
+          "title": "Microservices Principles",
+          "slug": "microservices-principles",
+          "order": 1,
+          "type": "theory",
+          "estimatedTime": "30 min",
+          "contentUrl": "/learning-content/microservices-architecture/microservices-principles.md",
+          "content": "Single responsibility, loose coupling, and independent deployment"
+        },
+        {
+          "id": "service-communication",
+          "moduleId": "microservices-architecture",
+          "title": "Service Communication Patterns",
+          "slug": "service-communication",
+          "order": 2,
+          "type": "interactive",
+          "estimatedTime": "40 min",
+          "contentUrl": "/learning-content/microservices-architecture/service-communication.md",
+          "content": "REST, gRPC, message queues, and event-driven architecture"
+        },
+        {
+          "id": "service-discovery",
+          "moduleId": "microservices-architecture",
+          "title": "Service Discovery & Registry",
+          "slug": "service-discovery",
+          "order": 3,
+          "type": "theory",
+          "estimatedTime": "25 min",
+          "contentUrl": "/learning-content/microservices-architecture/service-discovery.md",
+          "content": "How services find and communicate with each other"
+        }
+      ]
+    }
+  ]
+}

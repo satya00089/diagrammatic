@@ -126,7 +126,11 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
       >
         {data.icon && React.createElement(data.icon, { size: 16 })}
         {data.iconUrl && !data.icon && (
-          <img src={data.iconUrl} alt="" style={{ width: '16px', height: '16px' }} />
+          <img
+            src={data.iconUrl}
+            alt=""
+            style={{ width: "16px", height: "16px" }}
+          />
         )}
         <span>{data.label}</span>
       </div>

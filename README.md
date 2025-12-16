@@ -3,19 +3,19 @@
 _Design. Practice. Master System Architecture._
 
 Diagrammatic is an **interactive System Design Playground** built with **React Flow** and **Tailwind CSS**.
-Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 55 production-grade components — ideal for **interview preparation, learning, and technical documentation**.
+Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 93 production-grade components — ideal for **interview preparation, learning, and technical documentation**.
 
 ---
 
 ## ✨ Features
 
-- 🧩 **55 System Design Components** - Database, Load Balancer, Cache, CDN, Message Queue, API Gateway, and more
+- 🧩 **93 System Design Components** - Database, Load Balancer, Cache, CDN, Message Queue, API Gateway, and more
 - 🔍 **Smart Component Search** - Fuzzy search powered by Fuse.js to quickly find components
 - 🎯 **Practice Problems** - Real system design interview questions with assessment and hints
 - 🎨 **Interactive Drag & Drop Canvas** - Build architecture diagrams with ease
 - 🌙 **Dark / Light Theme** - Eye-friendly theme switching
 - 🖼️ **Export Diagrams** - Save your designs as PNG, JPEG, or SVG images
-- � **Export/Import** - Export as JSON or XML/DrawIO format for sharing and backup
+- 💾 **Export/Import** - Export as JSON format for sharing and backup
 - �📊 **Inspector Panel** - Configure component properties in real-time
 - 🔐 **Authentication** - Optional Google Sign-In or email/password authentication
 - ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
@@ -55,7 +55,7 @@ Practice system design interviews, learn distributed systems architecture, and c
 
 ## 🧩 Component Library
 
-Diagrammatic includes **55 production-grade system design components** organized into 9 categories:
+Diagrammatic includes **93 production-grade system design components** organized into 16 categories:
 
 ### Compute & Storage (8)
 
@@ -256,8 +256,8 @@ npm run build
 - **Multi-select**: Hold `Shift` and click multiple items
 - **Export Image**: Click "Download" button to save as PNG, JPEG, or SVG
 - **Export/Import**:
-  - Click "Export" to download as JSON or XML/DrawIO format
-  - Click "Import" to load diagrams from JSON or XML files
+  - Click "Export" to download as JSON format
+  - Click "Import" to load diagrams from JSON files
   - See [Export/Import Guide](docs/EXPORT_IMPORT.md) for details
 
 ### Theme Switching
@@ -281,7 +281,7 @@ diagrammatic/
 │   │   ├── Toolbar.tsx             # Top toolbar
 │   │   └── shared/                 # Shared UI components
 │   ├── config/
-│   │   └── components.ts    # Component library definitions (55 components)
+│   │   └── components.ts    # Component library definitions (93 components)
 │   ├── data/
 │   │   └── problems.ts      # System design practice problems
 │   ├── pages/
@@ -317,13 +317,13 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 - [x] Undo/Redo functionality
 - [x] Keyboard shortcuts for power users
 - [x] Save/load diagrams with authentication (requires backend setup - see docs/FASTAPI_BACKEND.md)
-- [x] Export/Import diagrams as JSON and XML/DrawIO formats
+- [x] Export/Import diagrams as JSON format
 
 ### Long-term
 
 - [x] User authentication and cloud storage (implemented with Google Sign-In support - see docs/GOOGLE_SIGNIN.md)
 - [x] Share Designs with public URLs (implemented with URL compression)
-- [x] Export to SVG and JSON (PNG, JPEG, SVG, JSON, XML export implemented)
+- [x] Export to SVG and JSON (PNG, JPEG, SVG, JSON export implemented)
 - [ ] Real-time collaboration
 - [ ] Custom component creation
 - [ ] Interactive tutorials and guided learning paths

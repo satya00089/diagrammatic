@@ -86,7 +86,7 @@ const Home: React.FC = () => {
       action: "Start Learning",
       route: "/learn",
       gradient: "from-green-500 to-emerald-500",
-      requiresAuth: false,
+      requiresAuth: true,
     },
     {
       icon: "🎯",
@@ -1021,7 +1021,7 @@ const Home: React.FC = () => {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            }
+                            },
                           )}
                         </div>
                       </div>

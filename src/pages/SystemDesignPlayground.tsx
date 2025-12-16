@@ -1062,7 +1062,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       minimalComp?.description || fullComp?.description || comp?.description;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.nodeType === "group" || minimalComp?.nodeType === "group";
+    const isGroupComponent =
+      comp?.nodeType === "group" || minimalComp?.nodeType === "group";
 
     // Determine node type: use component's nodeType if specified, otherwise default behavior
     const nodeTypeToUse =
@@ -2225,7 +2226,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Download canvas as image
   const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
     const nodesBounds = getNodesBounds(getNodes());
-    
+
     // Add padding to prevent cropping (100px on each side)
     const padding = 100;
     const imageWidth = nodesBounds.width + padding * 2;

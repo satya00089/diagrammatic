@@ -74,9 +74,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     [onGoogleLogin, onClose],
   );
 
-  // Initialize Google Sign-In
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  // Load Google Identity Services script once
   useEffect(() => {
-    if (!isOpen || !onGoogleLogin) return;
+    if (!onGoogleLogin) return;
+
+    // Check if script is already loaded
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    );
+    if (existingScript) {
+      setGoogleLoaded(true);
+      return;
+    }
 
     // Load Google Identity Services script
     const script = document.createElement("script");
@@ -91,26 +102,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
           callback: handleGoogleResponse,
         });
-        window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button"),
-          {
-            theme: isDarkMode ? "filled_black" : "outline",
-            size: "large",
-            width: 400,
-            text: mode === "login" ? "signin_with" : "signup_with",
-            shape: "rectangular",
-            logo_alignment: "left",
-          },
-        );
+        setGoogleLoaded(true);
       }
     };
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+    script.onerror = () => {
+      // Script failed to load
     };
-  }, [isOpen, mode, onGoogleLogin, handleGoogleResponse, isDarkMode]);
+
+    return () => {
+      // Don't remove the script, keep it loaded
+    };
+  }, [onGoogleLogin, handleGoogleResponse]); // Include handleGoogleResponse
+
+  // Render Google button when modal is open and Google is loaded
+  useEffect(() => {
+    if (!isOpen || !onGoogleLogin || !googleLoaded || !window.google) return;
+
+    const buttonElement = document.getElementById("google-signin-button");
+    if (buttonElement) {
+      // Clear any existing content
+      buttonElement.innerHTML = "";
+      window.google.accounts.id.renderButton(buttonElement, {
+        theme: isDarkMode ? "filled_black" : "outline",
+        size: "large",
+        width: 400,
+        text: mode === "login" ? "signin_with" : "signup_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+      });
+    }
+  }, [isOpen, mode, onGoogleLogin, isDarkMode, googleLoaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +210,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div
                   id="google-signin-button"
                   className="flex justify-center mb-4"
-                ></div>
+                >
+                  {!googleLoaded && (
+                    <div className="text-muted text-sm">
+                      Loading Google Sign-In...
+                    </div>
+                  )}
+                </div>
 
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">

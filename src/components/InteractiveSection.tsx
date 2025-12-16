@@ -70,15 +70,9 @@ export const InteractiveSection: React.FC<InteractiveSectionProps> = ({
       )}
 
       {/* Exercise Type Specific Content */}
-      {config.type === "comparison" && (
-        <ComparisonView config={config} />
-      )}
-      {config.type === "exercise" && (
-        <GuidedExercise config={config} />
-      )}
-      {config.type === "simulation" && (
-        <SimulationView config={config} />
-      )}
+      {config.type === "comparison" && <ComparisonView config={config} />}
+      {config.type === "exercise" && <GuidedExercise config={config} />}
+      {config.type === "simulation" && <SimulationView config={config} />}
     </div>
   );
 };

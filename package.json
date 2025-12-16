@@ -20,7 +20,6 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.0",
-    "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.12",
     "@tiptap/extension-bullet-list": "^3.6.1",
     "@tiptap/extension-heading": "^3.6.1",
@@ -55,6 +54,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/dagre": "^0.7.53",
     "@types/dompurify": "^3.2.0",
     "@types/react": "^19.1.10",

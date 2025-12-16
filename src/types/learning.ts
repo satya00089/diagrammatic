@@ -7,7 +7,11 @@ import { Node, Edge } from "@xyflow/react";
 
 export type LearningLevel = "beginner" | "intermediate" | "advanced";
 export type LessonType = "theory" | "interactive" | "exercise" | "quiz";
-export type InteractiveType = "canvas" | "comparison" | "exercise" | "simulation";
+export type InteractiveType =
+  | "canvas"
+  | "comparison"
+  | "exercise"
+  | "simulation";
 
 export interface LearningModule {
   id: string;
