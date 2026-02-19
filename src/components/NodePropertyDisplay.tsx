@@ -69,26 +69,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
     // Handle HTML string
     const strVal = String(val);
     if (strVal.includes("<") && strVal.includes(">")) {
-      const sanitized = DOMPurify.sanitize(strVal, {
-        ALLOWED_TAGS: [
-          "p",
-          "br",
-          "strong",
-          "em",
-          "u",
-          "ol",
-          "ul",
-          "li",
-          "a",
-          "h1",
-          "h2",
-          "h3",
-          "h4",
-          "h5",
-          "h6",
-        ],
-        ALLOWED_ATTR: ["href", "target", "class"],
-      });
+      const sanitized = DOMPurify.sanitize(strVal);
 
       // Strip HTML for checking if empty
       const textOnly = sanitized
@@ -102,7 +83,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
 
       return (
         <div
-          className="prose prose-sm max-w-none text-theme [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+          className="text-xs text-theme [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1 [&_p:last-child]:mb-0"
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
       );
@@ -119,12 +100,12 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
   return (
     <div className="flex flex-col gap-1 p-2 rounded bg-[var(--bg-hover)]/30">
       <div
-        className="text-muted font-semibold uppercase tracking-wide"
+        className="text-muted font-semibold capitalize tracking-wide"
         style={{ fontSize: "0.65rem" }}
       >
-        {propertyKey}
+        {propertyKey.replaceAll(/([a-z])([A-Z])/g, "$1 $2").replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")}
       </div>
-      <div className="text-theme max-h-32 overflow-y-auto node-properties-scroll">
+      <div className="text-theme break-words overflow-wrap-anywhere">
         {renderValue(value)}
       </div>
     </div>

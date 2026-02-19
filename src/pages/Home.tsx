@@ -699,7 +699,7 @@ const Home: React.FC = () => {
                     Diagrams, AI Assessment
                   </span>
                 </div>
-                <h1 className="text-5xl font-bold mb-6 leading-tight text-white">
+                <h1 className="text-6xl font-bold mb-6 leading-tight text-white">
                   <span className="inline-block animate-gradient bg-gradient-to-r from-white via-white/90 to-white bg-clip-text">
                     System Design
                   </span>

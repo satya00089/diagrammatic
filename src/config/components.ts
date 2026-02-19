@@ -40,13 +40,13 @@ import {
   FaSitemap,
   FaCloudUploadAlt,
   FaAtom,
+  FaDatabase,
 } from "react-icons/fa";
 
 // Simple Icons for brand-specific technology logos
 import {
   SiRedis,
   SiElasticsearch,
-  SiPostgresql,
   SiKubernetes,
   SiNginx,
   SiPrometheus,
@@ -307,7 +307,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "database",
     group: "Data Layer",
-    icon: SiPostgresql,
+    icon: FaDatabase,
     label: "Database",
     description: "Relational/NoSQL data storage",
     tags: [
@@ -3694,6 +3694,20 @@ export const COMPONENTS: CanvasComponent[] = [
         default: "Custom Component",
       },
       {
+        key: "subtitle",
+        label: "Subtitle",
+        type: "text",
+        placeholder: "Enter subtitle",
+        default: "",
+      },
+      {
+        key: "iconUrl",
+        label: "Icon URL",
+        type: "text",
+        placeholder: "Enter icon URL",
+        default: "",
+      },
+      {
         key: "description",
         label: "Description",
         type: "textarea",
@@ -4864,13 +4878,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Node Type",
         type: "text",
         default: "er-trigger",
+        hidden: true,
       },
       {
         key: "componentName",
         label: "Trigger Name",
         type: "text",
-        placeholder: "e.g., update_timestamp, log_changes, validate_data",
-        default: "update_timestamp",
+        placeholder: "e.g., Update Timestamp, Log Changes, Validate Data",
+        default: "Update Timestamp",
       },
       {
         key: "description",
@@ -4947,6 +4962,7 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Node Type",
         type: "text",
         default: "er-note",
+        hidden: true,
       },
       {
         key: "componentName",
@@ -4962,6 +4978,13 @@ export const COMPONENTS: CanvasComponent[] = [
         placeholder:
           "Describe the rule, constraint, or important note\ne.g., Email must be unique across all users\nOrders can only be placed by verified customers",
         default: "Email addresses must be unique across all user accounts",
+      },
+      {
+        key: "priority",
+        label: "Priority",
+        type: "select",
+        default: "Medium",
+        options: ["None", "High", "Medium", "Low"],
       },
       {
         key: "type",
@@ -5029,6 +5052,13 @@ export const COMPONENTS: CanvasComponent[] = [
     ],
     properties: [
       {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        default: "er-use-case",
+        hidden: true,
+      },
+      {
         key: "componentName",
         label: "Use Case Name",
         type: "text",
@@ -5040,14 +5070,14 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Description",
         type: "textarea",
         placeholder: "Describe this use case or requirement",
-        default: "",
+        default: "An actor performs this use case to achieve a specific goal within the system.",
       },
       {
         key: "priority",
         label: "Priority",
         type: "select",
         default: "Medium",
-        options: ["High", "Medium", "Low"],
+        options: ["None", "High", "Medium", "Low"],
       },
       {
         key: "relatedEntities",
@@ -5536,6 +5566,7 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Node Type",
         type: "text",
         default: "uml-use-case",
+        hidden: true,
       },
       {
         key: "componentName",
@@ -5549,21 +5580,21 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Description",
         type: "textarea",
         placeholder: "Describe this use case",
-        default: "",
+        default: "An actor performs this use case to achieve a specific goal within the system.",
       },
       {
         key: "priority",
         label: "Priority",
         type: "select",
         default: "Medium",
-        options: ["High", "Medium", "Low"],
+        options: ["None", "High", "Medium", "Low"],
       },
       {
         key: "complexity",
         label: "Complexity",
         type: "select",
         default: "Medium",
-        options: ["Simple", "Medium", "Complex"],
+        options: ["None", "Simple", "Medium", "Complex"],
       },
     ],
   },
@@ -5580,6 +5611,7 @@ export const COMPONENTS: CanvasComponent[] = [
         key: "nodeType",
         label: "Node Type",
         type: "text",
+        hidden: true,
         default: "uml-note",
       },
       {
@@ -5594,7 +5626,7 @@ export const COMPONENTS: CanvasComponent[] = [
         label: "Content",
         type: "textarea",
         placeholder: "Add your note or comment here",
-        default: "",
+        default: "Add your annotation, comment, or clarification here.",
       },
     ],
   },

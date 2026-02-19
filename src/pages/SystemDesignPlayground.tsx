@@ -1826,9 +1826,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const properties = fullComp?.properties || comp?.properties;
 
       if (properties && properties.length > 0) {
-        propertyElements = properties.map((p: ComponentProperty) =>
-          renderProperty(p),
-        );
+        propertyElements = properties
+          .filter((p: ComponentProperty) => !p.hidden)
+          .map((p: ComponentProperty) => renderProperty(p));
       } else {
         propertyElements = (
           <div className="text-sm text-muted">No properties defined</div>
