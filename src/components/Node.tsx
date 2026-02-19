@@ -287,7 +287,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-3 pt-3 border-t border-theme/10 nowheel max-h-64 overflow-y-auto node-properties-scroll"
+            className="mt-3 pt-3 border-t border-theme/10 nowheel"
           >
             <div className="text-xs space-y-2">
               {/* Display all node properties except system ones */}
@@ -303,8 +303,16 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   "backgroundColor",
                   "borderColor",
                 ]);
+                const isEmptyValue = (val: unknown): boolean => {
+                  if (val === undefined || val === null || val === "") return true;
+                  if (typeof val === "string") {
+                    const stripped = val.replace(/<[^>]*>/g, "").trim();
+                    return stripped === "";
+                  }
+                  return false;
+                };
                 const properties = Object.entries(data).filter(
-                  ([key]) => !excludeKeys.has(key),
+                  ([key, val]) => !excludeKeys.has(key) && !isEmptyValue(val),
                 );
 
                 if (

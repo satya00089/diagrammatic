@@ -16,6 +16,7 @@ export type ComponentProperty = {
   type: "text" | "textarea" | "number" | "boolean" | "select";
   default?: string | number | boolean;
   placeholder?: string;
+  hidden?: boolean; // If true, property won't be rendered in the UI but can still be set programmatically
   options?: string[];
 };
 
