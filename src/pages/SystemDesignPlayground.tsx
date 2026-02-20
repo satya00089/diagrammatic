@@ -486,6 +486,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // State for download menu
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [transparentBg, setTransparentBg] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
@@ -2449,8 +2450,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       fileExtension = "png";
     }
 
+    // Resolve background color: JPEG always needs a solid color; PNG/SVG respect the transparentBg toggle
+    const getExportBgColor = () => {
+      if (format === "jpeg") return "#ffffff";
+      if (transparentBg) return "transparent";
+      // Use the computed theme background color
+      const docStyle = getComputedStyle(document.documentElement);
+      return (
+        docStyle.getPropertyValue("--bg").trim() ||
+        docStyle.getPropertyValue("--surface").trim() ||
+        "#ffffff"
+      );
+    };
+
     downloadFunc(viewportElement, {
-      backgroundColor: format === "png" ? "transparent" : "#ffffff",
+      backgroundColor: getExportBgColor(),
       width: imageWidth,
       height: imageHeight,
       style: {
@@ -3114,9 +3128,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                   {/* Export format dropdown */}
                   {showDownloadMenu && (
-                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
-                        Images
+                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[200px]">
+                      <div className="px-3 py-1 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Images</span>
+                        <label
+                          className="flex items-center gap-1.5 cursor-pointer select-none"
+                          title="When enabled, PNG and SVG exports will have a transparent background instead of the theme background color"
+                        >
+                          <span className="text-xs text-muted">Transparent</span>
+                          <input
+                            type="checkbox"
+                            checked={transparentBg}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setTransparentBg(e.target.checked);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
+                          />
+                        </label>
                       </div>
                       <button
                         type="button"
