@@ -306,7 +306,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 const isEmptyValue = (val: unknown): boolean => {
                   if (val === undefined || val === null || val === "") return true;
                   if (typeof val === "string") {
-                    const stripped = val.replace(/<[^>]*>/g, "").trim();
+                    const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
                     return stripped === "";
                   }
                   return false;
