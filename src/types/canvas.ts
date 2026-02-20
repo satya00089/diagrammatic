@@ -13,7 +13,7 @@ export type PropertyValue =
 export type ComponentProperty = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "number" | "boolean" | "select";
+  type: "text" | "textarea" | "number" | "boolean" | "select" | "color";
   default?: string | number | boolean;
   placeholder?: string;
   hidden?: boolean; // If true, property won't be rendered in the UI but can still be set programmatically

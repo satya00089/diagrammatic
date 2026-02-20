@@ -148,6 +148,11 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         whileTap={{ scale: 0.985 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
         className="min-w-[200px] w-full max-w-[15vw] bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
+        style={{
+          ...(data.backgroundColor ? { backgroundColor: data.backgroundColor as string } : {}),
+          ...(data.borderColor ? { borderLeftColor: data.borderColor as string, borderLeftWidth: "3px" } : {}),
+          ...(data.textColor ? { color: data.textColor as string } : {}),
+        }}
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -162,9 +167,15 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           transition={{ duration: 0.15 }}
           onClick={toggleProperties}
           className="absolute top-2 right-10 z-10 w-6 h-6 flex items-center justify-center 
-            rounded-md bg-surface/90 hover:bg-[var(--bg-hover)] 
-            shadow-md hover:shadow-lg cursor-pointer text-theme"
-          style={{ pointerEvents: isHovered ? "auto" : "none" }}
+            rounded-md backdrop-blur-md border border-white/20
+            shadow-md hover:shadow-lg cursor-pointer"
+          style={{
+            pointerEvents: isHovered ? "auto" : "none",
+            backgroundColor: data.backgroundColor
+              ? `${data.backgroundColor as string}99`
+              : "color-mix(in srgb, var(--surface) 90%, transparent)",
+            color: (data.borderColor as string) || "var(--text-theme)",
+          }}
         >
           {showProperties ? (
             <AiOutlineEye className="w-4 h-4" />
@@ -181,9 +192,15 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           transition={{ duration: 0.15 }}
           onClick={handleMenuButtonHover}
           className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center 
-            rounded-md bg-surface/90 hover:bg-[var(--bg-hover)] 
-            shadow-md hover:shadow-lg cursor-pointer text-theme"
-          style={{ pointerEvents: isHovered ? "auto" : "none" }}
+            rounded-md backdrop-blur-md border border-white/20
+            shadow-md hover:shadow-lg cursor-pointer"
+          style={{
+            pointerEvents: isHovered ? "auto" : "none",
+            backgroundColor: data.backgroundColor
+              ? `${data.backgroundColor as string}99`
+              : "color-mix(in srgb, var(--surface) 90%, transparent)",
+            color: (data.borderColor as string) || "var(--text-theme)",
+          }}
         >
           <BiDotsVertical className="w-4 h-4" />
         </motion.button>
@@ -259,9 +276,26 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
               />
             </div>
           ) : (
-            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[var(--brand)]/20 to-[var(--brand)]/5 flex items-center justify-center text-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[var(--brand)]/10 rounded-full"></div>
-              <div className="relative z-10 opacity-80">
+            <div
+              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl relative overflow-hidden"
+              style={data.borderColor ? {
+                background: `linear-gradient(135deg, ${data.borderColor as string}30, ${data.borderColor as string}10)`,
+              } : {
+                background: "linear-gradient(135deg, color-mix(in srgb, var(--brand) 20%, transparent), color-mix(in srgb, var(--brand) 5%, transparent))",
+              }}
+            >
+              <div
+                className="absolute inset-0 rounded-full"
+                style={data.borderColor ? {
+                  background: `linear-gradient(135deg, transparent, ${data.borderColor as string}18)`,
+                } : {
+                  background: "linear-gradient(135deg, transparent, color-mix(in srgb, var(--brand) 10%, transparent))",
+                }}
+              />
+              <div
+                className="relative z-10 opacity-80"
+                style={data.borderColor ? { color: data.borderColor as string } : undefined}
+              >
                 {data.icon
                   ? React.createElement(
                       data.icon as React.ComponentType<{ size?: number }>,
@@ -275,7 +309,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           <div className="min-w-0 w-full text-center">
             <div className="truncate font-medium text-sm">{displayLabel}</div>
             {data.subtitle && (
-              <div className="text-xs text-muted truncate">{data.subtitle}</div>
+              <div className="text-xs opacity-70 truncate">{data.subtitle}</div>
             )}
           </div>
         </div>
@@ -302,11 +336,12 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   "_customProperties",
                   "backgroundColor",
                   "borderColor",
+                  "textColor",
                 ]);
                 const isEmptyValue = (val: unknown): boolean => {
                   if (val === undefined || val === null || val === "") return true;
                   if (typeof val === "string") {
-                    const stripped = val.replace(/<[^>]*>/g, "").trim();
+                    const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
                     return stripped === "";
                   }
                   return false;
@@ -322,7 +357,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                     data._customProperties.length === 0)
                 ) {
                   return (
-                    <div className="text-muted text-center py-2">
+                    <div className="opacity-60 text-center py-2">
                       No properties
                     </div>
                   );
@@ -332,7 +367,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   <>
                     {properties.length > 0 && (
                       <div className="space-y-2">
-                        <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                        <div className="text-xs font-semibold opacity-60 uppercase tracking-wide">
                           Standard Properties
                         </div>
                         {properties.map(([key, value]) => (
@@ -350,7 +385,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                       Array.isArray(data._customProperties) &&
                       data._customProperties.length > 0 && (
                         <div className="space-y-2">
-                          <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                          <div className="text-xs font-semibold opacity-60 uppercase tracking-wide">
                             Custom Properties
                           </div>
                           {data._customProperties.map(

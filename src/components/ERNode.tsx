@@ -46,6 +46,17 @@ const ERNode: React.FC<Props> = React.memo(
     const displayLabel = data.componentName || data.label;
     const nodeType = data.nodeType || "entity";
 
+    const isEmptyValue = (val: unknown): boolean => {
+      if (val === undefined || val === null || val === "") return true;
+      if (typeof val === "string") {
+        const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
+        return stripped === "";
+      }
+      return false;
+    };
+
+    const hasDescription = !isEmptyValue(data.description);
+
     const onDelete = React.useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -187,8 +198,6 @@ const ERNode: React.FC<Props> = React.memo(
       }
     };
 
-    const nodeStyle = getNodeStyle();
-
     // Special node type checks
     const isNote =
       nodeType === "er-note" ||
@@ -196,7 +205,18 @@ const ERNode: React.FC<Props> = React.memo(
       nodeType === "uml-use-case" ||
       nodeType === "er-use-case";
     const isTrigger = nodeType === "er-trigger";
-    const isUMLNode = ["uml-use-case", "uml-note", "er-use-case"].includes(nodeType || "");
+    const isUMLNode = ["uml-use-case", "uml-note", "er-use-case"].includes(
+      nodeType || "",
+    );
+
+    const nodeStyle = {
+      ...getNodeStyle(),
+      ...(data.backgroundColor ? { backgroundColor: data.backgroundColor as string } : {}),
+      ...(data.borderColor ? { borderLeftColor: data.borderColor as string } : {}),
+      // Default dark text for light-bg note/trigger nodes; user textColor always wins
+      ...((isNote || isTrigger) && !data.textColor ? { color: "#374151" } : {}),
+      ...(data.textColor ? { color: data.textColor as string } : {}),
+    };
 
     return (
       <>
@@ -278,17 +298,22 @@ const ERNode: React.FC<Props> = React.memo(
           {/* Note content */}
           {isNote && (
             <div className="px-3 py-2">
-              <div className="flex items-center mb-1 border-b border-gray-500 pb-1 gap-2">
-                {data.icon && <span className="text-lg">{data.icon}</span>}
-                <span className="font-bold text-xl text-gray-700">
-                  {displayLabel}
-                </span>
-              </div>
-              {data.description && (
+              {displayLabel && (
+                <div className="flex items-center gap-2">
+                  {data.icon && <span className="text-lg">{data.icon}</span>}
+                  <span className="font-bold text-xl">
+                    {displayLabel}
+                  </span>
+                </div>
+              )}
+              {displayLabel && hasDescription && (
+                <hr className="border-gray-400 my-1" />
+              )}
+              {hasDescription && (
                 <div
-                  className="text-xs text-gray-700 mt-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1"
+                  className="text-xs [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1"
                   dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(data.description),
+                    __html: DOMPurify.sanitize(data.description!),
                   }}
                 />
               )}
@@ -298,36 +323,41 @@ const ERNode: React.FC<Props> = React.memo(
           {/* Trigger content */}
           {isTrigger && (
             <div className="px-3 py-2">
-              <div className="flex items-center mb-1 border-b border-gray-500 pb-1 gap-2">
-                {data.icon && <span className="text-lg">{data.icon}</span>}
-                <span className="font-bold text-xl text-gray-700">
-                  {displayLabel}
-                </span>
-              </div>
+              {displayLabel && (
+                <div className="flex items-center gap-2">
+                  {data.icon && <span className="text-lg">{data.icon}</span>}
+                  <span className="font-bold text-xl">
+                    {displayLabel}
+                  </span>
+                </div>
+              )}
+              {displayLabel && hasDescription && (
+                <hr className="border-gray-400 my-1" />
+              )}
               <div className="text-xs space-y-1 mt-2">
                 {data.timing && data.event && (
-                  <div className="font-mono text-[11px] text-orange-700">
+                  <div className="font-mono text-[11px] opacity-80">
                     {data.timing} {data.event}
                   </div>
                 )}
                 {data.targetTable && (
-                  <div className="text-gray-700">
+                  <div>
                     ON{" "}
-                    <span className="font-semibold text-gray-700">
+                    <span className="font-semibold">
                       {data.targetTable}
                     </span>
                   </div>
                 )}
                 {data.level && (
-                  <div className="text-gray-600 text-[10px]">
+                  <div className="text-[10px] opacity-70">
                     FOR EACH {data.level}
                   </div>
                 )}
-                {data.description && (
+                {hasDescription && (
                   <div
-                    className="text-gray-700 mt-1 pt-1 border-t border-gray-300 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1"
+                    className="mt-1 pt-1 border-t border-gray-300 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1"
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(data.description),
+                      __html: DOMPurify.sanitize(data.description!),
                     }}
                   />
                 )}
@@ -343,11 +373,11 @@ const ERNode: React.FC<Props> = React.memo(
                 <span className="font-bold text-xl text-theme text-center">
                   {displayLabel}
                 </span>
-                {data.description && (
+                {hasDescription && (
                   <div
                     className="text-xs text-muted mt-1 text-left [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1"
                     dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(data.description),
+                      __html: DOMPurify.sanitize(data.description!),
                     }}
                   />
                 )}
@@ -363,11 +393,9 @@ const ERNode: React.FC<Props> = React.memo(
                   {attributesList.map((attr, index) => {
                     const isPrimaryKey =
                       data.primaryKey && attr.includes(data.primaryKey);
-                    const isForeignKey =
-                      data.foreignKeys &&
-                      data.foreignKeys
-                        .split("\n")
-                        .some((fk) => attr.includes(fk));
+                    const isForeignKey = data?.foreignKeys
+                      ?.split("\n")
+                      .some((fk) => attr.includes(fk));
 
                     return (
                       <div

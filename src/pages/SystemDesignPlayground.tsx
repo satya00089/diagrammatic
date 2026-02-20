@@ -486,6 +486,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // State for download menu
   const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [transparentBg, setTransparentBg] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
@@ -1801,6 +1802,76 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onChange={(v) => setPropSelect(p.key, v)}
           />
         )}
+        {p.type === "color" && (() => {
+          const colorPresets = [
+            // Row 1 — neutrals & cool
+            { value: "",          label: "Default",      bg: "transparent",  border: "#9ca3af", crossed: true },
+            { value: "#ffffff",   label: "White",        bg: "#ffffff",       border: "#d1d5db" },
+            { value: "#f3f4f6",   label: "Light Gray",   bg: "#f3f4f6",       border: "#d1d5db" },
+            { value: "#dbeafe",   label: "Light Blue",   bg: "#dbeafe",       border: "#93c5fd" },
+            { value: "#dcfce7",   label: "Light Green",  bg: "#dcfce7",       border: "#86efac" },
+            // Row 2 — warm
+            { value: "#fef3c7",   label: "Light Yellow", bg: "#fef3c7",       border: "#fcd34d" },
+            { value: "#ffedd5",   label: "Light Orange", bg: "#ffedd5",       border: "#fdba74" },
+            { value: "#fce7f3",   label: "Light Pink",   bg: "#fce7f3",       border: "#f9a8d4" },
+            { value: "#ede9fe",   label: "Light Purple", bg: "#ede9fe",       border: "#c4b5fd" },
+            { value: "#f1f5f9",   label: "Slate",        bg: "#f1f5f9",       border: "#cbd5e1" },
+          ];
+          return (
+            <div className="flex flex-col gap-2">
+              <label htmlFor={inputId} className="text-xs text-muted">
+                {p.label}
+              </label>
+              {/* Preset swatches */}
+              <div className="flex flex-wrap gap-1.5">
+                {colorPresets.map((preset) => {
+                  const isSelected = stringValue === preset.value;
+                  return (
+                    <button
+                      key={preset.value || "__default__"}
+                      type="button"
+                      title={preset.label}
+                      onClick={() => setPropString(p.key, preset.value)}
+                      className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
+                      style={{
+                        backgroundColor: preset.bg,
+                        border: isSelected
+                          ? `2px solid #6366f1`
+                          : `1.5px solid ${preset.border}`,
+                        boxShadow: isSelected ? "0 0 0 1px #6366f1" : undefined,
+                      }}
+                    >
+                      {preset.crossed && (
+                        <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-[10px] leading-none">
+                          ✕
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Custom color row */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  id={inputId}
+                  value={stringValue || "#ffffff"}
+                  onChange={(e) => setPropString(p.key, e.target.value)}
+                  className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
+                  style={{ padding: "1px" }}
+                  title="Custom color"
+                />
+                <input
+                  type="text"
+                  value={stringValue}
+                  placeholder={p.placeholder || "#rrggbb or rgba(…)"}
+                  onChange={(e) => setPropString(p.key, e.target.value)}
+                  className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
+                />
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -1832,6 +1903,131 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       } else {
         propertyElements = (
           <div className="text-sm text-muted">No properties defined</div>
+        );
+      }
+
+      // Universal Appearance section for all non-group nodes
+      if (node.type !== "group") {
+        const pairedPresets = [
+          { label: "Default",       bg: "",        border: "",        text: "" },
+          { label: "White",         bg: "#ffffff",  border: "#d1d5db", text: "#374151" },
+          { label: "Light Gray",    bg: "#f3f4f6",  border: "#9ca3af", text: "#374151" },
+          { label: "Light Blue",    bg: "#dbeafe",  border: "#60a5fa", text: "#1e3a5f" },
+          { label: "Light Green",   bg: "#dcfce7",  border: "#4ade80", text: "#14532d" },
+          { label: "Light Yellow",  bg: "#fef3c7",  border: "#f59e0b", text: "#78350f" },
+          { label: "Light Orange",  bg: "#ffedd5",  border: "#fb923c", text: "#7c2d12" },
+          { label: "Light Pink",    bg: "#fce7f3",  border: "#f472b6", text: "#831843" },
+          { label: "Light Purple",  bg: "#ede9fe",  border: "#a78bfa", text: "#4c1d95" },
+          { label: "Slate",         bg: "#f1f5f9",  border: "#94a3b8", text: "#1e293b" },
+        ];
+        const currentBg     = (nodeProps["backgroundColor"] as string) || "";
+        const currentBorder = (nodeProps["borderColor"] as string) || "";
+        const currentText   = (nodeProps["textColor"] as string) || "";
+        const applyPair = (bg: string, border: string, text: string) => {
+          updateNodeProperty("backgroundColor", bg);
+          updateNodeProperty("borderColor", border);
+          updateNodeProperty("textColor", text);
+        };
+        propertyElements = (
+          <>
+            {propertyElements}
+            <div className="flex flex-col gap-3 px-1 mt-3 pt-3 border-t border-theme/20">
+              <div className="text-xs font-semibold text-muted uppercase tracking-wide">
+                Appearance
+              </div>
+              {/* Paired presets */}
+              <div className="flex flex-wrap gap-1.5">
+                {pairedPresets.map((preset) => {
+                  const isSelected = currentBg === preset.bg && currentBorder === preset.border;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      title={preset.label}
+                      onClick={() => applyPair(preset.bg, preset.border, preset.text)}
+                      className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
+                      style={{
+                        backgroundColor: preset.bg || "transparent",
+                        border: isSelected
+                          ? "2px solid #6366f1"
+                          : `1.5px solid ${preset.border || "#9ca3af"}`,
+                        boxShadow: isSelected ? "0 0 0 1px #6366f1" : undefined,
+                      }}
+                    >
+                      {!preset.bg && (
+                        <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-[10px] leading-none">
+                          ✕
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Custom pickers */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted w-14 flex-shrink-0">Fill</span>
+                  <input
+                    type="color"
+                    value={currentBg || "#ffffff"}
+                    onChange={(e) => updateNodeProperty("backgroundColor", e.target.value)}
+                    className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
+                    style={{ padding: "1px" }}
+                  />
+                  <input
+                    type="text"
+                    value={currentBg}
+                    placeholder="#rrggbb or rgba(…)"
+                    onChange={(e) => updateNodeProperty("backgroundColor", e.target.value)}
+                    className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
+                  />
+                  {currentBg && (
+                    <button type="button" onClick={() => updateNodeProperty("backgroundColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted w-14 flex-shrink-0">Border</span>
+                  <input
+                    type="color"
+                    value={currentBorder || "#ffffff"}
+                    onChange={(e) => updateNodeProperty("borderColor", e.target.value)}
+                    className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
+                    style={{ padding: "1px" }}
+                  />
+                  <input
+                    type="text"
+                    value={currentBorder}
+                    placeholder="#rrggbb or rgba(…)"
+                    onChange={(e) => updateNodeProperty("borderColor", e.target.value)}
+                    className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
+                  />
+                  {currentBorder && (
+                    <button type="button" onClick={() => updateNodeProperty("borderColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted w-14 flex-shrink-0">Text</span>
+                  <input
+                    type="color"
+                    value={currentText || "#374151"}
+                    onChange={(e) => updateNodeProperty("textColor", e.target.value)}
+                    className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
+                    style={{ padding: "1px" }}
+                  />
+                  <input
+                    type="text"
+                    value={currentText}
+                    placeholder="#rrggbb or rgba(…)"
+                    onChange={(e) => updateNodeProperty("textColor", e.target.value)}
+                    className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
+                  />
+                  {currentText && (
+                    <button type="button" onClick={() => updateNodeProperty("textColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
         );
       }
     } else {
@@ -2254,8 +2450,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       fileExtension = "png";
     }
 
+    // Resolve background color: JPEG always needs a solid color; PNG/SVG respect the transparentBg toggle
+    const getExportBgColor = () => {
+      if (format === "jpeg") return "#ffffff";
+      if (transparentBg) return "transparent";
+      // Use the computed theme background color
+      const docStyle = getComputedStyle(document.documentElement);
+      return (
+        docStyle.getPropertyValue("--bg").trim() ||
+        docStyle.getPropertyValue("--surface").trim() ||
+        "#ffffff"
+      );
+    };
+
     downloadFunc(viewportElement, {
-      backgroundColor: format === "png" ? "transparent" : "#ffffff",
+      backgroundColor: getExportBgColor(),
       width: imageWidth,
       height: imageHeight,
       style: {
@@ -2919,9 +3128,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                   {/* Export format dropdown */}
                   {showDownloadMenu && (
-                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
-                        Images
+                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[200px]">
+                      <div className="px-3 py-1 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Images</span>
+                        <label
+                          className="flex items-center gap-1.5 cursor-pointer select-none"
+                          title="When enabled, PNG and SVG exports will have a transparent background instead of the theme background color"
+                        >
+                          <span className="text-xs text-muted">Transparent</span>
+                          <input
+                            type="checkbox"
+                            checked={transparentBg}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              setTransparentBg(e.target.checked);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
+                          />
+                        </label>
                       </div>
                       <button
                         type="button"
