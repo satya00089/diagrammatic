@@ -15,7 +15,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
   const renderValue = (val: PropertyValue): React.ReactNode => {
     // Handle null/undefined
     if (val === null || val === undefined) {
-      return <span className="text-muted italic">empty</span>;
+      return <span className="opacity-60 italic">empty</span>;
     }
 
     // Handle React Component
@@ -40,12 +40,12 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
     // Handle array
     if (Array.isArray(val)) {
       if (val.length === 0) {
-        return <span className="text-muted italic">[ ]</span>;
+        return <span className="opacity-60 italic">[ ]</span>;
       }
       return (
         <div className="flex flex-col gap-1">
           {val.map((item, idx) => (
-            <div key={idx} className="ml-2 text-muted">
+            <div key={idx} className="ml-2 opacity-70">
               • {String(item)}
             </div>
           ))}
@@ -58,7 +58,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
       return (
         <div className="flex flex-col gap-1">
           {Object.entries(val).map(([key, value]) => (
-            <div key={key} className="ml-2 text-muted">
+            <div key={key} className="ml-2 opacity-70">
               <span className="font-semibold">{key}:</span> {String(value)}
             </div>
           ))}
@@ -78,12 +78,12 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
         .trim();
 
       if (textOnly.length === 0) {
-        return <span className="text-muted italic">empty</span>;
+        return <span className="opacity-60 italic">empty</span>;
       }
 
       return (
         <div
-          className="text-xs text-theme [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1 [&_p:last-child]:mb-0"
+          className="text-xs [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:ml-1 [&_p]:mb-1 [&_p:last-child]:mb-0"
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
       );
@@ -91,7 +91,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
 
     // Handle regular string
     if (strVal.length === 0) {
-      return <span className="text-muted italic">empty</span>;
+      return <span className="opacity-60 italic">empty</span>;
     }
 
     return <span className="break-words">{strVal}</span>;
@@ -100,12 +100,12 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
   return (
     <div className="flex flex-col gap-1 p-2 rounded bg-[var(--bg-hover)]/30">
       <div
-        className="text-muted font-semibold capitalize tracking-wide"
+        className="opacity-60 font-semibold capitalize tracking-wide"
         style={{ fontSize: "0.65rem" }}
       >
         {propertyKey.replaceAll(/([a-z])([A-Z])/g, "$1 $2").replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")}
       </div>
-      <div className="text-theme break-words overflow-wrap-anywhere">
+      <div className="break-words overflow-wrap-anywhere">
         {renderValue(value)}
       </div>
     </div>
