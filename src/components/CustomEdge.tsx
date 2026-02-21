@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
-import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
+import {
+  getBezierPath,
+  getEdgeCenter,
+  getStraightPath,
+  getSmoothStepPath,
+  useStore,
+} from "@xyflow/react";
+
+export type EdgePathType = "bezier" | "straight" | "step" | "smoothstep";
 
 /** Resolve a CSS custom property to its actual computed value so html-to-image can capture it. */
 function resolveCssVar(varName: string, fallback: string): string {
@@ -36,29 +44,40 @@ const computeEdgeParams = (
     targetPosition: Position;
   },
   isBiDirectionEdge: boolean,
+  pathType: EdgePathType = "bezier",
 ) => {
   const { sourceX, sourceY, targetX, targetY } = params;
 
+  // When two edges connect the same nodes in opposite directions, offset the curve
   if (isBiDirectionEdge) {
     const offset = sourceX < targetX ? 25 : -25;
     const edgePath = getSpecialPath(
       { sourceX, sourceY, targetX, targetY },
       offset,
     );
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2;
-    const centerX = midX;
-    const centerY = midY + offset / 2;
+    const centerX = (sourceX + targetX) / 2;
+    const centerY = (sourceY + targetY) / 2 + offset / 2;
     return { edgePath, centerX, centerY };
   }
 
+  if (pathType === "straight") {
+    const [edgePath, centerX, centerY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "step") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath({ ...params, borderRadius: 0 });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "smoothstep") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath(params);
+    return { edgePath, centerX, centerY };
+  }
+
+  // Default: bezier
   const [edgePath] = getBezierPath(params);
-  const [centerX, centerY] = getEdgeCenter({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-  });
+  const [centerX, centerY] = getEdgeCenter({ sourceX, sourceY, targetX, targetY });
   return { edgePath, centerX, centerY };
 };
 
@@ -77,14 +96,28 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     selected,
     markerEnd,
   } = props;
+
+  const edgeData = data as {
+    label?: string;
+    hasLabel?: boolean;
+    description?: string;
+    pathType?: EdgePathType;
+    color?: string;
+    strokeWidth?: number;
+    animated?: boolean;
+    bidirectional?: boolean;
+  } | undefined;
+
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState<string>(
-    (data as { label?: string })?.label ?? "",
-  );
-  const [hasLabel, setHasLabel] = useState<boolean>(
-    (data as { hasLabel?: boolean })?.hasLabel ?? false,
-  );
+  const [value, setValue] = useState<string>(edgeData?.label ?? "");
+  const [hasLabel, setHasLabel] = useState<boolean>(edgeData?.hasLabel ?? false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Sync label/hasLabel when edge data changes (e.g. after undo/redo or collab)
+  useEffect(() => {
+    setValue(edgeData?.label ?? "");
+    setHasLabel(edgeData?.hasLabel ?? false);
+  }, [edgeData?.label, edgeData?.hasLabel]);
 
   // Resolve CSS variables to real color values so html-to-image can capture them.
   const [resolvedColors, setResolvedColors] = useState({
@@ -110,22 +143,21 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   }, []);
 
   // Detect if there's a bi-directional connection
-  const isBiDirectionEdge = useStore((s: ReactFlowState) => {
-    const edgeExists = s.edges.some(
+  const isBiDirectionEdge = useStore((s: ReactFlowState) =>
+    s.edges.some(
       (e) =>
-        e.id !== id && // exclude current edge
+        e.id !== id &&
         e.source === target &&
         e.target === source,
-    );
-    if (edgeExists) {
-      console.log(
-        `Bi-directional edge detected: ${id} (${source} -> ${target})`,
-      );
-    }
-    return edgeExists;
-  });
+    ),
+  );
 
   // Calculate path and center using extracted helper
+  const pathType: EdgePathType = (edgeData?.pathType) || "bezier";
+  const edgeColor = edgeData?.color || (selected ? resolvedColors.brand : resolvedColors.text + "99");
+  const strokeW = edgeData?.strokeWidth ?? (selected ? 3 : 2);
+  const isBidirectional = edgeData?.bidirectional ?? false;
+
   const edgePathParams = {
     sourceX,
     sourceY,
@@ -137,6 +169,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   const { edgePath, centerX, centerY } = computeEdgeParams(
     edgePathParams,
     isBiDirectionEdge,
+    pathType,
   );
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
@@ -190,17 +223,40 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
           markerHeight="6"
           orient="auto"
         >
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--brand)" />
+          <path d="M 0 0 L 10 5 L 0 10 z" fill={edgeColor} />
         </marker>
+        {isBidirectional && (
+          <marker
+            id={`arrow-start-${id}`}
+            viewBox="0 0 10 10"
+            refX="2"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 0 L 10 5 L 0 10 z" fill={edgeColor} />
+          </marker>
+        )}
       </defs>
+
+      {/* Wider transparent hit-area for easier clicking */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={20}
+      />
 
       <path
         id={id}
         d={edgePath}
         fill="none"
-        stroke={selected ? "var(--brand)" : "var(--muted)"}
-        strokeWidth={selected ? 3 : 2}
+        stroke={edgeColor}
+        strokeWidth={strokeW}
+        strokeDasharray={edgeData?.animated ? "6 3" : undefined}
         markerEnd={markerEnd || `url(#arrow-${id})`}
+        markerStart={isBidirectional ? `url(#arrow-start-${id})` : undefined}
         className="transition-colors"
       />
 
@@ -235,7 +291,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
                     if (e.key === "Enter") commit();
                     if (e.key === "Escape") {
                       setEditing(false);
-                      setValue((data as { label?: string })?.label ?? "");
+                      setValue(edgeData?.label ?? "");
                     }
                   }}
                   style={{

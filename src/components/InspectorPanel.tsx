@@ -21,8 +21,11 @@ type InspectorPanelProps = {
   setActiveTab: (t: "details" | "inspector" | "assessment") => void;
   inspectedNodeId: string | null;
   setInspectedNodeId: (id: string | null) => void;
+  inspectedEdgeId: string | null;
+  setInspectedEdgeId: (id: string | null) => void;
   propertyElements: React.ReactNode;
   customPropertyElements: React.ReactNode;
+  edgePropertyElements: React.ReactNode;
   onAddCustomProperty: () => void;
   handleSave: () => void;
   assessmentResult?: import("../types/systemDesign").ValidationResult | null;
@@ -36,8 +39,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   setActiveTab,
   inspectedNodeId,
   setInspectedNodeId,
+  inspectedEdgeId,
+  setInspectedEdgeId,
   propertyElements,
   customPropertyElements,
+  edgePropertyElements,
   onAddCustomProperty,
   handleSave,
   assessmentResult,
@@ -86,20 +92,20 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   // Auto-collapse panel in free design mode when no node is selected
   const isFreeDesignMode = problem?.id === "free";
 
-  // Auto-collapse when no node is selected in free design mode
+  // Auto-collapse when neither node nor edge is selected in free design mode
   React.useEffect(() => {
-    if (isFreeDesignMode && !inspectedNodeId) {
+    if (isFreeDesignMode && !inspectedNodeId && !inspectedEdgeId) {
       setOpen(false);
     }
-  }, [isFreeDesignMode, inspectedNodeId]);
+  }, [isFreeDesignMode, inspectedNodeId, inspectedEdgeId]);
 
-  // Auto-switch to inspector tab and expand when node is selected in free design mode
+  // Auto-switch to inspector tab and expand when node or edge is selected in free design mode
   React.useEffect(() => {
-    if (isFreeDesignMode && inspectedNodeId) {
+    if (isFreeDesignMode && (inspectedNodeId || inspectedEdgeId)) {
       setActiveTab("inspector");
       setOpen(true);
     }
-  }, [isFreeDesignMode, inspectedNodeId, setActiveTab]);
+  }, [isFreeDesignMode, inspectedNodeId, inspectedEdgeId, setActiveTab]);
 
   if (!problem) return null;
 
@@ -328,36 +334,68 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
               {activeTab === "inspector" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-theme mb-3">
-                    Component Properties
-                  </h3>
-                  {!inspectedNodeId && (
-                    <div className="text-sm text-muted">
-                      Select a node settings (⚙️) to view properties.
+                  {/* ── EDGE INSPECTOR ── */}
+                  {inspectedEdgeId && (
+                    <div className="flex flex-col gap-0">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-base">🔗</span>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-theme leading-tight">Connection</h3>
+                            <p className="text-[10px] text-muted font-mono truncate max-w-[140px]" title={inspectedEdgeId}>{inspectedEdgeId}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setInspectedEdgeId(null); setActiveTab("details"); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
+                          title="Close"
+                        >✕</button>
+                      </div>
+
+                      {edgePropertyElements && (
+                        <div>{edgePropertyElements}</div>
+                      )}
                     </div>
                   )}
-                  {inspectedNodeId && (
-                    <div>
-                      <div className="text-sm text-theme mb-3">
-                        Node: {inspectedNodeId}
+
+                  {/* ── NODE INSPECTOR ── */}
+                  {!inspectedEdgeId && inspectedNodeId && (
+                    <div className="flex flex-col gap-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-base">⚙️</span>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-theme leading-tight">Component Properties</h3>
+                            <p className="text-[10px] text-muted font-mono truncate max-w-[140px]" title={inspectedNodeId}>{inspectedNodeId}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setInspectedNodeId(null); setActiveTab("details"); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
+                          title="Close"
+                        >✕</button>
                       </div>
 
                       {/* Standard Properties */}
                       {propertyElements && (
-                        <div className="mb-6">
-                          <div className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-                            Standard Properties
-                          </div>
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Properties</span>
                           <div className="space-y-2">{propertyElements}</div>
                         </div>
                       )}
 
                       {/* Custom Properties Section */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-xs font-semibold text-muted uppercase tracking-wide">
-                            Custom Properties
-                          </div>
+                      <div className="flex flex-col gap-2 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Custom Properties</span>
                           <button
                             type="button"
                             onClick={onAddCustomProperty}
@@ -369,17 +407,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           </button>
                         </div>
                         <div className="space-y-2">
-                          {customPropertyElements}
+                          {customPropertyElements ?? (
+                            <p className="text-xs text-muted/60 text-center py-2">No custom properties yet</p>
+                          )}
                         </div>
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="mt-6 flex flex-col gap-2 pt-4 border-t border-theme">
-                        {/* Detach from Group Button - Only show if node is in a group */}
+                      <div className="flex flex-col gap-2">
                         {isNodeInGroup && onDetachFromGroup && (
                           <button
                             type="button"
-                            className="w-full px-3 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
+                            className="w-full px-3 py-2.5 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 transition-all font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
                             onClick={onDetachFromGroup}
                             title="Remove this node from its parent group"
                           >
@@ -387,27 +426,26 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             <span>Detach from Group</span>
                           </button>
                         )}
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2.5 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand)]/90 transition-all font-medium text-sm cursor-pointer"
+                          onClick={handleSave}
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                        {/* Save and Close Buttons */}
-                        <div className="flex space-x-2">
-                          <button
-                            type="button"
-                            className="flex-1 px-3 py-2 bg-[var(--brand)] text-white rounded-md hover:bg-[var(--brand)]/90 transition-colors font-medium text-sm cursor-pointer"
-                            onClick={handleSave}
-                          >
-                            Save Changes
-                          </button>
-                          <button
-                            type="button"
-                            className="px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm cursor-pointer"
-                            onClick={() => {
-                              setInspectedNodeId(null);
-                              setActiveTab("details");
-                            }}
-                          >
-                            Close
-                          </button>
-                        </div>
+                  {/* empty state */}
+                  {!inspectedNodeId && !inspectedEdgeId && (
+                    <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--brand)]/8 flex items-center justify-center">
+                        <span className="text-2xl">✦</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-theme">Nothing selected</p>
+                        <p className="text-xs text-muted mt-1">Click a node ⚙️ or an edge to inspect its properties.</p>
                       </div>
                     </div>
                   )}

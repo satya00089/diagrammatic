@@ -1237,8 +1237,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
+  const [inspectedEdgeId, setInspectedEdgeId] = useState<string | null>(null);
   type NodeProps = Record<string, string | number | boolean | undefined>;
   const [nodeProps, setNodeProps] = useState<NodeProps>({});
+  type EdgeProps = Record<string, string | number | boolean | undefined>;
+  const [edgeProps, setEdgeProps] = useState<EdgeProps>({});
   // Custom properties state - stores custom properties per node
   const [customProperties, setCustomProperties] = useState<
     Record<string, CustomProperty[]>
@@ -1278,8 +1281,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const id: string = ce.detail.id;
     setInspectedNodeId((curr) => {
       const next = curr === id ? null : id;
-      if (next) setActiveRightTab("inspector");
-      else setActiveRightTab("details");
+      if (next) {
+        setInspectedEdgeId(null); // clear edge when node selected
+        setActiveRightTab("inspector");
+      } else setActiveRightTab("details");
       return next;
     });
   };
@@ -1302,6 +1307,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       edge.id === id ? { ...edge, data: { ...edge.data, cardinality } } : edge,
     );
   }
+
+  const updateEdgeProperty = useCallback(
+    (key: string, value: string | number | boolean | undefined) => {
+      setEdgeProps((prev) => ({ ...prev, [key]: value }));
+      setEdges((eds) =>
+        eds.map((e) =>
+          e.id === inspectedEdgeId
+            ? { ...e, data: { ...e.data, [key]: value } }
+            : e,
+        ),
+      );
+    },
+    [inspectedEdgeId, setEdges],
+  );
+
+  const handleEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: Edge) => {
+      setInspectedEdgeId(edge.id);
+      setInspectedNodeId(null);
+      const d = (edge.data || {}) as EdgeProps;
+      setEdgeProps(d);
+      setActiveRightTab("inspector");
+    },
+    [],
+  );
 
   const edgeLabelChangeHandlerRef = React.useRef<
     ((e: Event) => void) | undefined
@@ -2057,6 +2087,185 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         </div>
       );
     }
+  }
+
+  // Compute edge property elements
+  let edgePropertyElements: React.ReactNode = null;
+  if (inspectedEdgeId) {
+    const currentEdgeColor = (edgeProps["color"] as string) || "";
+    const currentStrokeWidth = (edgeProps["strokeWidth"] as number) ?? 2;
+    const currentPathType = (edgeProps["pathType"] as string) || "bezier";
+    const currentAnimated = (edgeProps["animated"] as boolean) || false;
+    const currentBidirectional = (edgeProps["bidirectional"] as boolean) || false;
+    edgePropertyElements = (
+      <div className="flex flex-col gap-4">
+
+        {/* Label */}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="edge-label" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Label</label>
+          <input
+            id="edge-label"
+            type="text"
+            value={(edgeProps["label"] as string) || ""}
+            placeholder="e.g. HTTP, gRPC, async…"
+            onChange={(e) => {
+              const newLabel = e.target.value;
+              updateEdgeProperty("label", newLabel);
+              updateEdgeProperty("hasLabel", newLabel.trim().length > 0);
+            }}
+            className="w-full text-sm bg-[var(--surface)] border border-theme rounded-lg px-3 py-2 text-theme outline-none focus:border-[var(--brand)] focus:ring-1 focus:ring-[var(--brand)]/30 transition-all placeholder:text-muted/50"
+          />
+        </div>
+
+        {/* Description */}
+        <div className="flex flex-col gap-1.5">
+          <AnimatedTextarea
+            id="edge-desc"
+            label="Description"
+            value={(edgeProps["description"] as string) || ""}
+            placeholder="Describe this connection…"
+            onChange={(val) => updateEdgeProperty("description", val)}
+          />
+        </div>
+
+        {/* Path Style — visual button group */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Path Style</span>
+          <div className="grid grid-cols-4 gap-1">
+            {(
+              [
+                { value: "bezier",     label: "Curve",  icon: "⌒" },
+                { value: "straight",   label: "Line",   icon: "—" },
+                { value: "step",       label: "Step",   icon: "⌐" },
+                { value: "smoothstep", label: "Smooth", icon: "∫" },
+              ] as const
+            ).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => updateEdgeProperty("pathType", value)}
+                className={`flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg border text-center transition-all cursor-pointer ${
+                  currentPathType === value
+                    ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)]"
+                    : "border-theme bg-[var(--surface)] text-muted hover:border-[var(--brand)]/50 hover:text-theme"
+                }`}
+                title={label}
+              >
+                <span className="text-base leading-none">{icon}</span>
+                <span className="text-[9px] font-medium leading-tight">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="flex flex-col gap-3 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Appearance</span>
+
+          {/* Color */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted w-12 flex-shrink-0">Color</label>
+            <div className="relative flex-shrink-0">
+              <input
+                type="color"
+                value={currentEdgeColor || "#6366f1"}
+                onChange={(e) => updateEdgeProperty("color", e.target.value)}
+                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                title="Pick color"
+              />
+              <div
+                className="w-7 h-7 rounded-md border-2 border-white/30 shadow"
+                style={{ backgroundColor: currentEdgeColor || "var(--brand)" }}
+              />
+            </div>
+            <input
+              type="text"
+              value={currentEdgeColor}
+              placeholder="default"
+              onChange={(e) => updateEdgeProperty("color", e.target.value)}
+              className="flex-1 text-xs bg-transparent border border-theme rounded-md px-2 py-1.5 text-theme outline-none focus:border-[var(--brand)] min-w-0 font-mono"
+            />
+            {currentEdgeColor && (
+              <button
+                type="button"
+                onClick={() => updateEdgeProperty("color", "")}
+                className="text-muted hover:text-red-400 text-sm flex-shrink-0 transition-colors"
+                title="Reset to default"
+              >✕</button>
+            )}
+          </div>
+
+          {/* Stroke Width */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted w-12 flex-shrink-0">Width</label>
+            <input
+              type="range"
+              min={1}
+              max={8}
+              step={1}
+              value={currentStrokeWidth}
+              onChange={(e) => updateEdgeProperty("strokeWidth", Number(e.target.value))}
+              className="flex-1 cursor-pointer accent-[var(--brand)]"
+            />
+            <div className="flex items-center justify-center w-9 h-6 rounded bg-[var(--bg-hover)] flex-shrink-0">
+              <span className="text-[11px] font-mono text-theme">{currentStrokeWidth}px</span>
+            </div>
+          </div>
+
+          {/* Animated toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted">Animated dash</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={currentAnimated}
+              onClick={() => updateEdgeProperty("animated", !currentAnimated)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${currentAnimated ? "bg-[var(--brand)]" : "bg-[var(--border)]"}`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${currentAnimated ? "translate-x-4" : "translate-x-0.5"}`}
+              />
+            </button>
+          </div>
+
+          {/* Bidirectional toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-xs text-muted">Bidirectional</span>
+              <span className="text-[10px] text-muted/60">Arrows on both ends</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={currentBidirectional}
+              onClick={() => updateEdgeProperty("bidirectional", !currentBidirectional)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${currentBidirectional ? "bg-[var(--brand)]" : "bg-[var(--border)]"}`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${currentBidirectional ? "translate-x-4" : "translate-x-0.5"}`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Delete */}
+        <button
+          type="button"
+          onClick={() => {
+            setEdges((eds) => eds.filter((e) => e.id !== inspectedEdgeId));
+            setInspectedEdgeId(null);
+            setActiveRightTab("details");
+          }}
+          className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg bg-red-500/8 text-red-500 hover:bg-red-500/15 border border-red-500/20 hover:border-red-500/40 transition-all text-sm font-medium cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          Delete Connection
+        </button>
+
+      </div>
+    );
   }
 
   // Handle copying a node (defined before early returns to satisfy React Hook rules)
@@ -3397,6 +3606,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onDrop={onDrop}
             onNodeDragStop={onNodeDragStop}
             onMouseMove={handleCanvasMouseMove}
+            onEdgeClick={handleEdgeClick}
           >
             {/* Render collaborator cursors (always shown when connected) */}
             {cursors.map((cursor) => {
@@ -3419,8 +3629,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             setActiveTab={setActiveRightTab}
             inspectedNodeId={inspectedNodeId}
             setInspectedNodeId={setInspectedNodeId}
+            inspectedEdgeId={inspectedEdgeId}
+            setInspectedEdgeId={setInspectedEdgeId}
             propertyElements={propertyElements}
             customPropertyElements={customPropertyElements}
+            edgePropertyElements={edgePropertyElements}
             onAddCustomProperty={handleAddCustomProperty}
             handleSave={handleSave}
             assessmentResult={assessment}
