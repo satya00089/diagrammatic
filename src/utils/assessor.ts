@@ -53,6 +53,7 @@ export async function assessSolution(
           target: conn.target,
           label: conn.label,
           type: conn.type,
+          description: conn.description || (conn.properties?.description as string | undefined),
         })) || [],
       explanation: solution.explanation,
       keyPoints: solution.keyPoints,

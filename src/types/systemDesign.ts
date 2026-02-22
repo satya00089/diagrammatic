@@ -35,6 +35,7 @@ export interface SystemConnection {
   target: string;
   type: ConnectionType;
   label?: string;
+  description?: string;
   properties?: Record<string, unknown>;
 }
 

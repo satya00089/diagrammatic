@@ -939,12 +939,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const edgeLabel =
           typeof maybeLabel === "string" ? maybeLabel : undefined;
 
+        const maybeDescription = (dataObj as { description?: unknown })
+          .description;
+        const edgeDescription =
+          typeof maybeDescription === "string" && maybeDescription.trim()
+            ? maybeDescription
+            : undefined;
+
         return {
           id: e.id ?? `${e.source}-${e.target}`,
           source: e.source,
           target: e.target,
           type: inferredType,
           label: edgeLabel,
+          description: edgeDescription,
           properties: dataObj as Record<string, unknown>,
         };
       }),
