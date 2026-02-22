@@ -65,7 +65,7 @@ export async function assessSolution(
     const requestPayload = {
       // Filter out group/layout nodes that don't represent real architecture components
       components: solution.components
-        .filter((comp) => comp.type !== "group")
+        .filter((comp) => (comp.type as string) !== "group")
         .map((comp) => ({
           id: comp.id || `comp-${Date.now()}`,
           type: normalizeComponentType(comp.type),
@@ -77,7 +77,7 @@ export async function assessSolution(
         // Build set of excluded (group) component IDs so we can drop their connections
         const excludedIds = new Set(
           solution.components
-            .filter((c) => c.type === "group")
+            .filter((c) => (c.type as string) === "group")
             .map((c) => c.id),
         );
         return (solution.connections ?? [])
