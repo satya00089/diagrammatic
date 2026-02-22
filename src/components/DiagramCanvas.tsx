@@ -13,6 +13,7 @@ import {
 } from "@xyflow/react";
 
 type DiagramCanvasProps = {
+  readOnly?: boolean;
   reactFlowWrapperRef: React.RefObject<HTMLDivElement>;
   nodes: Node[];
   edges: Edge[];
@@ -30,6 +31,7 @@ type DiagramCanvasProps = {
 };
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
+  readOnly,
   reactFlowWrapperRef,
   nodes,
   edges,
@@ -60,12 +62,15 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           edges={edges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeDragStop={onNodeDragStop}
+          onNodesChange={readOnly ? undefined : onNodesChange}
+          onEdgesChange={readOnly ? undefined : onEdgesChange}
+          onConnect={readOnly ? undefined : onConnect}
+          onNodeDragStop={readOnly ? undefined : onNodeDragStop}
           onMouseMove={onMouseMove}
-          onEdgeClick={onEdgeClick}
+          onEdgeClick={readOnly ? undefined : onEdgeClick}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
           connectionMode={ConnectionMode.Loose}
           fitView
           proOptions={{ hideAttribution: true }}

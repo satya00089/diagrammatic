@@ -241,6 +241,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const navigate = useNavigate();
   const params = useParams();
   const idFromUrl = params?.id;
+  const publicId = params?.publicId; // populated when routed via /public/:publicId
+  const isSharedView = !!publicId;
   const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
@@ -340,6 +342,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Share to the World state
   const [showShareToWorldModal, setShowShareToWorldModal] = useState(false);
   const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
+  // Read-only shared view CTA
+  const [sharedCta, setSharedCta] = useState<{ to: string; label: string } | null>(null);
 
   // Collaboration is always enabled for saved diagrams (Figma-style)
   // No manual toggle needed - automatically connects when diagram is loaded
@@ -358,8 +362,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Fetch problem from API or localStorage
   useEffect(() => {
     if (!idFromUrl) {
-      setLoading(false);
-      setError("No problem ID provided");
+      if (!isSharedView) {
+        setLoading(false);
+        setError("No problem ID provided");
+      }
       return;
     }
 
@@ -426,6 +432,63 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [idFromUrl]);
 
   const onBack = () => navigate("/");
+
+  // Load shared (read-only) data when routed via /public/:publicId
+  useEffect(() => {
+    if (!publicId) return;
+    setLoading(true);
+    setError(null);
+    const decoded = decodeURIComponent(publicId);
+    const isAttempt = decoded.includes("#");
+    const loader = isAttempt
+      ? apiService.getPublicSolution(decoded).then((res) => ({
+          title: res.title as string,
+          difficulty: res.difficulty as string | undefined,
+          category: res.category as string | undefined,
+          nodes: res.nodes as Node[],
+          edges: res.edges as Edge[],
+          assessment: res.lastAssessment as ValidationResult | null,
+          problemId: res.problemId as string | undefined,
+        }))
+      : apiService.getPublicDiagramData(publicId).then((res) => ({
+          title: res.title as string,
+          difficulty: undefined as string | undefined,
+          category: undefined as string | undefined,
+          nodes: res.nodes as Node[],
+          edges: res.edges as Edge[],
+          assessment: null as ValidationResult | null,
+          problemId: undefined as string | undefined,
+        }));
+    loader
+      .then((d) => {
+        setProblem({
+          id: publicId,
+          title: d.title,
+          description: "",
+          difficulty: d.difficulty ?? "Medium",
+          category: d.category ?? "Custom",
+          domain: "application",
+          estimated_time: "",
+          requirements: [],
+          constraints: [],
+          hints: [],
+          tags: [],
+        });
+        setNodes(restoreNodeIcons(d.nodes));
+        setEdges(d.edges);
+        if (d.assessment) setAssessment(d.assessment);
+        setActiveRightTab("assessment");
+        setSharedCta(
+          isAttempt && d.problemId
+            ? { to: `/playground/${d.problemId}`, label: "Try this problem \u2192" }
+            : { to: "/playground/free", label: "Try by yourself \u2192" },
+        );
+      })
+      .catch(() =>
+        setError("This design is not available or has been unpublished."),
+      )
+      .finally(() => setLoading(false));
+  }, [publicId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Undo/Redo state management
   interface CanvasState {
@@ -2473,7 +2536,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       <div className="min-h-screen bg-theme flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-theme mb-4">
-            Loading problem...
+            {isSharedView ? "Loading design\u2026" : "Loading problem..."}
           </h2>
           <div className="text-muted">
             Please wait while we fetch the problem details
@@ -3213,8 +3276,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     {problem.title}
                   </h1>
 
-                  {/* Show difficulty and estimated time only for problems, not Design Studio */}
-                  {idFromUrl !== "free" && (
+                  {/* Show difficulty and estimated time only for problems, not Design Studio or shared view */}
+                  {idFromUrl !== "free" && !isSharedView && (
                     <>
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
@@ -3236,13 +3299,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     </>
                   )}
 
-                  {/* Timer - only show for problems, not Design Studio */}
-                  {idFromUrl !== "free" && (
+                  {/* Timer - only show for problems, not Design Studio or shared view */}
+                  {idFromUrl !== "free" && !isSharedView && (
                     <div className="flex items-center gap-1 border-l border-white/20 pl-3">
                       <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
                         {formatTime(elapsedTime)}
                       </span>
                     </div>
+                  )}
+
+                  {/* Read-only badge for shared view */}
+                  {isSharedView && (
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-white/10 text-white/80">
+                      View only
+                    </span>
                   )}
                 </div>
               </div>
@@ -3639,11 +3709,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex min-h-0">
-          <ComponentPalette
-            components={COMPONENTS}
-            onAdd={addNodeFromPalette}
-          />
+          {!isSharedView && (
+            <ComponentPalette
+              components={COMPONENTS}
+              onAdd={addNodeFromPalette}
+            />
+          )}
           <DiagramCanvas
+            readOnly={isSharedView}
             reactFlowWrapperRef={
               reactFlowWrapper as React.RefObject<HTMLDivElement>
             }
@@ -3700,8 +3773,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   undefined
                 : false
             }
+            sharedCta={isSharedView ? sharedCta ?? undefined : undefined}
             onShareToWorld={
-              idFromUrl && idFromUrl !== "free" && savedAttemptId
+              !isSharedView &&
+              ((idFromUrl && idFromUrl !== "free" && savedAttemptId) || currentDiagramId)
                 ? () => setShowShareToWorldModal(true)
                 : undefined
             }
@@ -3782,6 +3857,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           assessment={assessment}
           problem={problem ?? null}
           savedAttemptId={savedAttemptId}
+          diagramId={!savedAttemptId ? currentDiagramId : null}
+          diagramTitle={!savedAttemptId ? (currentDiagram?.title ?? undefined) : undefined}
           user={user}
           captureCanvasPng={captureCanvasPng}
         />

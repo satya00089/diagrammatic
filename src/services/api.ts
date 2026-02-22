@@ -537,6 +537,46 @@ class ApiService {
     if (!response.ok) throw new Error("Failed to generate article");
     return response.json();
   }
+
+  // ---------------------------------------------------------------------------
+  // Free-design diagram public sharing
+  // ---------------------------------------------------------------------------
+
+  async publishDiagram(diagramId: string): Promise<{ diagramId: string; publicUrl: string; publishedAt: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/publish`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: "Publish failed" }));
+      throw new Error(err.detail || "Failed to publish diagram");
+    }
+    return response.json();
+  }
+
+  async unpublishDiagram(diagramId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/unpublish`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Failed to unpublish diagram");
+  }
+
+  async getPublicDiagramData(diagramId: string): Promise<{
+    id: string;
+    title: string;
+    description?: string;
+    nodes: unknown[];
+    edges: unknown[];
+    authorName?: string;
+    authorPicture?: string;
+    publishedAt?: string;
+    viewCount: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/public/diagrams/${encodeURIComponent(diagramId)}`);
+    if (!response.ok) throw new Error("Diagram not found or not publicly available");
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();
