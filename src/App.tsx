@@ -13,6 +13,7 @@ import { ChatBotProvider } from "./contexts/ChatBotContext";
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
 
+
   return (
     <AuthProvider>
       <ChatBotProvider>
