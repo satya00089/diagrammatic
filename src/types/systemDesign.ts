@@ -35,6 +35,7 @@ export interface SystemConnection {
   target: string;
   type: ConnectionType;
   label?: string;
+  description?: string;
   properties?: Record<string, unknown>;
 }
 
@@ -75,6 +76,27 @@ export interface ValidationResult {
   missingComponents: string[];
   architectureStrengths: string[];
   improvements: string[];
+  scores?: ScoreBreakdown;
+  detailedAnalysis?: Record<string, string>;
+  interviewQuestions?: string[];
+  missingDescriptions?: string[];
+  unclearConnections?: string[];
+  processingTimeMs?: number;
+}
+
+export interface ScoreBreakdown {
+  scalability: number;
+  reliability: number;
+  security: number;
+  maintainability: number;
+  performance?: number;
+  cost_efficiency?: number;
+  observability?: number;
+  deliverability?: number;
+  requirements_alignment?: number;
+  constraint_compliance?: number;
+  component_justification?: number;
+  connection_clarity?: number;
 }
 
 export interface ValidationFeedback {
@@ -87,7 +109,14 @@ export interface ValidationFeedback {
     | "performance"
     | "security"
     | "cost"
-    | "maintainability";
+    | "maintainability"
+    | "observability"
+    | "deliverability"
+    | "requirements"
+    | "constraints"
+    | "component_description"
+    | "connection_reasoning";
+  priority?: number;
 }
 
 export interface ComponentTemplate {

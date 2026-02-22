@@ -25,6 +25,7 @@ type DiagramCanvasProps = {
   onDrop: (e: React.DragEvent) => void;
   onNodeDragStop?: (event: React.MouseEvent, node: Node) => void;
   onMouseMove?: (event: React.MouseEvent) => void;
+  onEdgeClick?: (event: React.MouseEvent, edge: Edge) => void;
   children?: React.ReactNode;
 };
 
@@ -41,6 +42,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onDrop,
   onNodeDragStop,
   onMouseMove,
+  onEdgeClick,
   children,
 }) => {
   return (
@@ -63,6 +65,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           onConnect={onConnect}
           onNodeDragStop={onNodeDragStop}
           onMouseMove={onMouseMove}
+          onEdgeClick={onEdgeClick}
           connectionMode={ConnectionMode.Loose}
           fitView
           proOptions={{ hideAttribution: true }}

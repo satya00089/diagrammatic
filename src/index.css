@@ -27,6 +27,12 @@
   --header-gradient-end: #ad63c7;
 
   --theme: var(--text);
+
+  /* Share / announcement colors (light mode) */
+  --share-bg: #4B4C5B;
+  --share-text: #ffffff;
+  --announcement-bg: var(--share-bg);
+  --announcement-text: var(--share-text);
 }
 
 .dark {
@@ -53,6 +59,12 @@
   --header-gradient-end: #bd6cd5;
 
   --theme: var(--text);
+
+  /* Share / announcement colors (dark mode) */
+  --share-bg: #AFAFBA;
+  --share-text: #000000;
+  --announcement-bg: var(--share-bg);
+  --announcement-text: var(--share-text);
 }
 
 /* Apply defaults */
