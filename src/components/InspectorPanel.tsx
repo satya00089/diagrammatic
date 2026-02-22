@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   PiDotsSixVerticalBold,
   PiCaretDownBold,
@@ -83,6 +84,7 @@ type InspectorPanelProps = {
   onDetachFromGroup?: () => void;
   isNodeInGroup?: boolean;
   onShareToWorld?: () => void;
+  sharedCta?: { to: string; label: string };
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -102,13 +104,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onDetachFromGroup,
   isNodeInGroup,
   onShareToWorld,
+  sharedCta,
 }) => {
   const [width, setWidth] = React.useState(320); // px
   const minWidth = 260;
   const maxWidth = 640;
   const resizingRef = React.useRef(false);
   const panelRef = React.useRef<HTMLElement | null>(null);
-  const [showHints, setShowHints] = React.useState(false);
+  const [showHints, setShowHints] = React.useState(true);
   const [open, setOpen] = React.useState(true);
   const [showInterviewQuestions, setShowInterviewQuestions] = React.useState(false);
 
@@ -312,40 +315,35 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   </p>
 
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-theme mb-2">
-                      Requirements
-                    </h4>
-                    <ul className="space-y-1">
-                      {problem.requirements.map((req) => (
-                        <li key={req} className="flex items-start space-x-2">
-                          <span className="text-green-500 mt-0.5 text-xs">
-                            ✓
-                          </span>
-                          <span className="text-xs text-muted">{req}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <h4 className="text-sm font-semibold text-theme mb-2">✅ Requirements</h4>
+                    {problem.requirements.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {problem.requirements.map((req) => (
+                          <li key={req} className="flex items-start gap-2 text-xs">
+                            <span className="text-green-500 mt-0.5 flex-shrink-0">•</span>
+                            <span className="text-muted leading-relaxed">{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted italic">No requirements listed.</p>
+                    )}
                   </div>
 
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-theme mb-2">
-                      Constraints
-                    </h4>
-                    <ul className="space-y-1">
-                      {problem.constraints.map((constraint) => (
-                        <li
-                          key={constraint}
-                          className="flex items-start space-x-2"
-                        >
-                          <span className="text-yellow-500 mt-0.5 text-xs">
-                            ⚠
-                          </span>
-                          <span className="text-xs text-muted">
-                            {constraint}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                    <h4 className="text-sm font-semibold text-theme mb-2">⚠️ Constraints</h4>
+                    {problem.constraints.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {problem.constraints.map((constraint) => (
+                          <li key={constraint} className="flex items-start gap-2 text-xs">
+                            <span className="text-yellow-500 mt-0.5 flex-shrink-0">•</span>
+                            <span className="text-muted leading-relaxed">{constraint}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted italic">No constraints listed.</p>
+                    )}
                   </div>
 
                   <div className="mb-4">
@@ -367,32 +365,36 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     </button>
                     {showHints && (
                       <div id="hints-content" className="space-y-2">
-                        {problem.hints.map((hint) => (
+                        {problem.hints.length > 0 ? problem.hints.map((hint) => (
                           <div
                             key={hint}
-                            className="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
+                            className="bg-yellow-50 dark:bg-yellow-900/40 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
                           >
-                            <div className="text-xs text-white">{hint}</div>
+                            <div className="text-xs text-yellow-900 dark:text-yellow-100 leading-relaxed">{hint}</div>
                           </div>
-                        ))}
+                        )) : (
+                          <p className="text-xs text-muted italic px-2">No hints available.</p>
+                        )}
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-theme mb-2">
-                      Tags
-                    </h4>
-                    <div className="flex flex-wrap gap-1">
-                      {problem.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-md"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    <h4 className="text-sm font-semibold text-theme mb-2">🏷️ Tags</h4>
+                    {problem.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {problem.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs rounded-full font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted italic">No tags.</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -847,6 +849,16 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               )}
             </div>
           </>
+        )}
+        {sharedCta && (
+          <div className="flex-shrink-0 border-t border-[var(--border)] px-4 py-3">
+            <Link
+              to={sharedCta.to}
+              className="block w-full text-center py-2.5 rounded-xl bg-[var(--brand,#6366f1)] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              {sharedCta.label}
+            </Link>
+          </div>
         )}
       </aside>
     </div>

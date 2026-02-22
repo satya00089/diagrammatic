@@ -14,6 +14,10 @@ interface ShareToWorldModalProps {
   assessment: ValidationResult | null;
   problem: SystemDesignProblem | null;
   savedAttemptId: string | null;
+  /** Pass the current free-design diagram ID to enable sharing from Design Studio */
+  diagramId?: string | null;
+  /** Title shown in the modal header when sharing a free diagram */
+  diagramTitle?: string;
   user: User | null;
   captureCanvasPng: () => Promise<string>;
 }
@@ -50,6 +54,8 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   assessment,
   problem,
   savedAttemptId,
+  diagramId,
+  diagramTitle,
   user,
 }) => {
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
@@ -59,8 +65,16 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const publishedRef = useRef(false); // guard against double-publish
 
+  // Determine sharing mode
+  const mode: "attempt" | "diagram" | null = savedAttemptId
+    ? "attempt"
+    : diagramId
+    ? "diagram"
+    : null;
+
   const score = assessment?.score ?? 0;
   const problemTitle = problem?.title ?? "System Design";
+  const sharedTitle = mode === "attempt" ? problemTitle : (diagramTitle || "My Design");
   const scoreLabel =
     score >= 80 ? "Outstanding work!" : score >= 60 ? "Solid design!" : "Keep improving!";
 
@@ -74,18 +88,25 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
       publishedRef.current = false;
       return;
     }
-    if (!savedAttemptId || publishedRef.current) return;
+    if (!mode || publishedRef.current) return;
     publishedRef.current = true;
     let cancelled = false;
     setIsPublishing(true);
     setError(null);
-    apiService
-      .publishAttempt(savedAttemptId)
-      .then((res) => { if (!cancelled) setPublicUrl(res.publicUrl); })
+
+    const publishPromise =
+      mode === "attempt" && savedAttemptId
+        ? apiService.publishAttempt(savedAttemptId).then((res) => res.publicUrl)
+        : mode === "diagram" && diagramId
+        ? apiService.publishDiagram(diagramId).then((res) => res.publicUrl)
+        : Promise.reject(new Error("Nothing to publish"));
+
+    publishPromise
+      .then((url) => { if (!cancelled) setPublicUrl(url); })
       .catch(() => { if (!cancelled) setError("Couldn't publish. Please try again."); })
       .finally(() => { if (!cancelled) setIsPublishing(false); });
     return () => { cancelled = true; };
-  }, [isOpen, savedAttemptId]);
+  }, [isOpen, mode, savedAttemptId, diagramId]);
 
   const handleCopyLink = useCallback(async () => {
     if (!publicUrl) return;
@@ -94,7 +115,10 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
     setTimeout(() => setLinkCopied(false), 2000);
   }, [publicUrl]);
 
-  const defaultPost = `?? Just solved "${problemTitle}" on Diagrammatic!\n\nScore: ${score}/100 � ${scoreLabel}\n\nCheck it out: ${publicUrl ?? ""}\n\n#SystemDesign #SoftwareArchitecture`;
+  const defaultPost =
+    mode === "attempt"
+      ? `?? Just solved "${sharedTitle}" on Diagrammatic!\n\nScore: ${score}/100 ?? ${scoreLabel}\n\nCheck it out: ${publicUrl ?? ""}\n\n#SystemDesign #SoftwareArchitecture`
+      : `?? Just shared my system design "${sharedTitle}" on Diagrammatic!\n\nCheck it out: ${publicUrl ?? ""}\n\n#SystemDesign #SoftwareArchitecture`;
 
   const handleLinkedIn = useCallback(() => {
     if (!publicUrl) return;
@@ -107,20 +131,26 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
 
   const handleTwitter = useCallback(() => {
     if (!publicUrl) return;
-    const tweet = `?? Solved "${problemTitle}" � ${score}/100 on Diagrammatic!`;
+    const tweet =
+      mode === "attempt"
+        ? `?? Solved "${sharedTitle}" ?? ${score}/100 on Diagrammatic!`
+        : `?? Shared my system design "${sharedTitle}" on Diagrammatic!`;
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(publicUrl)}`,
       "_blank", "noopener,noreferrer"
     );
-  }, [publicUrl, problemTitle, score]);
+  }, [publicUrl, sharedTitle, score, mode]);
 
   const handleMedium = useCallback(async () => {
-    const article = `# My ${problemTitle} System Design\n\n${defaultPost}`;
+    const article =
+      mode === "attempt"
+        ? `# My ${sharedTitle} System Design\n\n${defaultPost}`
+        : `# My System Design: ${sharedTitle}\n\n${defaultPost}`;
     await navigator.clipboard.writeText(article);
     setMessageCopied(true);
     setTimeout(() => setMessageCopied(false), 2500);
     window.open("https://medium.com/new-story", "_blank", "noopener,noreferrer");
-  }, [defaultPost, problemTitle]);
+  }, [defaultPost, sharedTitle, mode]);
 
   if (!isOpen) return null;
 
@@ -158,13 +188,21 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
                 <MdClose size={17} />
               </button>
               <div className="flex items-center gap-4">
-                <ScoreRing score={score} />
+                {mode === "attempt" ? (
+                  <ScoreRing score={score} />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0 text-3xl">
+                    ?????
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="text-[color:var(--share-text)]/60 text-[10px] font-semibold uppercase tracking-widest mb-0.5">
-                    Achievement unlocked
+                    {mode === "attempt" ? "Achievement unlocked" : "Sharing your design"}
                   </p>
-                  <h2 className="text-[color:var(--share-text)] text-base font-bold leading-snug">{problemTitle}</h2>
-                  <p className="text-[color:var(--share-text)]/80 text-sm mt-0.5">{scoreLabel}</p>
+                  <h2 className="text-[color:var(--share-text)] text-base font-bold leading-snug">{sharedTitle}</h2>
+                  {mode === "attempt" && (
+                    <p className="text-[color:var(--share-text)]/80 text-sm mt-0.5">{scoreLabel}</p>
+                  )}
                   {user?.name && (
                     <p className="text-[color:var(--share-text)]/50 text-xs mt-1 truncate">by {user.name}</p>
                   )}
