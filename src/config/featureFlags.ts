@@ -15,6 +15,7 @@ export const FeatureFlags = {
   YJS_COLLABORATION: "yjs-collaboration",
   AUTO_SAVE: "auto-save",
   OFFLINE_MODE: "offline-mode",
+  SHARE_TO_WORLD: "share-to-world",
 } as const;
 
 export type FeatureFlag = (typeof FeatureFlags)[keyof typeof FeatureFlags];
@@ -27,16 +28,19 @@ const DEFAULT_FLAGS: Record<string, Record<FeatureFlag, boolean>> = {
     [FeatureFlags.YJS_COLLABORATION]: true,
     [FeatureFlags.AUTO_SAVE]: true,
     [FeatureFlags.OFFLINE_MODE]: false,
+    [FeatureFlags.SHARE_TO_WORLD]: true,
   },
   staging: {
     [FeatureFlags.YJS_COLLABORATION]: false, // Gradual rollout
     [FeatureFlags.AUTO_SAVE]: true,
     [FeatureFlags.OFFLINE_MODE]: false,
+    [FeatureFlags.SHARE_TO_WORLD]: true,
   },
   production: {
     [FeatureFlags.YJS_COLLABORATION]: false, // Not ready yet
     [FeatureFlags.AUTO_SAVE]: true,
     [FeatureFlags.OFFLINE_MODE]: false,
+    [FeatureFlags.SHARE_TO_WORLD]: true,
   },
 };
 

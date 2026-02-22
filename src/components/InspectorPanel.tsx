@@ -6,6 +6,57 @@ import {
   PiCaretRightBold,
 } from "react-icons/pi";
 import { MdAdd } from "react-icons/md";
+import { FiShare2 } from "react-icons/fi";
+
+// ── Assessment tab constants (defined once, not inside render) ──────────────
+const RING_RADIUS = 26;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS; // ~163.4
+
+// Display groups for the Score Breakdown bars.
+// Composite groups (multiple keys) show the average of their member scores.
+const DISPLAY_GROUPS: { label: string; keys: string[] }[] = [
+  { label: "Scalability",     keys: ["scalability"] },
+  { label: "Reliability",     keys: ["reliability"] },
+  { label: "Security",        keys: ["security"] },
+  { label: "Maintainability", keys: ["maintainability"] },
+  { label: "Performance",     keys: ["performance"] },
+  // Composite: avg of cost_efficiency + observability + deliverability
+  { label: "Operations",      keys: ["cost_efficiency", "observability", "deliverability"] },
+  // Composite: avg of requirements_alignment + constraint_compliance
+  { label: "Alignment",       keys: ["requirements_alignment", "constraint_compliance"] },
+  // Composite: avg of component_justification + connection_clarity
+  { label: "Documentation",   keys: ["component_justification", "connection_clarity"] },
+];
+
+const DIM_LABELS: Record<string, string> = {
+  scalability: "Scalability",
+  reliability: "Reliability",
+  security: "Security",
+  maintainability: "Maintainability",
+  performance: "Performance",
+  cost_efficiency: "Cost Efficiency",
+  observability: "Observability",
+  deliverability: "Deliverability",
+  requirements_alignment: "Requirements",
+  constraint_compliance: "Constraints",
+  component_justification: "Components",
+  connection_clarity: "Connections",
+};
+
+const FEEDBACK_TYPE_ICON: Record<string, string> = {
+  success: "✅",
+  warning: "⚠️",
+  error: "❌",
+  info: "ℹ️",
+};
+
+const FEEDBACK_TYPE_BORDER: Record<string, string> = {
+  success: "border-green-500/50",
+  warning: "border-amber-400/50",
+  error: "border-red-500/50",
+  info: "border-[var(--brand)]/50",
+};
+// ────────────────────────────────────────────────────────────────────────────
 
 type InspectorPanelProps = {
   problem: {
@@ -31,6 +82,7 @@ type InspectorPanelProps = {
   assessmentResult?: import("../types/systemDesign").ValidationResult | null;
   onDetachFromGroup?: () => void;
   isNodeInGroup?: boolean;
+  onShareToWorld?: () => void;
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -49,6 +101,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   assessmentResult,
   onDetachFromGroup,
   isNodeInGroup,
+  onShareToWorld,
 }) => {
   const [width, setWidth] = React.useState(320); // px
   const minWidth = 260;
@@ -57,6 +110,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const panelRef = React.useRef<HTMLElement | null>(null);
   const [showHints, setShowHints] = React.useState(false);
   const [open, setOpen] = React.useState(true);
+  const [showInterviewQuestions, setShowInterviewQuestions] = React.useState(false);
+
+  const scoreColor = (v: number) => {
+    if (v >= 75) return "#22c55e";
+    if (v >= 50) return "#f59e0b";
+    return "#ef4444";
+  };
 
   const onMouseMove = React.useCallback((e: MouseEvent) => {
     if (!resizingRef.current) return;
@@ -116,19 +176,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         JSON.stringify(assessmentResult, null, 2),
       );
     } catch {
-      // fallback: create temporary textarea
-      const t = document.createElement("textarea");
-      t.value = JSON.stringify(assessmentResult, null, 2);
-      t.style.position = "fixed";
-      t.style.opacity = "0";
-      document.body.appendChild(t);
-      t.select();
-      try {
-        document.execCommand("copy");
-      } catch {
-        // Copy failed
-      }
-      t.remove();
+      // clipboard API unavailable — silently skip
     }
   };
 
@@ -184,6 +232,23 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 size={24}
               />
             </button>
+
+            {/* ── Share-to-World announcement bar — above the tabs ── */}
+            {onShareToWorld &&
+              assessmentResult &&
+              (assessmentResult.isValid || assessmentResult.score >= 70) && (
+                <button
+                  type="button"
+                  onClick={onShareToWorld}
+                  className="w-[calc(100%+2rem)] flex items-center justify-center gap-2 -mx-4 -mt-4 px-3.5 py-1.5 mb-4
+                    bg-[var(--announcement-bg)] text-[var(--announcement-text)] dark:bg-[var(--announcement-bg)] dark:text-[var(--announcement-text)] cursor-pointer text-sm font-medium
+                    hover:opacity-90 active:scale-[.98] transition-all"
+                >
+                  <FiShare2 size={12} className="flex-shrink-0" />
+                  <span className="font-semibold">Share your design</span>
+                  {/* <span className="text-white/70 text-xs">— Share publicly: generate a link to showcase your design</span> */}
+                </button>
+              )}
 
             <div
               className="flex flex-wrap items-center justify-start gap-2"
@@ -456,98 +521,299 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <div>
                   {assessmentResult ? (
                     <div className="space-y-4">
-                      {/* Score Header */}
-                      <div className="p-4 border rounded-lg bg-[var(--surface)]">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-lg font-semibold text-theme">
-                            Assessment Score
-                          </div>
-                          <div className="text-2xl font-bold text-[var(--brand)]">
-                            {assessmentResult.score}%
-                          </div>
+
+                      {/* ── 1. Score Header ── */}
+                      <div className="p-4 border rounded-xl bg-[var(--surface)] flex items-center gap-4">
+                        {/* Score ring */}
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                            <circle cx="32" cy="32" r={RING_RADIUS} fill="none" stroke="var(--border)" strokeWidth="6" />
+                            <circle
+                              cx="32" cy="32" r={RING_RADIUS} fill="none"
+                              stroke={scoreColor(assessmentResult.score)}
+                              strokeWidth="6"
+                              strokeDasharray={`${(assessmentResult.score / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-theme">
+                            {assessmentResult.score}
+                          </span>
                         </div>
-                        <div className="text-sm text-muted">
-                          {assessmentResult.isValid
-                            ? "✅ Pass"
-                            : "⚠️ Needs Improvement"}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-theme text-base">Assessment Score</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              assessmentResult.isValid
+                                ? "bg-green-500/15 text-green-500"
+                                : "bg-amber-500/15 text-amber-500"
+                            }`}>
+                              {assessmentResult.isValid ? "✅ Pass" : "⚠️ Needs Work"}
+                            </span>
+                          </div>
+                          {assessmentResult.processingTimeMs && (
+                            <div className="text-[10px] text-muted mt-1">
+                              Analysed in {(assessmentResult.processingTimeMs / 1000).toFixed(1)}s
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* What Went Right */}
-                      <div className="p-4 border rounded-lg bg-[var(--surface)]">
-                        <div className="font-semibold text-theme mb-3 flex items-center gap-2">
+                      {/* ── 2. Score Breakdown ── */}
+                      {assessmentResult.scores && (
+                        <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-3">
+                          <div className="font-semibold text-theme text-sm flex items-center gap-2">
+                            <span>📊</span><span>Score Breakdown</span>
+                          </div>
+                          {DISPLAY_GROUPS.map(({ label, keys }) => {
+                            const s = assessmentResult.scores;
+                            if (!s) return null;
+                            const vals = keys
+                              .map(k => (s as unknown as Record<string, number | undefined>)[k])
+                              .filter((v): v is number => v != null);
+                            if (vals.length === 0) return null;
+                            const val = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+                            const color = scoreColor(val);
+                            const subtitle = keys.length > 1
+                              ? keys.map(k => DIM_LABELS[k] ?? k.replaceAll("_", " ")).join(" · ")
+                              : null;
+                            return (
+                              <div key={label}>
+                                <div className="flex justify-between items-center mb-1">
+                                  <div>
+                                    <span className="text-xs text-muted">{label}</span>
+                                    {subtitle && (
+                                      <span className="text-[10px] text-muted/50 ml-1.5">{subtitle}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs font-semibold" style={{ color }}>{val}</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all"
+                                    style={{ width: `${val}%`, backgroundColor: color }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* ── 3. What Went Well ── */}
+                      <div className="p-4 border rounded-xl bg-[var(--surface)]">
+                        <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
                           <span className="text-green-500">✓</span>
-                          <span>What Went Right</span>
+                          <span>What Went Well</span>
                         </div>
                         {assessmentResult.architectureStrengths.length > 0 ? (
-                          <ul className="space-y-2">
+                          <ul className="space-y-1.5">
                             {assessmentResult.architectureStrengths.map((s) => (
-                              <li
-                                key={s}
-                                className="flex items-start gap-2 text-sm"
-                              >
-                                <span className="text-green-500 mt-0.5">•</span>
+                              <li key={s} className="flex items-start gap-2 text-sm">
+                                <span className="text-green-500 mt-0.5 flex-shrink-0">•</span>
                                 <span className="text-theme">{s}</span>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <div className="text-sm text-muted">
-                            No notable strengths detected.
-                          </div>
+                          <p className="text-sm text-muted">No notable strengths detected.</p>
                         )}
                       </div>
 
-                      {/* What to Improve */}
-                      <div className="p-4 border rounded-lg bg-[var(--surface)]">
-                        <div className="font-semibold text-theme mb-3 flex items-center gap-2">
-                          <span className="text-orange-500">!</span>
-                          <span>What to Improve</span>
+                      {/* ── 4. Where to Improve ── */}
+                      <div className="p-4 border rounded-xl bg-[var(--surface)]">
+                        <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
+                          <span className="text-orange-500">↑</span>
+                          <span>Where to Improve</span>
                         </div>
                         {assessmentResult.improvements.length > 0 ? (
-                          <ul className="space-y-2">
+                          <ul className="space-y-1.5 mb-3">
                             {assessmentResult.improvements.map((imp) => (
-                              <li
-                                key={imp}
-                                className="flex items-start gap-2 text-sm"
-                              >
-                                <span className="text-orange-500 mt-0.5">
-                                  •
-                                </span>
+                              <li key={imp} className="flex items-start gap-2 text-sm">
+                                <span className="text-orange-500 mt-0.5 flex-shrink-0">•</span>
                                 <span className="text-theme">{imp}</span>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <div className="text-sm text-muted">
-                            No specific improvements suggested.
-                          </div>
+                          <p className="text-sm text-muted mb-3">No specific improvements suggested.</p>
+                        )}
+                        {assessmentResult.suggestions && assessmentResult.suggestions.length > 0 && (
+                          <>
+                            <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Suggestions</div>
+                            <ul className="space-y-1.5">
+                              {assessmentResult.suggestions.map((s) => (
+                                <li key={s} className="flex items-start gap-2 text-sm">
+                                  <span className="text-[var(--brand)] mt-0.5 flex-shrink-0">→</span>
+                                  <span className="text-muted">{s}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
                         )}
                       </div>
 
-                      {/* Detailed Feedback */}
-                      <div className="p-4 border rounded-lg bg-[var(--surface)]">
-                        <div className="font-semibold text-theme mb-3">
-                          Detailed Feedback
-                        </div>
-                        <div className="space-y-3">
-                          {assessmentResult.feedback.map((f) => (
-                            <div
-                              key={`${f.category}-${f.message}`}
-                              className="border-l-2 border-[var(--brand)] pl-3 py-1"
-                            >
-                              <div className="font-medium text-xs text-[var(--brand)] uppercase mb-1">
-                                {f.category}
-                              </div>
-                              <div className="text-sm text-theme">
-                                {f.message}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      {/* ── 5. Analysis & Feedback ── */}
+                      {((assessmentResult.detailedAnalysis && Object.keys(assessmentResult.detailedAnalysis).length > 0) ||
+                        assessmentResult.feedback.length > 0) && (() => {
+                        // Group feedback items by category for co-location with analysis
+                        const feedbackByCategory: Record<string, typeof assessmentResult.feedback> = {};
+                        const uncategorisedFeedback: typeof assessmentResult.feedback = [];
+                        for (const fb of assessmentResult.feedback) {
+                          if (assessmentResult.detailedAnalysis?.[fb.category]) {
+                            if (!feedbackByCategory[fb.category]) feedbackByCategory[fb.category] = [];
+                            feedbackByCategory[fb.category].push(fb);
+                          } else {
+                            uncategorisedFeedback.push(fb);
+                          }
+                        }
 
-                      {/* Action Buttons */}
+                        return (
+                          <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-4">
+                            <div className="font-semibold text-theme text-sm flex items-center gap-2">
+                              <span>🔍</span><span>Analysis &amp; Feedback</span>
+                            </div>
+
+                            {/* Per-dimension: analysis prose + its feedback items */}
+                            {assessmentResult.detailedAnalysis &&
+                              Object.entries(assessmentResult.detailedAnalysis).map(([dim, text]) => {
+                                if (!text) return null;
+                                const dimFeedback = feedbackByCategory[dim] ?? [];
+                                return (
+                                  <div key={dim} className="space-y-1.5">
+                                    {/* Dimension heading */}
+                                    <div className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
+                                      {DIM_LABELS[dim] ?? dim}
+                                    </div>
+                                    {/* Analysis prose */}
+                                    <div className="text-xs text-theme leading-relaxed pl-2 border-l-2 border-[var(--brand)]/30">
+                                      {text}
+                                    </div>
+                                    {/* Feedback items for this dimension */}
+                                    {dimFeedback.map((f, i) => (
+                                      <div
+                                        key={`${dim}-fb-${i}`}
+                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"}`}
+                                      >
+                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[f.type]}</span>
+                                        <span className="text-xs text-theme leading-relaxed">{f.message}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+
+                            {/* Feedback items whose category has no analysis entry (e.g. component_description) */}
+                            {uncategorisedFeedback.length > 0 && (
+                              <div className="space-y-1.5 pt-1 border-t border-[var(--border)]">
+                                {uncategorisedFeedback.map((f) => (
+                                  <div
+                                  key={`uncategorised-${f.category}-${f.message.slice(0, 24)}`}
+                                    className={`border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"} pl-3 py-0.5`}
+                                  >
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <span className="text-[10px]">{FEEDBACK_TYPE_ICON[f.type]}</span>
+                                      <span className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
+                                        {f.category.replaceAll("_", " ")}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-theme leading-relaxed">{f.message}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* ── 7. Missing / Unclear ── */}
+                      {((assessmentResult.missingComponents && assessmentResult.missingComponents.length > 0) ||
+                        (assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0) ||
+                        (assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0)) && (
+                        <div className="p-4 border border-red-500/20 rounded-xl bg-red-500/5">
+                          <div className="font-semibold text-red-400 text-sm mb-3 flex items-center gap-2">
+                            <span>⚠</span><span>Gaps Identified</span>
+                          </div>
+                          {assessmentResult.missingComponents && assessmentResult.missingComponents.length > 0 && (
+                            <div className="mb-2">
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Missing Components</div>
+                              <ul className="space-y-1">
+                                {assessmentResult.missingComponents.map((m) => (
+                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
+                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0 && (
+                            <div className="mb-2">
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Missing Descriptions</div>
+                              <ul className="space-y-1">
+                                {assessmentResult.missingDescriptions.map((m) => (
+                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
+                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Unclear Connections</div>
+                              <ul className="space-y-1">
+                                {assessmentResult.unclearConnections.map((m) => (
+                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
+                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── 8. Interview Follow-up Questions ── */}
+                      {assessmentResult.interviewQuestions && assessmentResult.interviewQuestions.length > 0 && (
+                        <div className="border rounded-xl bg-[var(--surface)] overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setShowInterviewQuestions((v) => !v)}
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">🎯</span>
+                              <span className="font-semibold text-theme text-sm">Interview Follow-up Questions</span>
+                              <span className="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full">
+                                {assessmentResult.interviewQuestions.length}
+                              </span>
+                            </div>
+                            <PiCaretDownBold
+                              size={14}
+                              className={`text-muted transition-transform ${showInterviewQuestions ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                          {showInterviewQuestions && (
+                            <div className="px-4 pb-4 space-y-2.5 border-t border-[var(--border)]">
+                              <p className="text-[10px] text-muted pt-3 pb-1">
+                                Questions tailored to your specific design — think through these before your interview.
+                              </p>
+                              <ol className="space-y-2.5 list-none">
+                                {assessmentResult.interviewQuestions.map((q, i) => (
+                                  <li key={`iq-${q.slice(0, 30)}`} className="flex items-start gap-2.5">
+                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
+                                      {i + 1}
+                                    </span>
+                                    <span className="text-xs text-theme leading-relaxed">{q}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── Copy / Download ── */}
                       <div className="flex gap-2">
                         <button
                           type="button"

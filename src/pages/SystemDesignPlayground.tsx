@@ -92,6 +92,7 @@ import SEO from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { ToastContainer } from "../components/Toast";
 import { AuthModal } from "../components/AuthModal";
+import ShareToWorldModal from "../components/ShareToWorldModal";
 
 // UI Components - Diagram
 import DiagramCanvas from "../components/DiagramCanvas";
@@ -336,6 +337,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [isSharing, setIsSharing] = useState(false);
   const [isLoadingCollaborators, setIsLoadingCollaborators] = useState(false);
 
+  // Share to the World state
+  const [showShareToWorldModal, setShowShareToWorldModal] = useState(false);
+  const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
+
   // Collaboration is always enabled for saved diagrams (Figma-style)
   // No manual toggle needed - automatically connects when diagram is loaded
 
@@ -565,6 +570,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const loadAttempt = async () => {
         try {
           const attempt = (await apiService.getAttemptByProblem(idFromUrl)) as {
+            id?: string;
             nodes: Node[];
             edges: Edge[];
             elapsedTime: number;
@@ -594,6 +600,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               setAssessment(attempt.lastAssessment);
               // Automatically open Assessment tab to show the assessment
               setActiveRightTab("assessment");
+            }
+
+            // Restore attempt ID so Share to the World can reference it
+            if (attempt.id) {
+              setSavedAttemptId(attempt.id);
             }
 
             // Immediately update canvas state
@@ -972,7 +983,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
         try {
           console.log("Saving assessment to database:", res);
-          await apiService.saveAttempt({
+          const savedAttempt = await apiService.saveAttempt({
             problemId: idFromUrl,
             title: problem?.title || "Unknown Problem",
             difficulty: problem?.difficulty,
@@ -981,7 +992,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             elapsedTime,
             lastAssessment: res,
-          });
+          }) as { id?: string };
+          if (savedAttempt?.id) {
+            setSavedAttemptId(savedAttempt.id);
+          }
           console.log("Assessment saved successfully");
         } catch (error) {
           console.error("Failed to save assessment:", error);
@@ -2636,6 +2650,40 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   // Download canvas as image
+  /**
+   * Capture the current canvas viewport as a PNG data URL.
+   * Shared between downloadImage() and ShareToWorldModal screenshot.
+   */
+  const captureCanvasPng = async (): Promise<string> => {
+    const nodesBounds = getNodesBounds(getNodes());
+    const padding = 100;
+    const imageWidth = nodesBounds.width + padding * 2;
+    const imageHeight = nodesBounds.height + padding * 2;
+
+    const viewportElement = document.querySelector(
+      ".react-flow__viewport",
+    ) as HTMLElement;
+
+    if (!viewportElement) throw new Error("Viewport element not found");
+
+    const docStyle = getComputedStyle(document.documentElement);
+    const bgColor =
+      docStyle.getPropertyValue("--bg").trim() ||
+      docStyle.getPropertyValue("--surface").trim() ||
+      "#ffffff";
+
+    return toPng(viewportElement, {
+      backgroundColor: bgColor,
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${-nodesBounds.x + padding}px, ${-nodesBounds.y + padding}px) scale(1)`,
+      },
+    });
+  };
+
   const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
     const nodesBounds = getNodesBounds(getNodes());
     
@@ -3652,6 +3700,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   undefined
                 : false
             }
+            onShareToWorld={
+              idFromUrl && idFromUrl !== "free" && savedAttemptId
+                ? () => setShowShareToWorldModal(true)
+                : undefined
+            }
           />
         </div>
 
@@ -3720,6 +3773,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             await signup({ email, password, name });
           }}
           onGoogleLogin={googleLogin}
+        />
+
+        {/* Share to the World Modal */}
+        <ShareToWorldModal
+          isOpen={showShareToWorldModal}
+          onClose={() => setShowShareToWorldModal(false)}
+          assessment={assessment}
+          problem={problem ?? null}
+          savedAttemptId={savedAttemptId}
+          user={user}
+          captureCanvasPng={captureCanvasPng}
         />
 
         {/* Project Intent Dialog - shown when entering Design Studio */}

@@ -461,6 +461,82 @@ class ApiService {
       processingTimeMs: data.processing_time_ms,
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Share to the World
+  // ---------------------------------------------------------------------------
+
+  async publishAttempt(attemptId: string): Promise<{ publicUrl: string; publishedAt: string; attemptId: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/publish`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: "Publish failed" }));
+      throw new Error(err.detail || "Failed to publish solution");
+    }
+    return response.json();
+  }
+
+  async unpublishAttempt(attemptId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/unpublish`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error("Failed to unpublish solution");
+  }
+
+  async getPublicSolution(attemptId: string): Promise<{
+    id: string;
+    problemId: string;
+    title: string;
+    difficulty?: string;
+    category?: string;
+    nodes: unknown[];
+    edges: unknown[];
+    lastAssessment?: Record<string, unknown>;
+    authorName?: string;
+    authorPicture?: string;
+    publishedAt?: string;
+    viewCount: number;
+    elapsedTime: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/solutions/${encodeURIComponent(attemptId)}`);
+    if (!response.ok) throw new Error("Solution not found or not publicly available");
+    return response.json();
+  }
+
+  async getProblemLeaderboard(problemId: string): Promise<Array<{
+    attemptId: string;
+    authorName?: string;
+    authorPicture?: string;
+    score: number;
+    publishedAt?: string;
+    elapsedTime: number;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/problems/${encodeURIComponent(problemId)}/leaderboard`);
+    if (!response.ok) return [];
+    return response.json();
+  }
+
+  async generateShareArticle(payload: {
+    problemTitle: string;
+    problemDescription?: string;
+    score: number;
+    strengths?: string[];
+    improvements?: string[];
+    nodeCount?: number;
+    edgeCount?: number;
+    scores?: Record<string, unknown>;
+  }): Promise<{ linkedinPost: string; twitterPost: string; mediumArticle: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/share/generate-article`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error("Failed to generate article");
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();
