@@ -343,7 +343,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [showShareToWorldModal, setShowShareToWorldModal] = useState(false);
   const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
   // Read-only shared view CTA
-  const [sharedCta, setSharedCta] = useState<{ to: string; label: string } | null>(null);
+  const [sharedCta, setSharedCta] = useState<{
+    to: string;
+    label: string;
+  } | null>(null);
 
   // Collaboration is always enabled for saved diagrams (Figma-style)
   // No manual toggle needed - automatically connects when diagram is loaded
@@ -357,7 +360,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Timer state - always running for problems
   const [elapsedTime, setElapsedTime] = useState<number>(0); // in seconds
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch problem from API or localStorage
   useEffect(() => {
@@ -435,34 +438,67 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Load shared (read-only) data when routed via /public/:publicId
   useEffect(() => {
-    if (!publicId) return;
+    // Reconstruct an effective id that handles two hosting cases:
+    // 1) publicId param contains an encoded '%23' (normal)
+    // 2) some hosts/browsers decode '%23' into '#' so the second part becomes a fragment
+    let effectiveId: string | null = null;
+
+    if (publicId) {
+      // common case: param present (may be percent-encoded)
+      try {
+        effectiveId = decodeURIComponent(publicId);
+      } catch {
+        effectiveId = publicId;
+      }
+    } else {
+      // Fallback: read the pathname directly (handles hosts that strip params)
+      const m = /\/public\/(.+)$/.exec(globalThis.location.pathname);
+      if (m) {
+        try {
+          effectiveId = decodeURIComponent(m[1]);
+        } catch {
+          effectiveId = m[1];
+        }
+      }
+    }
+
+    // If there's a fragment (decoded '#' that split the path), append it
+    const frag = globalThis.location.hash.replace(/^#/, "");
+    if (frag && effectiveId && !effectiveId.includes("#")) {
+      effectiveId = `${effectiveId}#${frag}`;
+    }
+
+    if (!effectiveId) return;
+
     setLoading(true);
     setError(null);
-    const decoded = decodeURIComponent(publicId);
-    const isAttempt = decoded.includes("#");
+
+    const isAttempt = effectiveId.includes("#");
     const loader = isAttempt
-      ? apiService.getPublicSolution(decoded).then((res) => ({
-          title: res.title as string,
-          difficulty: res.difficulty as string | undefined,
-          category: res.category as string | undefined,
+      ? apiService.getPublicSolution(effectiveId).then((res) => ({
+          title: res.title,
+          difficulty: res.difficulty,
+          category: res.category,
           nodes: res.nodes as Node[],
           edges: res.edges as Edge[],
-          assessment: res.lastAssessment as ValidationResult | null,
+          assessment: (res.lastAssessment ??
+            null) as unknown as ValidationResult | null,
           problemId: res.problemId as string | undefined,
         }))
-      : apiService.getPublicDiagramData(publicId).then((res) => ({
-          title: res.title as string,
-          difficulty: undefined as string | undefined,
-          category: undefined as string | undefined,
+      : apiService.getPublicDiagramData(effectiveId).then((res) => ({
+          title: res.title,
+          difficulty: undefined,
+          category: undefined,
           nodes: res.nodes as Node[],
           edges: res.edges as Edge[],
           assessment: null as ValidationResult | null,
           problemId: undefined as string | undefined,
         }));
+
     loader
       .then((d) => {
         setProblem({
-          id: publicId,
+          id: effectiveId,
           title: d.title,
           description: "",
           difficulty: d.difficulty ?? "Medium",
@@ -476,11 +512,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         });
         setNodes(restoreNodeIcons(d.nodes));
         setEdges(d.edges);
-        if (d.assessment) setAssessment(d.assessment);
+        if (d.assessment)
+          setAssessment(d.assessment as unknown as ValidationResult);
         setActiveRightTab("assessment");
         setSharedCta(
           isAttempt && d.problemId
-            ? { to: `/playground/${d.problemId}`, label: "Try this problem \u2192" }
+            ? {
+                to: `/playground/${d.problemId}`,
+                label: "Try this problem \u2192",
+              }
             : { to: "/playground/free", label: "Try by yourself \u2192" },
         );
       })
@@ -1046,7 +1086,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
         try {
           console.log("Saving assessment to database:", res);
-          const savedAttempt = await apiService.saveAttempt({
+          const savedAttempt = (await apiService.saveAttempt({
             problemId: idFromUrl,
             title: problem?.title || "Unknown Problem",
             difficulty: problem?.difficulty,
@@ -1055,7 +1095,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             elapsedTime,
             lastAssessment: res,
-          }) as { id?: string };
+          })) as { id?: string };
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
           }
@@ -1148,7 +1188,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       minimalComp?.description || fullComp?.description || comp?.description;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.nodeType === "group" || minimalComp?.nodeType === "group";
+    const isGroupComponent =
+      comp?.nodeType === "group" || minimalComp?.nodeType === "group";
 
     // Determine node type: use component's nodeType if specified, otherwise default behavior
     const nodeTypeToUse =
@@ -1917,76 +1958,130 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onChange={(v) => setPropSelect(p.key, v)}
           />
         )}
-        {p.type === "color" && (() => {
-          const colorPresets = [
-            // Row 1 — neutrals & cool
-            { value: "",          label: "Default",      bg: "transparent",  border: "#9ca3af", crossed: true },
-            { value: "#ffffff",   label: "White",        bg: "#ffffff",       border: "#d1d5db" },
-            { value: "#f3f4f6",   label: "Light Gray",   bg: "#f3f4f6",       border: "#d1d5db" },
-            { value: "#dbeafe",   label: "Light Blue",   bg: "#dbeafe",       border: "#93c5fd" },
-            { value: "#dcfce7",   label: "Light Green",  bg: "#dcfce7",       border: "#86efac" },
-            // Row 2 — warm
-            { value: "#fef3c7",   label: "Light Yellow", bg: "#fef3c7",       border: "#fcd34d" },
-            { value: "#ffedd5",   label: "Light Orange", bg: "#ffedd5",       border: "#fdba74" },
-            { value: "#fce7f3",   label: "Light Pink",   bg: "#fce7f3",       border: "#f9a8d4" },
-            { value: "#ede9fe",   label: "Light Purple", bg: "#ede9fe",       border: "#c4b5fd" },
-            { value: "#f1f5f9",   label: "Slate",        bg: "#f1f5f9",       border: "#cbd5e1" },
-          ];
-          return (
-            <div className="flex flex-col gap-2">
-              <label htmlFor={inputId} className="text-xs text-muted">
-                {p.label}
-              </label>
-              {/* Preset swatches */}
-              <div className="flex flex-wrap gap-1.5">
-                {colorPresets.map((preset) => {
-                  const isSelected = stringValue === preset.value;
-                  return (
-                    <button
-                      key={preset.value || "__default__"}
-                      type="button"
-                      title={preset.label}
-                      onClick={() => setPropString(p.key, preset.value)}
-                      className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
-                      style={{
-                        backgroundColor: preset.bg,
-                        border: isSelected
-                          ? `2px solid #6366f1`
-                          : `1.5px solid ${preset.border}`,
-                        boxShadow: isSelected ? "0 0 0 1px #6366f1" : undefined,
-                      }}
-                    >
-                      {preset.crossed && (
-                        <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-[10px] leading-none">
-                          ✕
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+        {p.type === "color" &&
+          (() => {
+            const colorPresets = [
+              // Row 1 — neutrals & cool
+              {
+                value: "",
+                label: "Default",
+                bg: "transparent",
+                border: "#9ca3af",
+                crossed: true,
+              },
+              {
+                value: "#ffffff",
+                label: "White",
+                bg: "#ffffff",
+                border: "#d1d5db",
+              },
+              {
+                value: "#f3f4f6",
+                label: "Light Gray",
+                bg: "#f3f4f6",
+                border: "#d1d5db",
+              },
+              {
+                value: "#dbeafe",
+                label: "Light Blue",
+                bg: "#dbeafe",
+                border: "#93c5fd",
+              },
+              {
+                value: "#dcfce7",
+                label: "Light Green",
+                bg: "#dcfce7",
+                border: "#86efac",
+              },
+              // Row 2 — warm
+              {
+                value: "#fef3c7",
+                label: "Light Yellow",
+                bg: "#fef3c7",
+                border: "#fcd34d",
+              },
+              {
+                value: "#ffedd5",
+                label: "Light Orange",
+                bg: "#ffedd5",
+                border: "#fdba74",
+              },
+              {
+                value: "#fce7f3",
+                label: "Light Pink",
+                bg: "#fce7f3",
+                border: "#f9a8d4",
+              },
+              {
+                value: "#ede9fe",
+                label: "Light Purple",
+                bg: "#ede9fe",
+                border: "#c4b5fd",
+              },
+              {
+                value: "#f1f5f9",
+                label: "Slate",
+                bg: "#f1f5f9",
+                border: "#cbd5e1",
+              },
+            ];
+            return (
+              <div className="flex flex-col gap-2">
+                <label htmlFor={inputId} className="text-xs text-muted">
+                  {p.label}
+                </label>
+                {/* Preset swatches */}
+                <div className="flex flex-wrap gap-1.5">
+                  {colorPresets.map((preset) => {
+                    const isSelected = stringValue === preset.value;
+                    return (
+                      <button
+                        key={preset.value || "__default__"}
+                        type="button"
+                        title={preset.label}
+                        onClick={() => setPropString(p.key, preset.value)}
+                        className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
+                        style={{
+                          backgroundColor: preset.bg,
+                          border: isSelected
+                            ? `2px solid #6366f1`
+                            : `1.5px solid ${preset.border}`,
+                          boxShadow: isSelected
+                            ? "0 0 0 1px #6366f1"
+                            : undefined,
+                        }}
+                      >
+                        {preset.crossed && (
+                          <span className="absolute inset-0 flex items-center justify-center text-gray-400 text-[10px] leading-none">
+                            ✕
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Custom color row */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id={inputId}
+                    value={stringValue || "#ffffff"}
+                    onChange={(e) => setPropString(p.key, e.target.value)}
+                    className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
+                    style={{ padding: "1px" }}
+                    title="Custom color"
+                  />
+                  <input
+                    type="text"
+                    value={stringValue}
+                    placeholder={p.placeholder || "#rrggbb or rgba(…)"}
+                    onChange={(e) => setPropString(p.key, e.target.value)}
+                    className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
+                  />
+                </div>
               </div>
-              {/* Custom color row */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  id={inputId}
-                  value={stringValue || "#ffffff"}
-                  onChange={(e) => setPropString(p.key, e.target.value)}
-                  className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
-                  style={{ padding: "1px" }}
-                  title="Custom color"
-                />
-                <input
-                  type="text"
-                  value={stringValue}
-                  placeholder={p.placeholder || "#rrggbb or rgba(…)"}
-                  onChange={(e) => setPropString(p.key, e.target.value)}
-                  className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
-                />
-              </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </div>
     );
   };
@@ -2024,20 +2119,55 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // Universal Appearance section for all non-group nodes
       if (node.type !== "group") {
         const pairedPresets = [
-          { label: "Default",       bg: "",        border: "",        text: "" },
-          { label: "White",         bg: "#ffffff",  border: "#d1d5db", text: "#374151" },
-          { label: "Light Gray",    bg: "#f3f4f6",  border: "#9ca3af", text: "#374151" },
-          { label: "Light Blue",    bg: "#dbeafe",  border: "#60a5fa", text: "#1e3a5f" },
-          { label: "Light Green",   bg: "#dcfce7",  border: "#4ade80", text: "#14532d" },
-          { label: "Light Yellow",  bg: "#fef3c7",  border: "#f59e0b", text: "#78350f" },
-          { label: "Light Orange",  bg: "#ffedd5",  border: "#fb923c", text: "#7c2d12" },
-          { label: "Light Pink",    bg: "#fce7f3",  border: "#f472b6", text: "#831843" },
-          { label: "Light Purple",  bg: "#ede9fe",  border: "#a78bfa", text: "#4c1d95" },
-          { label: "Slate",         bg: "#f1f5f9",  border: "#94a3b8", text: "#1e293b" },
+          { label: "Default", bg: "", border: "", text: "" },
+          { label: "White", bg: "#ffffff", border: "#d1d5db", text: "#374151" },
+          {
+            label: "Light Gray",
+            bg: "#f3f4f6",
+            border: "#9ca3af",
+            text: "#374151",
+          },
+          {
+            label: "Light Blue",
+            bg: "#dbeafe",
+            border: "#60a5fa",
+            text: "#1e3a5f",
+          },
+          {
+            label: "Light Green",
+            bg: "#dcfce7",
+            border: "#4ade80",
+            text: "#14532d",
+          },
+          {
+            label: "Light Yellow",
+            bg: "#fef3c7",
+            border: "#f59e0b",
+            text: "#78350f",
+          },
+          {
+            label: "Light Orange",
+            bg: "#ffedd5",
+            border: "#fb923c",
+            text: "#7c2d12",
+          },
+          {
+            label: "Light Pink",
+            bg: "#fce7f3",
+            border: "#f472b6",
+            text: "#831843",
+          },
+          {
+            label: "Light Purple",
+            bg: "#ede9fe",
+            border: "#a78bfa",
+            text: "#4c1d95",
+          },
+          { label: "Slate", bg: "#f1f5f9", border: "#94a3b8", text: "#1e293b" },
         ];
-        const currentBg     = (nodeProps["backgroundColor"] as string) || "";
+        const currentBg = (nodeProps["backgroundColor"] as string) || "";
         const currentBorder = (nodeProps["borderColor"] as string) || "";
-        const currentText   = (nodeProps["textColor"] as string) || "";
+        const currentText = (nodeProps["textColor"] as string) || "";
         const applyPair = (bg: string, border: string, text: string) => {
           updateNodeProperty("backgroundColor", bg);
           updateNodeProperty("borderColor", border);
@@ -2053,13 +2183,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               {/* Paired presets */}
               <div className="flex flex-wrap gap-1.5">
                 {pairedPresets.map((preset) => {
-                  const isSelected = currentBg === preset.bg && currentBorder === preset.border;
+                  const isSelected =
+                    currentBg === preset.bg && currentBorder === preset.border;
                   return (
                     <button
                       key={preset.label}
                       type="button"
                       title={preset.label}
-                      onClick={() => applyPair(preset.bg, preset.border, preset.text)}
+                      onClick={() =>
+                        applyPair(preset.bg, preset.border, preset.text)
+                      }
                       className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
                       style={{
                         backgroundColor: preset.bg || "transparent",
@@ -2081,11 +2214,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               {/* Custom pickers */}
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted w-14 flex-shrink-0">Fill</span>
+                  <span className="text-xs text-muted w-14 flex-shrink-0">
+                    Fill
+                  </span>
                   <input
                     type="color"
                     value={currentBg || "#ffffff"}
-                    onChange={(e) => updateNodeProperty("backgroundColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("backgroundColor", e.target.value)
+                    }
                     className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
                     style={{ padding: "1px" }}
                   />
@@ -2093,19 +2230,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     type="text"
                     value={currentBg}
                     placeholder="#rrggbb or rgba(…)"
-                    onChange={(e) => updateNodeProperty("backgroundColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("backgroundColor", e.target.value)
+                    }
                     className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
                   />
                   {currentBg && (
-                    <button type="button" onClick={() => updateNodeProperty("backgroundColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                    <button
+                      type="button"
+                      onClick={() => updateNodeProperty("backgroundColor", "")}
+                      className="text-muted hover:text-red-500 text-xs flex-shrink-0"
+                      title="Clear"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted w-14 flex-shrink-0">Border</span>
+                  <span className="text-xs text-muted w-14 flex-shrink-0">
+                    Border
+                  </span>
                   <input
                     type="color"
                     value={currentBorder || "#ffffff"}
-                    onChange={(e) => updateNodeProperty("borderColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("borderColor", e.target.value)
+                    }
                     className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
                     style={{ padding: "1px" }}
                   />
@@ -2113,19 +2263,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     type="text"
                     value={currentBorder}
                     placeholder="#rrggbb or rgba(…)"
-                    onChange={(e) => updateNodeProperty("borderColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("borderColor", e.target.value)
+                    }
                     className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
                   />
                   {currentBorder && (
-                    <button type="button" onClick={() => updateNodeProperty("borderColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                    <button
+                      type="button"
+                      onClick={() => updateNodeProperty("borderColor", "")}
+                      className="text-muted hover:text-red-500 text-xs flex-shrink-0"
+                      title="Clear"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted w-14 flex-shrink-0">Text</span>
+                  <span className="text-xs text-muted w-14 flex-shrink-0">
+                    Text
+                  </span>
                   <input
                     type="color"
                     value={currentText || "#374151"}
-                    onChange={(e) => updateNodeProperty("textColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("textColor", e.target.value)
+                    }
                     className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
                     style={{ padding: "1px" }}
                   />
@@ -2133,11 +2296,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     type="text"
                     value={currentText}
                     placeholder="#rrggbb or rgba(…)"
-                    onChange={(e) => updateNodeProperty("textColor", e.target.value)}
+                    onChange={(e) =>
+                      updateNodeProperty("textColor", e.target.value)
+                    }
                     className="flex-1 text-xs bg-transparent border border-theme rounded px-2 py-1 text-theme min-w-0"
                   />
                   {currentText && (
-                    <button type="button" onClick={() => updateNodeProperty("textColor", "")} className="text-muted hover:text-red-500 text-xs flex-shrink-0" title="Clear">✕</button>
+                    <button
+                      type="button"
+                      onClick={() => updateNodeProperty("textColor", "")}
+                      className="text-muted hover:text-red-500 text-xs flex-shrink-0"
+                      title="Clear"
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
               </div>
@@ -2181,13 +2353,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const currentStrokeWidth = (edgeProps["strokeWidth"] as number) ?? 2;
     const currentPathType = (edgeProps["pathType"] as string) || "bezier";
     const currentAnimated = (edgeProps["animated"] as boolean) || false;
-    const currentBidirectional = (edgeProps["bidirectional"] as boolean) || false;
+    const currentBidirectional =
+      (edgeProps["bidirectional"] as boolean) || false;
     edgePropertyElements = (
       <div className="flex flex-col gap-4">
-
         {/* Label */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="edge-label" className="text-[11px] font-semibold text-muted uppercase tracking-widest">Label</label>
+          <label
+            htmlFor="edge-label"
+            className="text-[11px] font-semibold text-muted uppercase tracking-widest"
+          >
+            Label
+          </label>
           <input
             id="edge-label"
             type="text"
@@ -2215,13 +2392,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Path Style — visual button group */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Path Style</span>
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
+            Path Style
+          </span>
           <div className="grid grid-cols-4 gap-1">
             {(
               [
-                { value: "bezier",     label: "Curve",  icon: "⌒" },
-                { value: "straight",   label: "Line",   icon: "—" },
-                { value: "step",       label: "Step",   icon: "⌐" },
+                { value: "bezier", label: "Curve", icon: "⌒" },
+                { value: "straight", label: "Line", icon: "—" },
+                { value: "step", label: "Step", icon: "⌐" },
                 { value: "smoothstep", label: "Smooth", icon: "∫" },
               ] as const
             ).map(({ value, label, icon }) => (
@@ -2237,7 +2416,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 title={label}
               >
                 <span className="text-base leading-none">{icon}</span>
-                <span className="text-[9px] font-medium leading-tight">{label}</span>
+                <span className="text-[9px] font-medium leading-tight">
+                  {label}
+                </span>
               </button>
             ))}
           </div>
@@ -2245,11 +2426,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Appearance */}
         <div className="flex flex-col gap-3 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
-          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Appearance</span>
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
+            Appearance
+          </span>
 
           {/* Color */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted w-12 flex-shrink-0">Color</label>
+            <label className="text-xs text-muted w-12 flex-shrink-0">
+              Color
+            </label>
             <div className="relative flex-shrink-0">
               <input
                 type="color"
@@ -2276,24 +2461,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 onClick={() => updateEdgeProperty("color", "")}
                 className="text-muted hover:text-red-400 text-sm flex-shrink-0 transition-colors"
                 title="Reset to default"
-              >✕</button>
+              >
+                ✕
+              </button>
             )}
           </div>
 
           {/* Stroke Width */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted w-12 flex-shrink-0">Width</label>
+            <label className="text-xs text-muted w-12 flex-shrink-0">
+              Width
+            </label>
             <input
               type="range"
               min={1}
               max={8}
               step={1}
               value={currentStrokeWidth}
-              onChange={(e) => updateEdgeProperty("strokeWidth", Number(e.target.value))}
+              onChange={(e) =>
+                updateEdgeProperty("strokeWidth", Number(e.target.value))
+              }
               className="flex-1 cursor-pointer accent-[var(--brand)]"
             />
             <div className="flex items-center justify-center w-9 h-6 rounded bg-[var(--bg-hover)] flex-shrink-0">
-              <span className="text-[11px] font-mono text-theme">{currentStrokeWidth}px</span>
+              <span className="text-[11px] font-mono text-theme">
+                {currentStrokeWidth}px
+              </span>
             </div>
           </div>
 
@@ -2317,13 +2510,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-xs text-muted">Bidirectional</span>
-              <span className="text-[10px] text-muted/60">Arrows on both ends</span>
+              <span className="text-[10px] text-muted/60">
+                Arrows on both ends
+              </span>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={currentBidirectional}
-              onClick={() => updateEdgeProperty("bidirectional", !currentBidirectional)}
+              onClick={() =>
+                updateEdgeProperty("bidirectional", !currentBidirectional)
+              }
               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${currentBidirectional ? "bg-[var(--brand)]" : "bg-[var(--border)]"}`}
             >
               <span
@@ -2343,12 +2540,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           }}
           className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg bg-red-500/8 text-red-500 hover:bg-red-500/15 border border-red-500/20 hover:border-red-500/40 transition-all text-sm font-medium cursor-pointer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-4 h-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M9 6V4h6v2" />
           </svg>
           Delete Connection
         </button>
-
       </div>
     );
   }
@@ -2749,7 +2958,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
     const nodesBounds = getNodesBounds(getNodes());
-    
+
     // Add padding to prevent cropping (100px on each side)
     const padding = 100;
     const imageWidth = nodesBounds.width + padding * 2;
@@ -3465,12 +3674,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   {showDownloadMenu && (
                     <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[200px]">
                       <div className="px-3 py-1 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Images</span>
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+                          Images
+                        </span>
                         <label
                           className="flex items-center gap-1.5 cursor-pointer select-none"
                           title="When enabled, PNG and SVG exports will have a transparent background instead of the theme background color"
                         >
-                          <span className="text-xs text-muted">Transparent</span>
+                          <span className="text-xs text-muted">
+                            Transparent
+                          </span>
                           <input
                             type="checkbox"
                             checked={transparentBg}
@@ -3773,10 +3986,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   undefined
                 : false
             }
-            sharedCta={isSharedView ? sharedCta ?? undefined : undefined}
+            sharedCta={isSharedView ? (sharedCta ?? undefined) : undefined}
             onShareToWorld={
               !isSharedView &&
-              ((idFromUrl && idFromUrl !== "free" && savedAttemptId) || currentDiagramId)
+              ((idFromUrl && idFromUrl !== "free" && savedAttemptId) ||
+                currentDiagramId)
                 ? () => setShowShareToWorldModal(true)
                 : undefined
             }
@@ -3857,8 +4071,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           assessment={assessment}
           problem={problem ?? null}
           savedAttemptId={savedAttemptId}
-          diagramId={!savedAttemptId ? currentDiagramId : null}
-          diagramTitle={!savedAttemptId ? (currentDiagram?.title ?? undefined) : undefined}
+          diagramId={savedAttemptId ? null : currentDiagramId}
+          diagramTitle={
+            savedAttemptId ? undefined : (currentDiagram?.title ?? undefined)
+          }
           user={user}
           captureCanvasPng={captureCanvasPng}
         />
