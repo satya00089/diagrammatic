@@ -483,7 +483,7 @@ const SharedCanvasPage: React.FC = () => {
     const isAttempt = resolvedId.includes("#");
 
     const req = isAttempt
-      ? apiService.getPublicSolution(resolvedId).then((res) => ({
+          ? apiService.getPublicSolution(resolvedId).then((res) => ({
           kind: "attempt" as const,
           id: res.id,
           title: res.title,
@@ -492,7 +492,10 @@ const SharedCanvasPage: React.FC = () => {
           problemId: res.problemId,
           nodes: res.nodes as Node[],
           edges: res.edges as Edge[],
-          lastAssessment: res.lastAssessment as ValidationResult | null,
+          lastAssessment:
+            res.lastAssessment == null
+              ? null
+              : (res.lastAssessment as unknown as ValidationResult),
           authorName: res.authorName,
           authorPicture: res.authorPicture,
           publishedAt: res.publishedAt,

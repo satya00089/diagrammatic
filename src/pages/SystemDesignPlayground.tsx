@@ -477,7 +477,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const loader = isAttempt
       ? apiService.getPublicSolution(effectiveId).then((res) => ({
           title: res.title,
-          difficulty: res.difficulty,
+          difficulty: res.difficulty as SystemDesignProblem["difficulty"] | undefined,
           category: res.category,
           nodes: res.nodes as Node[],
           edges: res.edges as Edge[],
