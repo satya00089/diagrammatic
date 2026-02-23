@@ -1,0 +1,92 @@
+{
+  "name": "diagrammatic-electron",
+  "version": "1.0.0",
+  "description": "Electron desktop wrapper for Diagrammatic",
+  "main": "dist/main.js",
+  "private": true,
+  "author": "Satya",
+  "scripts": {
+    "build:main": "tsc -p tsconfig.json",
+    "dev": "npm run build:main && concurrently --kill-others --names \"VITE,ELECTRON\" \"npm run dev --prefix ..\" \"wait-on tcp:5173 && electron .\"",
+    "build": "npm run build:main && electron-builder build",
+    "dist:win": "npm run build:main && electron-builder build --win",
+    "dist:mac": "npm run build:main && electron-builder build --mac",
+    "dist:linux": "npm run build:main && electron-builder build --linux"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.8.3",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  }
+
+  ,
+  "build": {
+    "appId": "com.satya.diagrammatic",
+    "productName": "Diagrammatic",
+    "directories": {
+      "buildResources": "assets",
+      "output": "release"
+    },
+    "files": [
+      "dist/main.js",
+      "dist/preload.js",
+      "node_modules/**/*",
+      "package.json",
+      "assets/**/*",
+      {
+        "from": "..\\dist",
+        "to": "renderer",
+        "filter": ["**/*"]
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Diagrammatic",
+        "schemes": ["diagrammatic"],
+        "role": "Viewer"
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Diagrammatic"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist"
+    },
+    "dmg": { "sign": false },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "icon": "assets/icon.png",
+      "category": "Development"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "satya00089",
+        "repo": "diagrammatic",
+        "releaseType": "release"
+      }
+    ]
+  }
+}

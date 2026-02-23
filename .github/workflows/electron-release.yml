@@ -1,0 +1,71 @@
+name: Electron Release
+
+# Triggers on version tags: v1.0.0, v2.3.1, etc.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            artifact: "*.exe"
+          - os: macos-latest
+            script: dist:mac
+            artifact: "*.dmg"
+          - os: ubuntu-latest
+            script: dist:linux
+            artifact: "*.AppImage"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Build web app (Vite) ──────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: diagrammatic/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: diagrammatic
+        run: npm ci
+
+      - name: Build web app (electron mode)
+        working-directory: diagrammatic
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_YJS_URL: ${{ secrets.VITE_YJS_URL }}
+          VITE_ELECTRON: "true"
+        run: npm run build -- --mode electron
+
+      # ── Build Electron app ────────────────────────────────────
+      - name: Install Electron dependencies
+        working-directory: diagrammatic/electron
+        run: npm ci
+
+      - name: Package Electron app
+        working-directory: diagrammatic/electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false   # skip code-signing unless certs are configured
+        run: npm run ${{ matrix.script }}
+
+      # ── Upload artifacts to GitHub Release ───────────────────
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: diagrammatic/electron/release/**/${{ matrix.artifact }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

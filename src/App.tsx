@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import CreateProblem from "./pages/CreateProblem";
@@ -9,15 +9,20 @@ import { useTheme } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 
+// HashRouter is required inside Electron (file:// / custom protocols break BrowserRouter)
+const isElectron = navigator.userAgent.toLowerCase().includes("electron");
+const Router = isElectron ? HashRouter : BrowserRouter;
+
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
-
 
   return (
     <AuthProvider>
       <ChatBotProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        <Router
+          {...(!isElectron && {
+            future: { v7_startTransition: true, v7_relativeSplatPath: true },
+          })}
         >
           <Routes>
             <Route path="/" element={<Home />} />
@@ -31,7 +36,7 @@ const App: React.FC = () => {
             <Route path="/public/:publicId" element={<SystemDesignPlayground />} />
             <Route path="*" element={<Home />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
       </ChatBotProvider>
     </AuthProvider>
   );
