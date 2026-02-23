@@ -268,11 +268,12 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
           {data.iconUrl ? (
-            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+            <div className="flex-shrink-0 flex items-center justify-center">
               <img
                 src={data.iconUrl}
                 alt={displayLabel}
-                className="w-12 h-12 object-contain"
+                className="w-full h-full object-contain"
+                style={{ maxWidth: "10rem", maxHeight: "10rem" }}
               />
             </div>
           ) : (
