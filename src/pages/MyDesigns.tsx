@@ -7,6 +7,8 @@ import { useAuth } from "../hooks/useAuth";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
+import { MdSearch, MdSort, MdSearchOff } from "react-icons/md";
+import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
 
 const MyDesigns: React.FC = () => {
   useTheme();
@@ -144,9 +146,9 @@ const MyDesigns: React.FC = () => {
         description="View and manage your saved system design projects and diagrams shared with you"
         url="https://satya00089.github.io/diagrammatic/#/diagrams"
       />
-      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -292,7 +294,7 @@ const MyDesigns: React.FC = () => {
                     onClick={() => setFilterBy("all")}
                     className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
                       filterBy === "all"
-                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        ? "bg-[var(--brand)] text-white"
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
@@ -303,7 +305,7 @@ const MyDesigns: React.FC = () => {
                     onClick={() => setFilterBy("owned")}
                     className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
                       filterBy === "owned"
-                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        ? "bg-[var(--brand)] text-white"
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
@@ -314,7 +316,7 @@ const MyDesigns: React.FC = () => {
                     onClick={() => setFilterBy("shared")}
                     className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
                       filterBy === "shared"
-                        ? "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white shadow-lg"
+                        ? "bg-[var(--brand)] text-white"
                         : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
                     }`}
                   >
@@ -328,9 +330,9 @@ const MyDesigns: React.FC = () => {
                     <div>
                       <label
                         htmlFor="search-input"
-                        className="block text-sm font-semibold text-theme mb-2"
+                        className="block text-sm font-semibold text-theme mb-2 flex items-center gap-1.5"
                       >
-                        🔍 Search
+                        <MdSearch className="w-4 h-4" /> Search
                       </label>
                       <input
                         id="search-input"
@@ -346,9 +348,9 @@ const MyDesigns: React.FC = () => {
                     <div>
                       <label
                         htmlFor="sort-select"
-                        className="block text-sm font-semibold text-theme mb-2"
+                        className="block text-sm font-semibold text-theme mb-2 flex items-center gap-1.5"
                       >
-                        📊 Sort By
+                        <MdSort className="w-4 h-4" /> Sort By
                       </label>
                       <select
                         id="sort-select"
@@ -376,7 +378,7 @@ const MyDesigns: React.FC = () => {
                       Loading designs...
                     </div>
                     <div className="text-muted text-sm">
-                      Please wait while we fetch your designs
+                      Fetching your designs…
                     </div>
                   </div>
                 )}
@@ -384,30 +386,36 @@ const MyDesigns: React.FC = () => {
                 {/* Empty State */}
                 {!loadingDiagrams && filteredDiagrams.length === 0 && (
                   <div className="text-center py-20">
-                    <div className="text-7xl mb-6">
-                      {searchTerm ? "🔍" : filterBy === "shared" ? "🤝" : "🎨"}
+                    <div className="flex justify-center mb-6 text-[var(--brand)]/40">
+                      {searchTerm ? (
+                        <MdSearchOff className="w-16 h-16" />
+                      ) : filterBy === "shared" ? (
+                        <HiUserGroup className="w-16 h-16" />
+                      ) : (
+                        <HiPencilSquare className="w-16 h-16" />
+                      )}
                     </div>
                     <div className="text-theme text-2xl font-bold mb-2">
                       {searchTerm
-                        ? "No designs found"
+                        ? "No designs match your search"
                         : filterBy === "shared"
-                          ? "No shared designs yet"
+                          ? "Nothing shared with you yet"
                           : filterBy === "owned"
-                            ? "No designs created yet"
+                            ? "No designs yet"
                             : "No designs yet"}
                     </div>
                     <div className="text-muted text-lg mb-6">
                       {searchTerm
-                        ? "Try adjusting your search terms"
+                        ? "Try a different search term."
                         : filterBy === "shared"
-                          ? "Diagrams shared with you will appear here"
-                          : "Start creating your first system design project"}
+                          ? "Designs shared with you will show up here."
+                          : "Create your first design to get started."}
                     </div>
                     {!searchTerm && filterBy !== "shared" && (
                       <button
                         type="button"
                         onClick={() => navigate("/playground/free")}
-                        className="px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer"
+                        className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
                       >
                         Create Your First Design →
                       </button>
@@ -431,8 +439,7 @@ const MyDesigns: React.FC = () => {
                                 : ""
                         }`}
                       >
-                        {/* Gradient glow effect */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+
 
                         <div className="relative p-6">
                           {/* Delete Button - Only for owners */}
@@ -476,9 +483,7 @@ const MyDesigns: React.FC = () => {
                                 {!diagram.isOwner && (
                                   <div className="mb-2 flex items-center gap-2 flex-wrap">
                                     {/* Owner Info Badge - Inline */}
-                                    <div className="group/owner relative overflow-hidden rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-300 inline-flex items-center gap-2">
-                                      {/* Animated gradient background */}
-                                      <div className="absolute inset-0 bg-gradient-to-r from-purple-400/0 via-blue-400/10 to-purple-400/0 opacity-0 group-hover/owner:opacity-100 transition-opacity duration-500" />
+                                    <div className="group/owner relative rounded-lg bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 transition-all duration-300 inline-flex items-center gap-2">
 
                                       <div className="relative flex items-center gap-1.5">
                                         {/* Avatar */}
@@ -490,7 +495,7 @@ const MyDesigns: React.FC = () => {
                                               className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
                                             />
                                           ) : (
-                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-[9px] text-white font-bold">
+                                            <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[9px] text-white font-bold">
                                               {diagram.owner.name[0]?.toUpperCase()}
                                             </div>
                                           )}
@@ -525,8 +530,8 @@ const MyDesigns: React.FC = () => {
                                     <div
                                       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
                                         diagram.permission === "edit"
-                                          ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-md hover:shadow-emerald-500/30"
-                                          : "bg-gradient-to-r from-slate-400 to-gray-500 text-white hover:shadow-md hover:shadow-slate-400/30"
+                                          ? "bg-emerald-600 text-white hover:shadow-sm"
+                                          : "bg-slate-500 text-white hover:shadow-sm"
                                       }`}
                                     >
                                       <svg
@@ -566,7 +571,7 @@ const MyDesigns: React.FC = () => {
                                   </p>
                                 )}
                               </div>
-                              <div className="text-3xl">📐</div>
+                              <div className="text-[var(--brand)]/30"><HiCube className="w-8 h-8" /></div>
                             </div>
 
                             <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
@@ -638,7 +643,7 @@ const MyDesigns: React.FC = () => {
                                 e.stopPropagation();
                                 handleOpenDiagram(diagram.id);
                               }}
-                              className="w-full px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group-hover:shadow-xl"
+                              className="w-full px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
                             >
                               Open Design →
                             </button>

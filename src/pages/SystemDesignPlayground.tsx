@@ -3458,7 +3458,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}
-        <header className="bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] shadow-lg overflow-visible">
+        <header className="bg-[var(--brand)] shadow-lg overflow-visible">
           <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
             <div className="flex items-center justify-between h-12 overflow-visible">
               {/* Left side - Logo and Title */}

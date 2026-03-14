@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { MdCheck } from "react-icons/md";
 import type { Suggestion } from "../types/chatBot";
 
 interface SuggestionCardProps {
@@ -57,7 +58,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
           className="text-xs px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 
             rounded-full font-medium border border-green-500/20 flex items-center gap-1"
         >
-          <span>✓</span>
+          <MdCheck className="w-3 h-3" />
           <span>Added</span>
         </motion.span>
       );

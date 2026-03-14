@@ -4,6 +4,8 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import AnimatedTextarea from "../components/shared/AnimatedTextarea";
 import SEO from "../components/SEO";
+import { HiDocumentText, HiLightBulb, HiArrowRight } from "react-icons/hi2";
+import { MdTune, MdLabel, MdAccessTime, MdCheckCircle, MdWarning } from "react-icons/md";
 
 type ArrayField = "requirements" | "constraints" | "hints" | "tags";
 
@@ -110,9 +112,9 @@ const CreateProblem: React.FC = () => {
         keywords="create system design problem, custom architecture challenge, teaching system design, system design assignment creator"
         url="https://satya00089.github.io/diagrammatic/#/create-problem"
       />
-      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300 shadow-lg">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -142,8 +144,8 @@ const CreateProblem: React.FC = () => {
             {/* Page Header */}
             <div className="text-center mb-12">
               <div className="inline-block mb-4">
-                <span className="px-4 py-2 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] text-white text-sm font-semibold rounded-full shadow-lg">
-                  ✨ Custom Problem Creator
+                <span className="px-4 py-2 bg-[var(--brand)] text-white text-sm font-semibold rounded-full">
+                  Custom Problem Creator
                 </span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -162,7 +164,7 @@ const CreateProblem: React.FC = () => {
                     htmlFor="title"
                     className="text-sm font-bold text-theme mb-3 flex items-center gap-2"
                   >
-                    <span className="text-xl">📝</span> Problem Title *
+                    <HiDocumentText className="w-5 h-5" /> Problem Title *
                   </label>
                   <input
                     id="title"
@@ -178,7 +180,7 @@ const CreateProblem: React.FC = () => {
                 <div>
                   <AnimatedTextarea
                     id="description"
-                    label="📄 Description *"
+                    label="Description *"
                     value={formData.description}
                     onChange={(value) =>
                       handleInputChange("description", value)
@@ -194,7 +196,7 @@ const CreateProblem: React.FC = () => {
                       htmlFor="difficulty"
                       className="text-sm font-bold text-theme mb-3 flex items-center gap-2"
                     >
-                      <span className="text-xl">📊</span> Difficulty
+                      <MdTune className="w-5 h-5" /> Difficulty
                     </label>
                     <select
                       id="difficulty"
@@ -218,7 +220,7 @@ const CreateProblem: React.FC = () => {
                       htmlFor="category"
                       className="text-sm font-bold text-theme mb-3 flex items-center gap-2"
                     >
-                      <span className="text-xl">🏷️</span> Category
+                      <MdLabel className="w-5 h-5" /> Category
                     </label>
                     <input
                       id="category"
@@ -237,7 +239,7 @@ const CreateProblem: React.FC = () => {
                       htmlFor="estimatedTime"
                       className="text-sm font-bold text-theme mb-3 flex items-center gap-2"
                     >
-                      <span className="text-xl">⏱️</span> Estimated Time
+                      <MdAccessTime className="w-5 h-5" /> Estimated Time
                     </label>
                     <input
                       id="estimatedTime"
@@ -256,12 +258,12 @@ const CreateProblem: React.FC = () => {
                 <div className="rounded-2xl bg-[var(--surface)]/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm font-bold text-theme flex items-center gap-2">
-                      <span className="text-xl">✅</span> Requirements
+                      <MdCheckCircle className="w-5 h-5 text-[var(--brand)]" /> Requirements
                     </div>
                     <button
                       type="button"
                       onClick={() => addArrayItem("requirements")}
-                      className="px-4 py-2 text-sm text-white bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer font-semibold"
+                      className="px-4 py-2 text-sm text-white bg-[var(--brand)] rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer font-semibold"
                     >
                       + Add
                     </button>
@@ -304,12 +306,12 @@ const CreateProblem: React.FC = () => {
                 <div className="rounded-2xl bg-[var(--surface)]/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm font-bold text-theme flex items-center gap-2">
-                      <span className="text-xl">⚠️</span> Constraints
+                      <MdWarning className="w-5 h-5" /> Constraints
                     </div>
                     <button
                       type="button"
                       onClick={() => addArrayItem("constraints")}
-                      className="px-4 py-2 text-sm text-white bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer font-semibold"
+                      className="px-4 py-2 text-sm text-white bg-[var(--brand)] rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer font-semibold"
                     >
                       + Add
                     </button>
@@ -348,12 +350,12 @@ const CreateProblem: React.FC = () => {
                 <div className="rounded-2xl bg-[var(--surface)]/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm font-bold text-theme flex items-center gap-2">
-                      <span className="text-xl">💡</span> Hints (Optional)
+                      <HiLightBulb className="w-5 h-5" /> Hints
                     </div>
                     <button
                       type="button"
                       onClick={() => addArrayItem("hints")}
-                      className="px-4 py-2 text-sm text-white bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-lg hover:shadow-lg transition-all duration-300 cursor-pointer font-semibold"
+                      className="px-4 py-2 text-sm text-white bg-[var(--brand)] rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer font-semibold"
                     >
                       + Add
                     </button>
@@ -390,7 +392,7 @@ const CreateProblem: React.FC = () => {
                 <div className="rounded-2xl bg-[var(--surface)]/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm font-bold text-theme flex items-center gap-2">
-                      <span className="text-xl">🏷️</span> Tags
+                      <MdLabel className="w-5 h-5" /> Tags
                     </div>
                   </div>
 
@@ -402,7 +404,7 @@ const CreateProblem: React.FC = () => {
                         .map((item) => (
                           <div
                             key={item.id}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] text-white rounded-full text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300 group"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--brand)] text-white rounded-full text-sm font-semibold transition-all duration-200 group"
                           >
                             <span>{item.value}</span>
                             <button
@@ -457,7 +459,7 @@ const CreateProblem: React.FC = () => {
                           addArrayItem("tags");
                         }
                       }}
-                      className="px-6 py-3 text-white bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] rounded-xl hover:shadow-lg transition-all duration-300 cursor-pointer font-semibold"
+                      className="px-6 py-3 text-white bg-[var(--brand)] rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer font-semibold"
                     >
                       Add
                     </button>
@@ -472,7 +474,7 @@ const CreateProblem: React.FC = () => {
                     disabled={
                       !formData.title || !formData.description || isSubmitting
                     }
-                    className="flex-1 px-8 py-4 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] text-white font-bold rounded-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 cursor-pointer flex items-center justify-center gap-3 text-lg hover:scale-105"
+                    className="flex-1 px-8 py-4 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer flex items-center justify-center gap-3"
                   >
                     {isSubmitting ? (
                       <>
@@ -480,7 +482,7 @@ const CreateProblem: React.FC = () => {
                         Creating...
                       </>
                     ) : (
-                      <>🚀 Create & Start Designing</>
+                      <><HiArrowRight className="w-4 h-4" /> Create & Start Designing</>
                     )}
                   </button>
                   <button
