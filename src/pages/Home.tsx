@@ -32,6 +32,8 @@ import {
   HiBriefcase,
 } from "react-icons/hi2";
 
+const HERO_WORDS = ["Visually, Intuitively", "Clearly, Collaboratively", "Quickly, Confidently", "Precisely, Purposefully"];
+
 const Home: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
@@ -43,6 +45,10 @@ const Home: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
+  const [heroWordIndex, setHeroWordIndex] = useState(0);
+  const [displayedText, setDisplayedText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [statCounts, setStatCounts] = useState([0, 0, 0]);
 
   const handleNavigate = (route: string, requiresAuth = true) => {
     if (requiresAuth && !isAuthenticated) {
@@ -87,8 +93,56 @@ const Home: React.FC = () => {
     loadDiagrams();
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const currentWord = HERO_WORDS[heroWordIndex];
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting && displayedText === currentWord) {
+      timeoutId = setTimeout(() => setIsDeleting(true), 1800);
+    } else if (isDeleting && displayedText === "") {
+      const next = (heroWordIndex + 1) % HERO_WORDS.length;
+      setIsDeleting(false);
+      setHeroWordIndex(next);
+    } else if (isDeleting) {
+      timeoutId = setTimeout(() => setDisplayedText(displayedText.slice(0, -1)), 40);
+    } else {
+      timeoutId = setTimeout(() => setDisplayedText(currentWord.slice(0, displayedText.length + 1)), 70);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [displayedText, isDeleting, heroWordIndex]);
+
+  useEffect(() => {
+    const targets = [1000, 90, 1000];
+    const duration = 1600;
+    const startTime = Date.now();
+    let rafId: number;
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setStatCounts([
+        Math.round(targets[0] * eased),
+        Math.round(targets[1] * eased),
+        Math.round(targets[2] * eased),
+      ]);
+      if (progress < 1) {
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
   const handleOpenDiagram = (diagramId: string) => {
     handleNavigate(`/playground/free?diagramId=${diagramId}`);
+  };
+
+  const getStatDisplayValue = (index: number): string => {
+    if (index === 0) return statCounts[0] >= 1000 ? "1k+" : `${statCounts[0]}`;
+    if (index === 1) return statCounts[1] >= 90 ? "90+" : `${statCounts[1]}`;
+    if (index === 2) return statCounts[2] >= 1000 ? "1,000+" : `${statCounts[2]}`;
+    return "\u221e";
   };
 
   const features = [
@@ -357,13 +411,17 @@ const Home: React.FC = () => {
               >
                 <div className="inline-block mb-6">
                   <span className="px-4 py-2 bg-white/15 text-white/90 text-sm font-medium rounded-full">
-                    1,000+ components · AWS, Azure & GCP · AI assessment
+                    <span className="text-green-400 animate-pulse text-xl">●</span>
+                    {" 1,000+ components · AWS, Azure & GCP · AI assessment"}
                   </span>
                 </div>
                 <h1 className="text-5xl font-semibold mb-6 leading-tight text-white">
                   System Design
                   <br />
-                  <span className="text-white/80">Visually, Intuitively</span>
+                  <span className="text-white/80 inline-block">
+                    {displayedText}
+                    <span className="cursor-blink">|</span>
+                  </span>
                 </h1>
                 <p className="text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
                   The interactive playground for system design, ER diagrams, and
@@ -383,8 +441,8 @@ const Home: React.FC = () => {
                         } ${delay}`}
                       >
                         <div className="flex justify-center mb-1 text-white/80">{stat.icon}</div>
-                        <div className="text-2xl font-semibold text-white">
-                          {stat.value}
+                        <div className="text-2xl font-semibold text-white tabular-nums">
+                          {getStatDisplayValue(index)}
                         </div>
                         <div className="text-xs text-white/65">
                           {stat.label}
@@ -398,7 +456,7 @@ const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleNavigate("/playground/free")}
-                    className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                    className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer btn-shimmer"
                   >
                     Design Studio →
                   </button>
@@ -415,6 +473,11 @@ const Home: React.FC = () => {
                   Trusted by 1000+ developers · AI-powered feedback · Open source
                 </p>
               </div>
+            </div>
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 animate-bounce opacity-40 pointer-events-none">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
         </section>
@@ -703,8 +766,9 @@ const Home: React.FC = () => {
                     <p className="text-muted mb-5 leading-relaxed text-sm">
                       {feature.description}
                     </p>
-                    <div className="inline-flex items-center gap-1.5 text-[var(--brand)] font-medium text-sm">
-                      {feature.action} →
+                    <div className="inline-flex items-center gap-1 text-[var(--brand)] font-medium text-sm">
+                      {feature.action}
+                      <span className="inline-block transition-transform duration-200 group-hover:translate-x-1 ml-0.5">→</span>
                     </div>
                   </div>
                 );
@@ -847,7 +911,7 @@ const Home: React.FC = () => {
                 <span className="font-semibold text-theme">Diagrammatic</span>
               </div>
               <p className="text-muted text-sm">
-                © 2026 Diagrammatic. Built with ❤️ for system designers
+                © 2026 Diagrammatic. Built with <span className="inline-block animate-pulse">❤️</span> for system designers
               </p>
             </div>
           </div>
@@ -864,6 +928,34 @@ const Home: React.FC = () => {
         .animate-float-delayed {
           animation: float 32s ease-in-out infinite;
           animation-delay: 4s;
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .cursor-blink {
+          display: inline-block;
+          margin-left: 1px;
+          font-weight: 200;
+          animation: blink 1s step-start infinite;
+        }
+        @keyframes shimmer-sweep {
+          0% { left: -100%; }
+          60%, 100% { left: 150%; }
+        }
+        .btn-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-shimmer::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 50%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+          animation: shimmer-sweep 3s ease-in-out infinite;
         }
       `}</style>
 
