@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useChatBot } from "../hooks/useChatBot";
+import { HiSparkles } from "react-icons/hi2";
 
 export const WelcomeDialog: React.FC = () => {
   const { dismissWelcome } = useChatBot();
@@ -10,24 +11,19 @@ export const WelcomeDialog: React.FC = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6"
+      className="bg-[var(--surface)] border border-theme/10 rounded-lg p-5"
     >
       <div className="text-center">
-        <div className="text-4xl mb-3">👋</div>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Welcome to Design Assistant!
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          I'm here to help you with smart suggestions based on what you're
-          building. Start adding components to your canvas, and I'll provide
-          contextual tips!
+        <HiSparkles className="w-7 h-7 mx-auto mb-3 text-[var(--brand)]" />
+        <h3 className="text-sm font-semibold text-theme mb-1">Design Assistant</h3>
+        <p className="text-xs text-muted mb-4">
+          Add components to your canvas and I'll suggest what to build next.
         </p>
         <button
           onClick={dismissWelcome}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md
-            transition-colors font-medium"
+          className="px-4 py-1.5 bg-[var(--brand)] hover:opacity-90 text-white text-sm rounded-md transition-opacity"
         >
-          Got it!
+          Get started
         </button>
       </div>
     </motion.div>

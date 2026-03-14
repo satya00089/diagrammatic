@@ -5,6 +5,12 @@ import {
   MdBusiness,
   MdPhoneAndroid,
   MdSettings,
+  MdSearch,
+  MdTune,
+  MdLabel,
+  MdAccessTime,
+  MdWarningAmber,
+  MdSearchOff,
 } from "react-icons/md";
 
 import ThemeSwitcher from "../components/ThemeSwitcher";
@@ -127,9 +133,9 @@ const Dashboard: React.FC = () => {
         keywords="system design problems, architecture challenges, distributed systems practice, system design interview prep, scalable architecture exercises"
         url="https://satya00089.github.io/diagrammatic/#/problems"
       />
-      <div className="min-h-screen bg-gradient-to-br from-[var(--surface)] via-[var(--bg)] to-[var(--surface)] text-theme relative grid-pattern-overlay">
+      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[var(--brand)] to-[var(--accent)] transition-all duration-300">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -253,7 +259,7 @@ const Dashboard: React.FC = () => {
                 System Design Problems
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                Master system design through interactive problem solving
+                Browse curated problems and practice in an interactive canvas.
               </p>
             </div>
 
@@ -265,7 +271,7 @@ const Dashboard: React.FC = () => {
                   Loading problems...
                 </div>
                 <div className="text-muted text-sm">
-                  Please wait while we fetch the latest problems
+                  Fetching the latest problems…
                 </div>
               </div>
             )}
@@ -274,17 +280,19 @@ const Dashboard: React.FC = () => {
             {error && (
               <div className="elevated-card-bg backdrop-blur-md rounded-2xl p-8 mb-6 border-2 border-red-500/20 shadow-lg max-w-2xl mx-auto">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">⚠️</div>
+                  <div className="flex justify-center mb-4 text-red-400">
+                    <MdWarningAmber className="w-14 h-14" />
+                  </div>
                   <div className="text-theme text-xl font-semibold mb-2">
-                    Error Loading Problems
+                    Couldn't load problems
                   </div>
                   <div className="text-muted text-sm mb-6">{error}</div>
                   <button
                     type="button"
                     onClick={() => globalThis.location.reload()}
-                    className="px-6 py-3 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white font-semibold rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer"
+                    className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
                   >
-                    Retry
+                    Try again
                   </button>
                 </div>
               </div>
@@ -299,9 +307,9 @@ const Dashboard: React.FC = () => {
                     <div>
                       <label
                         htmlFor="search-input"
-                        className="block text-sm font-semibold text-theme mb-2"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"
                       >
-                        🔍 Search
+                        <MdSearch className="w-4 h-4" /> Search
                       </label>
                       <input
                         id="search-input"
@@ -319,9 +327,9 @@ const Dashboard: React.FC = () => {
                     <div>
                       <label
                         htmlFor="difficulty-select"
-                        className="block text-sm font-semibold text-theme mb-2"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"
                       >
-                        📊 Difficulty
+                        <MdTune className="w-4 h-4" /> Difficulty
                       </label>
                       <select
                         id="difficulty-select"
@@ -343,9 +351,9 @@ const Dashboard: React.FC = () => {
                     <div>
                       <label
                         htmlFor="category-select"
-                        className="block text-sm font-semibold text-theme mb-2"
+                        className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"
                       >
-                        🏷️ Category
+                        <MdLabel className="w-4 h-4" /> Category
                       </label>
                       <select
                         id="category-select"
@@ -367,8 +375,8 @@ const Dashboard: React.FC = () => {
 
                 {/* Domain Filter - Below the other filters */}
                 <div className="mb-4">
-                  <div className="text-sm font-semibold text-theme mb-2">
-                    🌐 Domain
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
+                    <MdPublic className="w-4 h-4" /> Domain
                   </div>
                   <div className="flex flex-wrap gap-2 p-1 rounded-xl">
                     {domains.map((domain) => (
@@ -406,8 +414,7 @@ const Dashboard: React.FC = () => {
                               : ""
                       }`}
                     >
-                      {/* Gradient glow effect */}
-                      <div className="absolute -inset-1 bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] rounded-2xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+
 
                       <div className="relative p-6">
                         <div className="flex items-start justify-between mb-4">
@@ -427,10 +434,10 @@ const Dashboard: React.FC = () => {
 
                         <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
                           <span className="flex items-center gap-1">
-                            <span>🏷️</span> {problem.category}
+                            <MdLabel className="w-4 h-4 text-muted/60" /> {problem.category}
                           </span>
                           <span className="flex items-center gap-1">
-                            <span>⏱️</span> {problem.estimated_time}
+                            <MdAccessTime className="w-4 h-4 text-muted/60" /> {problem.estimated_time}
                           </span>
                         </div>
 
@@ -463,8 +470,8 @@ const Dashboard: React.FC = () => {
                           aria-label={`Start ${problem.title}`}
                           className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
                             isAuth && attemptedProblems.has(problem.id)
-                              ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:scale-105"
-                              : "bg-gradient-to-r from-[var(--brand)] to-[#BD6CD5] text-white hover:shadow-lg hover:scale-105"
+                              ? "bg-blue-600 text-white hover:shadow-md"
+                              : "bg-[var(--brand)] text-white hover:shadow-md"
                           }`}
                         >
                           <span className="flex items-center justify-center gap-2">
@@ -497,12 +504,14 @@ const Dashboard: React.FC = () => {
 
                 {filteredProblems.length === 0 && !loading && (
                   <div className="text-center py-20">
-                    <div className="text-7xl mb-6">🔍</div>
-                    <div className="text-theme text-2xl font-bold mb-2">
+                    <div className="flex justify-center mb-6 text-muted/40">
+                      <MdSearchOff className="w-16 h-16" />
+                    </div>
+                    <div className="text-theme text-xl font-semibold mb-2">
                       No problems found
                     </div>
-                    <div className="text-muted text-lg">
-                      Try adjusting your filters or search terms
+                    <div className="text-muted">
+                      Try adjusting your filters or search terms.
                     </div>
                   </div>
                 )}
