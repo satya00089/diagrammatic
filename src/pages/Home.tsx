@@ -401,7 +401,7 @@ const Home: React.FC = () => {
             {/* Grid overlay for design aesthetic */}
             <div className="absolute inset-0 opacity-[0.03] hero-grid-overlay" />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
               <div
                 className={`relative z-10 text-center transition-all duration-1000 ${
                   isVisible
@@ -423,7 +423,7 @@ const Home: React.FC = () => {
                     <span className="cursor-blink">|</span>
                   </span>
                 </h1>
-                <p className="text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
+                <p className="text-lg text-white/75 max-w-3xl mx-auto mb-8 leading-relaxed">
                   The interactive playground for system design, ER diagrams, and
                   UML — featuring AWS, Azure & GCP cloud components, cloud
                   infrastructure problems, and AI-powered assessment
