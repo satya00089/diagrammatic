@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
@@ -34,6 +34,26 @@ import {
 
 const HERO_WORDS = ["Visually, Intuitively", "Clearly, Collaboratively", "Quickly, Confidently", "Precisely, Purposefully"];
 
+const HERO_ICONS: {
+  id: string;
+  Icon: React.ComponentType<{ size?: number }>;
+  top: number;
+  left: number;
+  size: number;
+  depth: number;
+  animDur: string;
+  animDelay: string;
+}[] = [
+  { id: "aws",     Icon: FaAws,                    top: 8,  left: 74, size: 48, depth: 28, animDur: "22s", animDelay: "0s"  },
+  { id: "azure",   Icon: SiMicrosoftazure,          top: 55, left: 18, size: 48, depth: 16, animDur: "30s", animDelay: "4s"  },
+  { id: "gcp",     Icon: SiGooglecloud,             top: 58, left: 80, size: 48, depth: 22, animDur: "26s", animDelay: "2s"  },
+  { id: "ec2",     Icon: SiAmazonec2,               top: 8,  left: 21, size: 48, depth: 32, animDur: "20s", animDelay: "6s"  },
+  { id: "elb",     Icon: SiAwselasticloadbalancing, top: 42, left: 4,  size: 48, depth: 18, animDur: "28s", animDelay: "8s"  },
+  { id: "lambda",  Icon: SiAwslambda,               top: 84, left: 8,  size: 42, depth: 24, animDur: "24s", animDelay: "3s"  },
+  { id: "devops",  Icon: VscAzureDevops,            top: 86, left: 68, size: 42, depth: 14, animDur: "32s", animDelay: "5s"  },
+  { id: "amplify", Icon: SiAwsamplify,              top: 83, left: 88, size: 42, depth: 30, animDur: "18s", animDelay: "7s"  },
+];
+
 const Home: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
@@ -49,6 +69,10 @@ const Home: React.FC = () => {
   const [displayedText, setDisplayedText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [statCounts, setStatCounts] = useState([0, 0, 0]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mousePxRef = useRef({ x: -9999, y: -9999 });
 
   const handleNavigate = (route: string, requiresAuth = true) => {
     if (requiresAuth && !isAuthenticated) {
@@ -65,9 +89,10 @@ const Home: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 100);
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(total > 0 ? (window.scrollY / total) * 100 : 0);
     };
-
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -134,6 +159,134 @@ const Home: React.FC = () => {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const onMove = (e: MouseEvent) => {
+      const r = hero.getBoundingClientRect();
+      mousePxRef.current = { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const onLeave = () => {
+      mousePxRef.current = { x: -9999, y: -9999 };
+    };
+    hero.addEventListener("mousemove", onMove);
+    hero.addEventListener("mouseleave", onLeave);
+    return () => {
+      hero.removeEventListener("mousemove", onMove);
+      hero.removeEventListener("mouseleave", onLeave);
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const N = 72;
+    const LINK_DIST = 135;
+    type P = { x: number; y: number; vx: number; vy: number };
+    let particles: P[] = [];
+    let W = 0;
+    let H = 0;
+    let rafId = 0;
+
+    const resize = () => {
+      W = canvas.offsetWidth;
+      H = canvas.offsetHeight;
+      if (W === 0 || H === 0) return;
+      canvas.width = W;
+      canvas.height = H;
+    };
+
+    const frame = () => {
+      if (W === 0 || H === 0) { rafId = requestAnimationFrame(frame); return; }
+      ctx.clearRect(0, 0, W, H);
+      const mx = mousePxRef.current.x;
+      const my = mousePxRef.current.y;
+
+      for (const p of particles) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 14400 && d2 > 0) {
+          const d = Math.sqrt(d2);
+          const f = ((120 - d) / 120) * 0.07;
+          p.vx += (dx / d) * f;
+          p.vy += (dy / d) * f;
+        }
+        p.vx *= 0.987;
+        p.vy *= 0.987;
+        const spd = Math.hypot(p.vx, p.vy);
+        if (spd > 1.4) { p.vx = (p.vx / spd) * 1.4; p.vy = (p.vy / spd) * 1.4; }
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
+        else if (p.x > W) { p.x = W; p.vx = -Math.abs(p.vx); }
+        if (p.y < 0) { p.y = 0; p.vy = Math.abs(p.vy); }
+        else if (p.y > H) { p.y = H; p.vy = -Math.abs(p.vy); }
+      }
+
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i];
+          const b = particles[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist < LINK_DIST) {
+            ctx.globalAlpha = (1 - dist / LINK_DIST) * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.globalAlpha = 0.35;
+      for (const p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      rafId = requestAnimationFrame(frame);
+    };
+
+    resize();
+    particles = Array.from({ length: N }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.55,
+      vy: (Math.random() - 0.5) * 0.55,
+    }));
+    rafId = requestAnimationFrame(frame);
+
+    const onResize = () => resize();
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) e.target.classList.add("reveal-visible");
+        }),
+      { threshold: 0.1 }
+    );
+    document
+      .querySelectorAll("[data-reveal-group], [data-reveal]")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   const handleOpenDiagram = (diagramId: string) => {
     handleNavigate(`/playground/free?diagramId=${diagramId}`);
   };
@@ -141,7 +294,7 @@ const Home: React.FC = () => {
   const getStatDisplayValue = (index: number): string => {
     if (index === 0) return statCounts[0] >= 1000 ? "1k+" : `${statCounts[0]}`;
     if (index === 1) return statCounts[1] >= 90 ? "90+" : `${statCounts[1]}`;
-    if (index === 2) return statCounts[2] >= 1000 ? "1,000+" : `${statCounts[2]}`;
+    if (index === 2) return statCounts[2] >= 1000 ? "1k+" : `${statCounts[2]}`;
     return "\u221e";
   };
 
@@ -208,7 +361,7 @@ const Home: React.FC = () => {
   const stats = [
     { value: "1k+", label: "Components", icon: <HiCube className="w-5 h-5" /> },
     { value: "90+", label: "Problems", icon: <HiDocumentText className="w-5 h-5" /> },
-    { value: "1,000+", label: "Users", icon: <HiUserGroup className="w-5 h-5" /> },
+    { value: "1k+", label: "Users", icon: <HiUserGroup className="w-5 h-5" /> },
     { value: "∞", label: "Possibilities", icon: <HiSparkles className="w-5 h-5" /> },
   ];
 
@@ -248,8 +401,18 @@ const Home: React.FC = () => {
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
         <header
-          className={`fixed top-0 left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300 ${isScrolled ? "shadow-lg" : ""}`}
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            isScrolled
+              ? "shadow-lg backdrop-blur-md bg-[var(--brand)]/90"
+              : "bg-[var(--brand)]"
+          }`}
         >
+          {/* Scroll progress bar */}
+          <div
+            className="absolute bottom-0 left-0 h-[2px] bg-white/40 pointer-events-none transition-none"
+            style={{ width: `${scrollProgress}%` }}
+            aria-hidden="true"
+          />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -366,42 +529,47 @@ const Home: React.FC = () => {
         </header>
 
         {/* Hero Section */}
-        <section className="relative pt-16 pb-20">
+        <section className="relative pt-16">
           {/* Hero Background Card */}
-          <div className="relative overflow-hidden bg-[var(--brand)]">
-            {/* Animated decorative system architecture diagram */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
-              {/* Component nodes */}
-              <div className="absolute top-[5%] left-[75%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-                <FaAws size={48} />
-              </div>
-              <div className="absolute top-[55%] left-[20%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl animate-float-delayed shadow-lg">
-                <SiMicrosoftazure size={48} />
-              </div>
-              <div className="absolute top-[60%] left-[80%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
-                <SiGooglecloud size={48} />
-              </div>
-              <div className="absolute top-[5%] left-[20%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
-                <SiAmazonec2 size={48} />
-              </div>
-              <div className="absolute top-[40%] left-[5%] w-20 h-20 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg delay-300">
-                <SiAwselasticloadbalancing size={48} />
-              </div>
-              <div className="absolute top-[85%] left-[8%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-                <SiAwslambda size={48} />
-              </div>
-              <div className="absolute top-[88%] left-[68%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-                <VscAzureDevops size={48} />
-              </div>
-              <div className="absolute top-[85%] left-[88%] w-16 h-16 text-white backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl animate-float shadow-lg">
-                <SiAwsamplify size={48} />
-              </div>
+          <div ref={heroRef} className="relative overflow-hidden bg-[var(--brand)] flex flex-col min-h-[calc(100vh-4rem)]">
+            {/* Aurora gradient layer */}
+            <div className="hero-aurora absolute inset-0 pointer-events-none" aria-hidden="true" />
+            {/* Particle network canvas */}
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              aria-hidden="true"
+            />
+            {/* Animated decorative graph */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* SVG connection lines */}
+              {/* Parallax floating nodes */}
+              {HERO_ICONS.map((ic) => (
+                <div
+                  key={ic.id}
+                  className="absolute"
+                  style={{
+                    top: `${ic.top}%`,
+                    left: `${ic.left}%`,
+                  }}
+                >
+                  <div
+                    className="w-14 h-14 sm:w-20 sm:h-20 text-white/10"
+                    style={{
+                      animation: `hero-float ${ic.animDur} ease-in-out infinite`,
+                      animationDelay: ic.animDelay,
+                    }}
+                  >
+                    <ic.Icon size={ic.size} />
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Grid overlay for design aesthetic */}
             <div className="absolute inset-0 opacity-[0.03] hero-grid-overlay" />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col items-center justify-center py-12 sm:py-16 w-full">
               <div
                 className={`relative z-10 text-center transition-all duration-1000 ${
                   isVisible
@@ -410,41 +578,42 @@ const Home: React.FC = () => {
                 }`}
               >
                 <div className="inline-block mb-6">
-                  <span className="px-4 py-2 bg-white/15 text-white/90 text-sm font-medium rounded-full">
-                    <span className="text-green-400 animate-pulse text-xl">●</span>
-                    {" 1,000+ components · AWS, Azure & GCP · AI assessment"}
+                  <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/15 text-white/90 text-xs sm:text-sm font-medium rounded-full inline-flex items-center gap-1 flex-wrap justify-center">
+                    <span className="text-green-400 animate-pulse text-base sm:text-xl">●</span>
+                    <span>{" 1,000+ components"}</span>
+                    <span className="hidden sm:inline">{" · AWS, Azure & GCP · AI assessment"}</span>
                   </span>
                 </div>
-                <h1 className="text-5xl font-semibold mb-6 leading-tight text-white">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight text-white">
                   System Design
                   <br />
-                  <span className="text-white/80 inline-block">
+                  <span className="text-white/85 inline-block">
                     {displayedText}
                     <span className="cursor-blink">|</span>
                   </span>
                 </h1>
-                <p className="text-lg text-white/75 max-w-3xl mx-auto mb-8 leading-relaxed">
+                <p className="text-sm sm:text-base lg:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
                   The interactive playground for system design, ER diagrams, and
                   UML — featuring AWS, Azure & GCP cloud components, cloud
                   infrastructure problems, and AI-powered assessment
                 </p>
 
                 {/* Stats Bar */}
-                <div className="flex flex-wrap justify-center gap-8 mb-12">
+                <div className="flex flex-wrap justify-center gap-3 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
                   {stats.map((stat, index) => {
                     const delay = ["fade-in-up-delay-100", "fade-in-up-delay-200", "fade-in-up-delay-300", "fade-in-up-delay-400"][index] ?? "fade-in-up-delay-400";
                     return (
                       <div
                         key={stat.label}
-                        className={`text-center transition-all duration-300 bg-white/10 rounded-xl px-5 py-3 hover:bg-white/15 ${
+                        className={`text-center transition-all duration-300 bg-white/10 rounded-xl px-3 py-2 sm:px-5 sm:py-3 hover:bg-white/15 ${
                           isVisible ? "fade-in-up" : "opacity-0 translate-y-5"
                         } ${delay}`}
                       >
                         <div className="flex justify-center mb-1 text-white/80">{stat.icon}</div>
-                        <div className="text-2xl font-semibold text-white tabular-nums">
+                        <div className="text-xl sm:text-2xl font-bold text-white tabular-nums">
                           {getStatDisplayValue(index)}
                         </div>
-                        <div className="text-xs text-white/65">
+                        <div className="text-xs text-white/70 tracking-wide">
                           {stat.label}
                         </div>
                       </div>
@@ -456,20 +625,20 @@ const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleNavigate("/playground/free")}
-                    className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer btn-shimmer"
+                    className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-lg cursor-pointer btn-shimmer"
                   >
                     Design Studio →
                   </button>
                   <button
                     type="button"
                     onClick={() => handleNavigate("/problems", false)}
-                    className="px-7 py-3.5 bg-white/10 border border-white/25 text-white/85 text-base font-medium rounded-lg hover:bg-white/15 transition-all duration-200 cursor-pointer"
+                    className="px-7 py-3.5 bg-white/10 border border-white/25 text-white/85 text-base font-medium rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
                   >
                     Explore Problems →
                   </button>
                 </div>
 
-                <p className="mt-5 text-xs text-white/55">
+                <p className="mt-5 text-xs text-white/65">
                   Trusted by 1000+ developers · AI-powered feedback · Open source
                 </p>
               </div>
@@ -484,11 +653,11 @@ const Home: React.FC = () => {
 
         {/* My Diagrams Section - Only shown when authenticated */}
         {isAuthenticated && (
-          <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
+          <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-semibold mb-1">
+                  <h2 className="text-2xl font-bold mb-1">
                     My Designs
                   </h2>
                   <p className="text-muted">
@@ -732,21 +901,21 @@ const Home: React.FC = () => {
         )}
 
         {/* Feature Cards */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <h2 className="text-2xl md:text-3xl font-semibold text-center mb-3">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3" data-reveal>
               Choose Your Path
             </h2>
-            <p className="text-muted text-center mb-12 max-w-xl mx-auto">
+            <p className="text-muted text-center mb-12 max-w-xl mx-auto leading-relaxed">
               Whether you're learning, building, or teaching — we've got you covered
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8" data-reveal-group>
               {features.map((feature, index) => {
                 const delay = ["delay-0", "delay-100", "delay-200"][index] ?? "delay-200";
                 return (
                   <div
                     key={feature.title}
-                    className={`group relative rounded-xl border border-theme/8 p-7 hover:shadow-md cursor-pointer overflow-hidden transition-all duration-300 elevated-card-bg ${delay}`}
+                    className={`group relative rounded-xl border border-theme/8 p-5 sm:p-7 hover:shadow-md cursor-pointer overflow-hidden transition-all duration-300 elevated-card-bg ${delay}`}
                     onClick={() =>
                       handleNavigate(feature.route, feature.requiresAuth)
                     }
@@ -778,15 +947,15 @@ const Home: React.FC = () => {
         </section>
 
         {/* Capabilities Grid */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <h2 className="text-2xl md:text-3xl font-semibold text-center mb-3">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3" data-reveal>
               Powerful Features
             </h2>
-            <p className="text-muted text-center mb-12 max-w-xl mx-auto">
+            <p className="text-muted text-center mb-12 max-w-xl mx-auto leading-relaxed">
               Everything you need to design, document, and share system architectures
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6" data-reveal-group>
               {capabilities.map((capability, capIndex) => {
                 const delay = ["delay-0", "delay-[50ms]", "delay-[100ms]", "delay-[150ms]", "delay-[200ms]", "delay-[250ms]"][capIndex] ?? "delay-[250ms]";
                 return (
@@ -797,7 +966,7 @@ const Home: React.FC = () => {
                     <div className="mb-3 text-[var(--brand)]">
                       {capability.icon}
                     </div>
-                    <h3 className="text-sm font-semibold mb-1.5 text-theme">
+                    <h3 className="text-base font-semibold mb-1.5 text-theme">
                       {capability.title}
                     </h3>
                     <p className="text-muted text-sm leading-relaxed">
@@ -811,15 +980,15 @@ const Home: React.FC = () => {
         </section>
 
         {/* Testimonials */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <h2 className="text-2xl md:text-3xl font-semibold text-center mb-3">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3" data-reveal>
               Loved by Designers Worldwide
             </h2>
-            <p className="text-muted text-center mb-12 max-w-xl mx-auto">
+            <p className="text-muted text-center mb-12 max-w-xl mx-auto leading-relaxed">
               Join thousands who trust Diagrammatic for their system design needs
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8" data-reveal-group>
               {testimonials.map((testimonial) => (
                 <div
                   key={`${testimonial.author}-${testimonial.role}`}
@@ -850,12 +1019,12 @@ const Home: React.FC = () => {
         </section>
 
         {/* Use Cases */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <h2 className="text-2xl md:text-3xl font-semibold text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-10" data-reveal>
               Perfect For Every Role
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10" data-reveal-group>
               {useCases.map((useCase) => (
                 <div
                   key={useCase.title}
@@ -884,12 +1053,12 @@ const Home: React.FC = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-3xl mx-auto text-center bg-[var(--brand)] rounded-2xl p-10">
-            <h2 className="text-2xl md:text-3xl font-semibold text-white mb-3">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-3xl mx-auto text-center bg-[var(--brand)] rounded-2xl p-6 sm:p-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">
               Ready to Start Designing?
             </h2>
-            <p className="text-white/75 mb-7 max-w-lg mx-auto">
+            <p className="text-white/75 mb-7 max-w-lg mx-auto leading-relaxed">
               Join engineers and architects who use Diagrammatic to plan, practice, and communicate system designs.
             </p>
             <button
@@ -918,20 +1087,36 @@ const Home: React.FC = () => {
         </footer>
 
         <style>{`
-        @keyframes float {
+        @property --au1x { syntax: '<percentage>'; initial-value: 20%; inherits: false; }
+        @property --au1y { syntax: '<percentage>'; initial-value: 30%; inherits: false; }
+        @property --au2x { syntax: '<percentage>'; initial-value: 76%; inherits: false; }
+        @property --au2y { syntax: '<percentage>'; initial-value: 62%; inherits: false; }
+        @property --au3x { syntax: '<percentage>'; initial-value: 48%; inherits: false; }
+        @property --au3y { syntax: '<percentage>'; initial-value: 82%; inherits: false; }
+        .hero-aurora {
+          --au1x: 20%; --au1y: 30%;
+          --au2x: 76%; --au2y: 62%;
+          --au3x: 48%; --au3y: 82%;
+          background:
+            radial-gradient(ellipse 55% 42% at var(--au1x) var(--au1y), rgba(255,255,255,0.10) 0%, transparent 65%),
+            radial-gradient(ellipse 48% 36% at var(--au2x) var(--au2y), rgba(255,255,255,0.07) 0%, transparent 65%),
+            radial-gradient(ellipse 40% 30% at var(--au3x) var(--au3y), rgba(255,255,255,0.05) 0%, transparent 65%);
+          animation: au1 22s ease-in-out infinite alternate, au2 30s ease-in-out infinite alternate, au3 38s ease-in-out infinite alternate;
+        }
+        @keyframes au1 { from { --au1x: 20%; --au1y: 30%; } to { --au1x: 34%; --au1y: 17%; } }
+        @keyframes au2 { from { --au2x: 76%; --au2y: 62%; } to { --au2x: 63%; --au2y: 76%; } }
+        @keyframes au3 { from { --au3x: 48%; --au3y: 82%; } to { --au3x: 38%; --au3y: 54%; } }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-aurora { animation: none; }
+        }
+        @keyframes hero-float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-        .animate-float {
-          animation: float 24s ease-in-out infinite;
-        }
-        .animate-float-delayed {
-          animation: float 32s ease-in-out infinite;
-          animation-delay: 4s;
+          33%       { transform: translateY(-14px) rotate(3deg); }
+          66%       { transform: translateY(-6px) rotate(-2deg); }
         }
         @keyframes blink {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
+          50%       { opacity: 0; }
         }
         .cursor-blink {
           display: inline-block;
@@ -940,7 +1125,7 @@ const Home: React.FC = () => {
           animation: blink 1s step-start infinite;
         }
         @keyframes shimmer-sweep {
-          0% { left: -100%; }
+          0%       { left: -100%; }
           60%, 100% { left: 150%; }
         }
         .btn-shimmer {
@@ -956,6 +1141,32 @@ const Home: React.FC = () => {
           height: 100%;
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
           animation: shimmer-sweep 3s ease-in-out infinite;
+        }
+        /* Scroll-driven staggered card reveals */
+        [data-reveal-group] > * {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        [data-reveal-group] > *:nth-child(1) { transition-delay:   0ms; }
+        [data-reveal-group] > *:nth-child(2) { transition-delay: 110ms; }
+        [data-reveal-group] > *:nth-child(3) { transition-delay: 220ms; }
+        [data-reveal-group] > *:nth-child(4) { transition-delay: 330ms; }
+        [data-reveal-group] > *:nth-child(5) { transition-delay: 440ms; }
+        [data-reveal-group] > *:nth-child(6) { transition-delay: 550ms; }
+        [data-reveal-group].reveal-visible > * {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        /* Section heading reveals */
+        [data-reveal] {
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        [data-reveal].reveal-visible {
+          opacity: 1;
+          transform: translateY(0);
         }
       `}</style>
 

@@ -73,6 +73,14 @@ body {
   background-color: var(--bg, var(--color-bg));
   color: var(--text, var(--color-text));
   font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading rendering — crisp Inter on high-DPI displays */
+h1, h2, h3, h4, h5, h6 {
+  font-feature-settings: 'kern' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* ReactFlow theming using Tailwind CSS custom properties */
