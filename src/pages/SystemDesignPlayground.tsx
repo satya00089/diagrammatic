@@ -29,6 +29,7 @@ import {
   MdClose,
   MdDownload,
   MdExpandMore,
+  MdSave,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 
@@ -303,6 +304,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Track if we've shown the project intent dialog for this session
   const hasShownProjectIntentRef = useRef(false);
+
+  // Track if user dismissed the save dialog — don't auto-prompt again until they click Save
+  const userDeclinedSaveRef = useRef(false);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(globalThis.location.search);
@@ -736,6 +740,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const autoSave = async () => {
       try {
+        if (idFromUrl === "free" && !currentDiagramId && !userIntent?.title && !userIntent?.description) {
+          if (!userDeclinedSaveRef.current) {
+            // No user intent - prompt for title and description (first time only)
+            setShowTitleDialog(true);
+            setAutoSaveStatus("idle");
+          }
+          // If declined, do nothing — no "saving" flash, no API call
+          return;
+        }
+
         setAutoSaveStatus("saving");
 
         if (idFromUrl === "free") {
@@ -769,11 +783,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             // Store the diagram ID for restoration
             const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
             localStorage.setItem(lastDiagramKey, newDiagram.id);
-          } else {
-            // No user intent - prompt for title and description
-            setShowTitleDialog(true);
-            setAutoSaveStatus("idle"); // Reset status since we're not saving yet
-            return;
           }
         } else {
           // For Problem-solving: save progress to database
@@ -3235,10 +3244,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   };
 
   const handleTitleDialogCancel = () => {
+    userDeclinedSaveRef.current = true; // Stop auto-prompting; user can click Save when ready
     setShowTitleDialog(false);
     setAutoSaveStatus("idle");
     setDialogTitle("");
     setDialogDescription("");
+  };
+
+  // Explicitly triggered save — resets the declined flag and opens the dialog
+  const handleManualSave = () => {
+    userDeclinedSaveRef.current = false;
+    setShowTitleDialog(true);
   };
 
   // Auto-layout nodes using Dagre with proper group handling
@@ -3529,6 +3545,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {/* Design Management Buttons (only for free mode and authenticated users) */}
                 {idFromUrl === "free" && (
                   <div className="hidden sm:flex items-center gap-2 border-white/20">
+                    {/* Manual Save button — shown when authenticated with unsaved canvas */}
+                    {isAuthenticated && !currentDiagramId && nodes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleManualSave}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded-md transition-colors cursor-pointer"
+                        data-tooltip="Save Design"
+                      >
+                        <MdSave className="h-4 w-4" />
+                        Save
+                      </button>
+                    )}
                     {/* Auto-save indicator */}
                     {autoSaveEnabled && (
                       <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
