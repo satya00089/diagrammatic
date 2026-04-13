@@ -5,6 +5,7 @@ import { store } from "./store";
 
 import "@xyflow/react/dist/style.css";
 import "./index.css";
+import "./styles/driver-overrides.css";
 import App from "./App.tsx";
 
 createRoot(document.getElementById("root")!).render(

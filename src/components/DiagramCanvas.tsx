@@ -48,7 +48,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   children,
 }) => {
   return (
-    <div className="flex-1 relative bg-theme min-h-0">
+    <div className="flex-1 relative bg-theme min-h-0" data-tour="canvas-area">
       <section
         className="w-full h-full"
         ref={reactFlowWrapperRef}

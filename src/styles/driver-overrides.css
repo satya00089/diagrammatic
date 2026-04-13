@@ -1,0 +1,117 @@
+/* Driver.js theme overrides — maps to Diagrammatic CSS variables */
+
+/* Core overlay */
+.driver-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Popover container */
+.driver-popover {
+  background: var(--surface, #1e1e2e) !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  color: var(--text, #f1f5f9) !important;
+  padding: 20px !important;
+  max-width: 320px !important;
+}
+
+/* Title */
+.driver-popover-title {
+  color: var(--text, #f1f5f9) !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  font-family: var(--font-family, "Inter", sans-serif) !important;
+  margin-bottom: 6px !important;
+}
+
+/* Description */
+.driver-popover-description {
+  color: var(--muted, #94a3b8) !important;
+  font-size: 13px !important;
+  font-family: var(--font-family, "Inter", sans-serif) !important;
+  line-height: 1.6 !important;
+}
+
+/* Footer buttons row */
+.driver-popover-footer {
+  margin-top: 16px !important;
+  gap: 8px !important;
+}
+
+/* Navigation buttons (Prev / Next) */
+.driver-popover-prev-btn,
+.driver-popover-next-btn {
+  background: var(--brand, #6366f1) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 6px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  font-family: var(--font-family, "Inter", sans-serif) !important;
+  transition: opacity 0.15s !important;
+}
+
+.driver-popover-prev-btn:hover,
+.driver-popover-next-btn:hover {
+  opacity: 0.85 !important;
+}
+
+/* Close button (×) */
+.driver-popover-close-btn {
+  color: var(--muted, #94a3b8) !important;
+  font-size: 18px !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.15s !important;
+}
+.driver-popover-close-btn:hover {
+  opacity: 1 !important;
+}
+
+/* Progress dots */
+.driver-popover-progress-text {
+  color: var(--muted, #94a3b8) !important;
+  font-size: 12px !important;
+  font-family: var(--font-family, "Inter", sans-serif) !important;
+}
+
+/* Highlighted element outline */
+.driver-active-element {
+  outline: 2px solid var(--brand, #6366f1) !important;
+  outline-offset: 3px !important;
+  border-radius: 6px !important;
+}
+
+/* Arrow — proper CSS triangle via border trick */
+.driver-popover-arrow {
+  width: 0 !important;
+  height: 0 !important;
+  border: 8px solid transparent !important;
+  background: transparent !important;
+}
+
+/* Popover is below the element → arrow points UP */
+.driver-popover-arrow.driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--surface, #1e1e2e) !important;
+  border-top: none !important;
+}
+
+/* Popover is above the element → arrow points DOWN */
+.driver-popover-arrow.driver-popover-arrow-side-top {
+  border-top-color: var(--surface, #1e1e2e) !important;
+  border-bottom: none !important;
+}
+
+/* Popover is to the right of the element → arrow points LEFT */
+.driver-popover-arrow.driver-popover-arrow-side-right {
+  border-right-color: var(--surface, #1e1e2e) !important;
+  border-left: none !important;
+}
+
+/* Popover is to the left of the element → arrow points RIGHT */
+.driver-popover-arrow.driver-popover-arrow-side-left {
+  border-left-color: var(--surface, #1e1e2e) !important;
+  border-right: none !important;
+}

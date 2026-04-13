@@ -4,6 +4,9 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import SEO from "../components/SEO";
 import { useAuth } from "../hooks/useAuth";
+import { useOnboarding } from "../hooks/useOnboarding";
+import { useTour } from "../hooks/useTour";
+import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
@@ -133,6 +136,8 @@ const Home: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+  const { isNewToPage, markPageVisited } = useOnboarding();
+  const { startTour } = useTour("home");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
@@ -156,6 +161,17 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     setIsVisible(true);
+  }, []);
+
+  // Mark page visited + auto-start tour for new users
+  useEffect(() => {
+    const isNew = isNewToPage("home");
+    markPageVisited("home");
+    if (isNew) {
+      const t = setTimeout(() => startTour(), 1200);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -566,6 +582,7 @@ const Home: React.FC = () => {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
+                  data-tour="nav-problems"
                   onClick={() => handleNavigate("/problems", false)}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                 >
@@ -580,6 +597,16 @@ const Home: React.FC = () => {
                     My Designs
                   </button>
                 )}
+
+                {/* Tour trigger */}
+                <button
+                  type="button"
+                  onClick={startTour}
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                >
+                  <MdHelpOutline className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
 
                 <ThemeSwitcher />
 
@@ -773,9 +800,10 @@ const Home: React.FC = () => {
                   })}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center" data-tour="hero-cta">
                   <button
                     type="button"
+                    data-tour="nav-studio"
                     onClick={() => handleNavigate("/playground/free")}
                     className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-lg cursor-pointer btn-shimmer"
                   >

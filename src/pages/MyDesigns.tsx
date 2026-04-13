@@ -4,15 +4,19 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import { AuthModal } from "../components/AuthModal";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
+import { useOnboarding } from "../hooks/useOnboarding";
+import { useTour } from "../hooks/useTour";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
-import { MdSearch, MdSort, MdSearchOff } from "react-icons/md";
+import { MdSearch, MdSort, MdSearchOff, MdHelpOutline } from "react-icons/md";
 import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
 
 const MyDesigns: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
+  const { isNewToPage, markPageVisited } = useOnboarding();
+  const { startTour } = useTour("my_designs");
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +45,17 @@ const MyDesigns: React.FC = () => {
       navigate("/");
     }
   }, [isAuth, navigate]);
+
+  // Mark visited + auto-start tour for new users
+  useEffect(() => {
+    const isNew = isNewToPage("my_designs");
+    markPageVisited("my_designs");
+    if (isNew) {
+      const t = setTimeout(() => startTour(), 800);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load diagrams
   useEffect(() => {
@@ -183,10 +198,21 @@ const MyDesigns: React.FC = () => {
                 </div>
                 <button
                   type="button"
+                  data-tour="new-design-btn"
                   onClick={() => navigate("/playground/free")}
                   className="px-4 py-2 bg-white/20 text-white text-sm font-semibold rounded-lg hover:bg-white/30 transition-all cursor-pointer"
                 >
                   New Design
+                </button>
+
+                {/* Tour trigger */}
+                <button
+                  type="button"
+                  onClick={startTour}
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                >
+                  <MdHelpOutline className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tour</span>
                 </button>
 
                 <ThemeSwitcher />
@@ -288,7 +314,7 @@ const MyDesigns: React.FC = () => {
             {!loadingDiagrams && (
               <>
                 {/* Filter Tabs */}
-                <div className="flex gap-2 mb-6 justify-center">
+                <div className="flex gap-2 mb-6 justify-center" data-tour="filter-tabs">
                   <button
                     type="button"
                     onClick={() => setFilterBy("all")}
@@ -429,6 +455,7 @@ const MyDesigns: React.FC = () => {
                     {filteredDiagrams.map((diagram, index) => (
                       <div
                         key={diagram.id}
+                        {...(index === 0 ? { "data-tour": "design-card" } : {})}
                         className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
                           index === 0
                             ? "delay-0"

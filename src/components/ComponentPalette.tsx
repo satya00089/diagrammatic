@@ -334,7 +334,7 @@ export default function ComponentPalette({
   };
 
   return (
-    <div className="relative z-40">
+    <div className="relative z-40" data-tour="component-palette">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -416,6 +416,7 @@ export default function ComponentPalette({
             <div className="mr-3 mb-3 relative">
               <input
                 ref={searchInputRef}
+                data-tour="palette-search"
                 type="text"
                 placeholder="Search providers or components..."
                 value={searchQuery}
