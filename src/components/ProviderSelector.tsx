@@ -4,13 +4,13 @@
 
 import React from "react";
 import {
-  SiAmazon,
-  SiMicrosoftazure,
   SiGooglecloud,
   SiKubernetes,
   SiDocker,
   SiTerraform,
 } from "react-icons/si";
+import { FaAws } from "react-icons/fa6";
+import { VscAzure } from "react-icons/vsc";
 import { MdApps } from "react-icons/md";
 import { BiCategory } from "react-icons/bi";
 
@@ -24,8 +24,8 @@ export type ProviderOption = {
 // Default provider configurations with icons
 export const DEFAULT_PROVIDERS: ProviderOption[] = [
   { id: "all", name: "All Providers", icon: MdApps, color: "#6B7280" },
-  { id: "AWS", name: "AWS", icon: SiAmazon, color: "#FF9900" },
-  { id: "Azure", name: "Azure", icon: SiMicrosoftazure, color: "#0078D4" },
+  { id: "AWS", name: "AWS", icon: FaAws, color: "#FF9900" },
+  { id: "Azure", name: "Azure", icon: VscAzure, color: "#0078D4" },
   { id: "GCP", name: "Google Cloud", icon: SiGooglecloud, color: "#4285F4" },
   {
     id: "kubernetes",

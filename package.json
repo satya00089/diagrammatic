@@ -19,6 +19,7 @@
     "seo:check": "node scripts/seo-check.js"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.2.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.12",
     "@tiptap/extension-bullet-list": "^3.6.1",
@@ -42,10 +43,9 @@
     "motion": "^12.23.21",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-icons": "^5.3.0",
+    "react-icons": "^5.6.0",
     "react-redux": "^9.1.0",
     "react-router-dom": "^6.14.1",
-    "@reduxjs/toolkit": "^2.2.0",
     "y-websocket": "^3.0.0",
     "yjs": "^13.6.27",
     "zustand": "^4.4.7"
@@ -62,7 +62,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "prettier": "^3.1.1",
-    "react-snap": "^1.23.0",
+    "react-snap": "^1.13.1",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
