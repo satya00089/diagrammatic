@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   MdPublic,
   MdBusiness,
@@ -17,6 +17,9 @@ import {
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
+import { useOnboarding } from "../hooks/useOnboarding";
+import { useTour } from "../hooks/useTour";
+import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import SEO from "../components/SEO";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -45,7 +48,22 @@ import {
 const Dashboard: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
+  const { isNewToPage, markPageVisited } = useOnboarding();
+  const { startTour } = useTour("dashboard");
+
+  // Mark visited + auto-start tour for new users
+  useEffect(() => {
+    const isNew = isNewToPage("dashboard");
+    markPageVisited("dashboard");
+    if (isNew || searchParams.get("tour") === "1") {
+      // Slight delay so DOM elements with data-tour attrs are rendered
+      const t = setTimeout(() => startTour(), 800);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Local UI state
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -173,6 +191,17 @@ const Dashboard: React.FC = () => {
                     ? "Loading..."
                     : `${filteredProblems.length} problems available`}
                 </div>
+
+                {/* Tour trigger button */}
+                <button
+                  type="button"
+                  onClick={startTour}
+                  data-tooltip="Take a tour"
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                >
+                  <MdHelpOutline className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
 
                 <ThemeSwitcher />
 
@@ -309,7 +338,7 @@ const Dashboard: React.FC = () => {
                 <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     {/* Search */}
-                    <div>
+                    <div data-tour="search-box">
                       <label
                         htmlFor="search-input"
                         className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"
@@ -329,7 +358,7 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* Difficulty Filter */}
-                    <div>
+                    <div data-tour="difficulty-filter">
                       <label
                         htmlFor="difficulty-select"
                         className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"
@@ -379,7 +408,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Domain Filter - Below the other filters */}
-                <div className="mb-4">
+                <div className="mb-4" data-tour="domain-filter">
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
                     <MdPublic className="w-4 h-4" /> Domain
                   </div>
@@ -409,6 +438,7 @@ const Dashboard: React.FC = () => {
                   {filteredProblems.map((problem, index) => (
                     <div
                       key={problem.id}
+                      {...(index === 0 ? { "data-tour": "problem-card" } : {})}
                       className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
                         index === 0
                           ? "delay-0"

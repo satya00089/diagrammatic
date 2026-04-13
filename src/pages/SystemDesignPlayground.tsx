@@ -30,6 +30,7 @@ import {
   MdDownload,
   MdExpandMore,
   MdSave,
+  MdHelpOutline,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 
@@ -55,6 +56,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useToast } from "../hooks/useToast";
 import { useChatBot } from "../hooks/useChatBot";
 import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
+import { useOnboarding } from "../hooks/useOnboarding";
+import { useTour } from "../hooks/useTour";
 
 // Redux store
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -294,6 +297,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Chat bot context for getting user intent
   const { userIntent, setUserIntent, resetChatBot } = useChatBot();
 
+  // Onboarding — tour management
+  const { isNewToPage, markPageVisited } = useOnboarding();
+  const tourPageId = idFromUrl === "free" ? "design_studio" : "problem_playground";
+  const { startTour } = useTour(tourPageId);
+
   // Toast notifications
   const toast = useToast();
   const toastRef = useRef(toast);
@@ -439,6 +447,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [idFromUrl]);
 
   const onBack = () => navigate("/");
+
+  // Mark page visited + auto-start onboarding tour for new users (skip shared views)
+  useEffect(() => {
+    if (isSharedView || !idFromUrl) return;
+    const isNew = isNewToPage(tourPageId);
+    markPageVisited(tourPageId);
+    if (isNew) {
+      // Wait for canvas/UI to render before driving the tour
+      const t = setTimeout(() => startTour(), 1200);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idFromUrl]);
 
   // Load shared (read-only) data when routed via /public/:publicId
   useEffect(() => {
@@ -3526,7 +3547,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                   {/* Timer - only show for problems, not Design Studio or shared view */}
                   {idFromUrl !== "free" && !isSharedView && (
-                    <div className="flex items-center gap-1 border-l border-white/20 pl-3">
+                    <div className="flex items-center gap-1 border-l border-white/20 pl-3" data-tour="timer">
                       <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
                         {formatTime(elapsedTime)}
                       </span>
@@ -3552,6 +3573,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                         onClick={handleManualSave}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded-md transition-colors cursor-pointer"
                         data-tooltip="Save Design"
+                        data-tour="save-btn"
                       >
                         <MdSave className="h-4 w-4" />
                         Save
@@ -3687,7 +3709,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 )}
 
                 {/* Download/Export button with dropdown */}
-                <div className="relative">
+                <div className="relative" data-tour="export-btn">
                   <button
                     type="button"
                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
@@ -3862,6 +3884,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                 {problem?.id !== "free" && (
                   <div
+                    data-tour="assess-btn"
                     data-tooltip={
                       isAuthenticated
                         ? isAssessing
@@ -3879,6 +3902,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       {isAssessing ? "Assessing..." : "Run Assessment"}
                     </button>
                   </div>
+                )}
+                {/* Tour trigger */}
+                {!isSharedView && (
+                  <button
+                    type="button"
+                    onClick={startTour}
+                    className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                    data-tooltip="Take a tour"
+                  >
+                    <MdHelpOutline className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">Tour</span>
+                  </button>
                 )}
                 <ThemeSwitcher />
                 {/* User Profile / Auth Button */}
@@ -4319,12 +4354,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
         {/* Chat Bot - Only for free mode (Design Studio) */}
         {idFromUrl === "free" && (
-          <ChatBot
-            canvasContext={canvasContext}
-            nodes={nodes}
-            edges={edges}
-            onAddComponent={addNodeFromPalette}
-          />
+          <div data-tour="chatbot-btn">
+            <ChatBot
+              canvasContext={canvasContext}
+              nodes={nodes}
+              edges={edges}
+              onAddComponent={addNodeFromPalette}
+            />
+          </div>
         )}
       </div>
     </>

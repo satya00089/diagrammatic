@@ -199,7 +199,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <div className="relative z-40">
+    <div className="relative z-40" data-tour="inspector-panel">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -207,6 +207,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           open ? "Collapse inspector panel" : "Expand inspector panel"
         }
         aria-controls="inspector-panel"
+        data-tour="inspector-toggle"
+        title={!open ? "Inspector panel is closed — click to expand" : undefined}
         className="absolute top-5 -left-3 h-6 w-6 flex items-center justify-center rounded-full border border-theme bg-surface text-theme shadow cursor-pointer hover:bg-[var(--bg-hover)] transition-colors z-50"
       >
         {open ? <PiCaretRightBold size={16} /> : <PiCaretLeftBold size={16} />}
