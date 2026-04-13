@@ -11,6 +11,7 @@ import {
   MdAccessTime,
   MdWarningAmber,
   MdSearchOff,
+  MdSmartToy,
 } from "react-icons/md";
 
 import ThemeSwitcher from "../components/ThemeSwitcher";
@@ -92,6 +93,8 @@ const Dashboard: React.FC = () => {
         return <MdBusiness className="inline" />;
       case "application":
         return <MdPhoneAndroid className="inline" />;
+      case "aiml":
+        return <MdSmartToy className="inline" />;
       default:
         return <MdSettings className="inline" />;
     }
@@ -105,6 +108,8 @@ const Dashboard: React.FC = () => {
         return "Infrastructure";
       case "application":
         return "Application";
+      case "aiml":
+        return "AI & ML";
       default:
         return domain;
     }
@@ -128,9 +133,9 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <SEO
-        title="System Design Practice Problems | Diagrammatic"
-        description="Browse and solve curated system design problems with real-world scenarios. Master distributed systems, scalable architectures, and ace your tech interviews with hands-on practice."
-        keywords="system design problems, architecture challenges, distributed systems practice, system design interview prep, scalable architecture exercises"
+        title="System Design & AI/ML Practice Problems | Diagrammatic"
+        description="Master system design, AI/ML architectures, and MLOps with 200+ curated problems. Practice infrastructure design, application architecture, machine learning systems, and AIOps with real-world scenarios and interactive diagrams."
+        keywords="system design problems, AI ML design problems, machine learning architecture, MLOps, AIOps, recommendation systems, fraud detection, NLP, computer vision, distributed systems, scalable architecture, system design interview prep, infrastructure design, application architecture"
         url="https://satya00089.github.io/diagrammatic/#/problems"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
@@ -256,10 +261,10 @@ const Dashboard: React.FC = () => {
             {/* Page Header */}
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                System Design Problems
+                System Design & AI/ML Problems
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                Browse curated problems and practice in an interactive canvas.
+                Master Infrastructure, Application, AI & ML architectures. Practice with 200+ curated problems in an interactive canvas.
               </p>
             </div>
 
