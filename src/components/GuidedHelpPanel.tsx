@@ -13,6 +13,8 @@ import type {
   GuidedStepType,
 } from "../types/systemDesign";
 
+import NodePropertyDisplay from "./NodePropertyDisplay";
+
 // ── Step type badge config ────────────────────────────────────────────────────
 
 const STEP_TYPE_CONFIG: Record<
@@ -118,6 +120,10 @@ export type ApplyStepPayload = GuidedStep;
 type GuidedHelpPanelProps = {
   problemId: string | null;
   onApplyStep: (step: ApplyStepPayload) => void;
+  /** Optional controlled current step index (0-based) */
+  currentStep?: number;
+  /** Called when the user changes the current step */
+  onStepChange?: (index: number) => void;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -134,35 +140,15 @@ function StepTypeBadge({ type }: { type: GuidedStepType }) {
   );
 }
 
-function PropertyRow({
-  label,
-  entry,
-}: {
-  label: string;
-  entry: string | number | boolean;
-}) {
-  return (
-    <div className="border border-[var(--border)]/50 rounded-lg overflow-hidden">
-      {/* Key + value row */}
-      <div className="flex items-start justify-between gap-2 px-2.5 py-2">
-        <span className="text-[10px] text-muted/70 uppercase tracking-wide font-medium leading-tight mt-0.5 flex-shrink-0 max-w-[110px]">
-          {label}
-        </span>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[11px] text-foreground font-medium text-right leading-snug">
-            {String(entry)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
   problemId,
   onApplyStep,
+  currentStep: currentStepProp,
+  onStepChange,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const walkthrough = useSelector((state: RootState) =>
@@ -180,9 +166,18 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
       ? "not_found"
       : "error";
 
-  const [currentStep, setCurrentStep] = useState(0); // 0-indexed
+  const [currentStep, setCurrentStep] = useState<number>(
+    currentStepProp ?? 0,
+  ); // 0-indexed
   const [appliedSteps, setAppliedSteps] = useState<Set<string>>(new Set());
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Sync controlled prop -> local state when provided
+  useEffect(() => {
+    if (currentStepProp !== undefined && currentStepProp !== currentStep) {
+      setCurrentStep(currentStepProp);
+    }
+  }, [currentStepProp]);
 
   // Dispatch fetch (Redux condition guard prevents duplicate calls)
   useEffect(() => {
@@ -192,13 +187,19 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
 
   // Reset step position when problem changes
   useEffect(() => {
-    setCurrentStep(0);
+    if (onStepChange) {
+      onStepChange(0);
+    } else {
+      setCurrentStep(0);
+    }
     setAppliedSteps(new Set());
   }, [problemId]);
 
   // Scroll content to top whenever the step changes
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    // Notify parent if controlled
+    if (onStepChange) onStepChange(currentStep);
   }, [currentStep]);
 
   const step = walkthrough?.steps[currentStep] ?? null;
@@ -363,7 +364,7 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
       {/* Step card — scrollable */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-y-auto px-3 pb-2 space-y-3 min-h-0"
+        className="flex-1 overflow-y-auto px-3 pb-2 space-y-3 min-h-0 node-properties-scroll"
       >
         {/* Header */}
         <div className="space-y-1.5">
@@ -422,10 +423,10 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
                     — tap a row to learn why
                   </span>
                 </p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {Object.entries(step.component.properties).map(
                     ([key, entry]) => (
-                      <PropertyRow key={key} label={key} entry={entry} />
+                      <NodePropertyDisplay key={key} propertyKey={key} value={entry} />
                     ),
                   )}
                 </div>

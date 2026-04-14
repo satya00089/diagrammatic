@@ -54,9 +54,19 @@ export const useChatSuggestions = (
           icon: nodeData.icon,
         };
 
-        // Add nodeData.properties if it exists and is an object
+        // Merge nested `nodeData.properties` first (backwards compatibility)
         if (nodeData.properties && typeof nodeData.properties === "object") {
           Object.assign(properties, nodeData.properties);
+        }
+
+        // Also merge any flattened top-level property keys
+        // (guided steps may place properties at top-level on node.data)
+        for (const [k, v] of Object.entries(nodeData)) {
+          if (
+            !["description", "subtitle", "componentId", "icon", "iconUrl", "label", "_customProperties", "properties"].includes(k)
+          ) {
+            properties[k] = v;
+          }
         }
 
         // Include custom properties if they exist
