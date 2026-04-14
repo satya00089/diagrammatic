@@ -1431,9 +1431,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             componentId: comp.componentType,
             iconUrl: comp.iconUrl ?? libraryComp?.iconUrl,
             subtitle: comp.description ?? comp.highlightReason,
-            // Flatten GuidedPropertyEntry → plain string values for the canvas node
+            // Pass flat property values directly to the canvas node
             properties: Object.fromEntries(
-              Object.entries(comp.properties).map(([k, v]) => [k, v.value]),
+              Object.entries(comp.properties).map(([k, v]) => [k, v]),
             ),
           },
         };

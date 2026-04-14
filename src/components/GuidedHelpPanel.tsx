@@ -139,50 +139,21 @@ function PropertyRow({
   entry,
 }: {
   label: string;
-  entry: { value: string; description: string };
+  entry: string | number | boolean;
 }) {
-  const [expanded, setExpanded] = React.useState(false);
   return (
     <div className="border border-[var(--border)]/50 rounded-lg overflow-hidden">
       {/* Key + value row */}
-      <div
-        className={`flex items-start justify-between gap-2 px-2.5 py-2 ${
-          entry.description
-            ? "cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
-            : ""
-        }`}
-        onClick={() => entry.description && setExpanded((x) => !x)}
-      >
+      <div className="flex items-start justify-between gap-2 px-2.5 py-2">
         <span className="text-[10px] text-muted/70 uppercase tracking-wide font-medium leading-tight mt-0.5 flex-shrink-0 max-w-[110px]">
           {label}
         </span>
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[11px] text-foreground font-medium text-right leading-snug">
-            {entry.value}
+            {String(entry)}
           </span>
-          {entry.description && (
-            <svg
-              className={`w-3 h-3 text-muted/40 flex-shrink-0 transition-transform ${
-                expanded ? "rotate-180" : ""
-              }`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          )}
         </div>
       </div>
-      {/* HTML description — TipTap-compatible */}
-      {expanded && entry.description && (
-        <div
-          className="px-2.5 pb-2.5 pt-0 text-[11px] text-muted/80 leading-relaxed border-t border-[var(--border)]/40 [&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-3.5 [&_ul]:space-y-0.5 [&_ol]:list-decimal [&_ol]:pl-3.5 [&_ol]:space-y-0.5 [&_li]:leading-relaxed [&_strong]:text-muted [&_code]:bg-[var(--surface-2)] [&_code]:px-1 [&_code]:py-px [&_code]:rounded [&_code]:text-[10px] [&_em]:text-muted/70"
-          // eslint-disable-next-line react/no-danger
-          dangerouslySetInnerHTML={{ __html: entry.description }}
-        />
-      )}
     </div>
   );
 }
