@@ -5,11 +5,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import componentsReducer from "./slices/componentsSlice";
 import problemsReducer from "./slices/problemsSlice";
+import walkthroughsReducer from "./slices/walkthroughsSlice";
 
 export const store = configureStore({
   reducer: {
     components: componentsReducer,
     problems: problemsReducer,
+    walkthroughs: walkthroughsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

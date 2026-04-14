@@ -382,7 +382,7 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {/* Category Filter */}
-                    <div>
+                    <div data-tour="category-filter">
                       <label
                         htmlFor="category-select"
                         className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2"

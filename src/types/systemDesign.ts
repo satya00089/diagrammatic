@@ -128,3 +128,90 @@ export interface ComponentTemplate {
   category: "frontend" | "backend" | "database" | "infrastructure" | "external";
   color: string;
 }
+
+// ─── Guided Walkthrough Types ────────────────────────────────────────────────
+
+export type GuidedStepType =
+  | "explanation"
+  | "add_component"
+  | "add_connection"
+  | "decision_point"
+  | "scale_trigger";
+
+/** A single canvas property with its value and a TipTap-compatible HTML description */
+export interface GuidedPropertyEntry {
+  value: string;
+  /** HTML string explaining WHY this value was chosen — rendered via dangerouslySetInnerHTML */
+  description: string;
+}
+
+export interface GuidedComponentStep {
+  /** Stable node ID — prefixed with "guided_" when placed on the canvas */
+  nodeId: string;
+  componentType: ComponentType;
+  label: string;
+  /** Short description shown as the node subtitle on the canvas */
+  description?: string;
+  position: { x: number; y: number };
+  iconUrl?: string;
+  properties: Record<string, GuidedPropertyEntry>;
+  /** One-liner explaining why this specific component was chosen */
+  highlightReason: string;
+}
+
+export interface GuidedConnectionStep {
+  edgeId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  connectionType: ConnectionType;
+  label: string;
+  description: string;
+}
+
+export interface GuidedDecisionAlternative {
+  option: string;
+  tradeoff: string;
+}
+
+export interface GuidedDecisionPoint {
+  question: string;
+  chosen: string;
+  chosenReason: string;
+  alternatives: GuidedDecisionAlternative[];
+}
+
+export interface GuidedScaleTrigger {
+  metric: string;
+  action: string;
+  impact: string;
+  /** Optional component to add when this trigger fires */
+  component?: GuidedComponentStep;
+}
+
+export interface GuidedStep {
+  id: string;
+  stepNumber: number;
+  phase: string;
+  title: string;
+  type: GuidedStepType;
+  /** Main teaching content — supports Markdown */
+  content: string;
+  component?: GuidedComponentStep;
+  connection?: GuidedConnectionStep;
+  decision?: GuidedDecisionPoint;
+  scaleTrigger?: GuidedScaleTrigger;
+}
+
+export interface GuidedWalkthroughPhase {
+  name: string;
+  stepRange: [number, number];
+  description: string;
+}
+
+export interface GuidedWalkthrough {
+  problem_id: string;
+  version: string;
+  totalSteps: number;
+  phases: GuidedWalkthroughPhase[];
+  steps: GuidedStep[];
+}

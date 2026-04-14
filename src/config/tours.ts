@@ -46,11 +46,11 @@ export const TOURS: Record<string, TourDefinition> = {
     id: "dashboard",
     steps: [
       {
-        element: '[data-tour="domain-filter"]',
+        element: '[data-tour="search-box"]',
         popover: {
-          title: "Filter by Domain",
+          title: "Search Problems",
           description:
-            "Switch between Infrastructure, Application, and AI & ML system design categories.",
+            "Search by title, tag, or technology — e.g. 'Redis', 'rate limiting', 'recommendation engine'.",
           side: "bottom",
           align: "start",
         },
@@ -66,11 +66,21 @@ export const TOURS: Record<string, TourDefinition> = {
         },
       },
       {
-        element: '[data-tour="search-box"]',
+        element: '[data-tour="category-filter"]',
         popover: {
-          title: "Search Problems",
+          title: "Filter by Category",
           description:
-            "Search by title, tag, or technology — e.g. 'Redis', 'rate limiting', 'recommendation engine'.",
+            "Narrow down to different categories to match your interest or focus area.",
+          side: "bottom",
+          align: "start",
+        },
+      },
+      {
+        element: '[data-tour="domain-filter"]',
+        popover: {
+          title: "Filter by Domain",
+          description:
+            "Switch between Infrastructure, Application, and AI & ML system design categories.",
           side: "bottom",
           align: "start",
         },
@@ -80,7 +90,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Open a Problem",
           description:
-            "Click any card to open the interactive canvas. Your progress auto-saves as you work.",
+            "Problems are sorted by popularity. Click 'Start Problem' to start designing your solution on the interactive canvas.",
           side: "right",
           align: "start",
         },

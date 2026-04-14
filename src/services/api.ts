@@ -577,6 +577,19 @@ class ApiService {
     if (!response.ok) throw new Error("Diagram not found or not publicly available");
     return response.json();
   }
+
+  async getWalkthrough(problemId: string): Promise<import("../types/systemDesign").GuidedWalkthrough> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/problem/${encodeURIComponent(problemId)}/walkthrough`,
+    );
+    if (response.status === 404) {
+      throw new Error("NOT_FOUND");
+    }
+    if (!response.ok) {
+      throw new Error("Failed to fetch guided walkthrough");
+    }
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();

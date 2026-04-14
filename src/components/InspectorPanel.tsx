@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import GuidedHelpPanel from "./GuidedHelpPanel";
+import type { ApplyStepPayload } from "./GuidedHelpPanel";
 import {
   PiDotsSixVerticalBold,
   PiCaretDownBold,
@@ -69,8 +71,12 @@ type InspectorPanelProps = {
     hints: string[];
     tags: string[];
   } | null;
-  activeTab: "details" | "inspector" | "assessment";
-  setActiveTab: (t: "details" | "inspector" | "assessment") => void;
+  activeTab: "details" | "inspector" | "assessment" | "guide";
+  setActiveTab: (t: "details" | "inspector" | "assessment" | "guide") => void;
+  /** Problem ID used to fetch the guided walkthrough */
+  problemId?: string | null;
+  /** Called when the user clicks "Apply to Canvas" on a guided step */
+  onApplyStep?: (step: ApplyStepPayload) => void;
   inspectedNodeId: string | null;
   setInspectedNodeId: (id: string | null) => void;
   inspectedEdgeId: string | null;
@@ -91,6 +97,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   problem,
   activeTab,
   setActiveTab,
+  problemId,
+  onApplyStep,
   inspectedNodeId,
   setInspectedNodeId,
   inspectedEdgeId,
@@ -289,6 +297,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </button>
               )}
 
+              {!isFreeDesignMode && (
+                <button
+                  type="button"
+                  role="tab"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "guide" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  onClick={() => setActiveTab("guide")}
+                >
+                  <span className="text-sm">🗺️</span>
+                  <span className="text-sm font-medium">Guide</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 role="tab"
@@ -305,7 +325,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               aria-hidden="true"
             />
 
+            {/* Guide tab — manages its own internal scroll */}
+            {activeTab === "guide" && (
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <GuidedHelpPanel
+                  problemId={problemId ?? null}
+                  onApplyStep={onApplyStep ?? (() => {})}
+                />
+              </div>
+            )}
+
             {/* scrollable content area under the tabs */}
+            {activeTab !== "guide" && (
             <div className="overflow-y-auto component-palette flex-1">
               {activeTab === "details" && (
                 <div>
@@ -850,6 +881,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </div>
               )}
             </div>
+            )}
           </>
         )}
         {sharedCta && (
