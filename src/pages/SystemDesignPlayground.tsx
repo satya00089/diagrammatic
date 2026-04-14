@@ -7,6 +7,10 @@ import React, {
   useMemo,
 } from "react";
 
+// State management
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+
 // External libraries - React Flow
 import {
   useNodesState,
@@ -44,6 +48,7 @@ import type {
   ValidationResult,
   ComponentType,
   ConnectionType,
+  GuidedStep,
 } from "../types/systemDesign";
 import type { SavedDiagram, Collaborator } from "../types/auth";
 import type { ComponentProperty, CanvasComponent } from "../types/canvas";
@@ -1402,9 +1407,60 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [customProperties, setCustomProperties] = useState<
     Record<string, CustomProperty[]>
   >({});
+  // ── Guided walkthrough: apply a step to the canvas ──────────────────────────
+  const allMinimalComponents = useSelector((state: RootState) =>
+    Object.values(state.components.minimalComponentsByProvider).flat(),
+  );
+
+  const handleApplyStep = React.useCallback(
+    (step: GuidedStep) => {
+      if (step.type === "add_component" && step.component) {
+        const comp = step.component;
+        // Skip if a node with this ID already exists
+        if (nodesRef.current.some((n) => n.id === comp.nodeId)) return;
+        // Look up icon from the Redux component library
+        const libraryComp = allMinimalComponents.find(
+          (c) => c.id === comp.componentType,
+        );
+        const newNode: Node = {
+          id: comp.nodeId,
+          position: comp.position,
+          type: "custom",
+          data: {
+            label: comp.label,
+            componentId: comp.componentType,
+            iconUrl: comp.iconUrl ?? libraryComp?.iconUrl,
+            subtitle: comp.description ?? comp.highlightReason,
+            // Flatten GuidedPropertyEntry → plain string values for the canvas node
+            properties: Object.fromEntries(
+              Object.entries(comp.properties).map(([k, v]) => [k, v.value]),
+            ),
+          },
+        };
+        setNodes((nds) => [...nds, newNode]);
+      } else if (step.type === "add_connection" && step.connection) {
+        const conn = step.connection;
+        const newEdge = {
+          id: conn.edgeId,
+          source: conn.sourceNodeId,
+          sourceHandle: "right",
+          target: conn.targetNodeId,
+          targetHandle: "left",
+          type: "customEdge",
+          data: {
+            label: conn.label,
+            hasLabel: true,
+          },
+        };
+        setEdges((eds) => addEdge(newEdge, eds));
+      }
+    },
+    [setNodes, setEdges, allMinimalComponents],
+  );
+
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<
-    "details" | "inspector" | "assessment"
+    "details" | "inspector" | "assessment" | "guide"
   >("details");
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -4032,6 +4088,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             problem={problem}
             activeTab={activeRightTab}
             setActiveTab={setActiveRightTab}
+            problemId={problem?.id ?? null}
+            onApplyStep={handleApplyStep}
             inspectedNodeId={inspectedNodeId}
             setInspectedNodeId={setInspectedNodeId}
             inspectedEdgeId={inspectedEdgeId}

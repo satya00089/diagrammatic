@@ -79,6 +79,7 @@
 
 /* Highlighted element outline */
 .driver-active-element {
+  margin: 5px;
   outline: 2px solid var(--brand, #6366f1) !important;
   outline-offset: 3px !important;
   border-radius: 6px !important;

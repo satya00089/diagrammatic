@@ -582,7 +582,6 @@ const Home: React.FC = () => {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  data-tour="nav-problems"
                   onClick={() => handleNavigate("/problems", false)}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                 >
@@ -811,6 +810,7 @@ const Home: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    data-tour="nav-problems"
                     onClick={() => handleNavigate("/problems", false)}
                     className="px-7 py-3.5 bg-white/10 border border-white/25 text-white/85 text-base font-medium rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
                   >
