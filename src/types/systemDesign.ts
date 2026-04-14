@@ -138,13 +138,6 @@ export type GuidedStepType =
   | "decision_point"
   | "scale_trigger";
 
-/** A single canvas property with its value and a TipTap-compatible HTML description */
-export interface GuidedPropertyEntry {
-  value: string;
-  /** HTML string explaining WHY this value was chosen — rendered via dangerouslySetInnerHTML */
-  description: string;
-}
-
 export interface GuidedComponentStep {
   /** Stable node ID — prefixed with "guided_" when placed on the canvas */
   nodeId: string;
@@ -154,7 +147,7 @@ export interface GuidedComponentStep {
   description?: string;
   position: { x: number; y: number };
   iconUrl?: string;
-  properties: Record<string, GuidedPropertyEntry>;
+  properties: Record<string, string | number | boolean>;
   /** One-liner explaining why this specific component was chosen */
   highlightReason: string;
 }

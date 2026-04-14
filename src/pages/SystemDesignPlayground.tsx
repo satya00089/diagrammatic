@@ -1418,10 +1418,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const comp = step.component;
         // Skip if a node with this ID already exists
         if (nodesRef.current.some((n) => n.id === comp.nodeId)) return;
-        // Look up icon from the Redux component library
+        // Look up icon from the Redux component library and local config
         const libraryComp = allMinimalComponents.find(
           (c) => c.id === comp.componentType,
         );
+        const localCompDef = COMPONENTS.find((c) => c.id === comp.componentType);
+        const fullComp = fullComponentsCache[comp.componentType];
+
         const newNode: Node = {
           id: comp.nodeId,
           position: comp.position,
@@ -1429,14 +1432,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           data: {
             label: comp.label,
             componentId: comp.componentType,
-            iconUrl: comp.iconUrl ?? libraryComp?.iconUrl,
+            // Prefer local React icon, fall back to provided iconUrl (minimal/full)
+            icon: localCompDef?.icon ?? fullComp?.icon,
+            iconUrl:
+              comp.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl,
             subtitle: comp.description ?? comp.highlightReason,
-            // Flatten GuidedPropertyEntry → plain string values for the canvas node
-            properties: Object.fromEntries(
-              Object.entries(comp.properties).map(([k, v]) => [k, v.value]),
-            ),
+            // Flatten guided step properties onto node.data so the Inspector can read them
+            ...Object.fromEntries(Object.entries(comp.properties).map(([k, v]) => [k, v])),
           },
         };
+        // Ensure full component metadata is fetched if it's a provider component
+        if (
+          comp.componentType &&
+          !COMPONENTS.find((c) => c.id === comp.componentType) &&
+          !fullComponentsCache[comp.componentType]
+        ) {
+          dispatch(fetchFullComponent(comp.componentType));
+        }
+
         setNodes((nds) => [...nds, newNode]);
       } else if (step.type === "add_connection" && step.connection) {
         const conn = step.connection;
@@ -1455,13 +1468,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         setEdges((eds) => addEdge(newEdge, eds));
       }
     },
-    [setNodes, setEdges, allMinimalComponents],
+    [setNodes, setEdges, allMinimalComponents, dispatch, fullComponentsCache],
   );
 
   // which tab is active in the right sidebar: 'details' or 'inspector'
   const [activeRightTab, setActiveRightTab] = useState<
     "details" | "inspector" | "assessment" | "guide"
   >("details");
+  // Preserve guided walkthrough step index across tab switches
+  const [guideCurrentStep, setGuideCurrentStep] = useState<number>(0);
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -2745,6 +2760,32 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Sync nodes and edges changes to undo/redo history
   // Skip during collaboration to prevent conflicts
+
+  // When full component metadata arrives (fetched lazily), update existing nodes
+  // that reference that component so their icons/iconUrls become available.
+  React.useEffect(() => {
+    if (!fullComponentsCache || Object.keys(fullComponentsCache).length === 0) return;
+    setNodes((nds) =>
+      nds.map((n) => {
+        const compId = typeof n.data?.componentId === "string" ? n.data.componentId : null;
+        if (!compId) return n;
+        const full = fullComponentsCache[compId];
+        if (!full) return n;
+
+        const hasIcon = Boolean(n.data?.icon) || Boolean(n.data?.iconUrl);
+        if (hasIcon) return n;
+
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            icon: n.data?.icon ?? full.icon,
+            iconUrl: n.data?.iconUrl ?? full.data?.iconUrl,
+          },
+        };
+      }),
+    );
+  }, [fullComponentsCache, setNodes]);
   useEffect(() => {
     // Skip if this change is from undo/redo
     if (isApplyingUndoRedo.current) return;
@@ -4090,6 +4131,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             setActiveTab={setActiveRightTab}
             problemId={problem?.id ?? null}
             onApplyStep={handleApplyStep}
+            guideCurrentStep={guideCurrentStep}
+            onGuideStepChange={setGuideCurrentStep}
             inspectedNodeId={inspectedNodeId}
             setInspectedNodeId={setInspectedNodeId}
             inspectedEdgeId={inspectedEdgeId}

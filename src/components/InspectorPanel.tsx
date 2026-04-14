@@ -77,6 +77,10 @@ type InspectorPanelProps = {
   problemId?: string | null;
   /** Called when the user clicks "Apply to Canvas" on a guided step */
   onApplyStep?: (step: ApplyStepPayload) => void;
+  /** Current step index for the guided walkthrough (0-based) */
+  guideCurrentStep?: number;
+  /** Callback when guided walkthrough step changes */
+  onGuideStepChange?: (index: number) => void;
   inspectedNodeId: string | null;
   setInspectedNodeId: (id: string | null) => void;
   inspectedEdgeId: string | null;
@@ -99,6 +103,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   setActiveTab,
   problemId,
   onApplyStep,
+  guideCurrentStep,
+  onGuideStepChange,
   inspectedNodeId,
   setInspectedNodeId,
   inspectedEdgeId,
@@ -330,7 +336,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                 <GuidedHelpPanel
                   problemId={problemId ?? null}
-                  onApplyStep={onApplyStep ?? (() => {})}
+                      onApplyStep={onApplyStep ?? (() => {})}
+                      currentStep={guideCurrentStep}
+                      onStepChange={onGuideStepChange}
                 />
               </div>
             )}
