@@ -1019,7 +1019,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       data: isERConnection
         ? { label: "", hasLabel: false, cardinality: "one-to-many" }
         : { label: "", hasLabel: false },
-    };
+    } as unknown as Edge;
     setEdges((eds) => addEdge(newEdge, eds));
   };
 
@@ -1465,7 +1465,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             description: conn?.description ?? "",
             hasLabel: true,
           },
-        };
+        } as Edge;
         setEdges((eds) => addEdge(newEdge, eds));
       }
     },
