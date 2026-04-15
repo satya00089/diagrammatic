@@ -449,7 +449,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     fetchProblem();
-  }, [idFromUrl]);
+  }, [idFromUrl, isSharedView]);
 
   const onBack = () => navigate("/");
 
@@ -1462,6 +1462,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           type: "customEdge",
           data: {
             label: conn.label,
+            description: conn?.description ?? "",
             hasLabel: true,
           },
         };
@@ -1479,6 +1480,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [guideCurrentStep, setGuideCurrentStep] = useState<number>(0);
   // Clear canvas confirmation state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // When true, also remove any persisted progress (local or server) on confirm
+  const [clearSavedOnConfirm, setClearSavedOnConfirm] = useState(false);
 
   // ref to hold latest inspectedNodeId for event handlers to read without adding deps
   const inspectedNodeIdRef = useRef<string | null>(null);
@@ -3036,12 +3039,53 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setShowClearConfirm(true);
   };
 
-  const confirmClearCanvas = () => {
+  const confirmClearCanvas = async () => {
+    // Clear local canvas state immediately for instant UX
     setNodes([]);
     setEdges([]);
     setInspectedNodeId(null);
     setAssessment(null);
     setShowClearConfirm(false);
+
+    // If user opted to also clear saved progress, remove local or server-side saves
+    if (!clearSavedOnConfirm) {
+      return setClearSavedOnConfirm(false);
+    }
+
+    try {
+      // Custom problems stored in localStorage (custom-...)
+      if (idFromUrl && idFromUrl.startsWith && idFromUrl.startsWith("custom-")) {
+        localStorage.removeItem(`custom-problem-${idFromUrl}`);
+      } else if (diagramIdFromUrl && currentDiagramId) {
+        // Viewing a diagram by URL: delete user's diagram if authenticated
+        if (isAuthenticated && currentDiagramId) {
+          await apiService.deleteDiagram(currentDiagramId);
+          setCurrentDiagramId(null);
+          setCurrentDiagram(null);
+        } else {
+          toast.error("Cannot delete public diagram while not authenticated");
+        }
+      } else if (idFromUrl === "free") {
+        // Free mode: clear last-diagram key from localStorage
+        const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
+        localStorage.removeItem(lastDiagramKey);
+      } else if (idFromUrl && idFromUrl !== "free") {
+        // Problem attempt: delete saved attempt on server (requires auth)
+        if (isAuthenticated) {
+          await apiService.deleteAttempt(idFromUrl);
+          setSavedAttemptId(null);
+        } else {
+          toast.error("Cannot delete attempt while not authenticated");
+        }
+      }
+
+      toast.success("Saved progress cleared");
+    } catch (err) {
+      console.error("Failed to clear saved progress", err);
+      toast.error("Failed to clear saved progress");
+    } finally {
+      setClearSavedOnConfirm(false);
+    }
   };
 
   const cancelClearCanvas = () => {
@@ -4191,10 +4235,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </p>
                 </div>
               </div>
-              <p className="text-muted mb-6">
+              <p className="text-muted mb-4">
                 Are you sure you want to clear all components and connections
                 from the canvas? You will lose all your current work.
               </p>
+
+              <div className="mb-4 flex items-start space-x-2">
+                <input
+                  id="clear-saved"
+                  type="checkbox"
+                  checked={clearSavedOnConfirm}
+                  onChange={(e) => setClearSavedOnConfirm(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded text-theme"
+                />
+                <label htmlFor="clear-saved" className="text-sm text-muted">
+                  Also delete saved progress (local or server). Use with caution.
+                </label>
+              </div>
+
               <div className="flex space-x-3">
                 <button
                   type="button"
