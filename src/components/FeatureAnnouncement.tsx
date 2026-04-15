@@ -1,10 +1,11 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MdClose } from "react-icons/md";
 import { LuBrainCircuit } from "react-icons/lu";
 import { HiUserGroup } from "react-icons/hi2";
 import { useOnboarding } from "../hooks/useOnboarding";
+import type { PageId } from "../contexts/OnboardingContext";
 
 interface Announcement {
   id: string;
@@ -43,8 +44,28 @@ const ANNOUNCEMENTS: Announcement[] = [
 ];
 
 const FeatureAnnouncement: React.FC = () => {
-  const { isAnnouncementSeen, dismissAnnouncement } = useOnboarding();
+  const { isAnnouncementSeen, dismissAnnouncement, isNewToPage, isTourCompleted } = useOnboarding();
   const navigate = useNavigate();
+
+  // If the user is new to the current page and the tour for that page
+  // hasn't completed yet, defer showing announcements to avoid overlap.
+  const location = useLocation();
+
+  const mapPathToPageId = (path: string): PageId | undefined => {
+    if (path === "/") return "home";
+    if (path.startsWith("/problems")) return "dashboard";
+    if (path.startsWith("/playground") || path.startsWith("/public")) return "design_studio";
+    if (path.startsWith("/diagrams")) return "my_designs";
+    if (path.startsWith("/problems/play")) return "problem_playground";
+    return undefined;
+  };
+
+  const currentPage = mapPathToPageId(location.pathname);
+
+  if (currentPage && isNewToPage(currentPage) && !isTourCompleted(currentPage)) {
+    // Defer announcements until after the onboarding tour completes.
+    return null;
+  }
 
   // Show the first unseen announcement
   const announcement = ANNOUNCEMENTS.find((a) => !isAnnouncementSeen(a.id));

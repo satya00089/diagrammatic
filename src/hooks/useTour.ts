@@ -11,7 +11,7 @@ import type { PageId } from "../contexts/OnboardingContext";
  * - The `?` Help button can always call startTour() to re-run the tour.
  */
 export const useTour = (pageId: PageId) => {
-  const { markTourComplete, isTourCompleted } = useOnboarding();
+  const { markTourComplete, isTourCompleted, markPageVisited, isNewToPage } = useOnboarding();
   const driverRef = useRef<ReturnType<typeof driver> | null>(null);
 
   const startTour = useCallback(() => {
@@ -36,15 +36,24 @@ export const useTour = (pageId: PageId) => {
       allowClose: true,
       overlayColor: "rgba(0,0,0,0)",
       steps,
-      onDestroyStarted: () => {
-        driverRef.current?.destroy();
-        markTourComplete(pageId);
-      },
-      onDestroyed: () => {
-        markTourComplete(pageId);
-      },
+        onDestroyStarted: () => {
+          driverRef.current?.destroy();
+          markTourComplete(pageId);
+        },
+        onDestroyed: () => {
+          markTourComplete(pageId);
+          // If this was the user's first visit to the page, record the
+          // visit after the tour completes so feature announcements
+          // don't appear while the tour is running.
+          try {
+            if (isNewToPage(pageId)) {
+              markPageVisited(pageId);
+            }
+          } catch (err) {
+            // swallow any errors — onboarding persistence is best-effort
+          }
+        },
     });
-
     driverRef.current.drive();
   }, [pageId, markTourComplete]);
 

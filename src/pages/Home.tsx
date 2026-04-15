@@ -166,11 +166,17 @@ const Home: React.FC = () => {
   // Mark page visited + auto-start tour for new users
   useEffect(() => {
     const isNew = isNewToPage("home");
-    markPageVisited("home");
     if (isNew) {
-      const t = setTimeout(() => startTour(), 1200);
+      const t = setTimeout(() => {
+        startTour();
+        // Do not mark the page visited here — the tour will mark the
+        // page as visited when it completes. This prevents feature
+        // announcements from appearing while the tour is running.
+      }, 1200);
       return () => clearTimeout(t);
     }
+    // Not a new visit — mark immediately
+    markPageVisited("home");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
