@@ -14,6 +14,7 @@ import type {
 } from "../types/systemDesign";
 
 import NodePropertyDisplay from "./NodePropertyDisplay";
+import type { CustomProperty } from "./CustomPropertyInput";
 
 // ── Step type badge config ────────────────────────────────────────────────────
 
@@ -424,11 +425,29 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
                   </span>
                 </p>
                 <div className="space-y-2">
-                  {Object.entries(step.component.properties).map(
-                    ([key, entry]) => (
+                  {Object.entries(step.component.properties)
+                    .filter(([k]) => k !== "_customProperties")
+                    .map(([key, entry]) => (
                       <NodePropertyDisplay key={key} propertyKey={key} value={entry} />
-                    ),
-                  )}
+                    ))}
+
+                  {/* Render each custom property as its own row for clarity */}
+                  {step.component.properties._customProperties &&
+                    Array.isArray(step.component.properties._customProperties) &&
+                    step.component.properties._customProperties.length > 0 && (
+                      <>
+                        <div className="text-xs font-semibold opacity-60 uppercase tracking-wide">
+                          Custom Properties
+                        </div>
+                        {step.component.properties._customProperties.map((cp: CustomProperty) => (
+                          <NodePropertyDisplay
+                            key={cp.id}
+                            propertyKey={cp.label || cp.key}
+                            value={cp.value}
+                          />
+                        ))}
+                      </>
+                    )}
                 </div>
               </div>
             )}

@@ -148,6 +148,7 @@ export interface GuidedComponentStep {
   position: { x: number; y: number };
   iconUrl?: string;
   properties: Record<string, string | number | boolean>;
+  data?: Record<string, unknown>;
   /** One-liner explaining why this specific component was chosen */
   highlightReason: string;
 }

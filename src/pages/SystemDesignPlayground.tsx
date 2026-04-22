@@ -304,7 +304,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Onboarding — tour management
   const { isNewToPage, markPageVisited } = useOnboarding();
-  const tourPageId = idFromUrl === "free" ? "design_studio" : "problem_playground";
+  const tourPageId =
+    idFromUrl === "free" ? "design_studio" : "problem_playground";
   const { startTour } = useTour(tourPageId);
 
   // Toast notifications
@@ -463,7 +464,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const t = setTimeout(() => startTour(), 1200);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idFromUrl]);
 
   // Load shared (read-only) data when routed via /public/:publicId
@@ -507,7 +508,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const loader = isAttempt
       ? apiService.getPublicSolution(effectiveId).then((res) => ({
           title: res.title,
-          difficulty: res.difficulty as SystemDesignProblem["difficulty"] | undefined,
+          difficulty: res.difficulty as
+            | SystemDesignProblem["difficulty"]
+            | undefined,
           category: res.category,
           nodes: res.nodes as Node[],
           edges: res.edges as Edge[],
@@ -766,7 +769,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const autoSave = async () => {
       try {
-        if (idFromUrl === "free" && !currentDiagramId && !userIntent?.title && !userIntent?.description) {
+        if (
+          idFromUrl === "free" &&
+          !currentDiagramId &&
+          !userIntent?.title &&
+          !userIntent?.description
+        ) {
           if (!userDeclinedSaveRef.current) {
             // No user intent - prompt for title and description (first time only)
             setShowTitleDialog(true);
@@ -1422,25 +1430,85 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const libraryComp = allMinimalComponents.find(
           (c) => c.id === comp.componentType,
         );
-        const localCompDef = COMPONENTS.find((c) => c.id === comp.componentType);
+        const localCompDef = COMPONENTS.find(
+          (c) => c.id === comp.componentType,
+        );
         const fullComp = fullComponentsCache[comp.componentType];
+
+        const isGroupComponent =
+          localCompDef?.nodeType === "group" || fullComp?.nodeType === "group";
+        const resolvedNodeType =
+          localCompDef?.nodeType || (isGroupComponent ? "group" : "custom");
+
+        // const newNode: Node = {
+        //   id: comp.nodeId,
+        //   position: comp.position,
+        //   type: resolvedNodeType,
+        //   data: {
+        //     label: comp.label,
+        //     componentId: comp.componentType,
+        //     // Prefer local React icon, fall back to provided iconUrl (minimal/full)
+        //     icon: localCompDef?.icon ?? fullComp?.icon,
+        //     iconUrl:
+        //       comp.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl,
+        //     subtitle: comp.description ?? comp.highlightReason,
+        //     // Flatten guided step properties onto node.data so the Inspector can read them
+        //     ...Object.fromEntries(
+        //       Object.entries(comp.properties).map(([k, v]) => [k, v]),
+        //     ),
+        //   },
+        // };/
 
         const newNode: Node = {
           id: comp.nodeId,
           position: comp.position,
-          type: "custom",
+          type: resolvedNodeType,
+          // For group nodes, use different styling
+          style: isGroupComponent
+            ? {
+                width: 400,
+                height: 300,
+                zIndex: -1, // Groups should be behind regular nodes
+              }
+            : undefined,
+          // include icon so the custom node can render it
           data: {
-            label: comp.label,
-            componentId: comp.componentType,
-            // Prefer local React icon, fall back to provided iconUrl (minimal/full)
-            icon: localCompDef?.icon ?? fullComp?.icon,
-            iconUrl:
-              comp.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl,
-            subtitle: comp.description ?? comp.highlightReason,
-            // Flatten guided step properties onto node.data so the Inspector can read them
-            ...Object.fromEntries(Object.entries(comp.properties).map(([k, v]) => [k, v])),
+            label: comp.label, // Use label from priority order
+            componentId: comp.componentType, // Store the original component ID (the type from drag data)
+            icon: localCompDef?.icon,
+            iconUrl: localCompDef?.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl, // Use iconUrl with priority order
+            subtitle: comp.description, // Use description from priority order
+            backgroundColor: isGroupComponent
+              ? "rgba(100, 100, 255, 0.05)"
+              : undefined,
+            borderColor: isGroupComponent
+              ? "rgba(100, 100, 255, 0.3)"
+              : undefined,
+            // For table nodes, add default attributes structure and renderConfig
+            ...(resolvedNodeType === "tableNode"
+              ? {
+                  componentName: comp?.label || "Entity",
+                  attributes:
+                    comp?.data?.attributes ||
+                    ([] as TableAttribute[]),
+                  renderConfig: localCompDef?.renderConfig, // Pass the renderConfig from component
+                }
+              : {}),
+            // For erNode types, add default property values
+            ...(resolvedNodeType === "erNode"
+              ? localCompDef?.properties?.reduce(
+                  (acc, prop) => {
+                    if (prop.default !== undefined && prop.default !== "") {
+                      acc[prop.key] = prop.default;
+                    }
+                    return acc;
+                  },
+                  {} as Record<string, string | number | boolean>,
+                )
+              : {}),
           },
         };
+
         // Ensure full component metadata is fetched if it's a provider component
         if (
           comp.componentType &&
@@ -2767,10 +2835,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // When full component metadata arrives (fetched lazily), update existing nodes
   // that reference that component so their icons/iconUrls become available.
   React.useEffect(() => {
-    if (!fullComponentsCache || Object.keys(fullComponentsCache).length === 0) return;
+    if (!fullComponentsCache || Object.keys(fullComponentsCache).length === 0)
+      return;
     setNodes((nds) =>
       nds.map((n) => {
-        const compId = typeof n.data?.componentId === "string" ? n.data.componentId : null;
+        const compId =
+          typeof n.data?.componentId === "string" ? n.data.componentId : null;
         if (!compId) return n;
         const full = fullComponentsCache[compId];
         if (!full) return n;
@@ -3054,7 +3124,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     try {
       // Custom problems stored in localStorage (custom-...)
-      if (idFromUrl && idFromUrl.startsWith && idFromUrl.startsWith("custom-")) {
+      if (
+        idFromUrl &&
+        idFromUrl.startsWith &&
+        idFromUrl.startsWith("custom-")
+      ) {
         localStorage.removeItem(`custom-problem-${idFromUrl}`);
       } else if (diagramIdFromUrl && currentDiagramId) {
         // Viewing a diagram by URL: delete user's diagram if authenticated
@@ -3688,7 +3762,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                   {/* Timer - only show for problems, not Design Studio or shared view */}
                   {idFromUrl !== "free" && !isSharedView && (
-                    <div className="flex items-center gap-1 border-l border-white/20 pl-3" data-tour="timer">
+                    <div
+                      className="flex items-center gap-1 border-l border-white/20 pl-3"
+                      data-tour="timer"
+                    >
                       <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300 flex items-center gap-1 font-mono">
                         {formatTime(elapsedTime)}
                       </span>
@@ -3708,18 +3785,20 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {idFromUrl === "free" && (
                   <div className="hidden sm:flex items-center gap-2 border-white/20">
                     {/* Manual Save button — shown when authenticated with unsaved canvas */}
-                    {isAuthenticated && !currentDiagramId && nodes.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleManualSave}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded-md transition-colors cursor-pointer"
-                        data-tooltip="Save Design"
-                        data-tour="save-btn"
-                      >
-                        <MdSave className="h-4 w-4" />
-                        Save
-                      </button>
-                    )}
+                    {isAuthenticated &&
+                      !currentDiagramId &&
+                      nodes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleManualSave}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded-md transition-colors cursor-pointer"
+                          data-tooltip="Save Design"
+                          data-tour="save-btn"
+                        >
+                          <MdSave className="h-4 w-4" />
+                          Save
+                        </button>
+                      )}
                     {/* Auto-save indicator */}
                     {autoSaveEnabled && (
                       <div className="flex items-center gap-2 px-2 py-1 text-xs text-white/80">
@@ -4249,7 +4328,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   className="mt-1 h-4 w-4 rounded text-theme"
                 />
                 <label htmlFor="clear-saved" className="text-sm text-muted">
-                  Also delete saved progress (local or server). Use with caution.
+                  Also delete saved progress (local or server). Use with
+                  caution.
                 </label>
               </div>
 
