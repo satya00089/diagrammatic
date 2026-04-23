@@ -11,6 +11,7 @@ export interface SystemDesignProblem {
   hints: string[];
   sampleSolution?: SystemDesignSolution;
   tags: string[];
+  has_guided_walkthrough?: boolean;
 }
 
 export interface SystemDesignSolution {

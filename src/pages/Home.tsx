@@ -557,11 +557,12 @@ const Home: React.FC = () => {
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
         <header
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
             isScrolled
               ? "shadow-lg backdrop-blur-md bg-[var(--brand)]/90"
               : "bg-[var(--brand)]"
           }`}
+          style={{ top: 'var(--announcement-h, 0px)' }}
         >
           {/* Scroll progress bar */}
           <div
