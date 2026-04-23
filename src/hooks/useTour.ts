@@ -49,13 +49,13 @@ export const useTour = (pageId: PageId) => {
             if (isNewToPage(pageId)) {
               markPageVisited(pageId);
             }
-          } catch (err) {
+          } catch {
             // swallow any errors — onboarding persistence is best-effort
           }
         },
     });
     driverRef.current.drive();
-  }, [pageId, markTourComplete]);
+  }, [pageId, markTourComplete, isNewToPage, markPageVisited]);
 
   return { startTour, isTourCompleted: isTourCompleted(pageId) };
 };
