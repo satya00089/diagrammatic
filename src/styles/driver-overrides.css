@@ -52,6 +52,7 @@
   cursor: pointer !important;
   font-family: var(--font-family, "Inter", sans-serif) !important;
   transition: opacity 0.15s !important;
+  text-shadow: none !important;
 }
 
 .driver-popover-prev-btn:hover,
