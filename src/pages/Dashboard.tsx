@@ -13,7 +13,6 @@ import {
   MdSearchOff,
   MdSmartToy,
 } from "react-icons/md";
-
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
@@ -62,7 +61,7 @@ const Dashboard: React.FC = () => {
       const t = setTimeout(() => startTour(), 800);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Local UI state
@@ -293,7 +292,8 @@ const Dashboard: React.FC = () => {
                 System Design & AI/ML Problems
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                Master Infrastructure, Application, AI & ML architectures. Practice with 200+ curated problems in an interactive canvas.
+                Master Infrastructure, Application, AI & ML architectures.
+                Practice with 200+ curated problems in an interactive canvas.
               </p>
             </div>
 
@@ -439,7 +439,7 @@ const Dashboard: React.FC = () => {
                     <div
                       key={problem.id}
                       {...(index === 0 ? { "data-tour": "problem-card" } : {})}
-                      className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
+                      className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative ${
                         index === 0
                           ? "delay-0"
                           : index === 1
@@ -449,18 +449,29 @@ const Dashboard: React.FC = () => {
                               : ""
                       }`}
                     >
-
-
+                      {problem.has_guided_walkthrough ? (
+                        <div className="flex items-center justify-between px-4 py-2 bg-sky-100 rounded-t-2xl">
+                          <span className="flex items-center gap-1.5 text-sky-700 text-sm font-semibold tracking-wide">
+                            <span>🗺️</span>
+                            Guided Walkthrough
+                          </span>
+                          <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                            {problem.difficulty}
+                          </span>
+                        </div>
+                      ) : null}
                       <div className="relative p-6">
                         <div className="flex items-start justify-between mb-4">
                           <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
                             {problem.title}
                           </h3>
-                          <span
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ml-2 flex-shrink-0 ${getDifficultyColor(problem.difficulty)}`}
-                          >
-                            {problem.difficulty}
-                          </span>
+                          {!problem.has_guided_walkthrough && (
+                            <div className="flex-shrink-0 ml-2">
+                              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                                {problem.difficulty}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <p className="text-muted text-sm mb-4 line-clamp-3 leading-relaxed">
@@ -469,10 +480,12 @@ const Dashboard: React.FC = () => {
 
                         <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
                           <span className="flex items-center gap-1">
-                            <MdLabel className="w-4 h-4 text-muted/60" /> {problem.category}
+                            <MdLabel className="w-4 h-4 text-muted/60" />{" "}
+                            {problem.category}
                           </span>
                           <span className="flex items-center gap-1">
-                            <MdAccessTime className="w-4 h-4 text-muted/60" /> {problem.estimated_time}
+                            <MdAccessTime className="w-4 h-4 text-muted/60" />{" "}
+                            {problem.estimated_time}
                           </span>
                         </div>
 
