@@ -3,11 +3,20 @@ import { Handle, Position, NodeResizer } from "@xyflow/react";
 import { MdSettings, MdDelete } from "react-icons/md";
 import { motion } from "framer-motion";
 import type { IconType } from "react-icons";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import SpriteIcon from "./SpriteIcon";
+import { loadSpriteManifest } from "../store/slices/spritesSlice";
+
+function providerFromId(id: string): string | null {
+  const prefix = id.split("-")[0].toLowerCase();
+  return ["aws", "azure", "gcp", "kubernetes"].includes(prefix) ? prefix : null;
+}
 
 export interface GroupNodeData {
   label: string;
   icon?: IconType;
   iconUrl?: string;
+  componentId?: string;
   subtitle?: string;
   backgroundColor?: string;
   borderColor?: string;
@@ -19,8 +28,19 @@ interface GroupNodeProps {
 }
 
 const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
+  const dispatch = useAppDispatch();
   const bgColor = data.backgroundColor || "rgba(100, 100, 255, 0.05)";
   const borderColor = data.borderColor || "rgba(100, 100, 255, 0.3)";
+  const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
+  const sprite = data.componentId ? spriteIcons[data.componentId] : undefined;
+
+  // condition in the thunk deduplicates — safe to dispatch every mount.
+  React.useEffect(() => {
+    if (!data.componentId) return;
+    const provider = providerFromId(data.componentId);
+    if (!provider) return;
+    dispatch(loadSpriteManifest(provider));
+  }, [data.componentId, dispatch]);
 
   const onDelete = React.useCallback(
     (e: React.MouseEvent) => {
@@ -125,9 +145,11 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
         }}
       >
         {data.icon && React.createElement(data.icon, { size: 16 })}
-        {data.iconUrl && !data.icon && (
+        {sprite ? (
+          <SpriteIcon sprite={sprite} displaySize={16} alt="" />
+        ) : data.iconUrl && !data.icon ? (
           <img src={data.iconUrl} alt="" style={{ width: '16px', height: '16px' }} />
-        )}
+        ) : null}
         <span>{data.label}</span>
       </div>
 
