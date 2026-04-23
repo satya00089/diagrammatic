@@ -58,6 +58,7 @@ import type { CanvasContext, UserIntent } from "../types/chatBot";
 import { useTheme } from "../hooks/useTheme";
 import { useUndoRedo } from "../hooks/useUndoRedo";
 import { useAuth } from "../hooks/useAuth";
+import { useCanvasEventLogger } from "../hooks/useCanvasEventLogger";
 import { useToast } from "../hooks/useToast";
 import { useChatBot } from "../hooks/useChatBot";
 import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
@@ -315,6 +316,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Store current nodes in ref to avoid dependency issues
   const nodesRef = useRef<Node[]>([]);
+  // Store current edges in ref (used by event logger for edge count)
+  const edgesRef = useRef<Edge[]>([]);
 
   // Track if we've shown the project intent dialog for this session
   const hasShownProjectIntentRef = useRef(false);
@@ -589,10 +592,55 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Track if we're currently applying undo/redo to prevent circular updates
   const isApplyingUndoRedo = useRef(false);
 
-  // Update nodes ref whenever nodes change
+  // Update nodes/edges refs whenever state changes
   useEffect(() => {
     nodesRef.current = nodes;
   }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  // Canvas event logger — buffers structural events and flushes to S3 every 15 s
+  // Only enabled for authenticated users solving a named problem (not free canvas)
+  const { logNodeAdded, logNodeDeleted, logEdgeAdded } = useCanvasEventLogger({
+    userId: user?.id,
+    problemId: idFromUrl,
+    isEnabled:
+      isAuthenticated &&
+      !isSharedView &&
+      !!idFromUrl &&
+      idFromUrl !== "free",
+  });
+
+  // Wrapped change handlers — intercept add/remove events for training data before
+  // forwarding to React Flow's built-in state updaters
+  const handleNodesChange = useCallback(
+    (changes: Parameters<typeof onNodesChange>[0]) => {
+      for (const change of changes) {
+        if (change.type === "add") {
+          logNodeAdded(nodesRef, edgesRef, change.item);
+        } else if (change.type === "remove") {
+          const removed = nodesRef.current.find((n) => n.id === change.id);
+          if (removed) logNodeDeleted(nodesRef, edgesRef, removed);
+        }
+      }
+      onNodesChange(changes);
+    },
+    [onNodesChange, logNodeAdded, logNodeDeleted],
+  );
+
+  const handleEdgesChange = useCallback(
+    (changes: Parameters<typeof onEdgesChange>[0]) => {
+      for (const change of changes) {
+        if (change.type === "add") {
+          logEdgeAdded(nodesRef, edgesRef, change.item.source, change.item.target);
+        }
+      }
+      onEdgesChange(changes);
+    },
+    [onEdgesChange, logEdgeAdded],
+  );
 
   // Show project intent dialog when entering Design Studio with blank canvas
   useEffect(() => {
@@ -4236,10 +4284,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             onNodesChange={
-              onNodesChange as unknown as (...changes: unknown[]) => void
+              handleNodesChange as unknown as (...changes: unknown[]) => void
             }
             onEdgesChange={
-              onEdgesChange as unknown as (...changes: unknown[]) => void
+              handleEdgesChange as unknown as (...changes: unknown[]) => void
             }
             onConnect={onConnect}
             onDragOver={onDragOver}
