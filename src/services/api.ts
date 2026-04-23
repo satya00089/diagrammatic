@@ -590,6 +590,35 @@ class ApiService {
     }
     return response.json();
   }
+
+  // ---------------------------------------------------------------------------
+  // ML training data — canvas event log ingestion
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Send a batch of canvas events to the backend for S3 storage.
+   * Fire-and-forget: callers should not await this or handle errors.
+   */
+  async flushCanvasEvents(payload: {
+    user_id: string;
+    problem_id: string;
+    session_id: string;
+    events: Array<{
+      ts: number;
+      action: "add_node" | "delete_node" | "add_edge";
+      type?: string;
+      source_type?: string;
+      target_type?: string;
+      graph_node_count: number;
+      graph_edge_count: number;
+    }>;
+  }): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/v1/events/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
 }
 
 export const apiService = new ApiService();
