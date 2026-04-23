@@ -175,7 +175,7 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
 
   // Sync controlled prop -> local state when provided
   useEffect(() => {
-    if (currentStepProp !== undefined && currentStepProp !== currentStep) {
+    if (currentStepProp !== undefined) {
       setCurrentStep(currentStepProp);
     }
   }, [currentStepProp]);
@@ -194,14 +194,14 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
       setCurrentStep(0);
     }
     setAppliedSteps(new Set());
-  }, [problemId]);
+  }, [problemId, onStepChange]);
 
   // Scroll content to top whenever the step changes
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     // Notify parent if controlled
     if (onStepChange) onStepChange(currentStep);
-  }, [currentStep]);
+  }, [currentStep, onStepChange]);
 
   const step = walkthrough?.steps[currentStep] ?? null;
   const total = walkthrough?.totalSteps ?? 0;
