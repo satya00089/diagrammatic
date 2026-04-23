@@ -8,6 +8,15 @@ import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import NodePropertyDisplay from "./NodePropertyDisplay";
+import { useAppSelector, useAppDispatch } from "../store/hooks";
+import SpriteIcon from "./SpriteIcon";
+import { loadSpriteManifest } from "../store/slices/spritesSlice";
+
+/** Extract provider slug from a component ID like "aws-cognito" → "aws" */
+function providerFromId(id: string): string | null {
+  const prefix = id.split("-")[0].toLowerCase();
+  return ["aws", "azure", "gcp", "kubernetes"].includes(prefix) ? prefix : null;
+}
 
 export type NodeData = {
   label: string;
@@ -43,6 +52,30 @@ type Props = {
 };
 
 const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
+  const dispatch = useAppDispatch();
+  const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
+  const componentId = typeof data.componentId === "string" ? data.componentId : undefined;
+  const sprite = componentId ? spriteIcons[componentId] : undefined;
+  const provider = componentId ? providerFromId(componentId) : null;
+  // Select only this node's provider status to avoid re-renders from other providers loading.
+  const spriteStatus = useAppSelector((state) =>
+    provider ? state.sprites.providerStatus[provider] : undefined
+  );
+  // For known sprite providers (aws/azure/gcp/kubernetes): NEVER fire iconUrl <img>.
+  // Show nothing while loading (status undefined or 'loading'), sprite once ready.
+  // Only fall back to iconUrl if sprite load definitively failed (status 'error'),
+  // or if this is a non-cloud component with no sprite provider at all.
+  const showIconUrl = !sprite && !!data.iconUrl && (!provider || spriteStatus === "error");
+
+  // Self-load sprite manifest for this node's provider if not already loaded.
+  // condition in the thunk handles deduplication (won't re-fetch if loading/ready).
+  React.useEffect(() => {
+    if (!componentId) return;
+    const p = providerFromId(componentId);
+    if (!p) return;
+    dispatch(loadSpriteManifest(p));
+  }, [componentId, dispatch]);
+
   const [contextMenu, setContextMenu] = React.useState<{
     visible: boolean;
     x: number;
@@ -267,7 +300,11 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
         {/* Main content */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
-          {data.iconUrl ? (
+          {sprite ? (
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <SpriteIcon sprite={sprite} displaySize={64} alt={displayLabel} />
+            </div>
+          ) : showIconUrl ? (
             <div className="flex-shrink-0 flex items-center justify-center">
               <img
                 src={data.iconUrl}

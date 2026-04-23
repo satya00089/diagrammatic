@@ -3051,6 +3051,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Intelligently find the best matching component
     const comp = findBestMatchingComponent(id);
 
+    // For cloud provider components (aws, azure, gcp) not in local COMPONENTS,
+    // look up the minimalComponent which has the real DB id and iconUrl.
+    let minimalComp: MinimalComponent | undefined;
+    if (!comp) {
+      for (const providerComps of Object.values(minimalComponentsByProvider)) {
+        minimalComp = providerComps.find((c) => c.id === id);
+        if (minimalComp) break;
+      }
+      minimalComp ??= minimalComponents.find((c) => c.id === id);
+    }
+
     // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!bounds) return;
@@ -3061,19 +3072,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       y: bounds.top + bounds.height / 2,
     });
 
-    const nodeId = `${comp?.id || "custom-component"}-${Date.now()}`;
+    // Use DB component id when available so sprite lookup works
+    const realId = comp?.id ?? minimalComp?.id ?? id;
+    const nodeId = `${realId}-${Date.now()}`;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.group === "Grouping";
+    const isGroupComponent = comp?.group === "Grouping" ||
+      (minimalComp as MinimalComponent | undefined)?.nodeType === "group";
 
-    // Determine node type: use component's nodeType if specified, otherwise default behavior
+    // Determine node type
     const nodeTypeToUse =
-      comp?.nodeType || (isGroupComponent ? "group" : "custom");
+      comp?.nodeType ?? minimalComp?.nodeType ?? (isGroupComponent ? "group" : "custom");
 
-    // If no component found, create a custom component with the provided label
-    const finalLabel = comp?.label ?? id;
-    const finalIcon = comp?.icon ?? "📦"; // Default icon for custom components
-    const finalSubtitle = comp?.description ?? "Custom Component";
+    const finalLabel = comp?.label ?? minimalComp?.label ?? id;
+    const finalIcon = comp?.icon;
+    const finalSubtitle = comp?.description ?? minimalComp?.description ?? "";
+    const finalIconUrl = minimalComp?.iconUrl ?? comp?.iconUrl;
 
     const newNode: Node = {
       id: nodeId,
@@ -3088,8 +3102,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         : undefined,
       data: {
         label: finalLabel,
-        componentId: comp?.id || "custom-component", // Store the original component ID or custom
+        componentId: realId, // real DB id — used for sprite lookup
         icon: finalIcon,
+        iconUrl: finalIconUrl, // fallback until sprite loads
         subtitle: finalSubtitle,
         backgroundColor: isGroupComponent
           ? "rgba(100, 100, 255, 0.05)"

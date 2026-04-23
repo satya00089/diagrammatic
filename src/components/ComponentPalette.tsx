@@ -16,6 +16,8 @@ import {
   toggleProvider,
   type MinimalComponent,
 } from "../store/slices/componentsSlice";
+import { loadSpriteManifest } from "../store/slices/spritesSlice";
+import SpriteIcon from "./SpriteIcon";
 
 interface Props {
   readonly components: readonly CanvasComponent[];
@@ -35,6 +37,8 @@ export default function ComponentPalette({
   // Redux state
   const { minimalComponents, selectedProviders, loading, error } =
     useAppSelector((state) => state.components);
+  const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
+  const spriteProviderStatus = useAppSelector((state) => state.sprites.providerStatus);
 
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
@@ -75,6 +79,10 @@ export default function ComponentPalette({
       prevSelectedProvidersRef.current = [];
     } else {
       dispatch(fetchMinimalComponents(selectedProviders));
+      // Pre-load sprite manifests for selected providers
+      for (const p of selectedProviders) {
+        dispatch(loadSpriteManifest(p));
+      }
 
       // Only expand newly added providers, preserve existing state
       const prevProviders = prevSelectedProvidersRef.current;
@@ -605,16 +613,32 @@ export default function ComponentPalette({
                                             >
                                               <div className="flex justify-center items-center">
                                                 {"iconUrl" in c && c.iconUrl ? (
-                                                  <div className="w-10 h-10 mb-1 relative">
-                                                    <div className="z-10 opacity-75 w-full h-full flex items-center justify-center">
-                                                      <span className="inline-flex items-center justify-center w-full h-full">
+                                                  <div className="w-10 h-10 mb-1 relative flex items-center justify-center">
+                                                    {(() => {
+                                                      if (spriteIcons[c.id]) {
+                                                        return (
+                                                          <SpriteIcon
+                                                            sprite={spriteIcons[c.id]}
+                                                            displaySize={40}
+                                                            alt={c.label}
+                                                            style={{ opacity: 0.9 }}
+                                                          />
+                                                        );
+                                                      }
+                                                      const pfx = c.id.split("-")[0];
+                                                      const isKnownProvider = ["aws","azure","gcp","kubernetes"].includes(pfx);
+                                                      const st = spriteProviderStatus[pfx];
+                                                      // For known providers: never fire individual iconUrl requests.
+                                                      // Only fall back on error, or if not a sprite provider.
+                                                      if (isKnownProvider && st !== "error") return null;
+                                                      return (
                                                         <img
                                                           src={c.iconUrl}
                                                           alt={c.label}
                                                           className="w-10 h-10 object-contain"
                                                         />
-                                                      </span>
-                                                    </div>
+                                                      );
+                                                    })()}
                                                   </div>
                                                 ) : (
                                                   <div className="w-10 h-10 mb-1 relative">
