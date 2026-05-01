@@ -1521,11 +1521,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             : undefined,
           // include icon so the custom node can render it
           data: {
+            // Spread guided step properties first so the Inspector and
+            // assessment service can read description, auth settings, etc.
+            // Explicit fields below take precedence over anything in properties.
+            ...comp.properties,
             label: comp.label, // Use label from priority order
             componentId: comp.componentType, // Store the original component ID (the type from drag data)
             icon: localCompDef?.icon,
             iconUrl: localCompDef?.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl, // Use iconUrl with priority order
-            subtitle: comp.description, // Use description from priority order
+            subtitle: comp.description ?? comp.highlightReason, // Use description from priority order
             backgroundColor: isGroupComponent
               ? "rgba(100, 100, 255, 0.05)"
               : undefined,
