@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("dashboard");
-  const { trackPageView } = useAnalytics({ userId: undefined, isEnabled: true });
+  const { trackPageView } = useAnalytics({ isEnabled: true });
 
   // Mark visited + auto-start tour for new users
   useEffect(() => {

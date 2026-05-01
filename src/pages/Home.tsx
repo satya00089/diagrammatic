@@ -137,7 +137,7 @@ const Home: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
-  const { trackPageView } = useAnalytics({ userId: user?.id, isEnabled: true });
+  const { trackPageView } = useAnalytics({ isEnabled: true });
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("home");
   const [showAuthModal, setShowAuthModal] = useState(false);

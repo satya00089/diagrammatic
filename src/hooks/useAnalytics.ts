@@ -26,63 +26,27 @@ interface AnalyticsBatch {
 }
 
 interface UseAnalyticsOptions {
-  userId?: string | undefined;
   isEnabled?: boolean;
 }
 
-function readConsentCookie(): boolean {
-  try {
-    const cookies = document.cookie.split(";");
-    for (const c of cookies) {
-      const [k, v] = c.split("=").map((s) => s.trim());
-      if (k === "analytics_consent") return v === "granted";
-    }
-  } catch {
-    // ignore
-  }
-  return false;
-}
+// Cookie-less analytics: do not depend on consent cookie or persistent ids.
+// This hook sends minimal, non-identifying events suitable for aggregated
+// collection (no cookies, no localStorage/IDs are used).
 
-export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) {
+export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
   const bufferRef = useRef<AnalyticsEvent[]>([]);
-  const sessionIdRef = useRef<string>(
-    sessionStorage.getItem("analytics_session_id") || crypto.randomUUID(),
-  );
+  // Use an ephemeral per-tab session id (not persisted to storage)
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
 
-  useEffect(() => {
-    // Persist session id for this tab
-    try {
-      sessionStorage.setItem("analytics_session_id", sessionIdRef.current);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  // Anonymous id persisted across sessions
-  const anonIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (anonIdRef.current !== null) return;
-    try {
-      let a = localStorage.getItem("analytics_anon_id");
-      if (!a) {
-        a = crypto.randomUUID();
-        localStorage.setItem("analytics_anon_id", a);
-      }
-      anonIdRef.current = a;
-    } catch {
-      anonIdRef.current = null;
-    }
-  }, []);
+  // No persistent anonymous id — keep analytics cookie-less and non-identifying
 
   const flush = useCallback(() => {
-    if (!isEnabled || !readConsentCookie()) return;
+    if (!isEnabled) return;
     if (bufferRef.current.length === 0) return;
 
     const events = bufferRef.current.splice(0);
     const payload: AnalyticsBatch = {
-      user_id: userId,
-      anon_id: anonIdRef.current ?? undefined,
+      // Do not send user-identifying ids in aggregated mode
       session_id: sessionIdRef.current,
       events,
     };
@@ -95,7 +59,7 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
     }).catch(() => {
       // swallow — non-blocking telemetry
     });
-  }, [isEnabled, userId]);
+  }, [isEnabled]);
 
   // Periodic flush and flush on unload/visibilitychange
   useEffect(() => {
@@ -141,7 +105,7 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
 
   const trackEvent = useCallback(
     (event_name: string, event_props?: Record<string, unknown>, immediate = false) => {
-      if (!isEnabled || !readConsentCookie()) return;
+      if (!isEnabled) return;
       const evt: AnalyticsEvent = {
         ts: Date.now(),
         event_name,
@@ -153,8 +117,7 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
 
       if (immediate) {
         const payload: AnalyticsBatch = {
-          user_id: userId,
-          anon_id: anonIdRef.current ?? undefined,
+          // Do not send user-identifying ids in aggregated mode
           session_id: sessionIdRef.current,
           events: [evt],
         };
@@ -169,7 +132,7 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
 
       bufferRef.current.push(evt);
     },
-    [isEnabled, userId],
+    [isEnabled],
   );
 
   const trackPageView = useCallback(
@@ -182,7 +145,7 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
 
   // Time on page helper - call when leaving
   const trackTimeOnPage = useCallback(() => {
-    if (!isEnabled || !readConsentCookie()) return;
+    if (!isEnabled) return;
     const start = window.__analytics_page_enter_ts || Date.now();
     const duration = Date.now() - start;
     trackEvent("time_on_page", { time_on_page_ms: duration }, true);
