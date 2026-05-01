@@ -18,6 +18,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
+import useAnalytics from "../hooks/useAnalytics";
 import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import SEO from "../components/SEO";
@@ -51,6 +52,7 @@ const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("dashboard");
+  const { trackPageView } = useAnalytics({ userId: undefined, isEnabled: true });
 
   // Mark visited + auto-start tour for new users
   useEffect(() => {
@@ -63,6 +65,14 @@ const Dashboard: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    try {
+      trackPageView();
+    } catch {
+      // ignore
+    }
+  }, [trackPageView]);
 
   // Local UI state
   const [showUserMenu, setShowUserMenu] = useState(false);
