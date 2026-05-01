@@ -51,11 +51,14 @@ export async function assessSolution(
     if (
       t === "application-server" || t === "application_server" ||
       t === "microservice" || t === "service" || t === "server" ||
-      t === "notification-service" || t === "search-engine"
+      t === "notification-service" || t === "search-engine" ||
+      t === "backend-server" || t === "scheduler"
     ) return "backend";
     if (t === "nosql" || t === "sql" || t === "rdbms" || t === "db") return "database";
     if (t === "file-storage" || t === "file_storage" || t === "blob" || t === "s3") return "storage";
-    if (t === "firewall" || t === "waf" || t === "auth") return "security";
+    if (t === "firewall" || t === "waf" || t === "auth" || t === "auth-service") return "security";
+    if (t === "loadbalancer" || t === "load_balancer") return "load-balancer";
+    if (t === "tracing") return "monitoring";
     // Anything else falls through as custom
     return "custom";
   };
@@ -66,8 +69,8 @@ export async function assessSolution(
       // Filter out group/layout nodes that don't represent real architecture components
       components: solution.components
         .filter((comp) => (comp.type as string) !== "group")
-        .map((comp) => ({
-          id: comp.id || `comp-${Date.now()}`,
+        .map((comp, i) => ({
+          id: comp.id || `comp-${Date.now()}-${i}`,
           type: normalizeComponentType(comp.type),
           label: comp.label,
           properties: comp.properties || {},
@@ -85,8 +88,8 @@ export async function assessSolution(
             (conn) =>
               !excludedIds.has(conn.source) && !excludedIds.has(conn.target),
           )
-          .map((conn) => ({
-            id: conn.id || `conn-${Date.now()}`,
+          .map((conn, i) => ({
+            id: conn.id || `conn-${Date.now()}-${i}`,
             source: conn.source,
             target: conn.target,
             label: conn.label,
