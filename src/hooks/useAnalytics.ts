@@ -1,5 +1,11 @@
 import { useRef, useEffect, useCallback } from "react";
 
+declare global {
+  interface Window {
+    __analytics_page_enter_ts?: number;
+  }
+}
+
 const API_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL || "";
 
 export interface AnalyticsEvent {
@@ -31,7 +37,7 @@ function readConsentCookie(): boolean {
       const [k, v] = c.split("=").map((s) => s.trim());
       if (k === "analytics_consent") return v === "granted";
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
   return false;
@@ -47,24 +53,27 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
     // Persist session id for this tab
     try {
       sessionStorage.setItem("analytics_session_id", sessionIdRef.current);
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, []);
 
   // Anonymous id persisted across sessions
-  const anonIdRef = useRef<string | null>(() => {
+  const anonIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (anonIdRef.current !== null) return;
     try {
       let a = localStorage.getItem("analytics_anon_id");
       if (!a) {
         a = crypto.randomUUID();
         localStorage.setItem("analytics_anon_id", a);
       }
-      return a;
-    } catch (e) {
-      return null;
+      anonIdRef.current = a;
+    } catch {
+      anonIdRef.current = null;
     }
-  });
+  }, []);
 
   const flush = useCallback(() => {
     if (!isEnabled || !readConsentCookie()) return;
@@ -174,14 +183,14 @@ export function useAnalytics({ userId, isEnabled = true }: UseAnalyticsOptions) 
   // Time on page helper - call when leaving
   const trackTimeOnPage = useCallback(() => {
     if (!isEnabled || !readConsentCookie()) return;
-    const start = (window as any).__analytics_page_enter_ts || Date.now();
+    const start = window.__analytics_page_enter_ts || Date.now();
     const duration = Date.now() - start;
     trackEvent("time_on_page", { time_on_page_ms: duration }, true);
   }, [isEnabled, trackEvent]);
 
   // Mark page enter ts for time on page; update on route changes if callers call trackPageView
   useEffect(() => {
-    (window as any).__analytics_page_enter_ts = Date.now();
+    window.__analytics_page_enter_ts = Date.now();
     return () => {
       trackTimeOnPage();
     };

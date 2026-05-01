@@ -182,7 +182,7 @@ const Home: React.FC = () => {
     // Track page view for analytics
     try {
       trackPageView();
-    } catch (e) {
+    } catch {
       // ignore analytics errors
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

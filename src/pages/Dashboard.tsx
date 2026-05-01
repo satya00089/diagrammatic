@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     try {
       trackPageView();
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [trackPageView]);
