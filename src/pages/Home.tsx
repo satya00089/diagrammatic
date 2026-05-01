@@ -6,6 +6,7 @@ import SEO from "../components/SEO";
 import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
+import useAnalytics from "../hooks/useAnalytics";
 import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
@@ -136,6 +137,7 @@ const Home: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+  const { trackPageView } = useAnalytics({ userId: user?.id, isEnabled: true });
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("home");
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -177,6 +179,12 @@ const Home: React.FC = () => {
     }
     // Not a new visit — mark immediately
     markPageVisited("home");
+    // Track page view for analytics
+    try {
+      trackPageView();
+    } catch (e) {
+      // ignore analytics errors
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

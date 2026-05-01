@@ -619,6 +619,52 @@ class ApiService {
       body: JSON.stringify(payload),
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Product analytics ingestion
+  // ---------------------------------------------------------------------------
+
+  async sendAnalyticsEvent(payload: {
+    user_id?: string;
+    anon_id?: string;
+    session_id: string;
+    events: Array<{
+      ts: number;
+      event_name: string;
+      page_url?: string;
+      route?: string;
+      page_title?: string;
+      event_props?: Record<string, unknown>;
+      time_on_page_ms?: number;
+    }>;
+  }): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/v1/analytics/event`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async flushAnalyticsEvents(payload: {
+    user_id?: string;
+    anon_id?: string;
+    session_id: string;
+    events: Array<{
+      ts: number;
+      event_name: string;
+      page_url?: string;
+      route?: string;
+      page_title?: string;
+      event_props?: Record<string, unknown>;
+      time_on_page_ms?: number;
+    }>;
+  }): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/v1/analytics/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
 }
 
 export const apiService = new ApiService();
