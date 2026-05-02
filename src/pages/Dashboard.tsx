@@ -134,7 +134,7 @@ const Dashboard: React.FC = () => {
 
     const primaryInterests = normalize(prefs.primary_interest ?? prefs["primaryInterest"] ?? prefs["primary_interest"]);
     const preferredClouds = normalize(prefs.preferred_cloud ?? prefs["preferredCloud"]);
-    const experience = String(prefs.experience_level ?? prefs["experienceLevel"] ?? "").toLowerCase();
+    const experience = normalize(prefs.experience_level ?? prefs["experienceLevel"] ?? "").join(",").toLowerCase();
 
     const scored = filteredProblems.map((problem, idx) => {
       let score = 0;
