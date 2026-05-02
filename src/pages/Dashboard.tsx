@@ -537,7 +537,7 @@ const Dashboard: React.FC = () => {
 
                 {/* Problems Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                  {prioritizedProblems.map((entry: any, index: number) => {
+                  {prioritizedProblems.map((entry, index) => {
                     const problem = entry.problem;
                     const score = entry.score;
                     const delayClass = index === 0 ? "delay-0" : index === 1 ? "delay-100" : index === 2 ? "delay-200" : "";
