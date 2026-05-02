@@ -173,7 +173,7 @@ const TableNode: React.FC<Props> = React.memo(
 
     // Start editing attribute
     const handleStartEdit = useCallback(
-      (attr: TableAttribute, e: React.MouseEvent) => {
+      (attr: TableAttribute, e: React.SyntheticEvent) => {
         e.stopPropagation();
         setEditingAttrId(attr.id);
         setEditingValue({ name: attr.name, type: attr.type });
@@ -257,8 +257,8 @@ const TableNode: React.FC<Props> = React.memo(
                 key={col.key}
                 type="text"
                 value={String(
-                  editingValue[col.key as keyof typeof editingValue] ||
-                    attrValue ||
+                  editingValue[col.key as keyof typeof editingValue] ??
+                    attrValue ??
                     "",
                 )}
                 onChange={(e) =>
@@ -292,16 +292,21 @@ const TableNode: React.FC<Props> = React.memo(
           }
 
           return (
-            <span
+            <button
               key={col.key}
-              className={`${cellClassName} truncate ${textColorClass}`}
+              type="button"
+              className={`${cellClassName} truncate ${textColorClass} text-left bg-transparent border-none p-0`}
               onDoubleClick={(e) => handleStartEdit(attr, e)}
-              title="Double-click to edit"
-              role="button"
-              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleStartEdit(attr, e);
+                }
+              }}
+              title="Double-click or press Enter to edit"
             >
               {String(attrValue || "")}
-            </span>
+            </button>
           );
         }
 
@@ -472,6 +477,21 @@ const TableNode: React.FC<Props> = React.memo(
                 <div
                   key={attr.id}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-hover)] group"
+                  role="group"
+                  aria-label={attr.name ? `Attribute ${attr.name}` : "Attribute row"}
+                  tabIndex={0}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                    // Only trigger when the div itself is the event target (not when typing in inputs)
+                    if (e.target === e.currentTarget && !isEditing && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleStartEdit(attr, e as unknown as React.SyntheticEvent);
+                    }
+                  }}
+                  onBlur={isEditing ? (e: React.FocusEvent<HTMLDivElement>) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      handleSaveEdit();
+                    }
+                  } : undefined}
                 >
                   {columns.map((col) => renderColumnCell(col, attr, isEditing))}
                 </div>
