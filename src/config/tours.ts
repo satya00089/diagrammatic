@@ -24,7 +24,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Browse Practice Problems",
           description:
-            "200+ curated system design problems across Infrastructure, Application, and AI & ML domains.",
+            "140+ curated system design problems across Infrastructure, Application, and AI & ML domains.",
           side: "bottom",
           align: "start",
         },

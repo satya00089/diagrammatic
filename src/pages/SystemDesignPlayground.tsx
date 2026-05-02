@@ -4233,7 +4233,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
                       {showUserMenu && (
                         <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                          <div className="px-4 py-2 border-b border-theme/10">
+                          <div className="px-4 py-2">
                             <p className="text-sm font-medium text-theme">
                               {user?.name || "User"}
                             </p>
@@ -4241,6 +4241,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                               {user?.email}
                             </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Open preferences editor (Quick Setup modal)
+                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              setShowUserMenu(false);
+                            }}
+                            aria-label="Edit preferences"
+                            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] dark:hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
+                          >
+                            Edit preferences
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => {
