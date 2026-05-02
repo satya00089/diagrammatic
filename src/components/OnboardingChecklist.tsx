@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MdClose, MdCheckCircle, MdRadioButtonUnchecked, MdChevronRight } from "react-icons/md";
 import { HiSparkles } from "react-icons/hi2";
 import { useOnboarding } from "../hooks/useOnboarding";
+import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +22,7 @@ const OnboardingChecklist: React.FC = () => {
   const [isDismissed, setIsDismissed] = useState(false);
   const { isTaskCompleted, completeTask } = useOnboarding();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const tasks: ChecklistTask[] = [
     {
@@ -87,6 +89,15 @@ const OnboardingChecklist: React.FC = () => {
                 <span className="text-xs text-muted">
                   {completedCount}/{totalCount}
                 </span>
+                {isAuthenticated && (
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new Event("open-quick-setup"))}
+                    className="text-xs text-theme hover:underline mr-2"
+                  >
+                    Edit preferences
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsDismissed(true)}

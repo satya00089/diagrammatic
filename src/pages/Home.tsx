@@ -246,7 +246,7 @@ const Home: React.FC = () => {
   }, [displayedText, isDeleting, heroWordIndex]);
 
   useEffect(() => {
-    const targets = [1000, 90, 1000];
+    const targets = [1000, 140, 1000];
     const duration = 1600;
     const startTime = Date.now();
     let rafId: number;
@@ -417,7 +417,7 @@ const Home: React.FC = () => {
 
   const getStatDisplayValue = (index: number): string => {
     if (index === 0) return statCounts[0] >= 1000 ? "1k+" : `${statCounts[0]}`;
-    if (index === 1) return statCounts[1] >= 90 ? "90+" : `${statCounts[1]}`;
+    if (index === 1) return statCounts[1] >= 140 ? "140+" : `${statCounts[1]}`;
     if (index === 2) return statCounts[2] >= 1000 ? "1k+" : `${statCounts[2]}`;
     return "\u221e";
   };
@@ -493,7 +493,7 @@ const Home: React.FC = () => {
   const stats = [
     { value: "1k+", label: "Components", icon: <HiCube className="w-5 h-5" /> },
     {
-      value: "90+",
+      value: "140+",
       label: "Problems",
       icon: <HiDocumentText className="w-5 h-5" />,
     },
@@ -558,7 +558,7 @@ const Home: React.FC = () => {
     <>
       <SEO
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
-        description="Master system design with Diagrammatic - an interactive playground featuring 1k+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and cloud infrastructure practice problems. Free system architecture tool for students, professionals, and educators."
+        description="Master system design with Diagrammatic — an interactive playground featuring 1k+ components and 140+ curated practice problems across cloud, AI/ML, and architecture topics. Free system architecture tool for students, professionals, and educators."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
         url="https://satya00089.github.io/diagrammatic/"
       />
@@ -667,7 +667,7 @@ const Home: React.FC = () => {
 
                       {showUserMenu && (
                         <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                          <div className="px-4 py-2 border-b border-theme/10">
+                          <div className="px-4 py-2">
                             <p className="text-sm font-medium text-theme">
                               {user?.name || "User"}
                             </p>
@@ -675,6 +675,18 @@ const Home: React.FC = () => {
                               {user?.email}
                             </p>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              setShowUserMenu(false);
+                            }}
+                            aria-label="Edit preferences"
+                            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
+                          >
+                            Edit preferences
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => {

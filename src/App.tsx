@@ -11,6 +11,7 @@ import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import OnboardingChecklist from "./components/OnboardingChecklist";
 import FeatureAnnouncement from "./components/FeatureAnnouncement";
+import QuickSetupModal from "./components/QuickSetupModal";
 
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
@@ -38,6 +39,7 @@ const App: React.FC = () => {
             {/* Global onboarding UI — rendered outside page routes so they persist across navigation */}
             <OnboardingChecklist />
             <FeatureAnnouncement />
+            <QuickSetupModal />
           </BrowserRouter>
         </OnboardingProvider>
       </ChatBotProvider>

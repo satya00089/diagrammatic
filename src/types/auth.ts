@@ -4,6 +4,7 @@ export interface User {
   name?: string;
   picture?: string | null;
   createdAt?: string;
+  preferences?: Record<string, unknown> | null;
 }
 
 export interface AuthState {

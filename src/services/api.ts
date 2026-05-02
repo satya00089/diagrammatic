@@ -84,6 +84,33 @@ class ApiService {
     return response.json();
   }
 
+  // User preferences endpoints
+  async getPreferences(): Promise<Record<string, unknown> | null> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/preferences`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Failed to fetch preferences");
+
+    return response.json();
+  }
+
+  async updatePreferences(preferences: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/preferences`, {
+      method: "PATCH",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(preferences),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: "Failed to update preferences" }));
+      throw new Error(err.message || "Failed to update preferences");
+    }
+
+    return response.json();
+  }
+
   // Diagram management endpoints
   async saveDiagram(payload: SaveDiagramPayload): Promise<SavedDiagram> {
     const response = await fetch(`${API_BASE_URL}/api/v1/diagrams`, {
