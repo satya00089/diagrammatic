@@ -305,7 +305,7 @@
             "id": "ss-scaling",
             "title": "Vertical vs Horizontal Scaling",
             "type": "article",
-            "content": "# Scaling Strategies\n\n- Scale up (vertical): increase the server's CPU, RAM, or storage — straightforward but bounded.\n- Scale out (horizontal): add instances behind a load balancer — requires architecture changes but improves resilience and capacity.\n\nTypical path: scale up first, observe, then separate tiers and scale out when necessary."
+            "content": "# Scaling Strategies\n\n![Single-server scaling](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-scaling.png)\n\n- Scale up (vertical): increase the server's CPU, RAM, or storage — straightforward but bounded.\n- Scale out (horizontal): add instances behind a load balancer — requires architecture changes but improves resilience and capacity.\n\nTypical path: scale up first, observe, then separate tiers and scale out when necessary."
           }
         ]
       },
@@ -319,19 +319,6 @@
             "title": "Advantages & Disadvantages",
             "type": "article",
             "content": "# Pros & Cons\n\nAdvantages:\n- Lower infrastructure and operational overhead.\n- Simplified local testing and debugging.\n- Quicker to get an initial product live.\n\nDrawbacks:\n- Entire service fails if the host fails.\n- Components compete for the same resources.\n- Scaling out often requires redesign.\n- Deployments can cause complete downtime."
-          }
-        ]
-      },
-      {
-        "id": "migration",
-        "title": "Migration Path",
-        "order": 7,
-        "lessons": [
-          {
-            "id": "ss-migration",
-            "title": "Evolving from Single Server",
-            "type": "article",
-            "content": "# Migration Path\n\n1. Move your database to a dedicated host or managed database service.\n2. Introduce an in-memory cache (e.g., Redis) for frequently-accessed data.\n3. Separate web and API into distinct processes or containers.\n4. Add a load balancer and multiple instances for redundancy and scale.\n5. Implement health checks, rolling deployments, and automated releases."
           }
         ]
       },
