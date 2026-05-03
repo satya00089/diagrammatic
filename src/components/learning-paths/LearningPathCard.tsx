@@ -1,15 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { MdCheckCircle } from "react-icons/md";
 import type { LearningPath } from "../../services/contentLoader";
 import { useLearningProgress } from "../../hooks/useLearningProgress";
+import { AuthModal } from "../AuthModal";
+import { useAuth } from "../../hooks/useAuth";
 
-const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
+type Props = {
+  path: LearningPath;
+  /** Optional: if provided, parent controls whether the user is authenticated */
+  isAuthenticated?: boolean;
+  /** Optional: parent callback to open auth modal; if provided it will be used for gating links */
+  onRequireAuth?: () => void;
+};
+
+const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, onRequireAuth }) => {
   const totalLessons = path.modules.reduce(
     (acc, m) => acc + (m.lessons?.length || 0),
     0,
   );
   const { isCompleted } = useLearningProgress(path.id);
+  const authCtx = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // pick up to first 2 lessons across modules for a quick preview
   const previewLessons: {
@@ -40,6 +52,8 @@ const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
     }
   };
 
+  const isAuthenticated = typeof isAuthProp === "boolean" ? isAuthProp : authCtx.isAuthenticated;
+
   return (
     <div className="group relative rounded-xl border border-theme/8 p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
       <div className="flex justify-end">
@@ -59,6 +73,16 @@ const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
             <Link
               to={`/learning-paths/${path.slug}`}
               className="text-[var(--brand)] hover:underline"
+              onClick={(e) => {
+                if (!isAuthenticated) {
+                  e.preventDefault();
+                  if (onRequireAuth) {
+                    onRequireAuth();
+                  } else {
+                    setShowAuthModal(true);
+                  }
+                }
+              }}
             >
               {path.title}
             </Link>
@@ -85,10 +109,20 @@ const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
           <div className="flex gap-2">
             {previewLessons.map((pl) => (
               <Link
-                key={pl.lessonId}
-                to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
-                className="flex-1 min-w-0 p-3 bg-surface rounded-md border border-theme/8 hover:shadow-sm transition-colors flex items-center justify-between"
-              >
+                  key={pl.lessonId}
+                  to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
+                  className="flex-1 min-w-0 p-3 bg-surface rounded-md border border-theme/8 hover:shadow-sm transition-colors flex items-center justify-between"
+                  onClick={(e) => {
+                    if (!isAuthenticated) {
+                      e.preventDefault();
+                      if (onRequireAuth) {
+                        onRequireAuth();
+                      } else {
+                        setShowAuthModal(true);
+                      }
+                    }
+                  }}
+                >
                 <div className="text-sm truncate text-[var(--brand)] hover:underline">{pl.title}</div>
                 <div className="ml-3">
                   {isCompleted(pl.lessonId) ? (
@@ -111,6 +145,12 @@ const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
                 key={m.id}
                 to={`/learning-paths/${path.slug}?module=${encodeURIComponent(m.id)}`}
                 className="text-xs px-2 py-1 bg-surface rounded text-[var(--brand)] hover:brightness-105 transition-colors"
+                onClick={(e) => {
+                  if (!isAuthenticated) {
+                    e.preventDefault();
+                    if (onRequireAuth) onRequireAuth(); else setShowAuthModal(true);
+                  }
+                }}
               >
                 {m.title}
               </Link>
@@ -119,12 +159,27 @@ const LearningPathCard: React.FC<{ path: LearningPath }> = ({ path }) => {
               <Link
                 to={`/learning-paths/${path.slug}`}
                 className="text-xs px-2 py-1 bg-surface rounded text-muted hover:brightness-105"
+                onClick={(e) => {
+                  if (!isAuthenticated) {
+                    e.preventDefault();
+                    if (onRequireAuth) onRequireAuth(); else setShowAuthModal(true);
+                  }
+                }}
               >
                 View all
               </Link>
             )}
           </div>
         </div>
+      )}
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={async (email, password) => authCtx.login({ email, password })}
+          onSignup={async (email, password, name) => authCtx.signup({ email, password, name })}
+          onGoogleLogin={async (credential) => authCtx.googleLogin(credential)}
+        />
       )}
     </div>
   );

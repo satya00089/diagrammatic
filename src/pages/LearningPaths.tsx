@@ -215,7 +215,14 @@ const LearningPaths: React.FC = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
                 </div>
               ) : (
-                paths.map((p) => <LearningPathCard key={p.id} path={p} />)
+                paths.map((p) => (
+                  <LearningPathCard
+                    key={p.id}
+                    path={p}
+                    isAuthenticated={isAuth}
+                    onRequireAuth={() => setShowAuthModal(true)}
+                  />
+                ))
               )}
             </div>
           </div>
