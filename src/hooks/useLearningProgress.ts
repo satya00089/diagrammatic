@@ -30,7 +30,7 @@ export function useLearningProgress(pathId: string) {
   async function persist(next: string[]) {
     try {
       await apiService.saveLearningProgress(pathId, next);
-    } catch (e) {
+    } catch {
       // Fail silently; server-side persistence preferred. No localStorage fallback.
     }
   }

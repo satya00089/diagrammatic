@@ -1506,7 +1506,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         return n;
       }),
     );
-  }, [setNodes, screenToFlowPosition]);
+  }, [setNodes]);
+
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
