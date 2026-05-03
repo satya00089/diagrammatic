@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* CSS Variables for theming */
 :root {
@@ -219,6 +220,42 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* End of theme utilities */
+
+/* Typography: ensure Tailwind 'prose' uses theme variables for light/dark */
+.prose {
+  color: var(--text) !important;
+}
+.prose p,
+.prose li,
+.prose td,
+.prose th,
+.prose thead,
+.prose tbody,
+.prose figcaption,
+.prose blockquote,
+.prose pre,
+.prose code,
+.prose strong,
+.prose em {
+  color: inherit !important;
+}
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--text) !important;
+}
+.prose a {
+  color: var(--brand) !important;
+}
+.prose table {
+  border-color: var(--border) !important;
+}
+.prose th {
+  color: var(--text) !important;
+}
+
+/* Ensure 'prose-invert' still relies on variables (dark mode) */
+.prose.prose-invert {
+  color: var(--text) !important;
+}
 
 /* Utility classes */
 .line-clamp-2 {

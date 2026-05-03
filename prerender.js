@@ -62,6 +62,25 @@ const routes = {
       <p>Practice with 90+ real-world system design challenges. Get instant AI-powered assessment and smart recommendations on your solutions.</p>
     `,
   },
+  "/learning-paths": {
+    title: "Learning Paths | Diagrammatic",
+    description:
+      "Structured learning paths that guide you through system design concepts, examples, and exercises.",
+    keywords: "system design learning path, system design tutorial, system architecture learning",
+    content: `
+      <h1>Learning Paths</h1>
+      <p>Follow curated learning paths that teach system design from first principles through practical examples.</p>
+    `,
+  },
+  "/learning-paths/system-design-foundations": {
+    title: "System Design Foundations | Diagrammatic",
+    description: "Introductory path: What is System Design and key trade-offs to consider.",
+    keywords: "what is system design, system design foundations, scalability, reliability",
+    content: `
+      <h1>System Design Foundations</h1>
+      <p>Start with the basics: goals of system design, core concepts, and common trade-offs.</p>
+    `,
+  },
 };
 
 // Check if dist exists
@@ -118,8 +137,8 @@ Object.entries(routes).forEach(([route, data]) => {
     outputPath = indexPath;
   } else {
     // For hash routes, we can't create separate files, but we update the main index
-    // For a real solution, you'd need to set up proper routing or use a different approach
-    const routeName = route.replace("/#/", "").replace("/", "-") || "index";
+    // Replace all slashes with hyphens and strip leading hyphens to create a safe filename
+    const routeName = (route.replace("/#/", "").replace(/\//g, "-") || "index").replace(/^-+/, "");
     outputPath = path.join(distDir, `${routeName}.html`);
   }
 

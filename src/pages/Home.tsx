@@ -7,6 +7,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
+import { fetchLearningPathBySlug } from "../services/contentLoader";
+import type { LearningPath as LPType } from "../services/contentLoader";
 import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
@@ -146,6 +148,8 @@ const Home: React.FC = () => {
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [heroWordIndex, setHeroWordIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
+  const [previewPath, setPreviewPath] = useState<LPType | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState<boolean>(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [statCounts, setStatCounts] = useState([0, 0, 0]);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -244,6 +248,25 @@ const Home: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [displayedText, isDeleting, heroWordIndex]);
+
+  // Load a single learning path preview for the landing page
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingPreview(true);
+    fetchLearningPathBySlug("system-design-foundations")
+      .then((p) => {
+        if (!cancelled) setPreviewPath(p);
+      })
+      .catch((err) => {
+        console.error("Failed to load learning path preview", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPreview(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const targets = [1000, 140, 1000];
@@ -865,6 +888,61 @@ const Home: React.FC = () => {
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
+            </div>
+          </div>
+        </section>
+
+        {/* Learning Path Preview */}
+        <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-1">Learning Path Preview</h2>
+                <p className="text-muted">Quickly inspect modules from a featured learning path.</p>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/learning-paths", false)}
+                  className="px-4 py-2 bg-[var(--brand)] text-white rounded-md"
+                >
+                  View Learning Paths
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-theme/8 p-6 elevated-card-bg">
+              {loadingPreview ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--brand)]"></div>
+                </div>
+              ) : previewPath ? (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">{previewPath.title}</h3>
+                  <p className="text-muted mb-4">{previewPath.summary}</p>
+                  <div className="space-y-3">
+                    {previewPath.modules.map((m) => (
+                      <div key={m.id} className="p-3 border rounded hover:bg-gray-50 dark:hover:bg-gray-900/10 flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{m.title}</div>
+                          <div className="text-xs text-muted">{m.lessons.length} lesson{m.lessons.length !== 1 ? "s" : ""}</div>
+                        </div>
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleNavigate(`/learning-paths/${previewPath.slug}`, false)}
+                            className="text-sm text-[var(--brand)] font-medium"
+                          >
+                            Open
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-muted">No learning path preview available. <button onClick={() => handleNavigate('/learning-paths', false)} className="text-[var(--brand)] ml-2">Browse paths</button></div>
+              )}
             </div>
           </div>
         </section>

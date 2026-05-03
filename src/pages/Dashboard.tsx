@@ -12,6 +12,7 @@ import {
   MdWarningAmber,
   MdSearchOff,
   MdSmartToy,
+  MdHelpOutline,
 } from "react-icons/md";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
@@ -19,7 +20,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
-import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import SEO from "../components/SEO";
 import { useAppDispatch, useAppSelector } from "../store/hooks";

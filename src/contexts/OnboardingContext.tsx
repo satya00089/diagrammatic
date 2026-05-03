@@ -10,7 +10,8 @@ export type PageId =
   | "dashboard"
   | "design_studio"
   | "problem_playground"
-  | "my_designs";
+  | "my_designs"
+  | "learning_paths";
 
 interface PageVisit {
   count: number;
@@ -63,7 +64,8 @@ const INITIAL_STATE: OnboardingState = {
     home: { ...DEFAULT_PAGE_VISIT },
     dashboard: { ...DEFAULT_PAGE_VISIT },
     design_studio: { ...DEFAULT_PAGE_VISIT },
-    problem_playground: { ...DEFAULT_PAGE_VISIT },
+      problem_playground: { ...DEFAULT_PAGE_VISIT },
+      learning_paths: { ...DEFAULT_PAGE_VISIT },
     my_designs: { ...DEFAULT_PAGE_VISIT },
   },
   completedTours: [],

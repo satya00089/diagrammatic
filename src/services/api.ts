@@ -692,6 +692,38 @@ class ApiService {
       body: JSON.stringify(payload),
     });
   }
+
+  // Retrieve learning progress for a path
+  async getLearningProgress(pathId: string): Promise<string[]> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`, {
+      headers: this.getAuthHeaders(),
+    });
+
+    if (response.status === 404) return [];
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: "Failed to fetch learning progress" }));
+      throw new Error(err.message || "Failed to fetch learning progress");
+    }
+
+    const data = await response.json();
+    return Array.isArray(data?.completed) ? data.completed : [];
+  }
+
+  // Save learning progress for a path (frontend should call this when progress changes)
+  async saveLearningProgress(pathId: string, completed: string[]): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ completed }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: "Failed to save learning progress" }));
+      throw new Error(err.message || "Failed to save learning progress");
+    }
+
+    return response.json();
+  }
 }
 
 export const apiService = new ApiService();
