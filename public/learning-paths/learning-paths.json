@@ -111,13 +111,23 @@
                   "id": "q1-daily-media",
                   "prompt": "Photo app — estimate daily media (in TB/day).",
                   "hint": "DAU = MAU * daily_fraction = 50,000,000 * 0.3 = 15,000,000. Daily media = DAU * posts_per_day * media_fraction * avg_media_size.",
-                  "answer": { "type": "numeric", "value": 13.5, "units": "TB/day", "tolerance": 0.15 }
+                  "answer": {
+                    "type": "numeric",
+                    "value": 13.5,
+                    "units": "TB/day",
+                    "tolerance": 0.15
+                  }
                 },
                 {
                   "id": "q1-3yr-storage",
                   "prompt": "Photo app — estimate 3-year media storage (in PB).",
                   "hint": "3-year storage = daily_media * 365 * 3 and convert to PB (1 PB = 1000 TB for rough BOTE).",
-                  "answer": { "type": "numeric", "value": 14.8, "units": "PB", "tolerance": 0.2 }
+                  "answer": {
+                    "type": "numeric",
+                    "value": 14.8,
+                    "units": "PB",
+                    "tolerance": 0.2
+                  }
                 },
                 {
                   "id": "q2-servers",
@@ -129,7 +139,12 @@
                   "id": "q3-cache",
                   "prompt": "Cache — 1B total objects, top 1% hottest, avg object 2 KB — estimate cache size (in GB) to hold the hottest 1%.",
                   "hint": "Hot objects = total * 0.01. Size = hot_objects * avg_object_size. Convert to GB (approx 1 GB = 1,000,000 KB for rough math).",
-                  "answer": { "type": "numeric", "value": 20, "units": "GB", "tolerance": 0.15 }
+                  "answer": {
+                    "type": "numeric",
+                    "value": 20,
+                    "units": "GB",
+                    "tolerance": 0.15
+                  }
                 }
               ]
             }
@@ -155,19 +170,13 @@
             "id": "dns-intro",
             "title": "What is DNS?",
             "type": "article",
-            "content": "# DNS — What and Why\n\nThe Domain Name System (DNS) maps human-readable names to IP addresses and other resources. It is a hierarchical, distributed database used by virtually all internet services.\n\nKey functions:\n- Name resolution (hostnames → IPs)\n- Service discovery (SRV/TXT)\n- Email routing (MX)\n\nThis module covers common records, resolution flow, caching, security (DNSSEC), and operational practices.\n\n**Simple example — Step by step**\n\n1. A user enters `www.example.com` in a browser; the client asks its configured recursive resolver (usually the ISP or OS resolver).\n2. The recursive resolver checks its cache; if the record is missing, it queries a root nameserver for the `.com` delegation.\n3. The root returns the list of `.com` TLD nameservers; the resolver then queries a `.com` TLD server for the `NS` records for `example.com`.\n4. The TLD responds with the authoritative nameservers for `example.com`; the resolver queries one authoritative server for the `A` (or `AAAA`) record for `www`.\n5. The authoritative server returns the IP address; the resolver caches the answer (respecting the record's TTL) and returns the IP to the client.\n6. The client connects to the returned IP and loads the website.\n\nNotes:\n- TTL controls how long resolvers cache the answer; low TTLs speed propagation but increase query volume.\n- Glue records are needed when a zone's nameservers are inside that zone (e.g., `ns1.example.com`)."
+            "content": "# DNS — What and Why\n\nThe Domain Name System (DNS) maps human-readable names to IP addresses and other resources. It is a hierarchical, distributed database used by virtually all internet services.\n\nKey functions:\n- Name resolution (hostnames → IPs)\n- Service discovery (SRV/TXT)\n- Email routing (MX)\n\nThis module covers common records, resolution flow, caching, security (DNSSEC), and operational practices."
           },
           {
-            "id": "dns-diagram",
-            "title": "DNS Diagram — Lookup Flow",
+            "id": "dns-resolution-flow",
+            "title": "Resolution Flow (root → TLD → authoritative)",
             "type": "article",
-            "content": "# DNS Diagram — Lookup Flow\n\n![DNS lookup diagram](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/dns.png)\n\nThis diagram shows the common DNS lookup path and how components interact. Step-by-step:\n1. The client asks its recursive resolver for `www.example.com`.\n2. The recursive resolver checks its cache; if missing, it queries a root nameserver for the TLD.\n3. The root returns TLD nameservers; the resolver queries the TLD for the domain's authoritative servers.\n4. The resolver queries an authoritative nameserver for the `A`/`AAAA` record for `www`.\n5. The authoritative server returns the IP; the resolver caches the answer (respecting TTL) and returns it to the client.\n6. The client connects to the IP and loads the site.\n\nDiagram notes:\n- Arrows show query (outgoing) and response (returning) flows.\n- Glue records are used when an NS is inside the same zone (e.g., `ns1.example.com`).\n- TTL values on records determine caching duration and propagation delays."
-          },
-          {
-            "id": "dns-resolution-and-caching",
-            "title": "Resolution & Caching",
-            "type": "article",
-            "content": "# Resolution & Caching\n\nConcise overview of the DNS resolution flow (root → TLD → authoritative), recursion vs iteration, and caching (TTL).\n\n- Recursive resolvers perform full lookups and cache answers; iterative queries follow referrals.\n- Glue records and delegation connect zones; authoritative servers provide canonical answers.\n- TTL (time-to-live) controls caching behavior: short TTLs speed propagation, long TTLs reduce query load.\n\nOperational note: choose TTLs and authority layout based on update frequency and expected query volume."
+            "content": "# DNS Resolution Flow\n\nDescribe iterative vs recursive resolution: the resolver asks the root servers, then TLD servers, then the authoritative nameserver for the zone.\n\n- Recursive resolver: performs the full lookup for the client and returns the answer.\n- Iterative: client may follow referrals itself (rare for end-users).\n\nInclude glue records, delegation, and how recursion and caching reduce load."
           },
           {
             "id": "dns-record-types",
@@ -176,10 +185,40 @@
             "content": "# DNS Record Types\n\n- **A / AAAA**: IPv4 / IPv6 address records mapping hostnames to IP addresses.\n- **CNAME**: Canonical name (alias) pointing to another hostname; cannot coexist with other records at the same name.\n- **MX**: Mail exchange records with priority values for email routing.\n- **NS**: Authoritative nameservers that delegate and serve a DNS zone.\n- **SOA**: Start of Authority — zone metadata (serial, refresh, retry, expire, default TTL).\n- **TXT**: Arbitrary text records (ownership verification, SPF, DKIM, misc data).\n- **SRV**: Service records specifying hostname, port, priority, and weight for service discovery.\n- **PTR**: Pointer records for reverse DNS (IP → hostname).\n\nExamples and when to use each."
           },
           {
-            "id": "dns-ops-security-and-troubleshooting",
-            "title": "Ops, Security & Troubleshooting",
+            "id": "dns-authoritative-vs-recursive",
+            "title": "Authoritative vs Recursive Resolvers",
             "type": "article",
-            "content": "# Ops, Security & Troubleshooting\n\nConcise operational guidance covering zone files, DNSSEC, load-balancing/failover, and common troubleshooting steps.\n\n- Zone files: SOA, NS, A/AAAA, MX, TXT — manage serials and perform safe rollouts.\n- DNSSEC: chain-of-trust, key rollover practices, and validation monitoring.\n- Load balancing & failover: multiple A records, geo-DNS, health checks, and TTL strategy.\n- Troubleshooting: use dig/nslookup/host, verify delegation/glue, inspect TTLs, and check DNSSEC validation errors.\n\nKeep operations simple: monitor, choose TTLs based on change frequency, and test rollouts in stages."
+            "content": "# Authoritative vs Recursive\n\nAuthoritative nameservers hold the canonical zone data. Recursive resolvers answer client queries by contacting other servers on behalf of the client, applying caching and retries.\n\nOperational notes: configure authoritative servers for redundancy and secure zone transfers (AXFR/IXFR) where needed."
+          },
+          {
+            "id": "dns-caching-ttl",
+            "title": "Caching, TTLs & Propagation",
+            "type": "article",
+            "content": "# Caching & TTLs\n\nTTL (time-to-live) controls how long resolvers may cache a record. Short TTLs speed propagation of changes but increase query volume; long TTLs reduce query load but delay updates.\n\nNegative caching (NXDOMAIN) and SOA's negative TTL are important. Zone serials and NOTIFY/AXFR help propagate zone changes between authoritative servers."
+          },
+          {
+            "id": "dnssec-and-security",
+            "title": "DNSSEC & Security Considerations",
+            "type": "article",
+            "content": "# DNSSEC & Security\n\nDNSSEC adds cryptographic signatures to DNS records to provide origin authentication and data integrity. Understand chain-of-trust from the root, key rollover, and common operational pitfalls.\n\nSecurity notes: mitigate amplification attacks, guard TSIG keys used for zone transfers, and monitor for configuration errors."
+          },
+          {
+            "id": "dns-zone-files",
+            "title": "Zone Files & Common Configurations",
+            "type": "article",
+            "content": "# Zone Files & Configuration\n\nWalkthrough of a simple zone file: SOA, NS, A/AAAA, MX, and TXT records. Explain the SOA serial format, default TTL, and how to perform safe rollouts and key rollovers.\n\nShow examples for common registrars and DNS providers."
+          },
+          {
+            "id": "dns-loadbalancing-failover",
+            "title": "DNS for Load Balancing & Failover",
+            "type": "article",
+            "content": "# Load Balancing & Failover with DNS\n\nTechniques: multiple A records, round-robin, geo-DNS, health-checked failover, and integration with CDNs. Understand the limits: DNS is eventually-consistent and not a substitute for real-time health-aware load balancers.\n\nDiscuss TTL choice and monitoring to achieve acceptable failover times."
+          },
+          {
+            "id": "dns-troubleshooting",
+            "title": "Troubleshooting & Debugging",
+            "type": "article",
+            "content": "# Troubleshooting DNS\n\nTools: `dig`, `nslookup`, `host`, `tcpdump`, `dnstracer`.\n\nChecks: authoritative responses, delegation/glue records, TTLs, propagation, and DNSSEC validation failures. Common issues: stale caches, misconfigured CNAMEs, missing glue, and SOA serial errors."
           },
           {
             "id": "dns-exercises",
@@ -206,6 +245,106 @@
                 }
               ]
             }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "single-server-setup",
+    "slug": "single-server-setup",
+    "title": "Single-Server Setup",
+    "summary": "Intro to running all components on a single server: architecture, request flow, database choices, scaling and migration.",
+    "difficulty": "Beginner",
+    "tags": ["deployment", "infrastructure", "single-server"],
+    "modules": [
+      {
+        "id": "overview",
+        "title": "Overview",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "ss-overview",
+            "title": "Single-Server Overview",
+            "type": "article",
+            "content": "# Single-Server Setup\n\nRun the frontend, backend, database, and cache on a single host. This pattern reduces operational overhead and speeds early development, making it a good fit for prototypes, demos, and small teams — but it centralizes risk and limits how far you can scale.\n\nWhen to choose this approach:\n- Early-stage projects or demos with low traffic\n- Small teams without dedicated operations\n- Tight budgets or simple deployment requirements\n\nQuick checklist for production readiness:\n- Use a process supervisor (systemd, pm2) to keep services running\n- Put a reverse proxy (nginx, Caddy) in front for TLS and static assets\n- Enable automated database backups and off-host snapshots\n- Add basic monitoring and alerts (CPU, memory, disk, request latency)\n- Harden the host: restrict open ports, use SSH keys, apply updates\n- Document recovery and maintenance steps\n\nNext steps: pick initial VM sizing, enable backups and monitoring, and prepare a simple migration plan to separate tiers when load increases."
+          },
+          {
+            "id": "ss-architecture",
+            "title": "Single-Server Architecture",
+            "type": "article",
+            "content": "# Single-Server Architecture\n\n![Single-server architecture](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-architecture.png)\n\nClients (browsers or mobile apps) resolve your domain to a single IP address that routes to one server. That server handles web pages, API requests, and stores application data locally.\n\n## Request flow — step by step\n\n1. The client resolves `api.mysite.com` via DNS.\n2. DNS returns the server IP (for example, `15.125.23.214`).\n3. The client connects to that IP and opens a TCP/TLS session.\n4. The server processes the request and responds with HTML or JSON.\n\nThis combined view makes it easier to trace latency and debug bottlenecks in single-host deployments."
+          }
+        ]
+      },
+      {
+        "id": "data-tier",
+        "title": "Database & Data Tier",
+        "order": 4,
+        "lessons": [
+          {
+            "id": "ss-architecture-with-db",
+            "title": "Architecture with Database",
+            "type": "article",
+            "content": "# Single-Server with Database\n\n![Single-server DB architecture](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-db-architecture.png)\n\nIn a single-server setup, the database (for example, PostgreSQL or MySQL) runs on the same host as the web/API server. This simplifies deployment and local development but means that your compute and storage resources are shared.\n\nRequest flow with database:\n1. Client → Server: HTTP request arrives at the server.\n2. Server → Database: The application processes the request and queries the local database for data.\n3. Database → Server: The database returns results to the application.\n4. Server → Client: The application generates a response and sends it back to the client.\n\nOperational tips:\n- Use connection pooling to avoid exhausting database connections.\n- Offload long-running queries to background workers where possible.\n- Monitor DB connections, CPU, memory, and disk I/O.\n- Schedule regular backups and test restore procedures.\n\nThis architecture is straightforward but can lead to resource contention under load, so monitor performance closely and be prepared to separate tiers as traffic grows."
+          },
+          {
+            "id": "ss-db-choices",
+            "title": "Choosing a Database",
+            "type": "article",
+            "content": "# Database Choices — Options & selection guide\n\nOptions and when to choose them:\n\n- SQLite (embedded) — When: prototypes, single-user apps, local development, very small datasets or low-concurrency services. Pros: zero configuration, file-based, easy to ship. Cons: limited concurrency and not suited for heavy write workloads.\n\n- Relational (PostgreSQL, MySQL) — When: structured data, transactions, complex queries (joins), and strong consistency requirements. Pros: ACID guarantees, SQL, mature tooling and extensions. Cons: more operational overhead; scaling usually requires replicas/sharding or managed services.\n\n- Managed Relational (RDS / Cloud SQL / Azure DB) — When: you want relational features without managing database operations; provides automated backups, failover, and maintenance.\n\n- Document DB (MongoDB, Couchbase) — When: flexible, evolving schemas, nested documents, or rapid iteration. Pros: schema flexibility and easy mapping to app objects. Cons: requires careful indexing and data modelling by query.\n\n- Key–Value / In-Memory (Redis, Memcached) — When: caching, sessions, counters, leaderboards, or sub-millisecond lookups. Pros: extremely low latency; Cons: not a full-featured durable transactional store unless configured for persistence.\n\n- Wide-column / Distributed (Cassandra, DynamoDB) — When: very high write/read throughput, multi-region distribution, and predictable latency at massive scale. Design schema around access patterns; expect eventual consistency trade-offs.\n\n- Search & Analytics (Elasticsearch / OpenSearch) — When: full-text search, complex aggregations, or log analytics. Not a transactional primary store.\n\n- Graph DB (Neo4j, JanusGraph) — When: relationship-first queries such as recommendations or social graphs.\n\nSelection checklist:\n- Data model: normalized relational vs document shapes.\n- Consistency & transactions: need ACID → relational.\n- Query patterns: joins/analytics → relational; key lookups → key-value.\n- Scale & latency targets: consider managed or distributed options.\n- Operational capacity: managed services reduce ops burden.\n- Backup, restore, and compliance requirements.\n\nSingle-server practical guidance:\n- Prototype/demo: use SQLite or a local Postgres for quick setup.\n- Small-to-medium production: Postgres (self-hosted or managed) is a safe default.\n- Use Redis for caching and session state; enable connection pooling.\n- Keep backups off-host and test restore procedures.\n- Monitor disk I/O, DB connections, CPU, and memory; be ready to separate the DB to its own host when needed.\n\nShort recommendations:\n- Start simple with Postgres for most web apps.\n- Add Redis for caching and low-latency lookup needs.\n- Choose DynamoDB/Cassandra only when you require extreme scale and can design by access patterns."
+          }
+        ]
+      },
+      {
+        "id": "scaling",
+        "title": "Scaling Strategies",
+        "order": 5,
+        "lessons": [
+          {
+            "id": "ss-scaling",
+            "title": "Vertical vs Horizontal Scaling",
+            "type": "article",
+            "content": "# Scaling Strategies\n\n- Scale up (vertical): increase the server's CPU, RAM, or storage — straightforward but bounded.\n- Scale out (horizontal): add instances behind a load balancer — requires architecture changes but improves resilience and capacity.\n\nTypical path: scale up first, observe, then separate tiers and scale out when necessary."
+          }
+        ]
+      },
+      {
+        "id": "pros-cons",
+        "title": "Pros & Cons",
+        "order": 6,
+        "lessons": [
+          {
+            "id": "ss-pros-cons",
+            "title": "Advantages & Disadvantages",
+            "type": "article",
+            "content": "# Pros & Cons\n\nAdvantages:\n- Lower infrastructure and operational overhead.\n- Simplified local testing and debugging.\n- Quicker to get an initial product live.\n\nDrawbacks:\n- Entire service fails if the host fails.\n- Components compete for the same resources.\n- Scaling out often requires redesign.\n- Deployments can cause complete downtime."
+          }
+        ]
+      },
+      {
+        "id": "migration",
+        "title": "Migration Path",
+        "order": 7,
+        "lessons": [
+          {
+            "id": "ss-migration",
+            "title": "Evolving from Single Server",
+            "type": "article",
+            "content": "# Migration Path\n\n1. Move your database to a dedicated host or managed database service.\n2. Introduce an in-memory cache (e.g., Redis) for frequently-accessed data.\n3. Separate web and API into distinct processes or containers.\n4. Add a load balancer and multiple instances for redundancy and scale.\n5. Implement health checks, rolling deployments, and automated releases."
+          }
+        ]
+      },
+      {
+        "id": "exercises",
+        "title": "Exercises",
+        "order": 8,
+        "lessons": [
+          {
+            "id": "ss-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) List two benefits and two drawbacks of running all components on one host.\n2) Describe the first three steps you would take to move from a single-server deployment to separate web and database tiers."
           }
         ]
       }
@@ -348,4 +487,3 @@
     ]
   }
 ]
-

@@ -21,6 +21,7 @@ const LearningPath: React.FC = () => {
   const {
     user,
     isAuthenticated: isAuth,
+    isLoading: isAuthLoading,
     login,
     signup,
     googleLogin,
@@ -72,10 +73,11 @@ const LearningPath: React.FC = () => {
   // If a user lands directly on a learning-path URL while unauthenticated,
   // open the auth modal so they are prompted to sign in before interacting.
   useEffect(() => {
-    if (slug && !isAuth) {
+    // Only prompt for auth after the auth initialization finishes.
+    if (slug && !isAuth && !isAuthLoading) {
       setShowAuthModal(true);
     }
-  }, [slug, isAuth]);
+  }, [slug, isAuth, isAuthLoading]);
 
   return (
     <>
