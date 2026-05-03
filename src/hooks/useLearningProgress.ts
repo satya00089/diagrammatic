@@ -16,7 +16,7 @@ export function useLearningProgress(pathId: string) {
       try {
         const serverProgress = await apiService.getLearningProgress(pathId);
         if (mounted) setCompleted(Array.isArray(serverProgress) ? serverProgress : []);
-      } catch (e) {
+      } catch {
         // If API fails (unauthenticated/offline), leave progress empty.
         if (mounted) setCompleted([]);
       }
@@ -25,7 +25,6 @@ export function useLearningProgress(pathId: string) {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathId]);
 
   async function persist(next: string[]) {

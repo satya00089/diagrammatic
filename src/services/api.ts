@@ -710,7 +710,7 @@ class ApiService {
   }
 
   // Save learning progress for a path (frontend should call this when progress changes)
-  async saveLearningProgress(pathId: string, completed: string[]): Promise<any> {
+  async saveLearningProgress(pathId: string, completed: string[]): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`, {
       method: "POST",
       headers: this.getAuthHeaders(),
@@ -722,7 +722,7 @@ class ApiService {
       throw new Error(err.message || "Failed to save learning progress");
     }
 
-    return response.json();
+    return response.json() as Promise<Record<string, unknown>>;
   }
 }
 

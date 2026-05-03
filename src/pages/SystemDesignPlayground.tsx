@@ -1344,7 +1344,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const newNode: Node = {
       id,
       position,
-      type: nodeTypeToUse as any,
+      type: nodeTypeToUse as unknown as Node["type"],
       // For group nodes, use different styling
       style: isGroupComponent
         ? {
@@ -1352,7 +1352,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             height: 300,
             zIndex: -1, // Groups should be behind regular nodes
           }
-        : (isFreeformNode ? (freeformDefault.style as any) : undefined),
+        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
       // include icon so the custom node can render it
       data: {
         label: label, // Use label from priority order
@@ -1364,7 +1364,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
-        ...(isFreeformNode ? (freeformDefault.data as any) : {}),
+        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
         // For table nodes, add default attributes structure and renderConfig
         ...(nodeTypeToUse === "tableNode"
           ? {
@@ -3297,14 +3297,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const newNode: Node = {
       id: nodeId,
       position,
-      type: nodeTypeToUse as any,
+      type: nodeTypeToUse as unknown as Node["type"],
       style: isGroupComponent
         ? {
             width: 400,
             height: 300,
             zIndex: -1,
           }
-        : (isFreeformNode ? (freeformDefault.style as any) : undefined),
+        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
       data: {
         label: finalLabel,
         componentId: realId, // real DB id — used for sprite lookup
@@ -3315,7 +3315,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
-        ...(isFreeformNode ? (freeformDefault.data as any) : {}),
+        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
       },
     };
 

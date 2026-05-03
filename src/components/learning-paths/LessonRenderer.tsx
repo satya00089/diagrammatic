@@ -48,7 +48,7 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
           const re = new RegExp(ans.regex, "i");
           const ok = re.test(user);
           setResults((r) => ({ ...r, [q.id]: { ok, message: ok ? "Correct" : `Incorrect — expected pattern ${ans.regex}` } }));
-        } catch (e) {
+        } catch {
           setResults((r) => ({ ...r, [q.id]: { ok: false, message: "Invalid validation regex." } }));
         }
         return;
