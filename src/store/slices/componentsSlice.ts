@@ -21,8 +21,11 @@ export interface MinimalComponent {
   description?: string;
   group?: string;
   iconUrl?: string;
+  // Optional default dimensions (e.g., used by freeform palette entries)
+  width?: number;
+  height?: number;
   tags?: string[];
-  nodeType?: "custom" | "group" | "tableNode" | "erNode";
+  nodeType?: "custom" | "group" | "tableNode" | "erNode" | "freeform";
 }
 
 interface ComponentsState {

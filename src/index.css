@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* CSS Variables for theming */
 :root {
@@ -86,6 +87,47 @@ h1, h2, h3, h4, h5, h6 {
 /* ReactFlow theming using Tailwind CSS custom properties */
 .react-flow {
   background: var(--bg);
+}
+
+/* Freeform nodes draw their own shape-matched selection outline via SVG.
+   Kill React Flow's default rectangular box-shadow / outline so it never
+   shows a boxy ring around circles, diamonds, ellipses, etc. */
+.react-flow__node-freeform,
+.react-flow__node-freeform.selected,
+.react-flow__node-freeform.selectable:focus,
+.react-flow__node-freeform.selectable:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+}
+.react-flow__node-freeform > div {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* ── Freeform connection handles (draw.io style) ──────────────────────────────
+   FaLongArrowAltRight icons are rendered inside Handle divs.  The icon itself
+   provides all visual colour; the Handle div must be transparent so only the
+   SVG icon is visible (not a coloured background square).
+   Opacity + pointer-events are controlled via React state (showHandles) as
+   inline styles — NOT via CSS :hover — because the handles sit outside the
+   node's layout box.                                                         */
+
+.freeform-node .freeform-handle,
+.freeform-node .react-flow__handle.freeform-handle {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  cursor: crosshair !important;
+}
+
+/* Scale up + glow when the user hovers the icon directly */
+.freeform-node .freeform-handle:hover svg,
+.freeform-node .freeform-handle:hover > * {
+  filter: drop-shadow(0 0 5px rgba(99,102,241,0.8));
+  transform-origin: center;
 }
 
 /* Light theme (default) */
@@ -178,6 +220,42 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* End of theme utilities */
+
+/* Typography: ensure Tailwind 'prose' uses theme variables for light/dark */
+.prose {
+  color: var(--text) !important;
+}
+.prose p,
+.prose li,
+.prose td,
+.prose th,
+.prose thead,
+.prose tbody,
+.prose figcaption,
+.prose blockquote,
+.prose pre,
+.prose code,
+.prose strong,
+.prose em {
+  color: inherit !important;
+}
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--text) !important;
+}
+.prose a {
+  color: var(--brand) !important;
+}
+.prose table {
+  border-color: var(--border) !important;
+}
+.prose th {
+  color: var(--text) !important;
+}
+
+/* Ensure 'prose-invert' still relies on variables (dark mode) */
+.prose.prose-invert {
+  color: var(--text) !important;
+}
 
 /* Utility classes */
 .line-clamp-2 {
@@ -662,4 +740,37 @@ select::-webkit-scrollbar-thumb {
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Arrow icon wrapper styles for FreeformNode handles
+   - No circular background by default; icon color comes from the
+     CSS variable `--arrow-default-color` (set per-node to match shape fill).
+   - Hovering the icon itself changes its colour to the primary brand. */
+
+.freeform-node .arrow-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  transition: color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  color: var(--arrow-default-color, var(--muted));
+}
+
+.freeform-node .freeform-handle:hover .arrow-icon {
+  /* Remove circular background/border — keep a subtle lift only */
+  box-shadow: 0 1px 3px rgba(99,102,241,0.08);
+  transform: scale(1.02);
+}
+
+/* When user hovers the specific arrow icon, make it primary color */
+.freeform-node .arrow-icon:hover {
+  color: var(--brand);
+  transform: scale(1.06);
+}
+
+.freeform-node .arrow-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }

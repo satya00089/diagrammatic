@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { marked } from "marked";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../store";
 import {
@@ -376,8 +376,8 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
         </div>
 
         {/* Main markdown content */}
-        <div className="prose prose-invert prose-sm max-w-none text-muted leading-relaxed text-xs [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:space-y-0.5 [&_li]:leading-relaxed [&_strong]:text-foreground [&_code]:bg-[var(--surface-2)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[10px] [&_table]:text-[10px] [&_th]:text-foreground [&_th]:font-semibold [&_td]:py-0.5">
-          <ReactMarkdown>{step.content}</ReactMarkdown>
+        <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed text-xs [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_ul]:space-y-0.5 [&_li]:leading-relaxed [&_strong]:text-foreground [&_code]:bg-[var(--surface-2)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[10px] [&_table]:text-[10px] [&_th]:text-foreground [&_th]:font-semibold [&_td]:py-0.5">
+          <div dangerouslySetInnerHTML={{ __html: marked.parse(step.content || "") }} />
         </div>
 
         {/* Component card */}

@@ -1,0 +1,147 @@
+[
+  {
+    "id": "system-design-foundations",
+    "slug": "system-design-foundations",
+    "title": "System Design Foundations",
+    "summary": "A concise introduction to system design principles, trade-offs, and real-world examples.",
+    "difficulty": "Beginner",
+    "tags": ["system-design", "foundations", "scalability"],
+    "modules": [
+      {
+        "id": "intro",
+        "title": "Introduction",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "what-is-system-design",
+            "title": "What is System Design",
+            "type": "article",
+            "content": "# What is System Design\nSystem design is the practice of defining the architecture, components, services, interfaces, and data models that enable a software system to satisfy functional and non-functional requirements. It focuses on high-level structure, interactions, and trade-offs rather than low-level implementation details.\n## Scope and goals\n- Functional requirements: what the system must do.\n- Non-functional requirements: performance, scalability, reliability, security, maintainability, and cost.\n## Key building blocks\n- Clients and APIs: how users and other systems interact with your service.\n- Services and components: logical boundaries and responsibilities.\n- Data storage: databases, caches, and their consistency models.\n- Messaging and integration: queues, streams, and asynchronous patterns.\n- Infrastructure: load balancers, CDNs, replication, and deployment topology.\n## A structured approach\n1. Clarify requirements and constraints (scale, latency, consistency).\n2. Estimate expected load, data volume, and growth patterns.\n3. Propose a high-level architecture with clear component responsibilities.\n4. Dive into critical components (data modeling, APIs, caching, storage).\n5. Outline failure modes, monitoring, and operational procedures.\n## Short example: URL shortener\nRequirements: create short links, redirect quickly, support high read volume, store mappings persistently, and track basic analytics.\nArchitecture: API service, datastore for mappings, caching layer for hot keys, and background workers for analytics.\nConsiderations: key generation and collisions, cache invalidation, scaling reads, and data backup.\n## Learning outcomes\n- Break down a problem into components and justify architectural choices.\n- Reason about trade-offs between latency, consistency, and cost.\n- Identify operational needs: monitoring, alerts, backups, and recovery.\n**Next:** Read 'Common Trade-offs in System Design' to explore concrete decision examples."
+          },
+          {
+            "id": "trade-offs",
+            "title": "Common Trade-offs in System Design",
+            "type": "article",
+            "content": "# Common Trade-offs in System Design\nDesigning systems always involves balancing competing priorities. The most common trade-offs include:\n- **Consistency vs Availability**: Strong consistency guarantees up-to-date reads but can reduce availability during network partitions. Eventual consistency improves availability but requires strategies for conflict resolution and reconciliation.\n- **Latency vs Throughput**: Optimizations for low latency (for example, caching or in-memory stores) can increase cost or complicate write paths. Batching improves throughput at the expense of per-request latency.\n- **Cost vs Performance**: Highly replicated or specialized hardware improves performance but increases operational cost. Align investments with user-visible SLOs.\n- **Simplicity vs Flexibility**: Monoliths are easier to develop and operate; microservices provide modularity and independent scaling but introduce operational complexity.\n- **Synchronous vs Asynchronous**: Synchronous calls simplify control flow but couple services and increase end-to-end latency; asynchronous patterns improve resilience and elasticity but make reasoning about consistency harder.\n## How to reason about trade-offs\n- Quantify expected load and failure scenarios.\n- Identify the user-facing SLOs that matter most.\n- Consider team expertise and operational burden when choosing complexity.\n## Mitigations and patterns\n- Use caching with explicit invalidation strategies to reduce latency and load.\n- Partition/shard data to scale writes and avoid hotspots.\n- Apply backpressure, rate limiting, and retries with exponential backoff.\n- Design for graceful degradation and implement feature flags to reduce blast radius.\n## Decision checklist\n- What are the critical operations and SLOs?\n- What failure modes are acceptable versus catastrophic?\n- How will we observe, alert, and recover from incidents?\n- What operational cost can we tolerate?\n**Tip:** Document assumptions and constraints alongside your design; they help future teams understand and iterate on the architecture."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "back-of-the-envelope-estimation",
+    "slug": "back-of-the-envelope-estimation",
+    "title": "Back-of-the-Envelope Estimation",
+    "summary": "Quick, interview-friendly estimation techniques and exercises for capacity and latency planning.",
+    "difficulty": "Beginner",
+    "tags": ["estimation", "system-design", "interviews"],
+    "modules": [
+      {
+        "id": "concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "boe-overview",
+            "title": "Overview: What is Back-of-the-Envelope Estimation",
+            "type": "article",
+            "content": "# Back-of-the-Envelope Estimation\n\nBack-of-the-envelope (BOTE) estimation is a compact technique for getting order-of-magnitude answers quickly. It combines straightforward arithmetic, explicit assumptions, and a few well-known performance numbers to decide whether a design approach is viable. The emphasis is on the process and assumptions rather than exact precision.\n\nIn interviews and early designs you should: list assumptions, choose round numbers, and label units. This module provides the small reference tables you'll use for quick calculations."
+          },
+          {
+            "id": "boe-units",
+            "title": "Units & Power-of-Two (data sizes)",
+            "type": "article",
+            "content": "# Units & Power-of-Two (data sizes)\n\nA byte is 8 bits. Use binary powers for precise magnitudes and decimal shortcuts for easy math.\n\n| Power | Approx. value | Full name | Short name |\n| -----: | -------------: | --------- | ---------- |\n| 2^10 | ~1 thousand | 1 Kilobyte | 1 KB |\n| 2^20 | ~1 million | 1 Megabyte | 1 MB |\n| 2^30 | ~1 billion | 1 Gigabyte | 1 GB |\n| 2^40 | ~1 trillion | 1 Terabyte | 1 TB |\n| 2^50 | ~1 quadrillion | 1 Petabyte | 1 PB |\n\nNotes: for quick mental arithmetic you can use 1 KB≈10^3, 1 MB≈10^6, but always write the units to avoid confusion."
+          },
+          {
+            "id": "boe-latency",
+            "title": "Latency Numbers Every Engineer Should Know",
+            "type": "article",
+            "content": "# Latency Numbers & Rules of Thumb\n\nKeep a compact table of typical latencies so you can compare design choices quickly. These are order-of-magnitude guides, not precise benchmarks.\n\n| Operation | Typical time |\n| --------- | ------------: |\n| L1 cache reference | ~1 ns |\n| Branch mispredict | ~5 ns |\n| L2 cache reference | ~3–7 ns |\n| Mutex lock/unlock | ~100 ns |\n| Main memory (DRAM) | ~100 ns |\n| Compress 1 KB (fast) | ~2–10 µs |\n| Send 2 KB over 1 Gbps | ~20 µs |\n| Read 1 MB sequential from memory | ~250 µs |\n| SSD random read | ~50–100 µs |\n| Datacenter round-trip | ~0.5–2 ms |\n| Read 1 MB from network/disk | ~10–30 ms |\n| Disk seek (HDD) | ~5–10 ms |\n| Intercontinental RTT | ~100–200 ms |\n\nUse these to decide when to cache, when to avoid disk seeks, and when network hops matter."
+          },
+          {
+            "id": "boe-availability",
+            "title": "Availability & the 'Nines'",
+            "type": "article",
+            "content": "# Availability (the 'Nines')\n\nAvailability targets and expected downtime per year: choose the right target based on user impact and cost.\n\n| Availability | Downtime per year |\n| ------------ | -----------------: |\n| 99% | ~3.65 days |\n| 99.9% | ~8.76 hours |\n| 99.99% | ~52.56 minutes |\n| 99.999% | ~5.26 minutes |\n| 99.9999% | ~31.54 seconds |\n\nHigher availability requires redundancy, automation, and usually more cost and operational complexity."
+          }
+        ]
+      },
+      {
+        "id": "examples",
+        "title": "Worked Examples",
+        "order": 2,
+        "lessons": [
+          {
+            "id": "boe-example-twitter",
+            "title": "Worked Example: Estimating QPS & Storage",
+            "type": "article",
+            "content": "# Worked Example: QPS and Storage\n\n**Assumptions (example)**\n- Monthly active users (MAU): 50,000,000\n- Fraction active daily: 30% → DAU = 15,000,000\n- Uploads (posts) per active user per day: 1.5\n- Fraction with media: 30%\n- Average media size: 2 MB\n- Retention: 3 years\n\n**Step 1 — Baseline QPS**\nPosts/sec = DAU * posts_per_day / 86,400\n= 15,000,000 * 1.5 / 86,400 ≈ 260.4 ≈ 260 QPS\n\n**Step 2 — Peak QPS**\nApply headroom (2–3×) for spikes: peak ≈ 520–780 QPS\n\n**Step 3 — Media storage**\nDaily media = DAU * posts_per_day * media_fraction * avg_media_size\n= 15,000,000 * 1.5 * 0.3 * 2 MB = 13.5 TB/day\n3-year media storage ≈ 13.5 TB * 365 * 3 ≈ 14.8 PB\n\n**Discussion**\nMedia fraction and retention dominate storage; small changes to these assumptions have large impacts. Round values for quick reasoning and always state units."
+          },
+          {
+            "id": "boe-tips",
+            "title": "Practical Tips & Best Practices",
+            "type": "article",
+            "content": "# Practical Tips for BOTE\n\n- Round early and keep arithmetic simple.\n- Write assumptions and label units.\n- Work in orders of magnitude and highlight sensitivities.\n- When time is limited, state steps and assumptions before computing.\n- Practice common calculations: QPS, storage, caches, and server counts."
+          }
+        ]
+      },
+      {
+        "id": "exercises",
+        "title": "Exercises",
+        "order": 3,
+        "lessons": [
+          {
+            "id": "boe-exercises",
+            "title": "Exercises: Practice Problems",
+            "type": "exercise",
+            "content": "# Exercises\n\nUse the fields below to enter your answers. Click 'Show hint' for help. You can enter numeric answers (units optional).",
+            "exercise": {
+              "assumptions": [
+                "MAU = 50,000,000",
+                "Fraction active daily (DAU/MAU) = 0.3 (30%)",
+                "Uploads (posts) per active user per day = 1.5",
+                "Fraction of posts with media = 0.3 (30%)",
+                "Average media size = 2 MB",
+                "Retention window = 3 years",
+                "Peak QPS for servers example = 10,000",
+                "Per-server peak capacity = 500 RPS",
+                "Operational buffer = 20%",
+                "Total objects = 1,000,000,000",
+                "Hot fraction (top objects) = 1%",
+                "Average object size = 2 KB",
+                "Conversions: 1 TB ≈ 1000 GB, 1 PB ≈ 1000 TB"
+              ],
+              "questions": [
+                {
+                  "id": "q1-daily-media",
+                  "prompt": "Photo app — estimate daily media (in TB/day).",
+                  "hint": "DAU = MAU * daily_fraction = 50,000,000 * 0.3 = 15,000,000. Daily media = DAU * posts_per_day * media_fraction * avg_media_size.",
+                  "answer": { "type": "numeric", "value": 13.5, "units": "TB/day", "tolerance": 0.15 }
+                },
+                {
+                  "id": "q1-3yr-storage",
+                  "prompt": "Photo app — estimate 3-year media storage (in PB).",
+                  "hint": "3-year storage = daily_media * 365 * 3 and convert to PB (1 PB = 1000 TB for rough BOTE).",
+                  "answer": { "type": "numeric", "value": 14.8, "units": "PB", "tolerance": 0.2 }
+                },
+                {
+                  "id": "q2-servers",
+                  "prompt": "Servers — peak 10k QPS, server handles 500 RPS at peak; compute server count with 20% buffer.",
+                  "hint": "Base servers = peak / per_server; apply buffer by multiplying by 1.2, then round up.",
+                  "answer": { "type": "integer", "value": 24 }
+                },
+                {
+                  "id": "q3-cache",
+                  "prompt": "Cache — 1B total objects, top 1% hottest, avg object 2 KB — estimate cache size (in GB) to hold the hottest 1%.",
+                  "hint": "Hot objects = total * 0.01. Size = hot_objects * avg_object_size. Convert to GB (approx 1 GB = 1,000,000 KB for rough math).",
+                  "answer": { "type": "numeric", "value": 20, "units": "GB", "tolerance": 0.15 }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -43,6 +43,7 @@ import {
   FaDatabase,
   FaRobot,
   FaBrain,
+  FaRegCircle ,
 } from "react-icons/fa";
 
 // Simple Icons for brand-specific technology logos
@@ -85,6 +86,9 @@ import {
   MdAccountTree,
 } from "react-icons/md";
 
+import { LuRectangleHorizontal, LuSquare, LuDiamond, LuHexagon, LuTriangle, LuText, LuTextCursorInput, LuShapes } from "react-icons/lu";
+import { TbOvalVertical } from "react-icons/tb";
+
 import { VscMcp } from "react-icons/vsc";
 
 /**
@@ -114,22 +118,23 @@ import { VscMcp } from "react-icons/vsc";
 
 // Group priority for sorting by usage frequency (lower number = higher priority)
 export const GROUP_PRIORITY: Record<string, number> = {
-  Compute: 1,
-  "Data Layer": 2,
-  Services: 3,
-  Networking: 4,
-  "AI & ML": 5,
-  Frontend: 6,
-  Messaging: 7,
-  Security: 8,
-  Observability: 9,
-  DevOps: 10,
-  Delivery: 11,
-  Grouping: 12,
-  "DNS & Network": 13,
-  "ER Diagram": 14,
-  UML: 15,
-  Custom: 16,
+  General: 1,
+  Compute: 2,
+  "Data Layer": 3,
+  Services: 4,
+  Networking: 5,
+  "AI & ML": 6,
+  Frontend: 7,
+  Messaging: 8,
+  Security: 9,
+  Observability: 10,
+  DevOps: 11,
+  Delivery: 12,
+  Grouping: 13,
+  "DNS & Network": 14,
+  "ER Diagram": 15,
+  UML: 16,
+  Custom: 17,
 };
 
 // Utility function to sort components by usage frequency
@@ -146,6 +151,265 @@ export const sortComponentsByUsage = (components: CanvasComponent[]) => {
 };
 
 export const COMPONENTS: CanvasComponent[] = [
+  // ========================================
+  // General LAYER
+  // ========================================
+  {
+    id: "shape-rectangle",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuRectangleHorizontal,
+    label: "Rectangle",
+    description: "Freeform rectangle shape for custom diagrams",
+    tags: ["shape", "rectangle", "freeform", "draw", "diagram"],
+    width: 240,
+    height: 120,
+    properties: [
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "rect",
+      },
+      {
+        key: "label",
+        label: "Label",
+        type: "text",
+        default: "",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+      },
+    ],
+  },
+  {
+    id: "shape-square",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuSquare,
+    label: "Square",
+    description: "Freeform square shape for custom diagrams",
+    tags: ["shape", "square", "freeform", "draw", "diagram"],
+    width: 120,
+    height: 120,
+    properties: [
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "square",
+      },
+      {
+        key: "label",
+        label: "Label",
+        type: "text",
+        default: "",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+      },
+    ],
+  },
+  {
+    id: "shape-ellipse",
+    group: "General",
+    nodeType: "freeform",
+    icon: TbOvalVertical,
+    label: "Ellipse",
+    description: "Freeform ellipse shape for custom diagrams",
+    tags: ["shape", "ellipse", "freeform", "draw", "diagram"],
+    width: 180,
+    height: 120,
+    properties: [
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "ellipse",
+      },
+      {
+        key: "label",
+        label: "Label",
+        type: "text",
+        default: "",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+      },
+    ],
+  },
+  {
+    id: "shape-circle",
+    group: "General",
+    nodeType: "freeform",
+    icon: FaRegCircle,
+    label: "Circle",
+    description: "Freeform circle shape for custom diagrams",
+    tags: ["shape", "circle", "freeform", "draw", "diagram"],
+    width: 120,
+    height: 120,
+    properties: [
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "circle",
+      },
+      {
+        key: "label",
+        label: "Label",
+        type: "text",
+        default: "",
+      },
+      {
+        key: "description",
+        label: "Description",
+        type: "textarea",
+        default: "",
+      },
+    ],
+  },
+  // ---- New freeform shapes ----
+  {
+    id: "shape-diamond",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuDiamond,
+    label: "Diamond",
+    description: "Freeform diamond (rhombus) shape",
+    tags: ["shape", "diamond", "rhombus", "freeform", "draw"],
+    width: 140,
+    height: 120,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "diamond" },
+      { key: "label", label: "Label", type: "text", default: "" },
+    ],
+  },
+  {
+    id: "shape-triangle",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuTriangle,
+    label: "Triangle",
+    description: "Freeform triangle shape",
+    tags: ["shape", "triangle", "freeform", "draw"],
+    width: 140,
+    height: 120,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "triangle" },
+      { key: "label", label: "Label", type: "text", default: "" },
+    ],
+  },
+  {
+    id: "shape-hexagon",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuHexagon,
+    label: "Hexagon",
+    description: "Freeform hexagon shape",
+    tags: ["shape", "hexagon", "freeform", "draw"],
+    width: 140,
+    height: 120,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "hexagon" },
+      { key: "label", label: "Label", type: "text", default: "" },
+    ],
+  },
+  {
+    id: "shape-parallelogram",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuShapes,
+    label: "Parallelogram",
+    description: "Freeform parallelogram shape",
+    tags: ["shape", "parallelogram", "freeform", "draw"],
+    width: 160,
+    height: 100,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "parallelogram" },
+      { key: "label", label: "Label", type: "text", default: "" },
+    ],
+  },
+  {
+    id: "shape-text",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuText,
+    label: "Text",
+    description: "Freeform text label",
+    tags: ["shape", "text", "label", "freeform", "draw"],
+    width: 160,
+    height: 60,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "text" },
+      { key: "label", label: "Text", type: "textarea", default: "Text" },
+      { key: "fontSize", label: "Font Size", type: "number", default: 16 },
+      { key: "textAlign", label: "Alignment", type: "select", options: ["left", "center", "right"], default: "center" },
+    ],
+  },
+  {
+    id: "shape-textbox",
+    group: "General",
+    nodeType: "freeform",
+    icon: LuTextCursorInput,
+    label: "Text Box",
+    description: "Box with a header and body paragraph",
+    tags: ["shape", "textbox", "header", "paragraph", "freeform", "draw"],
+    width: 200,
+    height: 140,
+    properties: [
+      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "textbox" },
+      { key: "label", label: "Header", type: "text", default: "Header" },
+      { key: "description", label: "Body", type: "textarea", default: "" },
+      { key: "fontSize", label: "Font Size", type: "number", default: 14 },
+      { key: "textAlign", label: "Alignment", type: "select", options: ["left", "center", "right"], default: "center" },
+    ],
+  },
+  {
+    id: "shape-note",
+    group: "General",
+    nodeType: "erNode",
+    icon: FaStickyNote,
+    label: "Note/Comment",
+    description: "Annotation or comment",
+    tags: ["note", "comment", "annotation", "documentation"],
+    properties: [
+      {
+        key: "nodeType",
+        label: "Node Type",
+        type: "text",
+        hidden: true,
+        default: "uml-note",
+      },
+      {
+        key: "componentName",
+        label: "Note Title",
+        type: "text",
+        placeholder: "Optional title",
+        default: "Note",
+      },
+      {
+        key: "description",
+        label: "Content",
+        type: "textarea",
+        placeholder: "Add your note or comment here",
+        default: "Add your annotation, comment, or clarification here.",
+      },
+    ],
+  },
   // ========================================
   // FRONTEND LAYER
   // ========================================

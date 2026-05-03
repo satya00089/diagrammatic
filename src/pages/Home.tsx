@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
+// learning paths preview removed — navigation via card in 'Choose Your Path'
 import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
@@ -146,6 +147,7 @@ const Home: React.FC = () => {
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [heroWordIndex, setHeroWordIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
+  // preview state removed; learning paths accessible from the 'Choose Your Path' card
   const [isDeleting, setIsDeleting] = useState(false);
   const [statCounts, setStatCounts] = useState([0, 0, 0]);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -244,6 +246,8 @@ const Home: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [displayedText, isDeleting, heroWordIndex]);
+
+  // Learning path preview removed — users can browse paths via the card below
 
   useEffect(() => {
     const targets = [1000, 140, 1000];
@@ -423,6 +427,15 @@ const Home: React.FC = () => {
   };
 
   const features = [
+    {
+      icon: <HiDocumentText className="w-8 h-8" />,
+      title: "Learning Paths",
+      description:
+        "Guided multi-lesson learning paths with exercises, progress tracking, and deep links.",
+      action: "Browse Paths",
+      route: "/learning-paths",
+      requiresAuth: false,
+    },
     {
       icon: <HiAcademicCap className="w-8 h-8" />,
       title: "Practice Problems",
@@ -869,6 +882,8 @@ const Home: React.FC = () => {
           </div>
         </section>
 
+        {/* Learning Path Preview removed — use the 'Learning Paths' card in Choose Your Path */}
+
         {/* My Diagrams Section - Only shown when authenticated */}
         {isAuthenticated && (
           <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
@@ -1129,7 +1144,7 @@ const Home: React.FC = () => {
               covered
             </p>
             <div
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
               data-reveal-group
             >
               {features.map((feature, index) => {

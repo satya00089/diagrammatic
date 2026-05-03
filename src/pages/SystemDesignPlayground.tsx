@@ -117,6 +117,8 @@ import type { ERNodeData } from "../components/ERNode";
 import TableNode from "../components/TableNode";
 import type { TableNodeData, TableAttribute } from "../components/TableNode";
 import GroupNode from "../components/GroupNode";
+import FreeformNode from "../components/FreeformNode";
+import type { FreeformNodeData } from "../components/FreeformNode";
 
 // UI Components - Edges
 import CustomEdge from "../components/CustomEdge";
@@ -135,7 +137,7 @@ import CustomPropertyInput, {
 } from "../components/CustomPropertyInput";
 
 // Type alias for all node data types
-type AnyNodeData = NodeData | ERNodeData | TableNodeData;
+type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
 
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
@@ -246,6 +248,42 @@ const createTableNodeWithCopyHandler = (
   };
 };
 
+// Create a wrapper component for FreeformNode with onCopy prop
+  const FreeformNodeWithCopy = React.memo(
+    (props: {
+      id: string;
+      data: unknown;
+      selected?: boolean;
+      onCopy: (id: string, data: AnyNodeData) => void;
+      isInGroup?: boolean;
+    }) => {
+      const nodeData = props.data as FreeformNodeData;
+      return (
+        <FreeformNode
+          id={props.id}
+          data={nodeData}
+          selected={props.selected}
+          onCopy={(id, data) => props.onCopy(id, data)}
+          isInGroup={props.isInGroup}
+        />
+      );
+    },
+  );
+
+  // Factory function to create freeform node component with copy handler and group detection
+  const createFreeformNodeWithCopyHandler = (
+    onCopy: (id: string, data: AnyNodeData) => void,
+    nodesRef: React.RefObject<Node[]>,
+  ) => {
+    return (props: { id: string; data: unknown; selected?: boolean }) => {
+      const isInGroup =
+        nodesRef.current?.find((n) => n.id === props.id)?.parentId !== undefined;
+      return (
+        <FreeformNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />
+      );
+    };
+  };
+
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme();
   const navigate = useNavigate();
@@ -294,7 +332,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             icon: restoredIcon, // Restore React icon component
             iconUrl: node.data?.iconUrl, // Keep iconUrl if it exists
           },
-        };
+        } as Node;
       });
     },
     [fullComponentsCache, dispatch],
@@ -1286,10 +1324,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const nodeTypeToUse =
       comp?.nodeType || (isGroupComponent ? "group" : "custom");
 
+    // Defaults for freeform nodes added via drag/drop - prefer width/height from
+    // the component definition (comp or minimalComp) when available. Also apply
+    // property defaults (e.g., shapeType) into the node's data so properties
+    // defined in `COMPONENTS` are respected on creation.
+    const isFreeformNode = (nodeTypeToUse as string) === "freeform";
+    const defaultW = Number(comp?.width ?? minimalComp?.width ?? 180);
+    const defaultH = Number(comp?.height ?? minimalComp?.height ?? 120);
+    const propList = comp?.properties ?? fullComp?.properties ?? [];
+    const propDefaults = (propList || []).reduce((acc: Record<string, unknown>, p) => {
+      if (p.default !== undefined) acc[p.key] = p.default;
+      return acc;
+    }, {} as Record<string, unknown>);
+    const shapeTypeFromProps = (propDefaults.shapeType as string | undefined) ?? undefined;
+    const freeformDefault = isFreeformNode
+      ? { style: { width: defaultW, height: defaultH }, data: { shape: { type: shapeTypeFromProps ?? "rect", width: defaultW, height: defaultH }, ...propDefaults } }
+      : {};
+
     const newNode: Node = {
       id,
       position,
-      type: nodeTypeToUse,
+      type: nodeTypeToUse as unknown as Node["type"],
       // For group nodes, use different styling
       style: isGroupComponent
         ? {
@@ -1297,7 +1352,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             height: 300,
             zIndex: -1, // Groups should be behind regular nodes
           }
-        : undefined,
+        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
       // include icon so the custom node can render it
       data: {
         label: label, // Use label from priority order
@@ -1309,6 +1364,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
+        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
         // For table nodes, add default attributes structure and renderConfig
         ...(nodeTypeToUse === "tableNode"
           ? {
@@ -1451,6 +1507,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }),
     );
   }, [setNodes]);
+
 
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
@@ -1780,6 +1837,70 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       "diagram:node-detach",
       detachListener as EventListener,
     );
+    // Listen for freeform node resize events emitted by NodeResizer onResizeEnd
+    const resizeListener = (e: Event) => {
+      const evt = e as CustomEvent<{ id: string; width: number; height: number }>;
+      const { id: nodeId, width, height } = evt.detail;
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== nodeId) return n;
+          const updated: Node = {
+            ...n,
+            style: { ...(n.style ?? {}), width, height },
+            data: {
+              ...(n.data as AnyNodeData),
+              shape: {
+                ...(((n.data as AnyNodeData)?.shape as Record<string, unknown>) ?? {}),
+                width,
+                height,
+              },
+            },
+          };
+          return updated;
+        }),
+      );
+    };
+    globalThis.addEventListener("diagram:node-resize", resizeListener as EventListener);
+    const bringToFrontListener = (e: Event) => {
+      const evt = e as CustomEvent<{ id: string }>;
+      const nodeId = evt.detail.id;
+      setNodes((nds) => {
+        const idx = nds.findIndex((n) => n.id === nodeId);
+        if (idx === -1) return nds;
+        const node = nds[idx];
+        const others = nds.slice(0, idx).concat(nds.slice(idx + 1));
+        const newOrder = [...others, node];
+        return newOrder.map((n, i) => ({
+          ...n,
+          style: { ...(n.style ?? {}), zIndex: i },
+        }));
+      });
+    };
+
+    const sendToBackListener = (e: Event) => {
+      const evt = e as CustomEvent<{ id: string }>;
+      const nodeId = evt.detail.id;
+      setNodes((nds) => {
+        const idx = nds.findIndex((n) => n.id === nodeId);
+        if (idx === -1) return nds;
+        const node = nds[idx];
+        const others = nds.slice(0, idx).concat(nds.slice(idx + 1));
+        const newOrder = [node, ...others];
+        return newOrder.map((n, i) => ({
+          ...n,
+          style: { ...(n.style ?? {}), zIndex: i },
+        }));
+      });
+    };
+
+    globalThis.addEventListener(
+      "diagram:node-to-front",
+      bringToFrontListener as EventListener,
+    );
+    globalThis.addEventListener(
+      "diagram:node-to-back",
+      sendToBackListener as EventListener,
+    );
     return () => {
       globalThis.removeEventListener(
         "diagram:node-delete",
@@ -1792,6 +1913,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-detach",
         detachListener as EventListener,
+      );
+      globalThis.removeEventListener("diagram:node-resize", resizeListener as EventListener);
+      globalThis.removeEventListener(
+        "diagram:node-to-front",
+        bringToFrontListener as EventListener,
+      );
+      globalThis.removeEventListener(
+        "diagram:node-to-back",
+        sendToBackListener as EventListener,
       );
     };
   }, [setNodes]);
@@ -2815,6 +2945,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     () => ({
       custom: createNodeWithCopyHandler(handleNodeCopy, nodesRef),
       erNode: createERNodeWithCopyHandler(handleNodeCopy, nodesRef),
+      freeform: createFreeformNodeWithCopyHandler(handleNodeCopy, nodesRef),
       tableNode: createTableNodeWithCopyHandler(handleNodeCopy, nodesRef),
       group: GroupNode,
     }),
@@ -3141,17 +3272,40 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const finalSubtitle = comp?.description ?? minimalComp?.description ?? "";
     const finalIconUrl = minimalComp?.iconUrl ?? comp?.iconUrl;
 
+    // Provide sensible defaults for freeform nodes (persisted style + data.shape)
+    // Prefer width/height from the palette/component metadata when present. Also
+    // include any property defaults (from local or fetched full component).
+    const isFreeformNode = (nodeTypeToUse as string) === "freeform";
+    const defaultW2 = Number(comp?.width ?? minimalComp?.width ?? 180);
+    const defaultH2 = Number(comp?.height ?? minimalComp?.height ?? 120);
+    const fullCompForDefaults = fullComponentsCache[realId];
+    const propList2 = comp?.properties ?? fullCompForDefaults?.properties ?? [];
+    const propDefaults2 = (propList2 || []).reduce((acc: Record<string, unknown>, p: ComponentProperty) => {
+      if (p.default !== undefined) acc[p.key] = p.default;
+      return acc;
+    }, {} as Record<string, unknown>);
+    const shapeTypeFromProps2 = (propDefaults2.shapeType as string | undefined) ?? undefined;
+    const freeformDefault = isFreeformNode
+      ? {
+          style: { width: defaultW2, height: defaultH2 },
+          data: {
+            shape: { type: shapeTypeFromProps2 ?? "rect", width: defaultW2, height: defaultH2 },
+            ...propDefaults2,
+          },
+        }
+      : {};
+
     const newNode: Node = {
       id: nodeId,
       position,
-      type: nodeTypeToUse,
+      type: nodeTypeToUse as unknown as Node["type"],
       style: isGroupComponent
         ? {
             width: 400,
             height: 300,
             zIndex: -1,
           }
-        : undefined,
+        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
       data: {
         label: finalLabel,
         componentId: realId, // real DB id — used for sprite lookup
@@ -3162,6 +3316,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
+        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
       },
     };
 

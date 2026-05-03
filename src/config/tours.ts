@@ -108,6 +108,31 @@ export const TOURS: Record<string, TourDefinition> = {
     ],
   },
 
+  learning_paths: {
+    id: "learning_paths",
+    steps: [
+      {
+        element: '[data-tour="create-path-btn"]',
+        popover: {
+          title: "Create a Learning Path",
+          description:
+            "Use the Create Path button to compose a new learning path made of modules and lessons.",
+          side: "bottom",
+          align: "center",
+        },
+      },
+      {
+        popover: {
+          title: "Browse Paths",
+          description:
+            "Each card shows a path summary, tags, and quick links to modules. Click a card to view its modules and lessons.",
+          side: "bottom",
+          align: "center",
+        },
+      },
+    ],
+  },
+
   design_studio: {
     id: "design_studio",
     steps: [
