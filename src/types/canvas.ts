@@ -62,8 +62,11 @@ export type CanvasComponent = {
   group?: string;
   platform?: string;
   tags?: string[];
+  // Optional default dimensions when creating nodes from the palette
+  width?: number;
+  height?: number;
   properties?: ComponentProperty[];
-  nodeType?: "custom" | "erNode" | "group" | "tableNode"; // Specify which node component to use
+  nodeType?: "custom" | "erNode" | "group" | "tableNode" | "freeform"; // Specify which node component to use
   renderConfig?: NodeRenderConfig; // Visual configuration for the node
   data?: Record<string, unknown>; // Default data for the node (e.g., attributes for table nodes)
 };

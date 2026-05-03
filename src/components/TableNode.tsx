@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdAdd } from "react-icons/md";
+import { MdSettings, MdDelete, MdAdd, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import type { NodeRenderConfig } from "../types/canvas";
@@ -534,6 +534,30 @@ const TableNode: React.FC<Props> = React.memo(
               >
                 <MdSettings className="w-4 h-4" />
                 Settings
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-front", { detail: { id } }));
+                  closeContextMenu();
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              >
+                <MdOutlineVerticalAlignTop className="w-4 h-4" />
+                Bring to Front
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-back", { detail: { id } }));
+                  closeContextMenu();
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              >
+                <MdOutlineVerticalAlignBottom className="w-4 h-4" />
+                Send to Back
               </button>
               <button
                 type="button"
