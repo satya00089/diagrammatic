@@ -16,7 +16,7 @@
             "id": "what-is-system-design",
             "title": "What is System Design",
             "type": "article",
-            "content": "# What is System Design\nSystem design is the practice of defining the architecture, components, services, interfaces, and data models that enable a software system to satisfy functional and non-functional requirements. It focuses on high-level structure, interactions, and trade-offs rather than low-level implementation details.\n## Scope and goals\n- Functional requirements: what the system must do.\n- Non-functional requirements: performance, scalability, reliability, security, maintainability, and cost.\n## Key building blocks\n- Clients and APIs: how users and other systems interact with your service.\n- Services and components: logical boundaries and responsibilities.\n- Data storage: databases, caches, and their consistency models.\n- Messaging and integration: queues, streams, and asynchronous patterns.\n- Infrastructure: load balancers, CDNs, replication, and deployment topology.\n## A structured approach\n1. Clarify requirements and constraints (scale, latency, consistency).\n2. Estimate expected load, data volume, and growth patterns.\n3. Propose a high-level architecture with clear component responsibilities.\n4. Dive into critical components (data modeling, APIs, caching, storage).\n5. Outline failure modes, monitoring, and operational procedures.\n## Short example: URL shortener\nRequirements: create short links, redirect quickly, support high read volume, store mappings persistently, and track basic analytics.\nArchitecture: API service, datastore for mappings, caching layer for hot keys, and background workers for analytics.\nConsiderations: key generation and collisions, cache invalidation, scaling reads, and data backup.\n## Learning outcomes\n- Break down a problem into components and justify architectural choices.\n- Reason about trade-offs between latency, consistency, and cost.\n- Identify operational needs: monitoring, alerts, backups, and recovery.\n**Next:** Read 'Common Trade-offs in System Design' to explore concrete decision examples."
+            "content": "# What is System Design\nSystem design is the practice of defining the architecture, components, services, interfaces, and data models that enable a software system to satisfy functional and non-functional requirements. It focuses on high-level structure, interactions, and trade-offs rather than low-level implementation details.\n\n## Scope and goals\n\n- Functional requirements: what the system must do.\n- Non-functional requirements: performance, scalability, reliability, security, maintainability, and cost.\n\n## Key building blocks\n\n- Clients and APIs: how users and other systems interact with your service.\n- Services and components: logical boundaries and responsibilities.\n- Data storage: databases, caches, and their consistency models.\n- Messaging and integration: queues, streams, and asynchronous patterns.\n- Infrastructure: load balancers, CDNs, replication, and deployment topology.\n\n## A structured approach\n\n1. Clarify requirements and constraints (scale, latency, consistency).\n2. Estimate expected load, data volume, and growth patterns.\n3. Propose a high-level architecture with clear component responsibilities.\n4. Dive into critical components (data modeling, APIs, caching, storage).\n5. Outline failure modes, monitoring, and operational procedures.\n\n## Short example: URL shortener\n\nRequirements: create short links, redirect quickly, support high read volume, store mappings persistently, and track basic analytics.\nArchitecture: API service, datastore for mappings, caching layer for hot keys, and background workers for analytics.\nConsiderations: key generation and collisions, cache invalidation, scaling reads, and data backup.\n\n## Learning outcomes\n\n- Break down a problem into components and justify architectural choices.\n- Reason about trade-offs between latency, consistency, and cost.\n- Identify operational needs: monitoring, alerts, backups, and recovery.\n\n**Next:** Read 'Common Trade-offs in System Design' to explore concrete decision examples."
           }
         ]
       }
@@ -137,5 +137,215 @@
         ]
       }
     ]
+  },
+  {
+    "id": "dns-fundamentals",
+    "slug": "dns-fundamentals",
+    "title": "DNS Fundamentals",
+    "summary": "Fundamentals of DNS: resolution, records, caching, security, and operations.",
+    "difficulty": "Intermediate",
+    "tags": ["dns", "networking", "infrastructure"],
+    "modules": [
+      {
+        "id": "dns-fundamentals",
+        "title": "DNS Fundamentals",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "dns-intro",
+            "title": "What is DNS?",
+            "type": "article",
+            "content": "# DNS — What and Why\n\nThe Domain Name System (DNS) maps human-readable names to IP addresses and other resources. It is a hierarchical, distributed database used by virtually all internet services.\n\nKey functions:\n- Name resolution (hostnames → IPs)\n- Service discovery (SRV/TXT)\n- Email routing (MX)\n\nThis module covers common records, resolution flow, caching, security (DNSSEC), and operational practices.\n\n**Simple example — Step by step**\n\n1. A user enters `www.example.com` in a browser; the client asks its configured recursive resolver (usually the ISP or OS resolver).\n2. The recursive resolver checks its cache; if the record is missing, it queries a root nameserver for the `.com` delegation.\n3. The root returns the list of `.com` TLD nameservers; the resolver then queries a `.com` TLD server for the `NS` records for `example.com`.\n4. The TLD responds with the authoritative nameservers for `example.com`; the resolver queries one authoritative server for the `A` (or `AAAA`) record for `www`.\n5. The authoritative server returns the IP address; the resolver caches the answer (respecting the record's TTL) and returns the IP to the client.\n6. The client connects to the returned IP and loads the website.\n\nNotes:\n- TTL controls how long resolvers cache the answer; low TTLs speed propagation but increase query volume.\n- Glue records are needed when a zone's nameservers are inside that zone (e.g., `ns1.example.com`)."
+          },
+          {
+            "id": "dns-diagram",
+            "title": "DNS Diagram — Lookup Flow",
+            "type": "article",
+            "content": "# DNS Diagram — Lookup Flow\n\n![DNS lookup diagram](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/dns.png)\n\nThis diagram shows the common DNS lookup path and how components interact. Step-by-step:\n1. The client asks its recursive resolver for `www.example.com`.\n2. The recursive resolver checks its cache; if missing, it queries a root nameserver for the TLD.\n3. The root returns TLD nameservers; the resolver queries the TLD for the domain's authoritative servers.\n4. The resolver queries an authoritative nameserver for the `A`/`AAAA` record for `www`.\n5. The authoritative server returns the IP; the resolver caches the answer (respecting TTL) and returns it to the client.\n6. The client connects to the IP and loads the site.\n\nDiagram notes:\n- Arrows show query (outgoing) and response (returning) flows.\n- Glue records are used when an NS is inside the same zone (e.g., `ns1.example.com`).\n- TTL values on records determine caching duration and propagation delays."
+          },
+          {
+            "id": "dns-resolution-and-caching",
+            "title": "Resolution & Caching",
+            "type": "article",
+            "content": "# Resolution & Caching\n\nConcise overview of the DNS resolution flow (root → TLD → authoritative), recursion vs iteration, and caching (TTL).\n\n- Recursive resolvers perform full lookups and cache answers; iterative queries follow referrals.\n- Glue records and delegation connect zones; authoritative servers provide canonical answers.\n- TTL (time-to-live) controls caching behavior: short TTLs speed propagation, long TTLs reduce query load.\n\nOperational note: choose TTLs and authority layout based on update frequency and expected query volume."
+          },
+          {
+            "id": "dns-record-types",
+            "title": "Common Record Types (A, AAAA, CNAME, MX, NS, SOA, TXT, SRV)",
+            "type": "article",
+            "content": "# DNS Record Types\n\n- **A / AAAA**: IPv4 / IPv6 address records mapping hostnames to IP addresses.\n- **CNAME**: Canonical name (alias) pointing to another hostname; cannot coexist with other records at the same name.\n- **MX**: Mail exchange records with priority values for email routing.\n- **NS**: Authoritative nameservers that delegate and serve a DNS zone.\n- **SOA**: Start of Authority — zone metadata (serial, refresh, retry, expire, default TTL).\n- **TXT**: Arbitrary text records (ownership verification, SPF, DKIM, misc data).\n- **SRV**: Service records specifying hostname, port, priority, and weight for service discovery.\n- **PTR**: Pointer records for reverse DNS (IP → hostname).\n\nExamples and when to use each."
+          },
+          {
+            "id": "dns-ops-security-and-troubleshooting",
+            "title": "Ops, Security & Troubleshooting",
+            "type": "article",
+            "content": "# Ops, Security & Troubleshooting\n\nConcise operational guidance covering zone files, DNSSEC, load-balancing/failover, and common troubleshooting steps.\n\n- Zone files: SOA, NS, A/AAAA, MX, TXT — manage serials and perform safe rollouts.\n- DNSSEC: chain-of-trust, key rollover practices, and validation monitoring.\n- Load balancing & failover: multiple A records, geo-DNS, health checks, and TTL strategy.\n- Troubleshooting: use dig/nslookup/host, verify delegation/glue, inspect TTLs, and check DNSSEC validation errors.\n\nKeep operations simple: monitor, choose TTLs based on change frequency, and test rollouts in stages."
+          },
+          {
+            "id": "dns-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\nPractice questions to check your understanding.",
+            "exercise": {
+              "assumptions": [
+                "Default TTL examples: 3600s (1h), 300s (5m)",
+                "Typical authoritative deployment: 2+ nameservers"
+              ],
+              "questions": [
+                {
+                  "id": "q1-ttl-propagation",
+                  "prompt": "If a DNS record has TTL=3600, approximately how long may caches hold the old value after you change the record? (in seconds)",
+                  "hint": "TTL is the maximum age a resolver may cache a record.",
+                  "answer": { "type": "numeric", "value": 3600 }
+                },
+                {
+                  "id": "q2-basic-records",
+                  "prompt": "What minimal set of DNS record types (names only) do you need to publish a public website and support email?",
+                  "hint": "Think about address records, mail exchange, and delegation records.",
+                  "answer": { "type": "text", "value": "A, NS, SOA, MX" }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "performance-and-scalability",
+    "slug": "performance-and-scalability",
+    "title": "Performance & Scalability",
+    "summary": "Understand performance and scalability trade-offs with practical examples.",
+    "difficulty": "Intermediate",
+    "tags": ["performance", "scalability", "latency"],
+    "modules": [
+      {
+        "id": "perf-vs-scal",
+        "title": "Designing for Performance & Scalability — Trade-offs & Patterns",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "perf-vs-scal-intro",
+            "title": "Performance vs Scalability",
+            "type": "article",
+            "content": "# Performance vs Scalability\n\nPerformance measures how fast a system responds (latency, throughput) under a given load. Scalability describes the system's ability to handle increasing load by adding resources. Key trade-offs:\n\n- Optimizing for single-request latency often focuses on micro-optimizations and caching.\n- Optimizing for scalability focuses on distributions of load, partitioning, and elastic resource management.\n\nConsiderations:\n\n- Vertical scaling (bigger machines) vs horizontal scaling (more machines).\n- Strong consistency vs availability under partition.\n- Cost implications and operational complexity.\n\nPractical guidance:\n\n- Profile hotspots before optimizing.\n- Use caching to reduce repeated work but plan for invalidation.\n- Design components to be stateless when possible to enable horizontal scaling."
+          },
+          {
+            "id": "perf-vs-scal-core-metrics",
+            "title": "Core Concepts & Metrics",
+            "type": "article",
+            "content": "# Core Concepts & Metrics\n\nThis lesson covers the basic vocabulary and signal definitions used when reasoning about performance and scalability.\n\n**Core concepts**\n- Performance: latency (time per request) and throughput (requests/sec).\n- Scalability: how capacity changes as load increases (vertical vs horizontal).\n- Capacity: the sustainable throughput at a target latency.\n- Saturation: a resource at or near 100% utilization.\n\n**Key metrics & SLOs**\n- Latency percentiles: p50, p95, p99, p999. Tail percentiles matter.\n- Throughput: steady-state and peak requests/sec.\n- Concurrency: in-flight requests or open connections.\n- Utilization and queue length: resource usage and queuing indicators.\n\nDefine SLIs and SLOs early (e.g., 'p95 latency < 200 ms') and use them to drive monitoring and alerting."
+          },
+          {
+            "id": "perf-vs-scal-littles-law",
+            "title": "Little's Law and Concurrency",
+            "type": "article",
+            "content": "# Little's Law — Concurrency, Arrival Rate, and Latency\n\nLittle's Law: L = λ W\n- L = average number in system (concurrency)\n- λ = arrival rate (requests/sec)\n- W = average time in system (seconds)\n\nUse this to size thread pools, connection pools, and instance concurrency.\n\nExample: λ = 500 RPS, target W = 0.2 s → L = 500 * 0.2 = 100 concurrent requests.\n\nPractical tip: always include safety margin above computed concurrency for spikes and overhead."
+          },
+          {
+            "id": "perf-vs-scal-observability",
+            "title": "Measurement & Observability",
+            "type": "article",
+            "content": "# Measurement & Observability\n\n- Instrument latency histograms, counters, traces, and resource metrics.\n- Use HDR histograms or equivalent for accurate percentile calculations.\n- Collect traces for p99/p999 requests to find hotspots (DB calls, GC pauses, external dependencies).\n- Run realistic load tests (steady, spike, soak) in production-like environments.\n\nObservability gives you evidence to prioritize and validate performance changes."
+          },
+          {
+            "id": "perf-vs-scal-patterns",
+            "title": "Scaling Patterns",
+            "type": "article",
+            "content": "# Scaling Patterns\n\n- Vertical scaling: bigger machines — fast but limited.\n- Horizontal scaling: more instances — requires statelessness or sharding.\n- Caching: reduce downstream load; plan invalidation.\n- Sharding/partitioning: distribute data load; watch for hot shards.\n- Asynchrony & background work: move long work off the request path.\n- Batching: amortize overhead to increase throughput (at cost of latency).\n\nChoose patterns based on workload characteristics and cost/complexity trade-offs."
+          },
+          {
+            "id": "perf-vs-scal-latency-throughput",
+            "title": "Latency vs Throughput",
+            "type": "article",
+            "content": "# Latency vs Throughput\n\n- Latency: time to complete a single operation (p50/p95/p99).\n- Throughput: operations per unit time.\n\nTrade-offs:\n- Batching increases throughput but raises per-item latency.\n- Parallelism increases throughput but can worsen tail latency due to contention.\n\nDesign recommendation: measure both latency percentiles and throughput under representative load."
+          },
+          {
+            "id": "perf-vs-scal-tail-mitigation",
+            "title": "Tail-Latency Mitigation",
+            "type": "article",
+            "content": "# Tail-Latency Mitigation\n\nTechniques:\n- Hedged requests: issue duplicate requests to reduce tail.\n- Request coalescing: avoid duplicated work under load.\n- Bulkheads: isolate resources to prevent cascading failures.\n- Timeouts & retries with backoff: avoid retry storms.\n- Load shedding: refuse requests gracefully when overloaded."
+          },
+          {
+            "id": "perf-vs-scal-capacity-planning",
+            "title": "Capacity Planning — Worked Examples",
+            "type": "article",
+            "content": "# Capacity Planning Examples\n\n1) Server count:\nS = ceil((peak * (1 + buffer)) / per_server_capacity)\nExample: peak=10,000 RPS, per_server=500 RPS, buffer=0.2 → S=24\n\n2) Cache sizing:\nHot objects = total_objects * hot_fraction\nSize = hot_objects * avg_object_size\nExample: 1B objects × 1% hot × 2 KB ≈ 20 GB\n\n3) Concurrency from latency (Little's Law):\nλ=1000 RPS, target W=0.05s → L=50 concurrent requests"
+          },
+          {
+            "id": "perf-vs-scal-optimization-ops",
+            "title": "Optimization Workflow & Operations",
+            "type": "article",
+            "content": "# Optimization Workflow & Operations\n\nWorkflow:\n1. Measure and define SLOs.\n2. Profile and identify the dominant resource.\n3. Hypothesize and apply targeted changes.\n4. Validate with load tests and metrics.\n5. Deploy gradually and monitor SLOs.\n\nOperational considerations:\n- Autoscaling on actionable metrics (latency/queue length).\n- Chaos and fault-injection testing.\n- Balance cost vs performance.\n\nChecklist for design reviews: p50/p95/p99 targets, stateless key paths, caching strategy, bulkheads, observability, load testing."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "latency-vs-throughput",
+    "slug": "latency-vs-throughput",
+    "title": "Latency vs Throughput",
+    "summary": "Deep dive into latency, throughput measurement and mitigation techniques.",
+    "difficulty": "Intermediate",
+    "tags": ["latency", "throughput", "performance"],
+    "modules": [
+      {
+        "id": "latency-vs-throughput",
+        "title": "Latency vs Throughput",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "latency-vs-throughput-intro",
+            "title": "Latency vs Throughput",
+            "type": "article",
+            "content": "# Latency vs Throughput\n\nLatency is the time taken to complete a single operation. Throughput is the number of operations completed per unit time. They are related but distinct metrics.\n\n- High throughput systems may accept higher latency per request if overall work per second increases.\n- Low latency often requires efficient I/O, warm caches, and minimal coordination.\n\nWhen designing systems, measure both latency percentiles (p50, p95, p99) and throughput under representative load."
+          },
+          {
+            "id": "latency-vs-throughput-signals",
+            "title": "Signals & Measurement",
+            "type": "article",
+            "content": "# Signals & Measurement\n\nKey signals to measure: latency histograms (p50/p95/p99), throughput (RPS), concurrency, resource utilization, and queue lengths.\n\n- Use HDR histograms or equivalent to capture percentiles accurately.\n- Trace p99 requests end-to-end to find hotspots (DB, network, GC).\n- Define SLIs and SLOs early (for example, 'p95 < 200 ms').\n\nCollecting the right signals enables evidence-based decisions rather than guesswork."
+          },
+          {
+            "id": "latency-vs-throughput-batching-parallelism",
+            "title": "Batching & Parallelism",
+            "type": "article",
+            "content": "# Batching & Parallelism\n\nBatching reduces per-item overhead and increases throughput by amortizing fixed costs, but it increases per-item latency because items wait for the batch to fill or a timer to expire.\n\nParallelism increases throughput by doing work concurrently, but can raise tail latency due to contention (locks, GC, IO).\n\nDesign trade-offs:\n- Choose batch sizes that balance latency targets and throughput needs.\n- Use parallelism carefully; measure tail percentiles under concurrency."
+          },
+          {
+            "id": "latency-vs-throughput-tail-latency",
+            "title": "Tail-Latency Causes & Mitigation",
+            "type": "article",
+            "content": "# Tail-Latency Causes & Mitigation\n\nCommon causes of high tail latency: GC pauses, noisy neighbors, slow downstream dependencies, queueing, and retries.\n\nMitigation techniques:\n- Hedged requests or request duplication with care.\n- Request coalescing to avoid redundant work.\n- Bulkheads to isolate resources and reduce cascading failures.\n- Timeouts and exponential backoff to stop retry storms.\n\nMeasure the impact of any mitigation with p99/p999 traces."
+          },
+          {
+            "id": "latency-vs-throughput-benchmarking",
+            "title": "Benchmarking & Load Testing",
+            "type": "article",
+            "content": "# Benchmarking & Load Testing\n\nRun realistic load tests: steady-state, spikes, ramps, and soak tests. Use tools like k6, locust, or JMeter.\n\n- Reproduce production-like traffic patterns and payload sizes.\n- Test both latency SLOs and throughput under load.\n- Record resource metrics and traces during tests.\n\nUse test results to validate autoscaling rules and capacity planning."
+          },
+          {
+            "id": "latency-vs-throughput-patterns",
+            "title": "Design Patterns & Techniques",
+            "type": "article",
+            "content": "# Design Patterns & Techniques\n\nUseful patterns: asynchronous processing (queues + workers), backpressure and rate-limiting, circuit breakers, caching, batching, and idempotent APIs.\n\n- Apply backpressure to protect downstream systems.\n- Use caches to reduce repeated work and improve latency.\n- Make critical paths as stateless and fast as possible."
+          },
+          {
+            "id": "latency-vs-throughput-examples",
+            "title": "Worked Examples",
+            "type": "article",
+            "content": "# Worked Examples\n\n1) Concurrency from latency (Little's Law): L = λ W. Example: λ=1000 RPS, W=0.05s → L=50 concurrent requests.\n\n2) Batch sizing: choose a batch size that keeps average wait < latency budget while delivering target throughput.\n\n3) Throughput vs latency: measure p50/p95/p99 at different concurrency levels to find optimal operating point."
+          },
+          {
+            "id": "latency-vs-throughput-exercises",
+            "title": "Exercises",
+            "type": "article",
+            "content": "# Exercises\n\n- Given λ=5000 RPS and p95 target 100 ms, compute expected concurrency using Little's Law.\n- Propose a batch size if average per-item processing is 2 ms and you want to keep per-item wait < 20 ms.\n- Given observed p99 spikes correlated with GC pauses, list 3 mitigation steps and how to validate them."
+          }
+        ]
+      }
+    ]
   }
 ]
+
