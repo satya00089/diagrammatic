@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdClose } from "react-icons/md";
+import { MdClose, MdMenuBook } from "react-icons/md";
 import { LuBrainCircuit } from "react-icons/lu";
 import { HiUserGroup } from "react-icons/hi2";
 import { useOnboarding } from "../hooks/useOnboarding";
+import { FeatureFlags, isFeatureEnabled } from "../config/featureFlags";
+import type { FeatureFlag } from "../config/featureFlags";
 import type { PageId } from "../contexts/OnboardingContext";
 
 interface Announcement {
@@ -15,6 +17,7 @@ interface Announcement {
   description: string;
   ctaLabel: string;
   ctaHref?: string;
+  featureFlag?: FeatureFlag;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,6 +44,17 @@ const ANNOUNCEMENTS: Announcement[] = [
     ctaLabel: "Try It Now",
     ctaHref: "/playground/free",
   },
+  {
+    id: "learning_path_weekly_modules_v1",
+    icon: <MdMenuBook className="h-8 w-8 text-yellow-400" />,
+    badge: "Weekly",
+    title: "Learning Paths Just Got Better",
+    description:
+      "New curated modules are added to Learning Paths every week — stay current with focused modules.",
+    ctaLabel: "Browse Learning Paths",
+    ctaHref: "/learning-paths",
+    featureFlag: FeatureFlags.LEARNING_PATH_WEEKLY_MODULES,
+  },
 ];
 
 const FeatureAnnouncement: React.FC = () => {
@@ -59,7 +73,12 @@ const FeatureAnnouncement: React.FC = () => {
 
   const currentPage = mapPathToPageId(location.pathname);
   const deferForTour = Boolean(currentPage && isNewToPage(currentPage) && !isTourCompleted(currentPage));
-  const announcement = deferForTour ? undefined : ANNOUNCEMENTS.find((a) => !isAnnouncementSeen(a.id));
+  const announcement = deferForTour
+    ? undefined
+    : ANNOUNCEMENTS.find((a) => {
+        if (a.featureFlag && !isFeatureEnabled(a.featureFlag)) return false;
+        return !isAnnouncementSeen(a.id);
+      });
   const isVisible = Boolean(announcement);
 
   // Set a CSS variable so fixed headers shift down on md+ screens
