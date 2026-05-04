@@ -49,4 +49,11 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  <!-- Learning Paths - Curated learning paths -->
+  <url>
+    <loc>https://diagrammatic.next-zen.dev/learning-paths</loc>
+    <lastmod>2026-05-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
 </urlset>
