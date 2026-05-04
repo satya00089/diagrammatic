@@ -48,7 +48,7 @@ export interface LearningPath {
   modules: Module[];
 }
 
-const SAMPLE_URL = "/learning-paths/sample-learning-path.json";
+const SAMPLE_URL = "/learning-paths/learning-paths.json";
 
 export async function fetchLearningPaths(): Promise<LearningPath[]> {
   const res = await fetch(SAMPLE_URL);

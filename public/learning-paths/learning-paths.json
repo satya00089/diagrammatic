@@ -1,0 +1,476 @@
+[
+  {
+    "id": "system-design-foundations",
+    "slug": "system-design-foundations",
+    "title": "System Design Foundations",
+    "summary": "A concise introduction to system design principles, trade-offs, and real-world examples.",
+    "difficulty": "Beginner",
+    "tags": ["system-design", "foundations", "scalability"],
+    "modules": [
+      {
+        "id": "intro",
+        "title": "Introduction",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "what-is-system-design",
+            "title": "What is System Design",
+            "type": "article",
+            "content": "# What is System Design\nSystem design is the practice of defining the architecture, components, services, interfaces, and data models that enable a software system to satisfy functional and non-functional requirements. It focuses on high-level structure, interactions, and trade-offs rather than low-level implementation details.\n\n## Scope and goals\n\n- Functional requirements: what the system must do.\n- Non-functional requirements: performance, scalability, reliability, security, maintainability, and cost.\n\n## Key building blocks\n\n- Clients and APIs: how users and other systems interact with your service.\n- Services and components: logical boundaries and responsibilities.\n- Data storage: databases, caches, and their consistency models.\n- Messaging and integration: queues, streams, and asynchronous patterns.\n- Infrastructure: load balancers, CDNs, replication, and deployment topology.\n\n## A structured approach\n\n1. Clarify requirements and constraints (scale, latency, consistency).\n2. Estimate expected load, data volume, and growth patterns.\n3. Propose a high-level architecture with clear component responsibilities.\n4. Dive into critical components (data modeling, APIs, caching, storage).\n5. Outline failure modes, monitoring, and operational procedures.\n\n## Short example: URL shortener\n\nRequirements: create short links, redirect quickly, support high read volume, store mappings persistently, and track basic analytics.\nArchitecture: API service, datastore for mappings, caching layer for hot keys, and background workers for analytics.\nConsiderations: key generation and collisions, cache invalidation, scaling reads, and data backup.\n\n## Learning outcomes\n\n- Break down a problem into components and justify architectural choices.\n- Reason about trade-offs between latency, consistency, and cost.\n- Identify operational needs: monitoring, alerts, backups, and recovery.\n\n**Next:** Read 'Common Trade-offs in System Design' to explore concrete decision examples."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "back-of-the-envelope-estimation",
+    "slug": "back-of-the-envelope-estimation",
+    "title": "Back-of-the-Envelope Estimation",
+    "summary": "Quick, interview-friendly estimation techniques and exercises for capacity and latency planning.",
+    "difficulty": "Beginner",
+    "tags": ["estimation", "system-design", "interviews"],
+    "modules": [
+      {
+        "id": "concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "boe-overview",
+            "title": "Overview: What is Back-of-the-Envelope Estimation",
+            "type": "article",
+            "content": "# Back-of-the-Envelope Estimation\n\nBack-of-the-envelope (BOTE) estimation is a compact technique for getting order-of-magnitude answers quickly. It combines straightforward arithmetic, explicit assumptions, and a few well-known performance numbers to decide whether a design approach is viable. The emphasis is on the process and assumptions rather than exact precision.\n\nIn interviews and early designs you should: list assumptions, choose round numbers, and label units. This module provides the small reference tables you'll use for quick calculations."
+          },
+          {
+            "id": "boe-units",
+            "title": "Units & Power-of-Two (data sizes)",
+            "type": "article",
+            "content": "# Units & Power-of-Two (data sizes)\n\nA byte is 8 bits. Use binary powers for precise magnitudes and decimal shortcuts for easy math.\n\n| Power | Approx. value | Full name | Short name |\n| -----: | -------------: | --------- | ---------- |\n| 2^10 | ~1 thousand | 1 Kilobyte | 1 KB |\n| 2^20 | ~1 million | 1 Megabyte | 1 MB |\n| 2^30 | ~1 billion | 1 Gigabyte | 1 GB |\n| 2^40 | ~1 trillion | 1 Terabyte | 1 TB |\n| 2^50 | ~1 quadrillion | 1 Petabyte | 1 PB |\n\nNotes: for quick mental arithmetic you can use 1 KB≈10^3, 1 MB≈10^6, but always write the units to avoid confusion."
+          },
+          {
+            "id": "boe-latency",
+            "title": "Latency Numbers Every Engineer Should Know",
+            "type": "article",
+            "content": "# Latency Numbers & Rules of Thumb\n\nKeep a compact table of typical latencies so you can compare design choices quickly. These are order-of-magnitude guides, not precise benchmarks.\n\n| Operation | Typical time |\n| --------- | ------------: |\n| L1 cache reference | ~1 ns |\n| Branch mispredict | ~5 ns |\n| L2 cache reference | ~3–7 ns |\n| Mutex lock/unlock | ~100 ns |\n| Main memory (DRAM) | ~100 ns |\n| Compress 1 KB (fast) | ~2–10 µs |\n| Send 2 KB over 1 Gbps | ~20 µs |\n| Read 1 MB sequential from memory | ~250 µs |\n| SSD random read | ~50–100 µs |\n| Datacenter round-trip | ~0.5–2 ms |\n| Read 1 MB from network/disk | ~10–30 ms |\n| Disk seek (HDD) | ~5–10 ms |\n| Intercontinental RTT | ~100–200 ms |\n\nUse these to decide when to cache, when to avoid disk seeks, and when network hops matter."
+          },
+          {
+            "id": "boe-availability",
+            "title": "Availability & the 'Nines'",
+            "type": "article",
+            "content": "# Availability (the 'Nines')\n\nAvailability targets and expected downtime per year: choose the right target based on user impact and cost.\n\n| Availability | Downtime per year |\n| ------------ | -----------------: |\n| 99% | ~3.65 days |\n| 99.9% | ~8.76 hours |\n| 99.99% | ~52.56 minutes |\n| 99.999% | ~5.26 minutes |\n| 99.9999% | ~31.54 seconds |\n\nHigher availability requires redundancy, automation, and usually more cost and operational complexity."
+          }
+        ]
+      },
+      {
+        "id": "examples",
+        "title": "Worked Examples",
+        "order": 2,
+        "lessons": [
+          {
+            "id": "boe-example-twitter",
+            "title": "Worked Example: Estimating QPS & Storage",
+            "type": "article",
+            "content": "# Worked Example: QPS and Storage\n\n**Assumptions (example)**\n- Monthly active users (MAU): 50,000,000\n- Fraction active daily: 30% → DAU = 15,000,000\n- Uploads (posts) per active user per day: 1.5\n- Fraction with media: 30%\n- Average media size: 2 MB\n- Retention: 3 years\n\n**Step 1 — Baseline QPS**\nPosts/sec = DAU * posts_per_day / 86,400\n= 15,000,000 * 1.5 / 86,400 ≈ 260.4 ≈ 260 QPS\n\n**Step 2 — Peak QPS**\nApply headroom (2–3×) for spikes: peak ≈ 520–780 QPS\n\n**Step 3 — Media storage**\nDaily media = DAU * posts_per_day * media_fraction * avg_media_size\n= 15,000,000 * 1.5 * 0.3 * 2 MB = 13.5 TB/day\n3-year media storage ≈ 13.5 TB * 365 * 3 ≈ 14.8 PB\n\n**Discussion**\nMedia fraction and retention dominate storage; small changes to these assumptions have large impacts. Round values for quick reasoning and always state units."
+          },
+          {
+            "id": "boe-tips",
+            "title": "Practical Tips & Best Practices",
+            "type": "article",
+            "content": "# Practical Tips for BOTE\n\n- Round early and keep arithmetic simple.\n- Write assumptions and label units.\n- Work in orders of magnitude and highlight sensitivities.\n- When time is limited, state steps and assumptions before computing.\n- Practice common calculations: QPS, storage, caches, and server counts."
+          }
+        ]
+      },
+      {
+        "id": "exercises",
+        "title": "Exercises",
+        "order": 3,
+        "lessons": [
+          {
+            "id": "boe-exercises",
+            "title": "Exercises: Practice Problems",
+            "type": "exercise",
+            "content": "# Exercises\n\nUse the fields below to enter your answers. Click 'Show hint' for help. You can enter numeric answers (units optional).",
+            "exercise": {
+              "assumptions": [
+                "MAU = 50,000,000",
+                "Fraction active daily (DAU/MAU) = 0.3 (30%)",
+                "Uploads (posts) per active user per day = 1.5",
+                "Fraction of posts with media = 0.3 (30%)",
+                "Average media size = 2 MB",
+                "Retention window = 3 years",
+                "Peak QPS for servers example = 10,000",
+                "Per-server peak capacity = 500 RPS",
+                "Operational buffer = 20%",
+                "Total objects = 1,000,000,000",
+                "Hot fraction (top objects) = 1%",
+                "Average object size = 2 KB",
+                "Conversions: 1 TB ≈ 1000 GB, 1 PB ≈ 1000 TB"
+              ],
+              "questions": [
+                {
+                  "id": "q1-daily-media",
+                  "prompt": "Photo app — estimate daily media (in TB/day).",
+                  "hint": "DAU = MAU * daily_fraction = 50,000,000 * 0.3 = 15,000,000. Daily media = DAU * posts_per_day * media_fraction * avg_media_size.",
+                  "answer": {
+                    "type": "numeric",
+                    "value": 13.5,
+                    "units": "TB/day",
+                    "tolerance": 0.15
+                  }
+                },
+                {
+                  "id": "q1-3yr-storage",
+                  "prompt": "Photo app — estimate 3-year media storage (in PB).",
+                  "hint": "3-year storage = daily_media * 365 * 3 and convert to PB (1 PB = 1000 TB for rough BOTE).",
+                  "answer": {
+                    "type": "numeric",
+                    "value": 14.8,
+                    "units": "PB",
+                    "tolerance": 0.2
+                  }
+                },
+                {
+                  "id": "q2-servers",
+                  "prompt": "Servers — peak 10k QPS, server handles 500 RPS at peak; compute server count with 20% buffer.",
+                  "hint": "Base servers = peak / per_server; apply buffer by multiplying by 1.2, then round up.",
+                  "answer": { "type": "integer", "value": 24 }
+                },
+                {
+                  "id": "q3-cache",
+                  "prompt": "Cache — 1B total objects, top 1% hottest, avg object 2 KB — estimate cache size (in GB) to hold the hottest 1%.",
+                  "hint": "Hot objects = total * 0.01. Size = hot_objects * avg_object_size. Convert to GB (approx 1 GB = 1,000,000 KB for rough math).",
+                  "answer": {
+                    "type": "numeric",
+                    "value": 20,
+                    "units": "GB",
+                    "tolerance": 0.15
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dns-fundamentals",
+    "slug": "dns-fundamentals",
+    "title": "DNS Fundamentals",
+    "summary": "Fundamentals of DNS: resolution, records, caching, security, and operations.",
+    "difficulty": "Intermediate",
+    "tags": ["dns", "networking", "infrastructure"],
+    "modules": [
+      {
+        "id": "dns-fundamentals",
+        "title": "DNS Fundamentals",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "dns-intro",
+            "title": "What is DNS?",
+            "type": "article",
+            "content": "# DNS — What and Why\n\nThe Domain Name System (DNS) maps human-readable names to IP addresses and other resources. It is a hierarchical, distributed database used by virtually all internet services.\n\nKey functions:\n- Name resolution (hostnames → IPs)\n- Service discovery (SRV/TXT)\n- Email routing (MX)\n\nThis module covers common records, resolution flow, caching, security (DNSSEC), and operational practices."
+          },
+          {
+            "id": "dns-resolution-flow",
+            "title": "Resolution Flow (root → TLD → authoritative)",
+            "type": "article",
+            "content": "# DNS Resolution Flow\n\nDescribe iterative vs recursive resolution: the resolver asks the root servers, then TLD servers, then the authoritative nameserver for the zone.\n\n- Recursive resolver: performs the full lookup for the client and returns the answer.\n- Iterative: client may follow referrals itself (rare for end-users).\n\nInclude glue records, delegation, and how recursion and caching reduce load."
+          },
+          {
+            "id": "dns-record-types",
+            "title": "Common Record Types (A, AAAA, CNAME, MX, NS, SOA, TXT, SRV)",
+            "type": "article",
+            "content": "# DNS Record Types\n\n- **A / AAAA**: IPv4 / IPv6 address records mapping hostnames to IP addresses.\n- **CNAME**: Canonical name (alias) pointing to another hostname; cannot coexist with other records at the same name.\n- **MX**: Mail exchange records with priority values for email routing.\n- **NS**: Authoritative nameservers that delegate and serve a DNS zone.\n- **SOA**: Start of Authority — zone metadata (serial, refresh, retry, expire, default TTL).\n- **TXT**: Arbitrary text records (ownership verification, SPF, DKIM, misc data).\n- **SRV**: Service records specifying hostname, port, priority, and weight for service discovery.\n- **PTR**: Pointer records for reverse DNS (IP → hostname).\n\nExamples and when to use each."
+          },
+          {
+            "id": "dns-authoritative-vs-recursive",
+            "title": "Authoritative vs Recursive Resolvers",
+            "type": "article",
+            "content": "# Authoritative vs Recursive\n\nAuthoritative nameservers hold the canonical zone data. Recursive resolvers answer client queries by contacting other servers on behalf of the client, applying caching and retries.\n\nOperational notes: configure authoritative servers for redundancy and secure zone transfers (AXFR/IXFR) where needed."
+          },
+          {
+            "id": "dns-caching-ttl",
+            "title": "Caching, TTLs & Propagation",
+            "type": "article",
+            "content": "# Caching & TTLs\n\nTTL (time-to-live) controls how long resolvers may cache a record. Short TTLs speed propagation of changes but increase query volume; long TTLs reduce query load but delay updates.\n\nNegative caching (NXDOMAIN) and SOA's negative TTL are important. Zone serials and NOTIFY/AXFR help propagate zone changes between authoritative servers."
+          },
+          {
+            "id": "dnssec-and-security",
+            "title": "DNSSEC & Security Considerations",
+            "type": "article",
+            "content": "# DNSSEC & Security\n\nDNSSEC adds cryptographic signatures to DNS records to provide origin authentication and data integrity. Understand chain-of-trust from the root, key rollover, and common operational pitfalls.\n\nSecurity notes: mitigate amplification attacks, guard TSIG keys used for zone transfers, and monitor for configuration errors."
+          },
+          {
+            "id": "dns-zone-files",
+            "title": "Zone Files & Common Configurations",
+            "type": "article",
+            "content": "# Zone Files & Configuration\n\nWalkthrough of a simple zone file: SOA, NS, A/AAAA, MX, and TXT records. Explain the SOA serial format, default TTL, and how to perform safe rollouts and key rollovers.\n\nShow examples for common registrars and DNS providers."
+          },
+          {
+            "id": "dns-loadbalancing-failover",
+            "title": "DNS for Load Balancing & Failover",
+            "type": "article",
+            "content": "# Load Balancing & Failover with DNS\n\nTechniques: multiple A records, round-robin, geo-DNS, health-checked failover, and integration with CDNs. Understand the limits: DNS is eventually-consistent and not a substitute for real-time health-aware load balancers.\n\nDiscuss TTL choice and monitoring to achieve acceptable failover times."
+          },
+          {
+            "id": "dns-troubleshooting",
+            "title": "Troubleshooting & Debugging",
+            "type": "article",
+            "content": "# Troubleshooting DNS\n\nTools: `dig`, `nslookup`, `host`, `tcpdump`, `dnstracer`.\n\nChecks: authoritative responses, delegation/glue records, TTLs, propagation, and DNSSEC validation failures. Common issues: stale caches, misconfigured CNAMEs, missing glue, and SOA serial errors."
+          },
+          {
+            "id": "dns-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\nPractice questions to check your understanding.",
+            "exercise": {
+              "assumptions": [
+                "Default TTL examples: 3600s (1h), 300s (5m)",
+                "Typical authoritative deployment: 2+ nameservers"
+              ],
+              "questions": [
+                {
+                  "id": "q1-ttl-propagation",
+                  "prompt": "If a DNS record has TTL=3600, approximately how long may caches hold the old value after you change the record? (in seconds)",
+                  "hint": "TTL is the maximum age a resolver may cache a record.",
+                  "answer": { "type": "numeric", "value": 3600 }
+                },
+                {
+                  "id": "q2-basic-records",
+                  "prompt": "What minimal set of DNS record types (names only) do you need to publish a public website and support email?",
+                  "hint": "Think about address records, mail exchange, and delegation records.",
+                  "answer": { "type": "text", "value": "A, NS, SOA, MX" }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "single-server-setup",
+    "slug": "single-server-setup",
+    "title": "Single-Server Setup",
+    "summary": "Intro to running all components on a single server: architecture, request flow, database choices, scaling and migration.",
+    "difficulty": "Beginner",
+    "tags": ["deployment", "infrastructure", "single-server"],
+    "modules": [
+      {
+        "id": "overview",
+        "title": "Overview",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "ss-overview",
+            "title": "Single-Server Overview",
+            "type": "article",
+            "content": "# Single-Server Setup\n\nRun the frontend, backend, database, and cache on a single host. This pattern reduces operational overhead and speeds early development, making it a good fit for prototypes, demos, and small teams — but it centralizes risk and limits how far you can scale.\n\nWhen to choose this approach:\n- Early-stage projects or demos with low traffic\n- Small teams without dedicated operations\n- Tight budgets or simple deployment requirements\n\nQuick checklist for production readiness:\n- Use a process supervisor (systemd, pm2) to keep services running\n- Put a reverse proxy (nginx, Caddy) in front for TLS and static assets\n- Enable automated database backups and off-host snapshots\n- Add basic monitoring and alerts (CPU, memory, disk, request latency)\n- Harden the host: restrict open ports, use SSH keys, apply updates\n- Document recovery and maintenance steps\n\nNext steps: pick initial VM sizing, enable backups and monitoring, and prepare a simple migration plan to separate tiers when load increases."
+          },
+          {
+            "id": "ss-architecture",
+            "title": "Single-Server Architecture",
+            "type": "article",
+            "content": "# Single-Server Architecture\n\n![Single-server architecture](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-architecture.png)\n\nClients (browsers or mobile apps) resolve your domain to a single IP address that routes to one server. That server handles web pages, API requests, and stores application data locally.\n\n## Request flow — step by step\n\n1. The client resolves `api.mysite.com` via DNS.\n2. DNS returns the server IP (for example, `15.125.23.214`).\n3. The client connects to that IP and opens a TCP/TLS session.\n4. The server processes the request and responds with HTML or JSON.\n\nThis combined view makes it easier to trace latency and debug bottlenecks in single-host deployments."
+          }
+        ]
+      },
+      {
+        "id": "data-tier",
+        "title": "Database & Data Tier",
+        "order": 4,
+        "lessons": [
+          {
+            "id": "ss-architecture-with-db",
+            "title": "Architecture with Database",
+            "type": "article",
+            "content": "# Single-Server with Database\n\n![Single-server DB architecture](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-db-architecture.png)\n\nIn a single-server setup, the database (for example, PostgreSQL or MySQL) runs on the same host as the web/API server. This simplifies deployment and local development but means that your compute and storage resources are shared.\n\nRequest flow with database:\n1. Client → Server: HTTP request arrives at the server.\n2. Server → Database: The application processes the request and queries the local database for data.\n3. Database → Server: The database returns results to the application.\n4. Server → Client: The application generates a response and sends it back to the client.\n\nOperational tips:\n- Use connection pooling to avoid exhausting database connections.\n- Offload long-running queries to background workers where possible.\n- Monitor DB connections, CPU, memory, and disk I/O.\n- Schedule regular backups and test restore procedures.\n\nThis architecture is straightforward but can lead to resource contention under load, so monitor performance closely and be prepared to separate tiers as traffic grows."
+          },
+          {
+            "id": "ss-db-choices",
+            "title": "Choosing a Database",
+            "type": "article",
+            "content": "# Database Choices — Options & selection guide\n\nOptions and when to choose them:\n\n- SQLite (embedded) — When: prototypes, single-user apps, local development, very small datasets or low-concurrency services. Pros: zero configuration, file-based, easy to ship. Cons: limited concurrency and not suited for heavy write workloads.\n\n- Relational (PostgreSQL, MySQL) — When: structured data, transactions, complex queries (joins), and strong consistency requirements. Pros: ACID guarantees, SQL, mature tooling and extensions. Cons: more operational overhead; scaling usually requires replicas/sharding or managed services.\n\n- Managed Relational (RDS / Cloud SQL / Azure DB) — When: you want relational features without managing database operations; provides automated backups, failover, and maintenance.\n\n- Document DB (MongoDB, Couchbase) — When: flexible, evolving schemas, nested documents, or rapid iteration. Pros: schema flexibility and easy mapping to app objects. Cons: requires careful indexing and data modelling by query.\n\n- Key–Value / In-Memory (Redis, Memcached) — When: caching, sessions, counters, leaderboards, or sub-millisecond lookups. Pros: extremely low latency; Cons: not a full-featured durable transactional store unless configured for persistence.\n\n- Wide-column / Distributed (Cassandra, DynamoDB) — When: very high write/read throughput, multi-region distribution, and predictable latency at massive scale. Design schema around access patterns; expect eventual consistency trade-offs.\n\n- Search & Analytics (Elasticsearch / OpenSearch) — When: full-text search, complex aggregations, or log analytics. Not a transactional primary store.\n\n- Graph DB (Neo4j, JanusGraph) — When: relationship-first queries such as recommendations or social graphs.\n\nSelection checklist:\n- Data model: normalized relational vs document shapes.\n- Consistency & transactions: need ACID → relational.\n- Query patterns: joins/analytics → relational; key lookups → key-value.\n- Scale & latency targets: consider managed or distributed options.\n- Operational capacity: managed services reduce ops burden.\n- Backup, restore, and compliance requirements.\n\nSingle-server practical guidance:\n- Prototype/demo: use SQLite or a local Postgres for quick setup.\n- Small-to-medium production: Postgres (self-hosted or managed) is a safe default.\n- Use Redis for caching and session state; enable connection pooling.\n- Keep backups off-host and test restore procedures.\n- Monitor disk I/O, DB connections, CPU, and memory; be ready to separate the DB to its own host when needed.\n\nShort recommendations:\n- Start simple with Postgres for most web apps.\n- Add Redis for caching and low-latency lookup needs.\n- Choose DynamoDB/Cassandra only when you require extreme scale and can design by access patterns."
+          }
+        ]
+      },
+      {
+        "id": "scaling",
+        "title": "Scaling Strategies",
+        "order": 5,
+        "lessons": [
+          {
+            "id": "ss-scaling",
+            "title": "Vertical vs Horizontal Scaling",
+            "type": "article",
+            "content": "# Scaling Strategies\n\n![Single-server scaling](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/single-server-scaling.png)\n\n- Scale up (vertical): increase the server's CPU, RAM, or storage — straightforward but bounded.\n- Scale out (horizontal): add instances behind a load balancer — requires architecture changes but improves resilience and capacity.\n\nTypical path: scale up first, observe, then separate tiers and scale out when necessary."
+          }
+        ]
+      },
+      {
+        "id": "pros-cons",
+        "title": "Pros & Cons",
+        "order": 6,
+        "lessons": [
+          {
+            "id": "ss-pros-cons",
+            "title": "Advantages & Disadvantages",
+            "type": "article",
+            "content": "# Pros & Cons\n\nAdvantages:\n- Lower infrastructure and operational overhead.\n- Simplified local testing and debugging.\n- Quicker to get an initial product live.\n\nDrawbacks:\n- Entire service fails if the host fails.\n- Components compete for the same resources.\n- Scaling out often requires redesign.\n- Deployments can cause complete downtime."
+          }
+        ]
+      },
+      {
+        "id": "exercises",
+        "title": "Exercises",
+        "order": 8,
+        "lessons": [
+          {
+            "id": "ss-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) List two benefits and two drawbacks of running all components on one host.\n2) Describe the first three steps you would take to move from a single-server deployment to separate web and database tiers."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "performance-and-scalability",
+    "slug": "performance-and-scalability",
+    "title": "Performance & Scalability",
+    "summary": "Understand performance and scalability trade-offs with practical examples.",
+    "difficulty": "Intermediate",
+    "tags": ["performance", "scalability", "latency"],
+    "modules": [
+      {
+        "id": "perf-vs-scal",
+        "title": "Designing for Performance & Scalability — Trade-offs & Patterns",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "perf-vs-scal-intro",
+            "title": "Performance vs Scalability",
+            "type": "article",
+            "content": "# Performance vs Scalability\n\nPerformance measures how fast a system responds (latency, throughput) under a given load. Scalability describes the system's ability to handle increasing load by adding resources. Key trade-offs:\n\n- Optimizing for single-request latency often focuses on micro-optimizations and caching.\n- Optimizing for scalability focuses on distributions of load, partitioning, and elastic resource management.\n\nConsiderations:\n\n- Vertical scaling (bigger machines) vs horizontal scaling (more machines).\n- Strong consistency vs availability under partition.\n- Cost implications and operational complexity.\n\nPractical guidance:\n\n- Profile hotspots before optimizing.\n- Use caching to reduce repeated work but plan for invalidation.\n- Design components to be stateless when possible to enable horizontal scaling."
+          },
+          {
+            "id": "perf-vs-scal-core-metrics",
+            "title": "Core Concepts & Metrics",
+            "type": "article",
+            "content": "# Core Concepts & Metrics\n\nThis lesson covers the basic vocabulary and signal definitions used when reasoning about performance and scalability.\n\n**Core concepts**\n- Performance: latency (time per request) and throughput (requests/sec).\n- Scalability: how capacity changes as load increases (vertical vs horizontal).\n- Capacity: the sustainable throughput at a target latency.\n- Saturation: a resource at or near 100% utilization.\n\n**Key metrics & SLOs**\n- Latency percentiles: p50, p95, p99, p999. Tail percentiles matter.\n- Throughput: steady-state and peak requests/sec.\n- Concurrency: in-flight requests or open connections.\n- Utilization and queue length: resource usage and queuing indicators.\n\nDefine SLIs and SLOs early (e.g., 'p95 latency < 200 ms') and use them to drive monitoring and alerting."
+          },
+          {
+            "id": "perf-vs-scal-littles-law",
+            "title": "Little's Law and Concurrency",
+            "type": "article",
+            "content": "# Little's Law — Concurrency, Arrival Rate, and Latency\n\nLittle's Law: L = λ W\n- L = average number in system (concurrency)\n- λ = arrival rate (requests/sec)\n- W = average time in system (seconds)\n\nUse this to size thread pools, connection pools, and instance concurrency.\n\nExample: λ = 500 RPS, target W = 0.2 s → L = 500 * 0.2 = 100 concurrent requests.\n\nPractical tip: always include safety margin above computed concurrency for spikes and overhead."
+          },
+          {
+            "id": "perf-vs-scal-observability",
+            "title": "Measurement & Observability",
+            "type": "article",
+            "content": "# Measurement & Observability\n\n- Instrument latency histograms, counters, traces, and resource metrics.\n- Use HDR histograms or equivalent for accurate percentile calculations.\n- Collect traces for p99/p999 requests to find hotspots (DB calls, GC pauses, external dependencies).\n- Run realistic load tests (steady, spike, soak) in production-like environments.\n\nObservability gives you evidence to prioritize and validate performance changes."
+          },
+          {
+            "id": "perf-vs-scal-patterns",
+            "title": "Scaling Patterns",
+            "type": "article",
+            "content": "# Scaling Patterns\n\n- Vertical scaling: bigger machines — fast but limited.\n- Horizontal scaling: more instances — requires statelessness or sharding.\n- Caching: reduce downstream load; plan invalidation.\n- Sharding/partitioning: distribute data load; watch for hot shards.\n- Asynchrony & background work: move long work off the request path.\n- Batching: amortize overhead to increase throughput (at cost of latency).\n\nChoose patterns based on workload characteristics and cost/complexity trade-offs."
+          },
+          {
+            "id": "perf-vs-scal-latency-throughput",
+            "title": "Latency vs Throughput",
+            "type": "article",
+            "content": "# Latency vs Throughput\n\n- Latency: time to complete a single operation (p50/p95/p99).\n- Throughput: operations per unit time.\n\nTrade-offs:\n- Batching increases throughput but raises per-item latency.\n- Parallelism increases throughput but can worsen tail latency due to contention.\n\nDesign recommendation: measure both latency percentiles and throughput under representative load."
+          },
+          {
+            "id": "perf-vs-scal-tail-mitigation",
+            "title": "Tail-Latency Mitigation",
+            "type": "article",
+            "content": "# Tail-Latency Mitigation\n\nTechniques:\n- Hedged requests: issue duplicate requests to reduce tail.\n- Request coalescing: avoid duplicated work under load.\n- Bulkheads: isolate resources to prevent cascading failures.\n- Timeouts & retries with backoff: avoid retry storms.\n- Load shedding: refuse requests gracefully when overloaded."
+          },
+          {
+            "id": "perf-vs-scal-capacity-planning",
+            "title": "Capacity Planning — Worked Examples",
+            "type": "article",
+            "content": "# Capacity Planning Examples\n\n1) Server count:\nS = ceil((peak * (1 + buffer)) / per_server_capacity)\nExample: peak=10,000 RPS, per_server=500 RPS, buffer=0.2 → S=24\n\n2) Cache sizing:\nHot objects = total_objects * hot_fraction\nSize = hot_objects * avg_object_size\nExample: 1B objects × 1% hot × 2 KB ≈ 20 GB\n\n3) Concurrency from latency (Little's Law):\nλ=1000 RPS, target W=0.05s → L=50 concurrent requests"
+          },
+          {
+            "id": "perf-vs-scal-optimization-ops",
+            "title": "Optimization Workflow & Operations",
+            "type": "article",
+            "content": "# Optimization Workflow & Operations\n\nWorkflow:\n1. Measure and define SLOs.\n2. Profile and identify the dominant resource.\n3. Hypothesize and apply targeted changes.\n4. Validate with load tests and metrics.\n5. Deploy gradually and monitor SLOs.\n\nOperational considerations:\n- Autoscaling on actionable metrics (latency/queue length).\n- Chaos and fault-injection testing.\n- Balance cost vs performance.\n\nChecklist for design reviews: p50/p95/p99 targets, stateless key paths, caching strategy, bulkheads, observability, load testing."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "latency-vs-throughput",
+    "slug": "latency-vs-throughput",
+    "title": "Latency vs Throughput",
+    "summary": "Deep dive into latency, throughput measurement and mitigation techniques.",
+    "difficulty": "Intermediate",
+    "tags": ["latency", "throughput", "performance"],
+    "modules": [
+      {
+        "id": "latency-vs-throughput",
+        "title": "Latency vs Throughput",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "latency-vs-throughput-intro",
+            "title": "Latency vs Throughput",
+            "type": "article",
+            "content": "# Latency vs Throughput\n\nLatency is the time taken to complete a single operation. Throughput is the number of operations completed per unit time. They are related but distinct metrics.\n\n- High throughput systems may accept higher latency per request if overall work per second increases.\n- Low latency often requires efficient I/O, warm caches, and minimal coordination.\n\nWhen designing systems, measure both latency percentiles (p50, p95, p99) and throughput under representative load."
+          },
+          {
+            "id": "latency-vs-throughput-signals",
+            "title": "Signals & Measurement",
+            "type": "article",
+            "content": "# Signals & Measurement\n\nKey signals to measure: latency histograms (p50/p95/p99), throughput (RPS), concurrency, resource utilization, and queue lengths.\n\n- Use HDR histograms or equivalent to capture percentiles accurately.\n- Trace p99 requests end-to-end to find hotspots (DB, network, GC).\n- Define SLIs and SLOs early (for example, 'p95 < 200 ms').\n\nCollecting the right signals enables evidence-based decisions rather than guesswork."
+          },
+          {
+            "id": "latency-vs-throughput-batching-parallelism",
+            "title": "Batching & Parallelism",
+            "type": "article",
+            "content": "# Batching & Parallelism\n\nBatching reduces per-item overhead and increases throughput by amortizing fixed costs, but it increases per-item latency because items wait for the batch to fill or a timer to expire.\n\nParallelism increases throughput by doing work concurrently, but can raise tail latency due to contention (locks, GC, IO).\n\nDesign trade-offs:\n- Choose batch sizes that balance latency targets and throughput needs.\n- Use parallelism carefully; measure tail percentiles under concurrency."
+          },
+          {
+            "id": "latency-vs-throughput-tail-latency",
+            "title": "Tail-Latency Causes & Mitigation",
+            "type": "article",
+            "content": "# Tail-Latency Causes & Mitigation\n\nCommon causes of high tail latency: GC pauses, noisy neighbors, slow downstream dependencies, queueing, and retries.\n\nMitigation techniques:\n- Hedged requests or request duplication with care.\n- Request coalescing to avoid redundant work.\n- Bulkheads to isolate resources and reduce cascading failures.\n- Timeouts and exponential backoff to stop retry storms.\n\nMeasure the impact of any mitigation with p99/p999 traces."
+          },
+          {
+            "id": "latency-vs-throughput-benchmarking",
+            "title": "Benchmarking & Load Testing",
+            "type": "article",
+            "content": "# Benchmarking & Load Testing\n\nRun realistic load tests: steady-state, spikes, ramps, and soak tests. Use tools like k6, locust, or JMeter.\n\n- Reproduce production-like traffic patterns and payload sizes.\n- Test both latency SLOs and throughput under load.\n- Record resource metrics and traces during tests.\n\nUse test results to validate autoscaling rules and capacity planning."
+          },
+          {
+            "id": "latency-vs-throughput-patterns",
+            "title": "Design Patterns & Techniques",
+            "type": "article",
+            "content": "# Design Patterns & Techniques\n\nUseful patterns: asynchronous processing (queues + workers), backpressure and rate-limiting, circuit breakers, caching, batching, and idempotent APIs.\n\n- Apply backpressure to protect downstream systems.\n- Use caches to reduce repeated work and improve latency.\n- Make critical paths as stateless and fast as possible."
+          },
+          {
+            "id": "latency-vs-throughput-examples",
+            "title": "Worked Examples",
+            "type": "article",
+            "content": "# Worked Examples\n\n1) Concurrency from latency (Little's Law): L = λ W. Example: λ=1000 RPS, W=0.05s → L=50 concurrent requests.\n\n2) Batch sizing: choose a batch size that keeps average wait < latency budget while delivering target throughput.\n\n3) Throughput vs latency: measure p50/p95/p99 at different concurrency levels to find optimal operating point."
+          },
+          {
+            "id": "latency-vs-throughput-exercises",
+            "title": "Exercises",
+            "type": "article",
+            "content": "# Exercises\n\n- Given λ=5000 RPS and p95 target 100 ms, compute expected concurrency using Little's Law.\n- Propose a batch size if average per-item processing is 2 ms and you want to keep per-item wait < 20 ms.\n- Given observed p99 spikes correlated with GC pauses, list 3 mitigation steps and how to validate them."
+          }
+        ]
+      }
+    ]
+  }
+]
