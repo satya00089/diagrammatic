@@ -338,6 +338,55 @@
     ]
   },
   {
+    "id": "load-balancers",
+    "slug": "load-balancers",
+    "title": "Load Balancers",
+    "summary": "Practical guide to load balancers, algorithms, and basic rate-limiting strategies.",
+    "difficulty": "Intermediate",
+    "tags": ["networking","infrastructure","load-balancing"],
+    "modules": [
+      {
+        "id": "lb-overview",
+        "title": "Load Balancers Overview",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "lb-overview-lesson",
+            "title": "What is a Load Balancer?",
+            "type": "article",
+            "content": "# Load Balancers Overview\n\n![Load balancer diagram](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/loadbalancer.png)\n\nA load balancer sits between clients and servers, distributing traffic to improve availability and scale. It can operate at Layer 4 (TCP/UDP) or Layer 7 (HTTP/S) and often provides health checks, SSL termination, session persistence, and basic routing.\n\nCommon deployment patterns:\n- External (edge) load balancer in front of app instances\n- Internal (service) load balancer for microservices\n\nWhen to use: scaling stateless services, blue/green deployments, and graceful failover.\n\nOperational notes: monitor health checks, set health thresholds, and plan for graceful draining."
+          }
+        ]
+      },
+      {
+        "id": "lb-algorithms",
+        "title": "Load Balancing Algorithms",
+        "order": 2,
+        "lessons": [
+          {
+            "id": "lb-algorithms-lesson",
+            "title": "Algorithms & Trade-offs",
+            "type": "article",
+            "content": "## Load Balancer Algorithms\n\n![Load Balancer Algorithms](https://diagrammatic-public.s3.ap-south-1.amazonaws.com/learning-paths/loadbalancer-algos.png)\n\nAlgorithms determine how a load balancer distributes incoming requests across backend instances.\n\n### Common Algorithms\n\n**1. Round-robin**\n- How it works: Sends each new request to the next backend in sequence.\n- Best for: Uniform request durations, stateless applications, simple workloads\n- Pros: Simple, fast, even distribution (for uniform workloads)\n- Cons: Not ideal for variable request durations, ignores server load\n\n**2. Least Connections**\n- How it works: Sends requests to the server with the fewest active connections.\n- Best for: Variable request durations, long-lived connections, real-time applications\n- Pros: Adapts to current load, better for uneven request times\n- Cons: Slightly more complex, requires connection tracking overhead\n\n**3. IP Hash (Source IP)**\n- How it works: Uses the client’s IP address to consistently route to the same backend.\n- Best for: Session affinity (sticky sessions), per-client caching\n- Pros: Maintains session consistency, good cache locality\n- Cons: Uneven load if IP distribution is skewed, poor with NAT/CGNAT\n\n**4. Weighted Round-robin / Weighted Least Connections**\n- How it works: Assigns weights to servers based on capacity; higher weight = more traffic.\n- Best for: Mixed-capacity servers, cost optimization, gradual scaling\n- Pros: Efficient resource utilization, flexible\n- Cons: Requires tuning, incorrect weights can cause imbalance\n\n**5. Consistent Hashing**\n- How it works: Maps keys (e.g., user ID) to a hash ring; minimizes remapping when servers change.\n- Best for: Caching layers, distributed storage, large-scale systems\n- Pros: Minimal remapping on topology changes, strong cache locality\n- Cons: More complex, not ideal for small clusters\n\n### Trade-offs to Consider\n- Stateful vs Stateless: IP hash supports session affinity; round-robin and least connections are better for stateless services\n- Evenness of Distribution: Round-robin is even for uniform workloads; least connections adapts dynamically\n- Cache Locality: IP hash and consistent hashing improve cache hit rates\n\n### When to Use What (Examples)\n- Choose Least Connections: When request durations vary significantly, improving throughput and reducing wait times\n- Choose Round-robin: When requests are short and uniform, offering low overhead and even distribution\n\n### Operational Tips\n- Monitor health checks to ensure accuracy and frequency\n- Set appropriate thresholds to avoid instability\n- Enable connection draining to allow requests to complete before removing instances\n- Continuously observe metrics and adjust algorithms or weights as needed\n"
+         }
+        ]
+      },
+      {
+        "id": "lb-rate-limiting",
+        "title": "Rate Limiting",
+        "order": 3,
+        "lessons": [
+          {
+            "id": "lb-rate-limiting-lesson",
+            "title": "Basic Rate Limiting Strategies",
+            "type": "article",
+            "content": "# Rate Limiting\n\nPurpose: protect services from overload and abuse. Common algorithms:\n- Token bucket: allows bursts and enforces average rate.\n- Leaky bucket: smooths bursts into constant output.\n- Fixed window / sliding window counters: simple counters per window.\n\nPlacement: at the edge (LB or API gateway), per IP, per API key, or per user. Combine with auth and quotas.\n\nOperational tips:\n- Provide informative HTTP responses (429) with Retry-After.\n- Use incrementing backoff and monitoring for false positives.\n- Tune limits based on real traffic and use adaptive throttling for spikes."
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "performance-and-scalability",
     "slug": "performance-and-scalability",
     "title": "Performance & Scalability",
