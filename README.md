@@ -6,6 +6,22 @@ Diagrammatic is an **interactive System Design Playground** built with **React F
 Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 55 production-grade components — ideal for **interview preparation, learning, and technical documentation**.
 
 ---
+ 
+## Table of Contents
+
+- Overview
+- Features
+- New Features
+- Getting Started
+- Usage
+- Component Library
+- ER Diagram Support
+- Project Structure
+- Roadmap
+- Changelog
+- Contributing
+- License
+- Links
 
 ## ✨ Features
 
@@ -21,6 +37,20 @@ Practice system design interviews, learn distributed systems architecture, and c
 - ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
 - 🔗 **Share Designs** - Share your designs via compressed URLs
 - ⚡ **Modern Tech Stack** - React 19 + TypeScript + Tailwind CSS 4 + Framer Motion
+
+## 🆕 What's New (v1.1.0 — 2026-05-05)
+
+Release notes (beta)
+
+- Real-time collaboration (beta) — Live multi-user editing with presence indicators and basic conflict resolution (server required).
+- Custom component creator — Design, save and share user-defined components; import/export component packages.
+- AI-assisted design suggestions — Experimental in-editor feedback that highlights potential scaling issues, bottlenecks, and missing patterns.
+- ER diagram improvements — Additional cardinality types, improved attribute editing, and better visual notation.
+- Export & performance — Higher-quality SVG/PNG exports, background export tasks and faster image generation.
+- Offline & autosave — Canvas caching with local autosave for improved reliability.
+- Accessibility — Improved keyboard navigation, ARIA roles, and color-contrast improvements.
+
+Notes: Some features are experimental or require backend components. See the docs/ folder for setup and server requirements.
 
 ---
 
@@ -310,24 +340,49 @@ Check out the [Learning Exercises](docs/LEARNING_EXERCISES.md) for:
 
 ## 🔮 Roadmap
 
-### Short-term
+### Released
 
+- [x] Real-time collaboration (beta)
+- [x] Custom component creation
+- [x] AI-assisted design suggestions (experimental)
+- [x] ER diagram enhancements
+- [x] Export improvements (SVG/PNG)
+- [x] Performance & offline caching
+- [x] Accessibility improvements
+
+### Near-term (next quarter)
+
+- [ ] CRDT / sync improvements for collaboration
+- [ ] Multi-user permissions and sharing model
 - [ ] More practice problems (Twitter, WhatsApp, Uber, Netflix)
-- [x] AI-powered design assessment and feedback (integrated — requires API configuration)
-- [x] Undo/Redo functionality
-- [x] Keyboard shortcuts for power users
-- [x] Save/load diagrams with authentication (requires backend setup - see docs/FASTAPI_BACKEND.md)
-- [x] Export/Import diagrams as JSON and XML/DrawIO formats
 
 ### Long-term
 
-- [x] User authentication and cloud storage (implemented with Google Sign-In support - see docs/GOOGLE_SIGNIN.md)
-- [x] Share Designs with public URLs (implemented with URL compression)
-- [x] Export to SVG and JSON (PNG, JPEG, SVG, JSON, XML export implemented)
-- [ ] Real-time collaboration
-- [ ] Custom component creation
 - [ ] Interactive tutorials and guided learning paths
-- [ ] Integration with popular design tools (Figma, Lucidchart, draw.io)
+- [ ] Real-time paired-review sessions
+- [ ] Integrations: Figma, Lucidchart, draw.io
+
+---
+
+## Changelog
+
+### v1.1.0 — 2026-05-05
+
+- Added real-time collaboration (beta)
+- Added custom component creator
+- Added AI-assisted design suggestions
+- Improved ER diagram support and cardinality types
+- Improved export quality and performance
+- Added offline autosave and canvas caching
+- Accessibility improvements and keyboard navigation enhancements
+
+### v1.0.0 — Initial release
+
+- Core diagram editor with 55 components
+- Practice problems and AI assessment
+- Export/Import (JSON, XML/DrawIO), PNG/JPEG/SVG export
+- Google Sign-In authentication and cloud save (optional)
+- Undo/Redo, keyboard shortcuts
 
 ---
 
@@ -354,7 +409,7 @@ Contributions are welcome! Here's how you can help:
 
 ## 📜 License
 
-MIT © 2025 [Satya Subudhi](https://github.com/satya00089)
+MIT © 2026 [Satya Subudhi](https://github.com/satya00089)
 
 ---
 
