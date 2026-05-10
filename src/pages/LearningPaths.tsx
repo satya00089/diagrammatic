@@ -197,16 +197,6 @@ const LearningPaths: React.FC = () => {
 
             <div className="mb-6 flex items-center justify-between">
               <div className="text-sm text-muted">{loading ? "Loading paths..." : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}</div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  data-tour="create-path-btn"
-                  onClick={() => navigate("/learning-paths/create")}
-                  className="px-4 py-2 bg-[var(--brand)] text-white rounded-md"
-                >
-                  Create Path
-                </button>
-              </div>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
