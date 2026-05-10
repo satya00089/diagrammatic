@@ -372,94 +372,6 @@
         ]
       },
       {
-        "id": "database-replication",
-        "slug": "database-replication",
-        "title": "Database Replication",
-        "summary": "Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.",
-        "difficulty": "Intermediate",
-        "tags": ["database", "replication", "consistency", "availability"],
-        "modules": [
-          {
-            "id": "intro-and-why",
-            "title": "Introduction & Why Replicate",
-            "order": 1,
-            "lessons": [
-              {
-                "id": "replication-intro",
-                "title": "Why Replicate Databases",
-                "type": "article",
-                "content": "# Database Replication — Why and When\n\nReplication copies data from one database node (the *primary*) to one or more other nodes (*replicas*) so that multiple copies of the data exist at all times. It is one of the foundational techniques for building reliable, scalable data systems.\n\n## Core goals\n\n- **High availability**: if the primary crashes, a replica can be promoted and traffic continues with minimal downtime.\n- **Read scale-out**: route read queries to replicas so the primary only handles writes, multiplying your read capacity without changing the schema.\n- **Geo-distribution**: place replicas close to users in different regions to reduce read latency from hundreds of milliseconds to single-digit milliseconds.\n- **Disaster recovery**: an off-site replica is an always-warm backup you can promote rather than restore from tape.\n- **Zero-downtime migrations and upgrades**: upgrade replicas first, verify correctness, then promote — no maintenance window needed.\n\n## When to introduce replication\n\n| Signal | Action |\n|---|---|\n| Primary CPU or I/O saturated by reads | Add read replicas |\n| RTO/RPO requirements tighter than backup restore allows | Add synchronous replica |\n| Users in multiple regions complain of read latency | Add geo-replicas |\n| Rolling upgrades needed with no downtime | Promote replica, upgrade old primary |\n\n## What replication does NOT solve\n\n- Write scaling (all writes still go to one primary in most setups)\n- Strong consistency across all nodes by default\n- Schema migrations — those still require careful coordination\n\n## Key concepts to keep in mind\n\n- **Replication log / WAL**: the primary records every change in a Write-Ahead Log (Postgres) or binary log (MySQL). Replicas stream and apply these events.\n- **LSN / GTID**: Log Sequence Number (Postgres) or Global Transaction ID (MySQL) uniquely identifies a position in the replication stream, enabling replicas to resume from the exact right point after a restart.\n- **Replication lag**: the delay between a write being committed on the primary and the same write being visible on a replica. This is the central trade-off to manage."
-              }
-            ]
-          },
-          {
-            "id": "modes",
-            "title": "Replication Modes",
-            "order": 2,
-            "lessons": [
-              {
-                "id": "replication-modes-deep",
-                "title": "Primary–Replica, Multi-Master & Sync vs Async",
-                "type": "article",
-                "content": "# Replication Modes — A Complete Guide\n\n## Primary–Replica (Leader–Follower)\n\nThe most common pattern. One node is the *primary* (leader) and accepts all writes. Changes are streamed to one or more *replicas* (followers) that are read-only.\n\n**How it works:**\n1. Application writes to the primary.\n2. Primary writes change to its WAL/binlog.\n3. Replica's IO thread pulls the log from the primary.\n4. Replica's SQL/apply thread replays the changes locally.\n5. Replica's data converges to match the primary.\n\n**Pros:**\n- Simple conflict model — only one node writes, so there are no write conflicts.\n- Widely supported (Postgres streaming replication, MySQL replication, MongoDB replica sets).\n- Reads can be offloaded to replicas.\n\n**Cons:**\n- Primary is a write bottleneck.\n- Primary failure requires promotion of a replica (automated or manual).\n- Replicas may serve stale reads during lag.\n\n---\n\n## Multi-Master (Active-Active)\n\nMultiple nodes each accept writes. Changes from each master are replicated to all others.\n\n**Use cases:** geo-write scenarios where you need writes in two regions with low latency; high-availability setups where you cannot afford even a brief write outage during failover.\n\n**Conflict resolution is mandatory:**\n- *Last-writer-wins (LWW)*: the write with the higher timestamp survives. Simple, but can silently discard data.\n- *Application-level merge*: the app defines how to reconcile divergent versions (e.g., shopping cart merge).\n- *CRDTs (Conflict-free Replicated Data Types)*: data structures designed to merge automatically (counters, sets, registers).\n- *Vector clocks*: track causal history so you can detect and surface conflicts to the application.\n\n**Cons:** complexity, risk of data divergence, hard to debug.\n\n---\n\n## Synchronous vs Asynchronous Replication\n\n| Property | Synchronous | Asynchronous |\n|---|---|---|\n| Write latency | Higher — waits for replica ACK | Lower — returns after primary write |\n| Durability | Stronger — replica confirmed before commit | Weaker — replica may lag |\n| Throughput | Lower | Higher |\n| Risk on primary failure | Zero data loss (for sync replica) | Up to lag worth of data loss |\n| Availability | Lower (write blocks if replica unreachable) | Higher |\n\n**Semi-synchronous (MySQL):** the primary waits for at least one replica to acknowledge receipt (not necessarily apply) before committing. A practical middle ground.\n\n**Postgres synchronous_standby_names:** you can designate specific standbys as synchronous, and configure `ANY 1` or `ALL` semantics, giving fine-grained durability control.\n\n**Practical guidance:**\n- Use synchronous replication for financial or audit data where zero data loss is mandatory.\n- Use asynchronous for read replicas, analytics replicas, and geo-read replicas where some staleness is acceptable.\n- Always monitor lag on async replicas and set alerting thresholds (e.g., alert if lag > 30 s)."
-              }
-            ]
-          },
-          {
-            "id": "consistency-and-lag",
-            "title": "Consistency, Lag & Conflict Resolution",
-            "order": 3,
-            "lessons": [
-              {
-                "id": "consistency-lag-conflicts",
-                "title": "Replication Lag, Staleness & Conflict Resolution",
-                "type": "article",
-                "content": "# Consistency, Lag & Conflict Resolution\n\n## Replication Lag — Causes and Effects\n\nReplication lag is the delay between a write being committed on the primary and that write becoming visible on a replica. Even milliseconds of lag matter for reads that must see their own writes.\n\n**Common causes of lag:**\n- Heavy write bursts that overwhelm the replica's apply thread.\n- Long-running transactions on the primary that block replication.\n- Network congestion between primary and replica.\n- Schema-incompatible DDL operations applied row-by-row on the replica.\n- Replica running on underpowered hardware.\n\n**Effects on application behaviour:**\n- A user writes data then reads it from a replica — they see stale data (\"read-your-writes\" violation).\n- Leaderboard or inventory reads return counts that don't include recent changes.\n- Analytics queries on replicas return results that miss the last N seconds of events.\n\n## Strategies for managing staleness\n\n1. **Route reads to the primary** for anything that requires read-your-writes consistency (session data, checkout flow).\n2. **Read-your-writes tokens**: after a write, return the LSN/GTID to the client. The client passes it to the read path, which waits for the replica to catch up to that position before serving the read.\n3. **Monotonic reads**: always route a given session to the same replica, so at least reads are consistent within a session.\n4. **Replica lag gate**: if lag exceeds a threshold (e.g., 5 s), fall back to reading from the primary.\n\n## Consistency Models Recap\n\n| Model | Guarantee | Common Use |\n|---|---|---|\n| Strong consistency | Every read reflects the latest write | Financial transactions |\n| Read-your-writes | A client always sees its own writes | User profile updates |\n| Monotonic reads | Reads never go backward in time | Session-scoped reads |\n| Eventual consistency | Replicas converge eventually | Analytics, caches |\n\n## Conflict Resolution (Multi-Master)\n\nIn multi-master setups, two primaries can accept writes to the same row concurrently. The replication layer must decide which wins.\n\n**Last-writer-wins (LWW):** use the wall-clock timestamp or a Lamport clock. Simple but can silently drop writes if clocks are skewed.\n\n**Version vectors / vector clocks:** each write carries a version vector. On conflict, the system can detect that neither version causally dominates the other, and surface the conflict to the application.\n\n**CRDTs:** data types with a mathematically defined merge function — counters, sets, maps, registers. Useful for collaborative features and distributed counters.\n\n**Application-level reconciliation:** the database stores all conflicting versions; the application merges them on read (e.g., Amazon shopping cart approach).\n\n**Operational tip:** always log conflicts with enough context to audit what happened. Silent data loss in production is catastrophic."
-              }
-            ]
-          },
-          {
-            "id": "topologies",
-            "title": "Topologies & Patterns",
-            "order": 4,
-            "lessons": [
-              {
-                "id": "topologies-deep",
-                "title": "Topologies: Cascading, Sharding & Geo-Replication",
-                "type": "article",
-                "content": "# Replication Topologies & Patterns\n\n## Single Primary with Read Replicas\n\nThe baseline topology: one primary, N read replicas. Each replica maintains a persistent replication connection to the primary.\n\n```\nClients (writes) → Primary\nClients (reads)  → Replica 1\n                 → Replica 2\n                 → Replica 3\n```\n\nRoute reads via a connection pooler (PgBouncer, ProxySQL) or a service discovery layer that knows which nodes are replicas.\n\n## Cascading (Chain) Replication\n\nA replica replicates from another replica rather than directly from the primary. This reduces the number of replication connections the primary must maintain.\n\n```\nPrimary → Replica A (intermediate)\n               → Replica B\n               → Replica C\n```\n\n**When to use:** when you have many replicas (10+) and the primary's network or CPU is strained by maintaining all replication streams. The trade-off is increased lag further down the chain.\n\n## Sharding with Per-Shard Replication\n\nHorizontal partitioning (sharding) divides data across multiple primary nodes. Each shard has its own set of replicas.\n\n```\nShard 0: Primary-0 → Replica-0a, Replica-0b\nShard 1: Primary-1 → Replica-1a, Replica-1b\nShard 2: Primary-2 → Replica-2a, Replica-2b\n```\n\nThis multiplies both write and read capacity. The application (or a router like Vitess, Citus, or MongoDB's mongos) must know which shard to target for a given key.\n\n**Challenges:** cross-shard joins become expensive, distributed transactions are complex, and re-sharding requires data movement.\n\n## Geo-Replication\n\nPlace replicas in different data centres or cloud regions. Reads are served locally; writes travel to the single primary or to a regional primary in multi-master setups.\n\n```\nRegion EU (primary) → Region US-East (replica) → Region AP (replica)\n```\n\n**Read latency improvement:** a user in Tokyo reading from an AP replica sees ~5–20 ms instead of ~250 ms round-trip to Europe.\n\n**Consistency trade-off:** cross-region replication lag can be 50–200 ms. Applications must tolerate stale reads or implement routing logic to redirect consistency-sensitive reads to the primary region.\n\n## Choosing a Topology\n\n| Scenario | Recommended Topology |\n|---|---|\n| Small app, moderate reads | 1 primary + 1–2 replicas |\n| High read-to-write ratio | 1 primary + 3–6 read replicas |\n| Very many replicas | Cascading replication |\n| Write scale required | Sharding + per-shard replication |\n| Global user base | Geo-replication + regional read routing |"
-              }
-            ]
-          },
-          {
-            "id": "operations",
-            "title": "Monitoring, Failover & Operations",
-            "order": 5,
-            "lessons": [
-              {
-                "id": "ops-monitoring-failover",
-                "title": "Monitoring, Failover & Operational Practices",
-                "type": "article",
-                "content": "# Monitoring, Failover & Operational Practices\n\n## Key Metrics to Monitor\n\n| Metric | What it tells you | Alert threshold example |\n|---|---|---|\n| Replication lag (seconds) | How far behind the replica is | > 30 s warning, > 5 min critical |\n| Replica apply rate (events/s) | Whether replica is keeping up | Drop below baseline |\n| Open replication connections | Primary replication health | 0 (replica disconnected) |\n| WAL/binlog send queue depth | Backlog at the primary | Growing unboundedly |\n| LSN/GTID position delta | Exact byte offset of lag | Track over time for trends |\n| Replica CPU & I/O utilization | Is the replica hardware constrained? | > 80% sustained |\n\n**Postgres:** query `pg_stat_replication` on the primary and `pg_stat_wal_receiver` on the replica.\n**MySQL:** use `SHOW REPLICA STATUS\\G` and look at `Seconds_Behind_Source` and `Retrieved_Gtid_Set`.\n\n## Planned Failover (Switchover)\n\nA controlled promotion with no data loss:\n1. Stop new writes to the primary (put app in read-only or drain traffic).\n2. Confirm the target replica has applied all WAL up to the primary's current LSN.\n3. Promote the replica to primary (`pg_promote()` in Postgres, `STOP REPLICA; RESET REPLICA ALL; ...` in MySQL).\n4. Update connection strings / DNS / load balancer to point at the new primary.\n5. Rejoin old primary as a replica.\n\n## Unplanned Failover (Crash Recovery)\n\nWhen the primary fails unexpectedly:\n1. Detect failure (health check timeout, heartbeat loss).\n2. Select the most up-to-date replica (highest LSN/GTID).\n3. Promote it.\n4. Fence the old primary (STONITH, revoke network access) to prevent split-brain.\n5. Re-point application traffic.\n6. Bring remaining replicas up to date from the new primary.\n\n**Split-brain risk:** two nodes both believe they are primary and both accept writes. This causes data divergence. Prevent it with:\n- Quorum-based promotion (Patroni, MHA, Orchestrator).\n- STONITH (Shoot The Other Node In The Head) — forcibly power off or network-fence the old primary before promoting the new one.\n\n## Automation Tools\n\n| Tool | Database | Approach |\n|---|---|---|\n| Patroni | Postgres | DCS (etcd/Consul/ZooKeeper) for consensus |\n| pg_auto_failover | Postgres | Lightweight built-in monitor |\n| Orchestrator | MySQL | Topology-aware failover with web UI |\n| MHA | MySQL | Classic manager + agent |\n| AWS RDS Multi-AZ | MySQL / Postgres | Managed synchronous standby |\n\n## Replica Rebuild After Extended Lag\n\nIf a replica has fallen too far behind (the WAL segments it needs have been recycled):\n1. Take a base backup from the primary (`pg_basebackup` or `xtrabackup`).\n2. Copy it to the replica.\n3. Start the replica — it will stream from the nearest available WAL position.\n\n## Testing Your Failover Runbook\n\n- Run monthly or quarterly drills in staging.\n- Measure actual RTO (time from detection to traffic serving on new primary).\n- Validate that connection poolers and applications reconnect cleanly.\n- Confirm monitoring alerts fire correctly when you simulate lag."
-              }
-            ]
-          },
-          {
-            "id": "exercises",
-            "title": "Exercises",
-            "order": 6,
-            "lessons": [
-              {
-                "id": "replication-exercises",
-                "title": "Exercises: Design & Troubleshoot",
-                "type": "exercise",
-                "content": "# Exercises\n\n## Design\n1) You have a social platform with 10× more reads than writes and users in the US, EU, and Asia. Design a replication topology. Which topology pattern do you choose? How do you handle read-your-writes for the posting flow?\n\n2) Your team needs zero RPO for financial records but cannot accept write latency above 50 ms added by replication. Evaluate synchronous vs asynchronous replication for this constraint.\n\n3) Sketch a multi-master setup for an e-commerce cart. Define how you would resolve a conflict where two regions incremented the same cart item's quantity concurrently.\n\n## Troubleshoot\n4) Replication lag on your primary Postgres replica has climbed from < 1 s to 45 s over the past 6 hours. List the three most likely causes and the first diagnostic query or command you would run for each.\n\n5) After an unplanned primary failure, you notice both the old primary (now recovered) and the promoted replica are accepting writes. What went wrong, and what must you do immediately?\n\n## Estimation\n6) Your primary generates 50 MB/s of WAL. You have 3 replicas in the same region and 2 geo-replicas across continents. Estimate the total network bandwidth consumed by replication from the primary, assuming semi-synchronous replication to the nearest replica and async to the rest."
-              }
-            ]
-          }
-        ]
-      },
-      {
         "id": "lb-rate-limiting",
         "title": "Rate Limiting",
         "order": 3,
@@ -469,6 +381,94 @@
             "title": "Basic Rate Limiting Strategies",
             "type": "article",
             "content": "# Rate Limiting\n\nPurpose: protect services from overload and abuse. Common algorithms:\n- Token bucket: allows bursts and enforces average rate.\n- Leaky bucket: smooths bursts into constant output.\n- Fixed window / sliding window counters: simple counters per window.\n\nPlacement: at the edge (LB or API gateway), per IP, per API key, or per user. Combine with auth and quotas.\n\nOperational tips:\n- Provide informative HTTP responses (429) with Retry-After.\n- Use incrementing backoff and monitoring for false positives.\n- Tune limits based on real traffic and use adaptive throttling for spikes."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "database-replication",
+    "slug": "database-replication",
+    "title": "Database Replication",
+    "summary": "Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.",
+    "difficulty": "Intermediate",
+    "tags": ["database", "replication", "consistency", "availability"],
+    "modules": [
+      {
+        "id": "intro-and-why",
+        "title": "Introduction & Why Replicate",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "replication-intro",
+            "title": "Why Replicate Databases",
+            "type": "article",
+            "content": "# Database Replication — Why and When\n\nReplication copies data from one database node (the *primary*) to one or more other nodes (*replicas*) so that multiple copies of the data exist at all times. It is one of the foundational techniques for building reliable, scalable data systems.\n\n## Core goals\n\n- **High availability**: if the primary crashes, a replica can be promoted and traffic continues with minimal downtime.\n- **Read scale-out**: route read queries to replicas so the primary only handles writes, multiplying your read capacity without changing the schema.\n- **Geo-distribution**: place replicas close to users in different regions to reduce read latency from hundreds of milliseconds to single-digit milliseconds.\n- **Disaster recovery**: an off-site replica is an always-warm backup you can promote rather than restore from tape.\n- **Zero-downtime migrations and upgrades**: upgrade replicas first, verify correctness, then promote — no maintenance window needed.\n\n## When to introduce replication\n\n| Signal | Action |\n|---|---|\n| Primary CPU or I/O saturated by reads | Add read replicas |\n| RTO/RPO requirements tighter than backup restore allows | Add synchronous replica |\n| Users in multiple regions complain of read latency | Add geo-replicas |\n| Rolling upgrades needed with no downtime | Promote replica, upgrade old primary |\n\n## What replication does NOT solve\n\n- Write scaling (all writes still go to one primary in most setups)\n- Strong consistency across all nodes by default\n- Schema migrations — those still require careful coordination\n\n## Key concepts to keep in mind\n\n- **Replication log / WAL**: the primary records every change in a Write-Ahead Log (Postgres) or binary log (MySQL). Replicas stream and apply these events.\n- **LSN / GTID**: Log Sequence Number (Postgres) or Global Transaction ID (MySQL) uniquely identifies a position in the replication stream, enabling replicas to resume from the exact right point after a restart.\n- **Replication lag**: the delay between a write being committed on the primary and the same write being visible on a replica. This is the central trade-off to manage."
+          }
+        ]
+      },
+      {
+        "id": "modes",
+        "title": "Replication Modes",
+        "order": 2,
+        "lessons": [
+          {
+            "id": "replication-modes-deep",
+            "title": "Primary–Replica, Multi-Master & Sync vs Async",
+            "type": "article",
+            "content": "# Replication Modes — A Complete Guide\n\n## Primary–Replica (Leader–Follower)\n\nThe most common pattern. One node is the *primary* (leader) and accepts all writes. Changes are streamed to one or more *replicas* (followers) that are read-only.\n\n**How it works:**\n1. Application writes to the primary.\n2. Primary writes change to its WAL/binlog.\n3. Replica's IO thread pulls the log from the primary.\n4. Replica's SQL/apply thread replays the changes locally.\n5. Replica's data converges to match the primary.\n\n**Pros:**\n- Simple conflict model — only one node writes, so there are no write conflicts.\n- Widely supported (Postgres streaming replication, MySQL replication, MongoDB replica sets).\n- Reads can be offloaded to replicas.\n\n**Cons:**\n- Primary is a write bottleneck.\n- Primary failure requires promotion of a replica (automated or manual).\n- Replicas may serve stale reads during lag.\n\n---\n\n## Multi-Master (Active-Active)\n\nMultiple nodes each accept writes. Changes from each master are replicated to all others.\n\n**Use cases:** geo-write scenarios where you need writes in two regions with low latency; high-availability setups where you cannot afford even a brief write outage during failover.\n\n**Conflict resolution is mandatory:**\n- *Last-writer-wins (LWW)*: the write with the higher timestamp survives. Simple, but can silently discard data.\n- *Application-level merge*: the app defines how to reconcile divergent versions (e.g., shopping cart merge).\n- *CRDTs (Conflict-free Replicated Data Types)*: data structures designed to merge automatically (counters, sets, registers).\n- *Vector clocks*: track causal history so you can detect and surface conflicts to the application.\n\n**Cons:** complexity, risk of data divergence, hard to debug.\n\n---\n\n## Synchronous vs Asynchronous Replication\n\n| Property | Synchronous | Asynchronous |\n|---|---|---|\n| Write latency | Higher — waits for replica ACK | Lower — returns after primary write |\n| Durability | Stronger — replica confirmed before commit | Weaker — replica may lag |\n| Throughput | Lower | Higher |\n| Risk on primary failure | Zero data loss (for sync replica) | Up to lag worth of data loss |\n| Availability | Lower (write blocks if replica unreachable) | Higher |\n\n**Semi-synchronous (MySQL):** the primary waits for at least one replica to acknowledge receipt (not necessarily apply) before committing. A practical middle ground.\n\n**Postgres synchronous_standby_names:** you can designate specific standbys as synchronous, and configure `ANY 1` or `ALL` semantics, giving fine-grained durability control.\n\n**Practical guidance:**\n- Use synchronous replication for financial or audit data where zero data loss is mandatory.\n- Use asynchronous for read replicas, analytics replicas, and geo-read replicas where some staleness is acceptable.\n- Always monitor lag on async replicas and set alerting thresholds (e.g., alert if lag > 30 s)."
+          }
+        ]
+      },
+      {
+        "id": "consistency-and-lag",
+        "title": "Consistency, Lag & Conflict Resolution",
+        "order": 3,
+        "lessons": [
+          {
+            "id": "consistency-lag-conflicts",
+            "title": "Replication Lag, Staleness & Conflict Resolution",
+            "type": "article",
+            "content": "# Consistency, Lag & Conflict Resolution\n\n## Replication Lag — Causes and Effects\n\nReplication lag is the delay between a write being committed on the primary and that write becoming visible on a replica. Even milliseconds of lag matter for reads that must see their own writes.\n\n**Common causes of lag:**\n- Heavy write bursts that overwhelm the replica's apply thread.\n- Long-running transactions on the primary that block replication.\n- Network congestion between primary and replica.\n- Schema-incompatible DDL operations applied row-by-row on the replica.\n- Replica running on underpowered hardware.\n\n**Effects on application behaviour:**\n- A user writes data then reads it from a replica — they see stale data (\"read-your-writes\" violation).\n- Leaderboard or inventory reads return counts that don't include recent changes.\n- Analytics queries on replicas return results that miss the last N seconds of events.\n\n## Strategies for managing staleness\n\n1. **Route reads to the primary** for anything that requires read-your-writes consistency (session data, checkout flow).\n2. **Read-your-writes tokens**: after a write, return the LSN/GTID to the client. The client passes it to the read path, which waits for the replica to catch up to that position before serving the read.\n3. **Monotonic reads**: always route a given session to the same replica, so at least reads are consistent within a session.\n4. **Replica lag gate**: if lag exceeds a threshold (e.g., 5 s), fall back to reading from the primary.\n\n## Consistency Models Recap\n\n| Model | Guarantee | Common Use |\n|---|---|---|\n| Strong consistency | Every read reflects the latest write | Financial transactions |\n| Read-your-writes | A client always sees its own writes | User profile updates |\n| Monotonic reads | Reads never go backward in time | Session-scoped reads |\n| Eventual consistency | Replicas converge eventually | Analytics, caches |\n\n## Conflict Resolution (Multi-Master)\n\nIn multi-master setups, two primaries can accept writes to the same row concurrently. The replication layer must decide which wins.\n\n**Last-writer-wins (LWW):** use the wall-clock timestamp or a Lamport clock. Simple but can silently drop writes if clocks are skewed.\n\n**Version vectors / vector clocks:** each write carries a version vector. On conflict, the system can detect that neither version causally dominates the other, and surface the conflict to the application.\n\n**CRDTs:** data types with a mathematically defined merge function — counters, sets, maps, registers. Useful for collaborative features and distributed counters.\n\n**Application-level reconciliation:** the database stores all conflicting versions; the application merges them on read (e.g., Amazon shopping cart approach).\n\n**Operational tip:** always log conflicts with enough context to audit what happened. Silent data loss in production is catastrophic."
+          }
+        ]
+      },
+      {
+        "id": "topologies",
+        "title": "Topologies & Patterns",
+        "order": 4,
+        "lessons": [
+          {
+            "id": "topologies-deep",
+            "title": "Topologies: Cascading, Sharding & Geo-Replication",
+            "type": "article",
+            "content": "# Replication Topologies & Patterns\n\n## Single Primary with Read Replicas\n\nThe baseline topology: one primary, N read replicas. Each replica maintains a persistent replication connection to the primary.\n\n```\nClients (writes) → Primary\nClients (reads)  → Replica 1\n                 → Replica 2\n                 → Replica 3\n```\n\nRoute reads via a connection pooler (PgBouncer, ProxySQL) or a service discovery layer that knows which nodes are replicas.\n\n## Cascading (Chain) Replication\n\nA replica replicates from another replica rather than directly from the primary. This reduces the number of replication connections the primary must maintain.\n\n```\nPrimary → Replica A (intermediate)\n               → Replica B\n               → Replica C\n```\n\n**When to use:** when you have many replicas (10+) and the primary's network or CPU is strained by maintaining all replication streams. The trade-off is increased lag further down the chain.\n\n## Sharding with Per-Shard Replication\n\nHorizontal partitioning (sharding) divides data across multiple primary nodes. Each shard has its own set of replicas.\n\n```\nShard 0: Primary-0 → Replica-0a, Replica-0b\nShard 1: Primary-1 → Replica-1a, Replica-1b\nShard 2: Primary-2 → Replica-2a, Replica-2b\n```\n\nThis multiplies both write and read capacity. The application (or a router like Vitess, Citus, or MongoDB's mongos) must know which shard to target for a given key.\n\n**Challenges:** cross-shard joins become expensive, distributed transactions are complex, and re-sharding requires data movement.\n\n## Geo-Replication\n\nPlace replicas in different data centres or cloud regions. Reads are served locally; writes travel to the single primary or to a regional primary in multi-master setups.\n\n```\nRegion EU (primary) → Region US-East (replica) → Region AP (replica)\n```\n\n**Read latency improvement:** a user in Tokyo reading from an AP replica sees ~5–20 ms instead of ~250 ms round-trip to Europe.\n\n**Consistency trade-off:** cross-region replication lag can be 50–200 ms. Applications must tolerate stale reads or implement routing logic to redirect consistency-sensitive reads to the primary region.\n\n## Choosing a Topology\n\n| Scenario | Recommended Topology |\n|---|---|\n| Small app, moderate reads | 1 primary + 1–2 replicas |\n| High read-to-write ratio | 1 primary + 3–6 read replicas |\n| Very many replicas | Cascading replication |\n| Write scale required | Sharding + per-shard replication |\n| Global user base | Geo-replication + regional read routing |"
+          }
+        ]
+      },
+      {
+        "id": "operations",
+        "title": "Monitoring, Failover & Operations",
+        "order": 5,
+        "lessons": [
+          {
+            "id": "ops-monitoring-failover",
+            "title": "Monitoring, Failover & Operational Practices",
+            "type": "article",
+            "content": "# Monitoring, Failover & Operational Practices\n\n## Key Metrics to Monitor\n\n| Metric | What it tells you | Alert threshold example |\n|---|---|---|\n| Replication lag (seconds) | How far behind the replica is | > 30 s warning, > 5 min critical |\n| Replica apply rate (events/s) | Whether replica is keeping up | Drop below baseline |\n| Open replication connections | Primary replication health | 0 (replica disconnected) |\n| WAL/binlog send queue depth | Backlog at the primary | Growing unboundedly |\n| LSN/GTID position delta | Exact byte offset of lag | Track over time for trends |\n| Replica CPU & I/O utilization | Is the replica hardware constrained? | > 80% sustained |\n\n**Postgres:** query `pg_stat_replication` on the primary and `pg_stat_wal_receiver` on the replica.\n**MySQL:** use `SHOW REPLICA STATUS\\G` and look at `Seconds_Behind_Source` and `Retrieved_Gtid_Set`.\n\n## Planned Failover (Switchover)\n\nA controlled promotion with no data loss:\n1. Stop new writes to the primary (put app in read-only or drain traffic).\n2. Confirm the target replica has applied all WAL up to the primary's current LSN.\n3. Promote the replica to primary (`pg_promote()` in Postgres, `STOP REPLICA; RESET REPLICA ALL; ...` in MySQL).\n4. Update connection strings / DNS / load balancer to point at the new primary.\n5. Rejoin old primary as a replica.\n\n## Unplanned Failover (Crash Recovery)\n\nWhen the primary fails unexpectedly:\n1. Detect failure (health check timeout, heartbeat loss).\n2. Select the most up-to-date replica (highest LSN/GTID).\n3. Promote it.\n4. Fence the old primary (STONITH, revoke network access) to prevent split-brain.\n5. Re-point application traffic.\n6. Bring remaining replicas up to date from the new primary.\n\n**Split-brain risk:** two nodes both believe they are primary and both accept writes. This causes data divergence. Prevent it with:\n- Quorum-based promotion (Patroni, MHA, Orchestrator).\n- STONITH (Shoot The Other Node In The Head) — forcibly power off or network-fence the old primary before promoting the new one.\n\n## Automation Tools\n\n| Tool | Database | Approach |\n|---|---|---|\n| Patroni | Postgres | DCS (etcd/Consul/ZooKeeper) for consensus |\n| pg_auto_failover | Postgres | Lightweight built-in monitor |\n| Orchestrator | MySQL | Topology-aware failover with web UI |\n| MHA | MySQL | Classic manager + agent |\n| AWS RDS Multi-AZ | MySQL / Postgres | Managed synchronous standby |\n\n## Replica Rebuild After Extended Lag\n\nIf a replica has fallen too far behind (the WAL segments it needs have been recycled):\n1. Take a base backup from the primary (`pg_basebackup` or `xtrabackup`).\n2. Copy it to the replica.\n3. Start the replica — it will stream from the nearest available WAL position.\n\n## Testing Your Failover Runbook\n\n- Run monthly or quarterly drills in staging.\n- Measure actual RTO (time from detection to traffic serving on new primary).\n- Validate that connection poolers and applications reconnect cleanly.\n- Confirm monitoring alerts fire correctly when you simulate lag."
+          }
+        ]
+      },
+      {
+        "id": "exercises",
+        "title": "Exercises",
+        "order": 6,
+        "lessons": [
+          {
+            "id": "replication-exercises",
+            "title": "Exercises: Design & Troubleshoot",
+            "type": "exercise",
+            "content": "# Exercises\n\n## Design\n1) You have a social platform with 10× more reads than writes and users in the US, EU, and Asia. Design a replication topology. Which topology pattern do you choose? How do you handle read-your-writes for the posting flow?\n\n2) Your team needs zero RPO for financial records but cannot accept write latency above 50 ms added by replication. Evaluate synchronous vs asynchronous replication for this constraint.\n\n3) Sketch a multi-master setup for an e-commerce cart. Define how you would resolve a conflict where two regions incremented the same cart item's quantity concurrently.\n\n## Troubleshoot\n4) Replication lag on your primary Postgres replica has climbed from < 1 s to 45 s over the past 6 hours. List the three most likely causes and the first diagnostic query or command you would run for each.\n\n5) After an unplanned primary failure, you notice both the old primary (now recovered) and the promoted replica are accepting writes. What went wrong, and what must you do immediately?\n\n## Estimation\n6) Your primary generates 50 MB/s of WAL. You have 3 replicas in the same region and 2 geo-replicas across continents. Estimate the total network bandwidth consumed by replication from the primary, assuming semi-synchronous replication to the nearest replica and async to the rest."
           }
         ]
       }
