@@ -133,6 +133,14 @@ const LessonRenderer: React.FC<{
   hasFinishModule?: boolean;
   onFinish?: () => void;
 }> = ({ lesson, completed = false, onToggleCompleted, hasNextLesson = false, onNext, hasFinishModule = false, onFinish }) => {
+  // Ref for scroll-to-top on lesson change
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [lesson.id]);
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-start justify-between mb-4 shrink-0">
@@ -149,7 +157,7 @@ const LessonRenderer: React.FC<{
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto component-palette">
+      <div className="flex-1 overflow-auto component-palette" ref={contentRef}>
         {lesson.type === "article" && (
           <div className="prose max-w-none prose-headings:text-theme prose-p:text-theme prose-strong:text-theme prose-li:text-theme prose-code:text-theme dark:prose-invert">
             <div dangerouslySetInnerHTML={{ __html: marked.parse(lesson.content || "") }} />
