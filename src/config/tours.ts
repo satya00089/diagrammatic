@@ -223,12 +223,42 @@ export const TOURS: Record<string, TourDefinition> = {
     id: "problem_playground",
     steps: [
       {
-        element: '[data-tour="inspector-toggle"]',
+        element: '[data-tour="problem-brief"]',
         popover: {
           title: "Problem Brief",
           description:
-            "Click to expand the panel and read the problem's requirements, constraints, and hints in the Details tab.",
+            "Click here to view the problem's requirements, constraints, and hints in the Details tab.",
           side: "left",
+          align: "start",
+        },
+      },
+      {
+        element: '[data-tour="inspector-toggle"]',
+        popover: {
+          title: "Inspector Panel",
+          description:
+            "Click to expand the Inspector Panel. Select any node or edge on the canvas to edit its properties, labels, and appearance here.",
+          side: "left",
+          align: "start",
+        },
+      },
+      {
+        element: '[data-tour="component-palette"]',
+        popover: {
+          title: "Component Palette",
+          description:
+            "1000+ components live here — architectural primitives and cloud provider services. Drag any item onto the canvas to add it to your design.",
+          side: "right",
+          align: "start",
+        },
+      },
+      {
+        element: '[data-tour="palette-search"]',
+        popover: {
+          title: "Search Providers & Components",
+          description:
+            "Type 'aws', 'azure', or 'gcp' to load cloud provider components. Or search by name — e.g. 'load balancer', 'S3', 'Redis'.",
+          side: "right",
           align: "start",
         },
       },
@@ -249,6 +279,16 @@ export const TOURS: Record<string, TourDefinition> = {
           description:
             "Track how long you spend on each problem — great for interview practice.",
           side: "bottom",
+          align: "start",
+        },
+      },
+      {
+        element: '[data-tour="guide"]',
+        popover: {
+          title: "Guide",
+          description:
+            "Click here for a step-by-step walkthrough of how to approach and solve the problem, along with the solution.",
+          side: "left",
           align: "start",
         },
       },

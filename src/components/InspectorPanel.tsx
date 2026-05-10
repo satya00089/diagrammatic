@@ -222,7 +222,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         }
         aria-controls="inspector-panel"
         data-tour="inspector-toggle"
-        title={!open ? "Inspector panel is closed — click to expand" : undefined}
+        title={open ? undefined : "Inspector panel is closed — click to expand"}
         className="absolute top-5 -left-3 h-6 w-6 flex items-center justify-center rounded-full border border-theme bg-surface text-theme shadow cursor-pointer hover:bg-[var(--bg-hover)] transition-colors z-50"
       >
         {open ? <PiCaretRightBold size={16} /> : <PiCaretLeftBold size={16} />}
@@ -279,6 +279,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   type="button"
                   role="tab"
                   className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "details" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  data-tour="problem-brief"
                   onClick={() => setActiveTab("details")}
                 >
                   <span className="text-sm">📄</span>
@@ -308,6 +309,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   type="button"
                   role="tab"
                   className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "guide" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  data-tour="guide"
                   onClick={() => setActiveTab("guide")}
                 >
                   <span className="text-sm">🗺️</span>
