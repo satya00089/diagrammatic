@@ -60,7 +60,7 @@ const LearningPaths: React.FC = () => {
         url="/learning-paths"
       />
 
-      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
+      <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
         <header className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300" style={{ top: 'var(--announcement-h, 0px)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -185,21 +185,21 @@ const LearningPaths: React.FC = () => {
             </div>
           </div>
         </header>
-        <div className="pt-16 relative z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="pt-12 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Page Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h1 className="text-4xl md:text-5xl font-bold mb-3">Learning Paths</h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
                 Follow curated sequences of modules and lessons that teach system design from first principles to advanced patterns.
               </p>
             </div>
 
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
               <div className="text-sm text-muted">{loading ? "Loading paths..." : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}</div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {loading ? (
                 <div className="col-span-3 flex items-center justify-center py-16">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
