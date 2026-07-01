@@ -1,6 +1,51 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MdClose } from "react-icons/md";
+import { useTheme } from "../hooks/useTheme";
+
+const GOOGLE_IDENTITY_SCRIPT_ID = "google-identity-services";
+let googleIdentityScriptPromise: Promise<void> | null = null;
+let googleIdentityInitialized = false;
+
+const loadGoogleIdentityScript = (): Promise<void> => {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (window.google) {
+    return Promise.resolve();
+  }
+
+  if (googleIdentityScriptPromise) {
+    return googleIdentityScriptPromise;
+  }
+
+  googleIdentityScriptPromise = new Promise<void>((resolve, reject) => {
+    const existingScript = document.getElementById(
+      GOOGLE_IDENTITY_SCRIPT_ID,
+    ) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => {
+        reject(new Error("Failed to load Google Identity Services"));
+      }, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = GOOGLE_IDENTITY_SCRIPT_ID;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () =>
+      reject(new Error("Failed to load Google Identity Services"));
+    document.body.appendChild(script);
+  });
+
+  return googleIdentityScriptPromise;
+};
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -23,35 +68,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme } = useTheme();
+  const googleResponseRef = useRef<(response: GoogleCredentialResponse) => void>(
+    () => {},
+  );
 
-  // Detect theme changes
-  useEffect(() => {
-    const updateTheme = () => {
-      const darkMode =
-        window.matchMedia("(prefers-color-scheme: dark)").matches ||
-        document.documentElement.classList.contains("dark");
-      setIsDarkMode(darkMode);
-    };
-
-    // Initial check
-    updateTheme();
-
-    // Listen for theme changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const observer = new MutationObserver(updateTheme);
-
-    mediaQuery.addEventListener("change", updateTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => {
-      mediaQuery.removeEventListener("change", updateTheme);
-      observer.disconnect();
-    };
-  }, []);
+  const resolvedDarkMode =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const handleGoogleResponse = useCallback(
     async (response: GoogleCredentialResponse) => {
@@ -74,43 +100,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     [onGoogleLogin, onClose],
   );
 
+  useEffect(() => {
+    googleResponseRef.current = handleGoogleResponse;
+  }, [handleGoogleResponse]);
+
   // Initialize Google Sign-In
   useEffect(() => {
     if (!isOpen || !onGoogleLogin) return;
 
-    // Load Google Identity Services script
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
+    let cancelled = false;
 
-    script.onload = () => {
-      if (window.google) {
+    const renderGoogleButton = () => {
+      const container = document.getElementById("google-signin-button");
+      if (!container || !window.google) return;
+
+      container.innerHTML = "";
+      window.google.accounts.id.renderButton(container, {
+        theme: resolvedDarkMode ? "filled_black" : "outline",
+        size: "large",
+        width: 400,
+        text: mode === "login" ? "signin_with" : "signup_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+      });
+    };
+
+    const initializeGoogle = async () => {
+      await loadGoogleIdentityScript();
+      if (cancelled || !window.google) return;
+
+      if (!googleIdentityInitialized) {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
-          callback: handleGoogleResponse,
-        });
-        window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-button"),
-          {
-            theme: isDarkMode ? "filled_black" : "outline",
-            size: "large",
-            width: 400,
-            text: mode === "login" ? "signin_with" : "signup_with",
-            shape: "rectangular",
-            logo_alignment: "left",
+          callback: (response: GoogleCredentialResponse) => {
+            googleResponseRef.current(response);
           },
-        );
+        });
+        googleIdentityInitialized = true;
       }
+
+      renderGoogleButton();
     };
 
+    initializeGoogle().catch((err) => {
+      console.error("Failed to initialize Google Sign-In", err);
+    });
+
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
+      cancelled = true;
     };
-  }, [isOpen, mode, onGoogleLogin, handleGoogleResponse, isDarkMode]);
+  }, [isOpen, mode, onGoogleLogin, resolvedDarkMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +216,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {/* Error message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-red-800 dark:text-red-200 text-sm">
+              <div
+                role="alert"
+                aria-live="polite"
+                className={`mb-4 rounded-xl border px-4 py-3 text-sm font-semibold leading-6 shadow-sm ${
+                  resolvedDarkMode
+                    ? "border-red-700 bg-red-950/40 text-red-100"
+                    : "border-red-500 bg-red-50 text-red-800 ring-1 ring-red-200"
+                }`}
+              >
                 {error}
               </div>
             )}

@@ -20,6 +20,41 @@ class ApiService {
     };
   }
 
+  private async getErrorMessage(
+    response: Response,
+    fallback: string,
+  ): Promise<string> {
+    const error = await response.json().catch(() => null);
+
+    if (typeof error === "string" && error.trim()) {
+      return error;
+    }
+
+    if (error && typeof error === "object") {
+      const message =
+        "detail" in error && typeof error.detail === "string"
+          ? error.detail
+          : "detail" in error && Array.isArray(error.detail)
+            ? error.detail
+                .map((entry) =>
+                  entry && typeof entry === "object" && "msg" in entry && typeof entry.msg === "string"
+                    ? entry.msg
+                    : null,
+                )
+                .filter((msg): msg is string => Boolean(msg))
+                .join(", ")
+            : "message" in error && typeof error.message === "string"
+              ? error.message
+              : null;
+
+      if (message?.trim()) {
+        return message;
+      }
+    }
+
+    return fallback;
+  }
+
   // Authentication endpoints
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
@@ -29,10 +64,7 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Login failed" }));
-      throw new Error(error.message || "Login failed");
+      throw new Error(await this.getErrorMessage(response, "Login failed"));
     }
 
     return response.json();
@@ -46,10 +78,7 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Signup failed" }));
-      throw new Error(error.message || "Signup failed");
+      throw new Error(await this.getErrorMessage(response, "Signup failed"));
     }
 
     return response.json();
@@ -63,10 +92,9 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Google login failed" }));
-      throw new Error(error.message || "Google login failed");
+      throw new Error(
+        await this.getErrorMessage(response, "Google login failed"),
+      );
     }
 
     return response.json();
@@ -104,8 +132,9 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: "Failed to update preferences" }));
-      throw new Error(err.message || "Failed to update preferences");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to update preferences"),
+      );
     }
 
     return response.json();
@@ -120,10 +149,9 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Failed to Save Design" }));
-      throw new Error(error.message || "Failed to Save Design");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to Save Design"),
+      );
     }
 
     return response.json();
@@ -140,10 +168,9 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Failed to update diagram" }));
-      throw new Error(error.message || "Failed to update diagram");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to update diagram"),
+      );
     }
 
     return response.json();
@@ -215,10 +242,9 @@ class ApiService {
     );
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Failed to add collaborator" }));
-      throw new Error(error.message || "Failed to add collaborator");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to add collaborator"),
+      );
     }
   }
 
@@ -252,10 +278,9 @@ class ApiService {
     );
 
     if (!response.ok) {
-      const error = await response
-        .json()
-        .catch(() => ({ message: "Failed to update collaborator" }));
-      throw new Error(error.message || "Failed to update collaborator");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to update collaborator"),
+      );
     }
   }
 
@@ -499,8 +524,7 @@ class ApiService {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: "Publish failed" }));
-      throw new Error(err.detail || "Failed to publish solution");
+      throw new Error(await this.getErrorMessage(response, "Publish failed"));
     }
     return response.json();
   }
@@ -575,8 +599,7 @@ class ApiService {
       headers: this.getAuthHeaders(),
     });
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: "Publish failed" }));
-      throw new Error(err.detail || "Failed to publish diagram");
+      throw new Error(await this.getErrorMessage(response, "Publish failed"));
     }
     return response.json();
   }
@@ -701,8 +724,12 @@ class ApiService {
 
     if (response.status === 404) return [];
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: "Failed to fetch learning progress" }));
-      throw new Error(err.message || "Failed to fetch learning progress");
+      throw new Error(
+        await this.getErrorMessage(
+          response,
+          "Failed to fetch learning progress",
+        ),
+      );
     }
 
     const data = await response.json();
@@ -718,8 +745,9 @@ class ApiService {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: "Failed to save learning progress" }));
-      throw new Error(err.message || "Failed to save learning progress");
+      throw new Error(
+        await this.getErrorMessage(response, "Failed to save learning progress"),
+      );
     }
 
     return response.json() as Promise<Record<string, unknown>>;

@@ -68,7 +68,7 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
   return (
     <div className="space-y-4">
       {ex.assumptions && ex.assumptions.length > 0 && (
-        <div className="p-4 border rounded-md bg-[var(--card)]">
+        <div className="rounded-xl border border-theme/10 bg-[var(--bg)] p-4 shadow-sm">
           <div className="font-medium">Assumptions</div>
           <ul className="list-disc list-inside mt-2 text-sm text-theme/90">
             {ex.assumptions.map((a, i) => (
@@ -79,7 +79,7 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
       )}
 
       {ex.questions.map((q, idx) => (
-        <div key={q.id} className="p-4 border rounded-md bg-[var(--card)]">
+        <div key={q.id} className="rounded-xl border border-theme/10 bg-[var(--bg)] p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
               <div className="font-medium">Question {idx + 1}</div>
@@ -89,7 +89,7 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
               {q.hint && (
                 <button
                   onClick={() => setShowHints((s) => ({ ...s, [q.id]: !s[q.id] }))}
-                  className="text-xs px-2 py-1 border rounded text-[var(--brand)]"
+                  className="rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/8 px-2 py-1 text-xs font-medium text-[var(--brand)]"
                 >
                   {showHints[q.id] ? "Hide hint" : "Show hint"}
                 </button>
@@ -104,7 +104,7 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
               aria-label={`answer-${q.id}`}
               value={answers[q.id] || ""}
               onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-              className="flex-1 px-3 py-2 border rounded"
+              className="flex-1 rounded-lg border border-theme/15 bg-[var(--surface)] px-3 py-2 text-theme"
               placeholder="Type your answer (numbers accepted)"
             />
             <button
@@ -145,13 +145,13 @@ const LessonRenderer: React.FC<{
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-start justify-between mb-4 shrink-0">
         <div>
-          <h2 className="text-2xl font-semibold">{lesson.title}</h2>
+          <h2 className="text-2xl font-semibold text-theme">{lesson.title}</h2>
           <div className="text-sm text-muted">Type: {lesson.type}</div>
         </div>
         <div className="ml-4">
           <button
             onClick={onToggleCompleted}
-            className={`px-3 py-1 rounded-full text-sm font-medium border ${completed ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-gray-700"}`}
+            className={`px-3 py-1 rounded-full text-sm font-medium border shadow-sm ${completed ? "bg-emerald-600 text-white border-emerald-600" : "bg-[var(--bg)] text-theme border-theme/15"}`}
           >
             {completed ? "Completed" : "Mark complete"}
           </button>

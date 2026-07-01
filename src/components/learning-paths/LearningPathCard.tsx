@@ -55,13 +55,13 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
   const isAuthenticated = typeof isAuthProp === "boolean" ? isAuthProp : authCtx.isAuthenticated;
 
   return (
-    <div className="group relative rounded-xl border border-theme/8 p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
+    <div className="group relative rounded-xl border border-theme/10 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
       <div className="flex justify-end">
         <div className="flex items-center gap-2">
-          <div className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(path.difficulty ?? "Beginner")}`}>
+          <div className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border border-transparent ${getDifficultyColor(path.difficulty ?? "Beginner")}`}>
             {path.difficulty || "Beginner"}
           </div>
-          <div className="text-xs px-2 py-1 bg-surface rounded text-muted hover:brightness-105 transition-colors">
+          <div className="text-xs px-2 py-1 rounded border border-theme/10 bg-[var(--bg)] text-theme/90 font-medium transition-colors">
             {totalLessons} lesson{totalLessons === 1 ? "" : "s"}
           </div>
         </div>
@@ -72,7 +72,7 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
           <h3 className="text-xl font-semibold">
             <Link
               to={`/learning-paths/${path.slug}`}
-              className="text-[var(--brand)] hover:underline"
+              className="text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4 decoration-[1.5px]"
               onClick={(e) => {
                 if (!isAuthenticated) {
                   e.preventDefault();
@@ -95,7 +95,7 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
           {path.tags?.slice(0, 4).map((t) => (
             <div
               key={t}
-              className="text-xs px-2 py-1 bg-surface rounded text-muted capitalize hover:brightness-105 transition-colors"
+              className="text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold capitalize shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
             >
               {t}
             </div>
@@ -111,8 +111,8 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
               <Link
                   key={pl.lessonId}
                   to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
-                  className="flex-1 min-w-0 p-3 bg-surface rounded-md border border-theme/8 hover:shadow-sm transition-colors flex items-center justify-between"
-                  onClick={(e) => {
+                className="flex-1 min-w-0 p-3 rounded-md border border-theme/10 bg-[var(--bg)] hover:bg-[var(--bg-hover)] hover:shadow-sm transition-colors flex items-center justify-between"
+                onClick={(e) => {
                     if (!isAuthenticated) {
                       e.preventDefault();
                       if (onRequireAuth) {
@@ -123,7 +123,7 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
                     }
                   }}
                 >
-                <div className="text-sm truncate text-[var(--brand)] hover:underline">{pl.title}</div>
+                <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">{pl.title}</div>
                 <div className="ml-3">
                   {isCompleted(pl.lessonId) ? (
                     <MdCheckCircle className="text-emerald-500 h-5 w-5" />
@@ -144,7 +144,7 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
               <Link
                 key={m.id}
                 to={`/learning-paths/${path.slug}?module=${encodeURIComponent(m.id)}`}
-                className="text-xs px-2 py-1 bg-surface rounded text-[var(--brand)] hover:brightness-105 transition-colors"
+                className="text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
                 onClick={(e) => {
                   if (!isAuthenticated) {
                     e.preventDefault();
@@ -158,7 +158,7 @@ const LearningPathCard: React.FC<Props> = ({ path, isAuthenticated: isAuthProp, 
             {path.modules.length > 3 && (
               <Link
                 to={`/learning-paths/${path.slug}`}
-                className="text-xs px-2 py-1 bg-surface rounded text-muted hover:brightness-105"
+                className="text-xs px-2 py-1 rounded-full border border-theme/10 bg-[var(--bg)] text-theme/90 font-medium hover:bg-[var(--bg-hover)]"
                 onClick={(e) => {
                   if (!isAuthenticated) {
                     e.preventDefault();

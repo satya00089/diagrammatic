@@ -187,7 +187,7 @@ const Home: React.FC = () => {
     } catch {
       // ignore analytics errors
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -583,7 +583,7 @@ const Home: React.FC = () => {
               ? "shadow-lg backdrop-blur-md bg-[var(--brand)]/90"
               : "bg-[var(--brand)]"
           }`}
-          style={{ top: 'var(--announcement-h, 0px)' }}
+          style={{ top: "var(--announcement-h, 0px)" }}
         >
           {/* Scroll progress bar */}
           <div
@@ -691,7 +691,9 @@ const Home: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              globalThis.dispatchEvent(
+                                new Event("open-quick-setup"),
+                              );
                               setShowUserMenu(false);
                             }}
                             aria-label="Edit preferences"
@@ -839,7 +841,10 @@ const Home: React.FC = () => {
                   })}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center" data-tour="hero-cta">
+                <div
+                  className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                  data-tour="hero-cta"
+                >
                   <button
                     type="button"
                     data-tour="nav-studio"
@@ -890,7 +895,9 @@ const Home: React.FC = () => {
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-bold mb-1">My Designs</h2>
+                  <h2 className="text-2xl text-[var(--brand)] font-bold mb-1">
+                    My Designs
+                  </h2>
                   <p className="text-muted">
                     Your saved diagrams and shared workspaces
                   </p>
@@ -908,7 +915,7 @@ const Home: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleNavigate("/playground/free")}
-                    className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:brightness-95 transition-all flex items-center gap-2"
+                    className="px-3 py-2 bg-[var(--brand)] text-white font-semibold rounded-lg hover:brightness-95 transition-all flex items-center gap-2"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1134,7 +1141,7 @@ const Home: React.FC = () => {
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
-              className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3"
+              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
               data-reveal
             >
               Choose Your Path
@@ -1190,7 +1197,7 @@ const Home: React.FC = () => {
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
-              className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3"
+              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
               data-reveal
             >
               Powerful Features
@@ -1238,7 +1245,7 @@ const Home: React.FC = () => {
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
-              className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-3"
+              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
               data-reveal
             >
               Loved by Designers Worldwide
@@ -1284,7 +1291,7 @@ const Home: React.FC = () => {
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
-              className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-10"
+              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
               data-reveal
             >
               Perfect For Every Role
@@ -1323,22 +1330,52 @@ const Home: React.FC = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-3xl mx-auto text-center bg-[var(--brand)] rounded-2xl p-6 sm:p-10">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-3">
-              Ready to Start Designing?
-            </h2>
-            <p className="text-white/75 mb-7 max-w-lg mx-auto leading-relaxed">
-              Join engineers and architects who use Diagrammatic to plan,
-              practice, and communicate system designs.
-            </p>
-            <button
-              type="button"
-              onClick={() => handleNavigate("/playground/free")}
-              className="px-7 py-3 bg-white text-[var(--brand)] font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
-            >
-              Launch Free Canvas
-            </button>
+        <section className="py-14 sm:py-24 px-4 sm:px-6 lg:px-8 relative">
+          <div className="max-w-7xl mx-auto relative" data-reveal>
+            <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(circle_at_20%_20%,rgba(0,214,255,0.18),transparent_34%),radial-gradient(circle_at_80%_70%,rgba(4,217,160,0.14),transparent_30%),radial-gradient(circle_at_55%_45%,rgba(255,255,255,0.08),transparent_34%)] blur-2xl opacity-90 pointer-events-none" />
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#031018] px-6 py-12 sm:px-12 sm:py-14 shadow-[0_26px_100px_rgba(0,0,0,0.62)]">
+              <div className="absolute inset-0 cta-grid-overlay opacity-[0.12]" />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(1,6,10,0.35),rgba(2,54,68,0.62)_50%,rgba(0,0,0,0.28))]" />
+              <div className="absolute -left-16 top-10 h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
+              <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+              <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] lg:items-center">
+                <div className="max-w-2xl text-left">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
+                    Let&apos;s build from here
+                  </h2>
+                  <p className="mt-5 max-w-xl text-base sm:text-lg leading-relaxed text-white/82">
+                    Harnessed for productivity. Designed for collaboration.
+                    Celebrated for built-in security. Welcome to the platform
+                    developers love.
+                  </p>
+                </div>
+
+                <div className="lg:justify-self-end w-full max-w-xl">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate("/playground/free")}
+                      className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded border px-8 font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer"
+                    >
+                      Explore Problems
+                      <span aria-hidden="true" className="text-xl leading-none">
+                        →
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate("/playground/free")}
+                      className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
+                    >
+                      Design Studio
+                      <span aria-hidden="true" className="text-xl leading-none">
+                        →
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1414,6 +1451,13 @@ const Home: React.FC = () => {
           height: 100%;
           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
           animation: shimmer-sweep 3s ease-in-out infinite;
+        }
+        .cta-grid-overlay {
+          background-image:
+            linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
         }
         /* Scroll-driven staggered card reveals */
         [data-reveal-group] > * {

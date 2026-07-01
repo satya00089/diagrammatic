@@ -23,6 +23,7 @@ interface OnboardingState {
   appVersion: string;
   visits: Record<PageId, PageVisit>;
   completedTours: string[];
+  completedQuickSetupUsers: string[];
   dismissedTips: string[];
   completedTasks: string[];
   seenAnnouncements: string[];
@@ -35,6 +36,8 @@ interface OnboardingContextType {
   markPageVisited: (pageId: PageId) => void;
   isTourCompleted: (tourId: string) => boolean;
   markTourComplete: (tourId: string) => void;
+  isQuickSetupCompleted: (userId: string) => boolean;
+  markQuickSetupComplete: (userId: string) => void;
   isTipDismissed: (tipId: string) => boolean;
   dismissTip: (tipId: string) => void;
   isTaskCompleted: (taskId: string) => boolean;
@@ -69,6 +72,7 @@ const INITIAL_STATE: OnboardingState = {
     my_designs: { ...DEFAULT_PAGE_VISIT },
   },
   completedTours: [],
+  completedQuickSetupUsers: [],
   dismissedTips: [],
   completedTasks: [],
   seenAnnouncements: [],
@@ -142,6 +146,11 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({
     [state.completedTours],
   );
 
+  const isQuickSetupCompleted = useCallback(
+    (userId: string) => state.completedQuickSetupUsers.includes(userId),
+    [state.completedQuickSetupUsers],
+  );
+
   const isTipDismissed = useCallback(
     (tipId: string) => state.dismissedTips.includes(tipId),
     [state.dismissedTips],
@@ -186,6 +195,15 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
   }, []);
 
+  const markQuickSetupComplete = useCallback((userId: string) => {
+    setState((prev) => ({
+      ...prev,
+      completedQuickSetupUsers: prev.completedQuickSetupUsers.includes(userId)
+        ? prev.completedQuickSetupUsers
+        : [...prev.completedQuickSetupUsers, userId],
+    }));
+  }, []);
+
   const dismissTip = useCallback((tipId: string) => {
     setState((prev) => ({
       ...prev,
@@ -224,6 +242,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({
       markPageVisited,
       isTourCompleted,
       markTourComplete,
+      isQuickSetupCompleted,
+      markQuickSetupComplete,
       isTipDismissed,
       dismissTip,
       isTaskCompleted,
@@ -238,6 +258,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({
       markPageVisited,
       isTourCompleted,
       markTourComplete,
+      isQuickSetupCompleted,
+      markQuickSetupComplete,
       isTipDismissed,
       dismissTip,
       isTaskCompleted,
