@@ -31,17 +31,23 @@ class ApiService {
     }
 
     if (error && typeof error === "object") {
+      type DetailEntry = {
+        msg?: unknown;
+      };
+
       const message =
         "detail" in error && typeof error.detail === "string"
           ? error.detail
           : "detail" in error && Array.isArray(error.detail)
             ? error.detail
-                .map((entry) =>
-                  entry && typeof entry === "object" && "msg" in entry && typeof entry.msg === "string"
-                    ? entry.msg
+                .map((entry: unknown) =>
+                  entry &&
+                  typeof entry === "object" &&
+                  typeof (entry as DetailEntry).msg === "string"
+                    ? (entry as DetailEntry).msg
                     : null,
                 )
-                .filter((msg): msg is string => Boolean(msg))
+                .filter((msg: string | null): msg is string => Boolean(msg))
                 .join(", ")
             : "message" in error && typeof error.message === "string"
               ? error.message
