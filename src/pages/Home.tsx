@@ -1333,9 +1333,9 @@ const Home: React.FC = () => {
         <section className="py-14 sm:py-24 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative" data-reveal>
             <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(circle_at_20%_20%,rgba(0,214,255,0.18),transparent_34%),radial-gradient(circle_at_80%_70%,rgba(4,217,160,0.14),transparent_30%),radial-gradient(circle_at_55%_45%,rgba(255,255,255,0.08),transparent_34%)] blur-2xl opacity-90 pointer-events-none" />
-            <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#07111a] px-6 py-12 sm:px-12 sm:py-14 shadow-[0_24px_90px_rgba(0,0,0,0.55)]">
-              <div className="absolute inset-0 cta-grid-overlay opacity-[0.16]" />
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(4,9,16,0.2),rgba(3,61,78,0.52)_52%,rgba(0,0,0,0.18))]" />
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#031018] px-6 py-12 sm:px-12 sm:py-14 shadow-[0_26px_100px_rgba(0,0,0,0.62)]">
+              <div className="absolute inset-0 cta-grid-overlay opacity-[0.12]" />
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(1,6,10,0.35),rgba(2,54,68,0.62)_50%,rgba(0,0,0,0.28))]" />
               <div className="absolute -left-16 top-10 h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
               <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
               <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] lg:items-center">
