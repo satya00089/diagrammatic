@@ -187,7 +187,7 @@ const Home: React.FC = () => {
     } catch {
       // ignore analytics errors
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -583,7 +583,7 @@ const Home: React.FC = () => {
               ? "shadow-lg backdrop-blur-md bg-[var(--brand)]/90"
               : "bg-[var(--brand)]"
           }`}
-          style={{ top: 'var(--announcement-h, 0px)' }}
+          style={{ top: "var(--announcement-h, 0px)" }}
         >
           {/* Scroll progress bar */}
           <div
@@ -691,7 +691,9 @@ const Home: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              globalThis.dispatchEvent(
+                                new Event("open-quick-setup"),
+                              );
                               setShowUserMenu(false);
                             }}
                             aria-label="Edit preferences"
@@ -839,7 +841,10 @@ const Home: React.FC = () => {
                   })}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center" data-tour="hero-cta">
+                <div
+                  className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                  data-tour="hero-cta"
+                >
                   <button
                     type="button"
                     data-tour="nav-studio"
@@ -890,7 +895,9 @@ const Home: React.FC = () => {
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl text-[var(--brand)] font-bold mb-1">My Designs</h2>
+                  <h2 className="text-2xl text-[var(--brand)] font-bold mb-1">
+                    My Designs
+                  </h2>
                   <p className="text-muted">
                     Your saved diagrams and shared workspaces
                   </p>
@@ -1331,21 +1338,6 @@ const Home: React.FC = () => {
               <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(4,9,16,0.2),rgba(3,61,78,0.52)_52%,rgba(0,0,0,0.18))]" />
               <div className="absolute -left-16 top-10 h-52 w-52 rounded-full bg-cyan-400/12 blur-3xl" />
               <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
-              <button
-                type="button"
-                aria-label="Previous"
-                className="absolute left-0 top-1/2 z-10 hidden -translate-x-1/2 -translate-y-1/2 md:inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/90 text-white shadow-lg ring-1 ring-white/10"
-              >
-                <span className="text-2xl leading-none">‹</span>
-              </button>
-              <button
-                type="button"
-                aria-label="Next"
-                className="absolute right-0 top-1/2 z-10 hidden translate-x-1/2 -translate-y-1/2 md:inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/90 text-white shadow-lg ring-1 ring-white/10"
-              >
-                <span className="text-2xl leading-none">›</span>
-              </button>
-
               <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] lg:items-center">
                 <div className="max-w-2xl text-left">
                   <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]">
@@ -1360,21 +1352,22 @@ const Home: React.FC = () => {
 
                 <div className="lg:justify-self-end w-full max-w-xl">
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <label className="sr-only" htmlFor="cta-email">
-                      Email address
-                    </label>
-                    <input
-                      id="cta-email"
-                      type="email"
-                      placeholder="Email address"
-                      className="h-14 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-cyan-300/60 focus:bg-black/30 focus:ring-2 focus:ring-cyan-300/20"
-                    />
                     <button
                       type="button"
                       onClick={() => handleNavigate("/playground/free")}
-                      className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
+                      className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded border px-8 font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer"
                     >
-                      Launch Free Canvas
+                      Explore Problems
+                      <span aria-hidden="true" className="text-xl leading-none">
+                        →
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleNavigate("/playground/free")}
+                      className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
+                    >
+                      Design Studio
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>
