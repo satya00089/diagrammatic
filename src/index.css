@@ -3,12 +3,12 @@
 
 /* CSS Variables for theming */
 :root {
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-hover: #f3f4f6;
+  --color-bg: #f8f6f1;
+  --color-bg-secondary: #f2ede6;
+  --color-bg-hover: #ebe4da;
   --color-text: #111827;
   --color-text-secondary: #6b7280;
-  --color-border: #e5e7eb;
+  --color-border: #d9d2c5;
   --font-family:
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
@@ -28,6 +28,7 @@
   --header-gradient-end: #ad63c7;
 
   --theme: var(--text);
+  --elevated-card-bg: color-mix(in srgb, var(--surface) 95%, white 50%);
 
   /* Share / announcement colors (light mode) */
   --share-bg: #4B4C5B;
@@ -60,6 +61,7 @@
   --header-gradient-end: #bd6cd5;
 
   --theme: var(--text);
+  --elevated-card-bg: color-mix(in srgb, var(--surface) 92%, black 28%);
 
   /* Share / announcement colors (dark mode) */
   --share-bg: #AFAFBA;
@@ -657,7 +659,7 @@ select::-webkit-scrollbar-thumb {
 
 /* Elevated card background */
 .elevated-card-bg {
-  background: color-mix(in srgb, var(--surface) 95%, white 5%);
+  background: var(--elevated-card-bg);
 }
 
 /* Tooltip styles */

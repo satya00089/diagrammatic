@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useOnboarding } from "../hooks/useOnboarding";
 import { apiService } from "../services/api";
 import { MdClose } from "react-icons/md";
 
@@ -10,6 +11,7 @@ const contentTypes = ["Articles", "Videos", "Interactive", "Projects"];
 
 export const QuickSetupModal: React.FC = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
+  const { isQuickSetupCompleted, markQuickSetupComplete } = useOnboarding();
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,12 +66,16 @@ export const QuickSetupModal: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
+
     if (user.preferences) {
       prefillFromPreferences(user.preferences);
+      if (!isQuickSetupCompleted(user.id)) {
+        markQuickSetupComplete(user.id);
+      }
     } else {
-      setVisible(true);
+      setVisible(!isQuickSetupCompleted(user.id));
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isQuickSetupCompleted, markQuickSetupComplete]);
 
   useEffect(() => {
     const handler = () => {
@@ -108,6 +114,9 @@ export const QuickSetupModal: React.FC = () => {
       } as Record<string, unknown>;
 
       await apiService.updatePreferences(prefs);
+      if (user?.id) {
+        markQuickSetupComplete(user.id);
+      }
       await refreshUser();
       setVisible(false);
     } catch (err) {
@@ -121,6 +130,9 @@ export const QuickSetupModal: React.FC = () => {
     setSubmitting(true);
     try {
       await apiService.updatePreferences({});
+      if (user?.id) {
+        markQuickSetupComplete(user.id);
+      }
       await refreshUser();
       setVisible(false);
     } catch (err) {
