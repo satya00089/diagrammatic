@@ -81,6 +81,17 @@ const routes = {
       <p>Start with the basics: goals of system design, core concepts, and common trade-offs.</p>
     `,
   },
+  "/learning-paths/cache-fundamentals": {
+    title: "Cache Fundamentals | Diagrammatic",
+    description:
+      "Learn cache tiers, cache-aside, read-through, write-through, TTLs, eviction, invalidation, cache stampede handling, and CDN boundaries.",
+    keywords:
+      "cache fundamentals, cache aside, read through, write through, write back, cache stampede, cache invalidation, ttl, eviction policy, cdn cache",
+    content: `
+      <h1>Cache Fundamentals</h1>
+      <p>Learn how cache tiers, cache-aside, freshness rules, stampede protection, and CDN boundaries improve performance while keeping systems predictable.</p>
+    `,
+  },
 };
 
 // Check if dist exists
@@ -97,38 +108,72 @@ console.log("🚀 Starting prerendering...\n");
 // Generate HTML for each route
 Object.entries(routes).forEach(([route, data]) => {
   let html = baseHtml;
+  const canonicalUrl =
+    route === "/"
+      ? "https://diagrammatic.next-zen.dev/"
+      : `https://diagrammatic.next-zen.dev${route}`;
 
   // Update title
-  html = html.replace(/<title>.*?<\/title>/, `<title>${data.title}</title>`);
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${data.title}</title>`);
+
+  // Update meta title
+  html = html.replace(
+    /<meta\s+name="title"[\s\S]*?\/>/,
+    `<meta name="title" content="${data.title}" />`,
+  );
 
   // Update meta description
   html = html.replace(
-    /<meta name="description" content=".*?">/,
+    /<meta\s+name="description"[\s\S]*?\/>/,
     `<meta name="description" content="${data.description}">`,
   );
 
   // Update meta keywords
   html = html.replace(
-    /<meta name="keywords" content=".*?">/,
+    /<meta\s+name="keywords"[\s\S]*?\/>/,
     `<meta name="keywords" content="${data.keywords}">`,
   );
 
   // Update OG title
   html = html.replace(
-    /<meta property="og:title" content=".*?">/,
+    /<meta\s+property="og:title"[\s\S]*?\/>/,
     `<meta property="og:title" content="${data.title}">`,
   );
 
   // Update OG description
   html = html.replace(
-    /<meta property="og:description" content=".*?">/,
+    /<meta\s+property="og:description"[\s\S]*?\/>/,
     `<meta property="og:description" content="${data.description}">`,
+  );
+
+  // Update OG URL and canonical URL
+  html = html.replace(
+    /<meta\s+property="og:url"[\s\S]*?\/>/,
+    `<meta property="og:url" content="${canonicalUrl}">`,
+  );
+  html = html.replace(
+    /<link\s+rel="canonical"[\s\S]*?\/>/,
+    `<link rel="canonical" href="${canonicalUrl}" />`,
+  );
+
+  // Update Twitter metadata
+  html = html.replace(
+    /<meta\s+name="twitter:url"[\s\S]*?\/>/,
+    `<meta name="twitter:url" content="${canonicalUrl}" />`,
+  );
+  html = html.replace(
+    /<meta\s+name="twitter:title"[\s\S]*?\/>/,
+    `<meta name="twitter:title" content="${data.title}" />`,
+  );
+  html = html.replace(
+    /<meta\s+name="twitter:description"[\s\S]*?\/>/,
+    `<meta name="twitter:description" content="${data.description}" />`,
   );
 
   // Inject prerendered content into the SEO content div
   html = html.replace(
-    /<div id="seo-content".*?<article>/s,
-    `<div id="seo-content" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"><article>${data.content}`,
+    /<div\s+id="seo-content"[\s\S]*?<article>[\s\S]*?<\/article>/,
+    `<div id="seo-content" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"><article>${data.content}</article>`,
   );
 
   // Determine output path

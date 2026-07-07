@@ -546,6 +546,112 @@
     ]
   },
   {
+    "id": "cache-fundamentals",
+    "slug": "cache-fundamentals",
+    "title": "Cache Fundamentals",
+    "summary": "A short curriculum on cache tiers, cache-aside, freshness, stampede handling, and CDN boundaries.",
+    "difficulty": "Intermediate",
+    "tags": ["cache", "performance", "cdn", "latency"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "cache-what-and-why",
+            "title": "What Caches Do",
+            "type": "article",
+            "content": "# What Caches Do\n\nA cache is a temporary copy of data or a computed result kept close to where it is used. The goal is to avoid repeating expensive work on every request.\n\nCaches help most when the same data is requested repeatedly and the source of truth is slower than memory or the network. They are less useful when every request is unique or when freshness matters more than latency.\n\n## Where caches sit\n\n- Browser cache: keeps assets on the client.\n- CDN cache: serves shared public content from the edge.\n- Application cache: stores computed or fetched values inside a service.\n- Shared cache: lets multiple service instances reuse the same entries.\n\n## What makes a good cache target\n\nA good candidate is expensive, repeatable, and safe to reuse for a short time. Hot keys, repeated lookups, and expensive rendering work are all good examples.\n\n**Next:** Look at the main cache tiers and the most common read path, cache-aside."
+          },
+          {
+            "id": "cache-tiers-and-aside",
+            "title": "Cache Tiers and Cache-Aside",
+            "type": "article",
+            "content": "# Cache Tiers and Cache-Aside\n\nCaches can exist at several layers, and each tier solves a different part of the latency problem. A browser cache avoids downloading the same asset twice. A CDN reduces origin traffic for shared public content. An application cache speeds up repeated work inside the service. A shared cache helps a whole fleet reuse the same results.\n\n## Cache-aside\n\nCache-aside puts the application in charge of the cache. The app checks the cache first. On a miss, it reads from the database or origin, returns the value, and usually stores it in the cache for the next request.\n\nThis pattern is popular because it is simple to reason about and easy to adapt to different data models. The downside is that writes and invalidation stay the app's responsibility.\n\n## When cache-aside works well\n\n- Read-heavy data with repeated lookups.\n- Values that can tolerate a short stale window.\n- Systems where the app already owns invalidation logic.\n\n## When to avoid it\n\n- Data that must be strongly consistent on every read.\n- Workloads where stale data is unacceptable.\n- Cases where the cache layer must hide all lookup complexity from the app.\n\n**Next:** See how read-through, write-through, and write-back differ on the write path."
+          },
+          {
+            "id": "cache-write-patterns",
+            "title": "Read-Through, Write-Through, and Write-Back",
+            "type": "article",
+            "content": "# Read-Through, Write-Through, and Write-Back\n\nDifferent cache patterns move responsibility to different layers.\n\n## Read-through\n\nWith read-through, the cache knows how to fetch missing data itself. The application asks for a value, and the cache loads it from the backing store if needed. This keeps the read path consistent, but it adds more intelligence to the cache layer.\n\n## Write-through\n\nWith write-through, each write goes to the cache and the backing store together. That keeps cached data fresh and makes reads predictable, but it adds write latency because the cache is part of the synchronous path.\n\n## Write-back\n\nWith write-back, the application writes to the cache first and flushes changes to the backing store later. This can be very fast, but it also means the cache becomes part of the durability story. If the cache fails before the flush, data can be lost.\n\n## Picking between them\n\n- Read-through is helpful when you want the cache to own miss handling.\n- Write-through is safer when correctness matters and writes cannot be lost.\n- Write-back is only worth it when latency matters more than the risk of delayed persistence.\n\n**Next:** Learn how TTLs, eviction, and invalidation keep cached data bounded and fresh."
+          },
+          {
+            "id": "cache-ttl-eviction-invalidation",
+            "title": "TTL, Eviction, and Invalidation",
+            "type": "article",
+            "content": "# TTL, Eviction, and Invalidation\n\nA cache needs rules for how long an entry may live and what happens when memory runs out.\n\n## TTL\n\nTTL, or time to live, limits the age of a cached entry. A TTL gives you a freshness boundary even when invalidation is delayed or missed. Short TTLs reduce staleness but increase misses. Long TTLs improve hit rate but can keep bad data around longer.\n\n## Eviction\n\nEviction decides what to remove when the cache is full. Common policies include LRU, LFU, and FIFO.\n\n- LRU is a good general-purpose choice when recent use predicts future use.\n- LFU fits workloads with a small set of very hot entries.\n- FIFO is simple, but it does not adapt as well to real access patterns.\n\n## Invalidation and consistency\n\nInvalidation removes an entry when the source of truth changes. That can happen by deleting the key, updating the value, or versioning the key so old data becomes unreachable.\n\nThe hardest part is consistency. Cache and database updates do not usually happen inside the same atomic transaction, so there is always a small chance of stale reads. Jittered TTLs, versioned keys, and explicit invalidation events reduce the chance of many keys expiring or going stale at once.\n\n**Next:** See the failure modes that show up under load and where CDN boundaries belong."
+          },
+          {
+            "id": "cache-stampede-hot-keys-cdn",
+            "title": "Cache Stampede, Hot Keys, and CDN Boundaries",
+            "type": "article",
+            "content": "# Cache Stampede, Hot Keys, and CDN Boundaries\n\nA cache is not just about speed. It also has to behave well when many callers arrive at the same time.\n\n## Cache stampede\n\nA cache stampede happens when many requests miss or expire together and all try to refresh the same value. The backing store can get overloaded even though the cache is supposed to protect it. Request coalescing, singleflight, soft TTLs, and brief stale-while-revalidate windows help prevent that burst of duplicate work.\n\n## Hot keys\n\nA hot key is one entry that receives a disproportionate amount of traffic. Even if the cache is healthy overall, one key can saturate a shard or node. Splitting the key, adding replication, or serving slightly stale data can reduce the pressure.\n\n## CDN boundaries\n\nA CDN sits at the edge and is best for shared public content such as images, scripts, stylesheets, and other responses that many users can reuse. It is not a general replacement for an application cache.\n\nUse the CDN for content that is public, broadly reusable, and safe to cache across users. Keep personalized responses, sensitive data, and service-specific computed values inside the application or shared backend cache.\n\n## The boundary test\n\nIf the content is shared by many users and changes slowly, think CDN. If the content is computed by the application or depends on user/session state, think application or shared cache.\n\n**Next:** Practice picking the right pattern, size, and cache boundary in short exercises."
+          },
+          {
+            "id": "cache-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\nUse the prompts below to practice sizing, pattern selection, CDN boundaries, and stampede handling.",
+            "exercise": {
+              "assumptions": [
+                "Total catalog items = 1,200,000,000",
+                "Hot fraction = 2%",
+                "Average cached object size = 1.5 KB",
+                "1 GB ~= 1,000,000 KB for rough estimation",
+                "A product catalog is read-heavy and updated occasionally",
+                "CDN is only for shared public content"
+              ],
+              "questions": [
+                {
+                  "id": "cache-q1-sizing",
+                  "prompt": "Estimate the cache size in GB needed to hold the hottest 2% of objects.",
+                  "hint": "Hot objects = total items x hot fraction. Multiply by average object size and convert KB to GB using the rough conversion in the assumptions.",
+                  "answer": {
+                    "type": "numeric",
+                    "value": 36,
+                    "units": "GB",
+                    "tolerance": 0.15
+                  }
+                },
+                {
+                  "id": "cache-q2-pattern",
+                  "prompt": "Which cache pattern fits a read-heavy catalog when the app wants to manage invalidation itself?",
+                  "hint": "The app reads the cache first, then loads from the backing store on a miss.",
+                  "answer": {
+                    "type": "string",
+                    "value": "cache-aside",
+                    "regex": "^cache[- ]aside$"
+                  }
+                },
+                {
+                  "id": "cache-q3-cdn",
+                  "prompt": "A shared product image is requested globally and changes rarely. Which tier should serve it closest to users?",
+                  "hint": "Think about the edge layer that serves shared public assets.",
+                  "answer": {
+                    "type": "string",
+                    "value": "cdn",
+                    "regex": "^(cdn|cdn cache)$"
+                  }
+                },
+                {
+                  "id": "cache-q4-hot-key",
+                  "prompt": "What technique helps prevent duplicate recomputation when many requests hit the same hot key?",
+                  "hint": "You want only one request to refresh the value while others wait or reuse the same work.",
+                  "answer": {
+                    "type": "string",
+                    "value": "request coalescing",
+                    "regex": "^(request coalescing|singleflight|deduplication)$"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "latency-vs-throughput",
     "slug": "latency-vs-throughput",
     "title": "Latency vs Throughput",
