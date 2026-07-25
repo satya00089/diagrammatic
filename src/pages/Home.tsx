@@ -567,6 +567,9 @@ const Home: React.FC = () => {
     },
   ];
 
+  const landingCardClass =
+    "relative overflow-hidden rounded-[1.5rem] border border-theme/10 elevated-card-bg shadow-[0_18px_50px_rgba(0,0,0,0.12)]";
+
   return (
     <>
       <SEO
@@ -1160,7 +1163,7 @@ const Home: React.FC = () => {
                 return (
                   <div
                     key={feature.title}
-                    className={`group relative rounded-xl border border-theme/8 p-5 sm:p-7 hover:shadow-md cursor-pointer overflow-hidden transition-all duration-300 elevated-card-bg ${delay}`}
+                    className={`group ${landingCardClass} p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${delay}`}
                     onClick={() =>
                       handleNavigate(feature.route, feature.requiresAuth)
                     }
@@ -1223,7 +1226,7 @@ const Home: React.FC = () => {
                 return (
                   <div
                     key={capability.title}
-                    className={`group rounded-xl border border-theme/8 p-5 hover:shadow-sm transition-all duration-200 elevated-card-bg ${delay}`}
+                    className={`group ${landingCardClass} p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${delay}`}
                   >
                     <div className="mb-3 text-[var(--brand)]">
                       {capability.icon}
@@ -1261,7 +1264,7 @@ const Home: React.FC = () => {
               {testimonials.map((testimonial) => (
                 <div
                   key={`${testimonial.author}-${testimonial.role}`}
-                  className="group relative rounded-xl border border-theme/8 p-6 hover:shadow-sm transition-all duration-200 elevated-card-bg"
+                  className="group relative overflow-hidden rounded-[1.5rem] border border-theme/10 elevated-card-bg p-6 shadow-[0_18px_50px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   <div className="relative z-10">
                     <p className="text-muted mb-5 leading-relaxed text-sm italic">
@@ -1303,7 +1306,7 @@ const Home: React.FC = () => {
               {useCases.map((useCase) => (
                 <div
                   key={useCase.title}
-                  className="group text-center p-6 rounded-xl hover:elevated-card-bg hover:shadow-sm transition-all duration-200 hover:-translate-y-0.5"
+                  className="group text-center p-6 rounded-[1.5rem] border border-theme/10 elevated-card-bg shadow-[0_18px_50px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
                   role="button"
                   tabIndex={0}
                 >
