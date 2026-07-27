@@ -573,6 +573,8 @@ const SharedCanvasPage: React.FC = () => {
             ? `Check out this system design solution for "${data.title}" on Diagrammatic.`
             : `Check out this interactive diagram "${data.title}" on Diagrammatic.`
         }
+        image="https://diagrammatic.next-zen.dev/og/shared-canvas.png"
+        imageAlt={pageTitle}
       />
 
       <div className="h-screen flex flex-col bg-[var(--bg)] overflow-hidden">

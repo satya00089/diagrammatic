@@ -576,6 +576,8 @@ const Home: React.FC = () => {
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
         description="Master system design with Diagrammatic — an interactive playground featuring 1k+ components and 140+ curated practice problems across cloud, AI/ML, and architecture topics. Free system architecture tool for students, professionals, and educators."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
+        image="https://diagrammatic.next-zen.dev/og/home.png"
+        imageAlt="Diagrammatic homepage preview"
         url="https://diagrammatic.next-zen.dev/"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">

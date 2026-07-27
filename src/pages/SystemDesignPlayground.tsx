@@ -3928,6 +3928,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         title={pageTitle}
         description={pageDescription}
         keywords={`system design playground, ${problem?.title || "free canvas"}, architecture diagram tool, ${problem?.category || "design tool"}`}
+        image="https://diagrammatic.next-zen.dev/og/playground.png"
+        imageAlt={
+          problem?.title
+            ? `${problem.title} playground preview`
+            : "Diagrammatic design playground preview"
+        }
         url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
       />
       <div className="h-screen flex flex-col bg-theme">

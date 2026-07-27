@@ -243,6 +243,8 @@ const Dashboard: React.FC = () => {
         title="System Design & AI/ML Practice Problems | Diagrammatic"
         description="Master system design, AI/ML architectures, and MLOps with 140+ curated problems. Practice infrastructure design, application architecture, machine learning systems, and AIOps with real-world scenarios and interactive diagrams."
         keywords="system design problems, AI ML design problems, machine learning architecture, MLOps, AIOps, recommendation systems, fraud detection, NLP, computer vision, distributed systems, scalable architecture, system design interview prep, infrastructure design, application architecture"
+        image="https://diagrammatic.next-zen.dev/og/problems.png"
+        imageAlt="Diagrammatic practice problems preview"
         url="https://diagrammatic.next-zen.dev/problems"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">

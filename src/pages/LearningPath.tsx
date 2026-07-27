@@ -92,6 +92,8 @@ const LearningPath: React.FC = () => {
           "Deep dive lessons and modules for system design learning."
         }
         keywords="system design learning path, system design module, system architecture lessons"
+        image="https://diagrammatic.next-zen.dev/og/learning-path.png"
+        imageAlt={path?.title ? `${path.title} learning path preview` : "Diagrammatic learning path preview"}
         url={
           slug
             ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}`
