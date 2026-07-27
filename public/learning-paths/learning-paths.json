@@ -652,6 +652,235 @@
     ]
   },
   {
+    "id": "stateless-web-tier",
+    "slug": "stateless-web-tier",
+    "title": "Stateless Web Tier",
+    "summary": "How to move request state out of web servers so the application tier can scale horizontally.",
+    "difficulty": "Intermediate",
+    "tags": ["scalability", "web-tier", "sessions", "multi-dc"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "stateless-web-tier-overview",
+            "title": "Overview: Stateless Web Tier",
+            "type": "article",
+            "content": "# Stateless Web Tier\n\nA stateless web tier is a web/application layer that does not keep user-specific state in memory between requests. Session data, authentication context, and other per-user state move into shared storage so any server can handle any request.\n\nThis matters because it unlocks clean horizontal scaling: you can add, remove, or replace servers without breaking user sessions. It also makes failover and multi-region deployment much easier.\n\n**Next:** Compare the stateful and stateless models side by side."
+          },
+          {
+            "id": "stateless-web-tier-stateful-vs-stateless",
+            "title": "Stateful vs Stateless Architecture",
+            "type": "article",
+            "content": "# Stateful vs Stateless Architecture\n\n## Stateful server\n\nA stateful server remembers client data from one request to the next. In practice, that often means each user must keep hitting the same server so local session data is available. Load balancers can use sticky sessions to make this work, but that adds routing overhead and makes scaling and failover harder.\n\n## Stateless server\n\nA stateless server keeps no client state between requests. Any request can be routed to any server, and the server can fetch what it needs from shared storage. This simplifies autoscaling, replacement, and recovery.\n\n## Trade-offs\n\n- Stateful: simpler local access to session data, but harder to scale and recover.\n- Stateless: easier to scale and operate, but requires a shared state store.\n\n## Practical rule\n\nIf a request can land on any server without breaking the user experience, prefer stateless design."
+          },
+          {
+            "id": "stateless-web-tier-moving-state",
+            "title": "Moving State Out of the Web Tier",
+            "type": "article",
+            "content": "# Moving State Out of the Web Tier\n\nThe goal is to keep user-specific data out of the server process and place it in a shared persistent store. Common choices include a relational database, Redis, Memcached, or a NoSQL system.\n\n## What to move\n\n- Session data\n- Authentication state\n- Per-user preferences that must survive server restarts\n- Other request context that must be shared across servers\n\n## What stays in the web tier\n\n- Temporary request-local variables\n- Pure computation results that do not need to survive the request\n- Ephemeral caches that can be rebuilt safely\n\n## Practical guidance\n\n- Store sessions in shared storage rather than process memory.\n- Keep authentication and request state outside the server instance.\n- Pick the backing store based on access patterns and latency needs.\n\n**Next:** See how statelessness changes load balancing and autoscaling."
+          },
+          {
+            "id": "stateless-web-tier-scaling-and-routing",
+            "title": "Scaling and Load Balancing Impact",
+            "type": "article",
+            "content": "# Scaling and Load Balancing Impact\n\nOnce the web tier is stateless, a load balancer can send any request to any server. That makes round-robin, least-connections, and health-checked routing much simpler.\n\n## Why this helps\n\n- Autoscaling becomes straightforward because new servers do not need copied session state.\n- Server replacement is safer because another server can take over immediately.\n- Failures are less disruptive because the load balancer can stop sending traffic to unhealthy nodes.\n\n## Design note\n\nStatelessness does not remove the need for shared storage. It just moves the state to a place that all servers can reach.\n\n## Practical guidance\n\n- Treat sticky sessions as a workaround, not the long-term architecture.\n- Combine stateless servers with cache and replicated data stores.\n- Keep the request path simple so horizontal scaling stays predictable."
+          },
+          {
+            "id": "stateless-web-tier-multi-dc",
+            "title": "Multi-Data-Center Considerations",
+            "type": "article",
+            "content": "# Multi-Data-Center Considerations\n\nWhen the website grows internationally, a stateless web tier makes it easier to place servers in multiple data centers or regions. Users can be routed to the closest healthy region, while shared state is replicated or centralized in an appropriate data layer.\n\n## What changes\n\n- Better user experience through lower latency\n- Higher availability through regional redundancy\n- Easier failover when one region is unhealthy\n\n## What still needs care\n\n- Data replication and consistency\n- Session durability and recovery\n- Cross-region latency for shared state lookups\n\n## Practical guidance\n\n- Keep the web tier stateless before attempting multi-region deployment.\n- Decide whether state should be replicated globally or kept regional.\n- Plan for disaster recovery and traffic rerouting early."
+          },
+          {
+            "id": "stateless-web-tier-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) Name two problems caused by sticky sessions.\n2) List two kinds of state that should move out of the web tier.\n3) Explain why stateless servers are easier to autoscale.\n4) Describe one reason statelessness helps multi-data-center deployments."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "message-queue",
+    "slug": "message-queue",
+    "title": "Message Queue",
+    "summary": "Producer-consumer decoupling, async workers, delivery semantics, and queue operations.",
+    "difficulty": "Intermediate",
+    "tags": ["queue", "messaging", "async", "workers"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "mq-overview",
+            "title": "Overview: Message Queue",
+            "type": "article",
+            "content": "# Message Queue\n\nA message queue is a durable buffer for asynchronous communication between producers and consumers. Producers publish messages when work is created, and consumers subscribe or poll to process that work later.\n\nThis pattern decouples the sender from the receiver: the producer can keep accepting requests even if workers are busy or temporarily unavailable, and consumers can catch up later. It is a common fit for background jobs, event pipelines, and any task that does not need to complete on the request path.\n\n**Next:** See how queues improve resilience and decoupling."
+          },
+          {
+            "id": "mq-decoupling-and-resilience",
+            "title": "Decoupling and Failure Resilience",
+            "type": "article",
+            "content": "# Decoupling and Failure Resilience\n\nQueues let producers and consumers fail independently. If workers are unavailable, messages remain buffered until capacity returns. If the producer is briefly unavailable, consumers can still drain existing work.\n\n## Why this matters\n\n- Reduces tight coupling between services\n- Smooths traffic spikes by buffering work\n- Keeps user-facing requests fast by pushing slow work off the request path\n\n## Practical guidance\n\n- Use queues for work that can be retried or delayed.\n- Keep queue messages small and self-contained.\n- Design consumers to be idempotent so retries do not create duplicate side effects."
+          },
+          {
+            "id": "mq-photo-processing",
+            "title": "Photo Processing Workers",
+            "type": "article",
+            "content": "# Photo Processing Workers\n\nA classic use case is photo customization. Web servers accept uploads or edit requests, then publish jobs such as crop, sharpen, or blur to a queue. Worker servers consume those jobs and perform the expensive processing asynchronously.\n\n## Scaling behavior\n\n- Add workers when the queue grows and latency increases.\n- Reduce workers when the queue is mostly empty.\n- Scale producers and consumers independently because they are separated by the queue.\n\nThis pattern keeps the web tier responsive while heavy computation happens in the background."
+          },
+          {
+            "id": "mq-delivery-semantics",
+            "title": "Delivery Semantics and Retries",
+            "type": "article",
+            "content": "# Delivery Semantics and Retries\n\nQueues usually trade simplicity for reliability through delivery semantics. Common choices are at-most-once, at-least-once, and exactly-once, though the exact guarantees depend on the broker and application design.\n\n## Operational implications\n\n- At-least-once delivery means duplicate processing is possible, so consumers should be idempotent.\n- Retries should use backoff so failing consumers do not create retry storms.\n- Poison messages should be isolated so one bad payload does not block the whole pipeline.\n\n## Practical guidance\n\n- Make handlers idempotent.\n- Track retries and failures.\n- Use dead-letter queues for messages that cannot be processed safely."
+          },
+          {
+            "id": "mq-operations",
+            "title": "Queue Operations",
+            "type": "article",
+            "content": "# Queue Operations\n\nOperating a message queue is mostly about watching pressure and preventing buildup. Queue depth, consumer lag, error rate, and retry count tell you when the system is falling behind.\n\n## What to monitor\n\n- Queue length and age of the oldest message\n- Consumer throughput and failure rate\n- Dead-letter queue volume\n- Backpressure and publish rate\n\n## Practical guidance\n\n- Add workers when lag increases.\n- Reduce workers when the queue stays empty.\n- Alert on sustained queue growth or repeated consumer failure."
+          },
+          {
+            "id": "mq-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) Explain two reasons a queue improves reliability.\n2) Describe why photo processing is a good queue-based workload.\n3) Name one reason consumers should be idempotent.\n4) List two queue metrics worth alerting on."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "observability-and-automation",
+    "slug": "observability-and-automation",
+    "title": "Logging, Metrics & Automation",
+    "summary": "Operational visibility and automation for growing systems.",
+    "difficulty": "Intermediate",
+    "tags": ["observability", "logging", "metrics", "automation"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "obs-overview",
+            "title": "Overview: Logging, Metrics & Automation",
+            "type": "article",
+            "content": "# Logging, Metrics & Automation\n\nAs a system grows, ad hoc debugging is no longer enough. Logging tells you what happened, metrics tell you how the system is behaving over time, and automation helps you build, test, and deploy changes safely and repeatedly.\n\nThese tools are not optional at scale because the number of servers, failures, and deployment steps grows too large for manual handling.\n\n**Next:** Start with logging, then add metrics and automation."
+          },
+          {
+            "id": "obs-logging",
+            "title": "Logging",
+            "type": "article",
+            "content": "# Logging\n\nLogs capture events, warnings, and errors from each server. At small scale, per-server logs may be enough, but as the fleet grows it becomes much more useful to aggregate them into a centralized service for search, filtering, and retention.\n\n## Practical guidance\n\n- Log errors with enough context to debug the issue.\n- Centralize logs so operators can search across the whole system.\n- Use structured fields when possible so log analysis is easier.\n\nLogging is usually your first line of investigation during incidents."
+          },
+          {
+            "id": "obs-metrics",
+            "title": "Metrics",
+            "type": "article",
+            "content": "# Metrics\n\nMetrics summarize the health of the system over time. Useful examples include host-level metrics such as CPU, memory, and disk I/O, tier-level metrics such as database or cache performance, and business metrics such as daily active users, retention, and revenue.\n\n## Why metrics matter\n\n- They show trends before users feel pain.\n- They support dashboards and alerting.\n- They let teams compare normal load, spikes, and regressions.\n\n## Practical guidance\n\n- Track both infrastructure and business metrics.\n- Watch the health of the whole tier, not only one server.\n- Choose alerts that reflect user impact rather than raw resource noise."
+          },
+          {
+            "id": "obs-automation",
+            "title": "Automation",
+            "type": "article",
+            "content": "# Automation\n\nOnce the system gets large and complex, automation becomes a force multiplier. Continuous integration verifies code changes automatically, while automated build, test, and deploy pipelines reduce human error and speed up delivery.\n\n## Practical guidance\n\n- Verify each check-in through CI.\n- Automate build, test, and deploy steps.\n- Use automation to catch errors early and improve developer productivity.\n\nAutomation makes operations repeatable and safer as the release cadence increases."
+          },
+          {
+            "id": "obs-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) Why are centralized logs useful at scale?\n2) List one host-level metric, one tier-level metric, and one business metric.\n3) What problem does CI solve in a growing system?\n4) Name one build or deploy step that should be automated."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "database-scaling",
+    "slug": "database-scaling",
+    "title": "Database Scaling",
+    "summary": "Vertical scaling, sharding, hot keys, and offloading work from the primary database.",
+    "difficulty": "Intermediate",
+    "tags": ["database", "scaling", "sharding", "nosql"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "db-scaling-overview",
+            "title": "Overview: Database Scaling",
+            "type": "article",
+            "content": "# Database Scaling\n\nAs data and traffic grow, the database tier eventually becomes the bottleneck. Database scaling is the process of adding capacity and reducing contention so the storage layer can keep up with the application.\n\nTwo broad approaches exist: vertical scaling, where you add more resources to one machine, and horizontal scaling, where you add more database servers and partition the workload.\n\n**Next:** Compare scale-up and scale-out strategies."
+          },
+          {
+            "id": "db-vertical-scaling",
+            "title": "Vertical Scaling",
+            "type": "article",
+            "content": "# Vertical Scaling\n\nVertical scaling, or scaling up, means adding CPU, RAM, disk, or faster hardware to an existing database server. It can work well for a while because powerful machines can handle significant load.\n\n## Pros\n\n- Simple to implement\n- No data partitioning required\n- Useful when the workload still fits on one strong machine\n\n## Cons\n\n- Hardware limits eventually appear\n- A single server remains a single point of failure\n- Large machines are expensive\n\nVertical scaling is often the first step, but it does not solve growth forever."
+          },
+          {
+            "id": "db-horizontal-scaling",
+            "title": "Horizontal Scaling and Sharding",
+            "type": "article",
+            "content": "# Horizontal Scaling and Sharding\n\nHorizontal scaling adds more database servers and partitions the workload across shards. The sharding key determines where each record lives and which server handles a given request."
+          },
+          {
+            "id": "db-sharding-challenges",
+            "title": "Sharding Challenges",
+            "type": "article",
+            "content": "# Sharding Challenges\n\nSharding introduces resharding, hotspot keys, and cross-shard query complexity. A good sharding key distributes data evenly and matches the access pattern."
+          },
+          {
+            "id": "db-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) Why does vertical scaling eventually stop working?\n2) What is a sharding key?\n3) Name one problem that sharding introduces."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "millions-of-users-and-beyond",
+    "slug": "millions-of-users-and-beyond",
+    "title": "Millions of Users and Beyond",
+    "summary": "A roadmap for scaling web systems to large audiences and multiple data centers.",
+    "difficulty": "Intermediate",
+    "tags": ["scalability", "cdn", "multi-dc", "monitoring"],
+    "modules": [
+      {
+        "id": "core-concepts",
+        "title": "Core Concepts",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "mub-overview",
+            "title": "Overview: Millions of Users and Beyond",
+            "type": "article",
+            "content": "# Millions of Users and Beyond\n\nScaling to a large audience is an iterative process. Keep the web tier stateless, add redundancy, cache aggressively, support multiple data centers, serve static assets from a CDN, and automate operations as the system grows."
+          },
+          {
+            "id": "mub-exercises",
+            "title": "Exercises",
+            "type": "exercise",
+            "content": "# Exercises\n\n1) Why is statelessness important at scale?\n2) Name one reason redundancy is required at every tier.\n3) What role does CDN play in a large system?\n4) Why do monitoring and automation become essential as usage grows?"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "latency-vs-throughput",
     "slug": "latency-vs-throughput",
     "title": "Latency vs Throughput",
