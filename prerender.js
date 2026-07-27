@@ -51,7 +51,7 @@ const routes = {
       <p>Create unlimited architecture diagrams with 1k+ professional components including AWS, Azure & GCP cloud services. Export in multiple formats. No signup required.</p>
     `,
   },
-  "/#/problems": {
+  "/problems": {
     title: "Practice Problems | Diagrammatic",
     description:
       "Practice system design with 90+ real-world challenges. Get AI-powered feedback and recommendations on your architecture designs. Perfect for FAANG interview preparation.",
@@ -60,6 +60,15 @@ const routes = {
     content: `
       <h1>System Design Practice Problems</h1>
       <p>Practice with 90+ real-world system design challenges. Get instant AI-powered assessment and smart recommendations on your solutions.</p>
+      <section>
+        <h2>Problem categories</h2>
+        <ul>
+          <li>Distributed systems, scaling, and reliability</li>
+          <li>AI / ML and MLOps architecture problems</li>
+          <li>Application and product design scenarios</li>
+          <li>Infrastructure, caching, queues, and search</li>
+        </ul>
+      </section>
     `,
   },
   "/learning-paths": {
@@ -110,8 +119,8 @@ Object.entries(routes).forEach(([route, data]) => {
   let html = baseHtml;
   const canonicalUrl =
     route === "/"
-      ? "https://diagrammatic.next-zen.dev/"
-      : `https://diagrammatic.next-zen.dev${route}`;
+      ? "https://satya00089.github.io/diagrammatic/"
+      : `https://satya00089.github.io/diagrammatic${route}`;
 
   // Update title
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${data.title}</title>`);

@@ -14,4 +14,4 @@ Crawl-delay: 1
 
 # Sitemap
 Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml
-Sitemap: https://satya00089.github.io/diagrammatic/sitemap.xml
+Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml

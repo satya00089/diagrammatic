@@ -57,7 +57,7 @@ const LearningPaths: React.FC = () => {
         title="Learning Paths | Diagrammatic"
         description="Structured learning paths to master system design concepts, modules, and exercises."
         keywords="system design learning path, system design tutorial, learning path"
-        url="/learning-paths"
+        url="https://diagrammatic.next-zen.dev/learning-paths"
       />
 
       <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">

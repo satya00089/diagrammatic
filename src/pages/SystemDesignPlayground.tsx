@@ -3928,7 +3928,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         title={pageTitle}
         description={pageDescription}
         keywords={`system design playground, ${problem?.title || "free canvas"}, architecture diagram tool, ${problem?.category || "design tool"}`}
-        url={`https://satya00089.github.io/diagrammatic/#/playground/${idFromUrl || "free"}`}
+        url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}

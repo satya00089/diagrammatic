@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://satya00089.github.io/diagrammatic",
+  "homepage": "https://diagrammatic.next-zen.dev",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

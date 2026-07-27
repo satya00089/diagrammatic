@@ -159,7 +159,7 @@ const MyDesigns: React.FC = () => {
       <SEO
         title="My Designs | Diagrammatic"
         description="View and manage your saved system design projects and diagrams shared with you"
-        url="https://satya00089.github.io/diagrammatic/#/diagrams"
+        url="https://diagrammatic.next-zen.dev/diagrams"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}

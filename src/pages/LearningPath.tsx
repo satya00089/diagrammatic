@@ -92,7 +92,11 @@ const LearningPath: React.FC = () => {
           "Deep dive lessons and modules for system design learning."
         }
         keywords="system design learning path, system design module, system architecture lessons"
-        url={slug ? `/learning-paths/${slug}` : "/learning-paths"}
+        url={
+          slug
+            ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}`
+            : "https://diagrammatic.next-zen.dev/learning-paths"
+        }
       />
 
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
