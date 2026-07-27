@@ -176,7 +176,7 @@ const MyDesigns: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">
                   Diagrammatic
                 </span>
               </button>

@@ -580,7 +580,7 @@ const SharedCanvasPage: React.FC = () => {
         <header className="flex items-center gap-4 px-4 py-2.5 border-b border-[var(--border)] bg-[var(--surface)] flex-shrink-0 h-12">
           <Link
             to="/"
-            className="font-bold text-sm text-theme hover:opacity-80 transition-opacity"
+            className="text-3xl font-bold text-theme uppercase tracking-wide hover:opacity-80 transition-opacity"
           >
             Diagrammatic
           </Link>
