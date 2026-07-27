@@ -57,7 +57,9 @@ const LearningPaths: React.FC = () => {
         title="Learning Paths | Diagrammatic"
         description="Structured learning paths to master system design concepts, modules, and exercises."
         keywords="system design learning path, system design tutorial, learning path"
-        url="/learning-paths"
+        image="https://diagrammatic.next-zen.dev/og/learning-paths.png"
+        imageAlt="Diagrammatic learning paths preview"
+        url="https://diagrammatic.next-zen.dev/learning-paths"
       />
 
       <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">
@@ -75,7 +77,7 @@ const LearningPaths: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">Diagrammatic</span>
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">Diagrammatic</span>
               </button>
               <div className="flex items-center gap-4">
                 {isAuth && (

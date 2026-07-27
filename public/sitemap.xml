@@ -20,7 +20,7 @@
 
   <!-- Free Playground - High priority entry point -->
   <url>
-    <loc>https://diagrammatic.next-zen.dev/playground/free</loc>
+    <loc>https://diagrammatic.next-zen.dev/#/playground/free</loc>
     <lastmod>2025-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
@@ -36,7 +36,7 @@
 
   <!-- My Designs - User Dashboard -->
   <url>
-    <loc>https://diagrammatic.next-zen.dev/diagrams</loc>
+    <loc>https://diagrammatic.next-zen.dev/#/diagrams</loc>
     <lastmod>2025-11-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -44,7 +44,7 @@
 
   <!-- Create Problem - Content Creation -->
   <url>
-    <loc>https://diagrammatic.next-zen.dev/create-problem</loc>
+    <loc>https://diagrammatic.next-zen.dev/#/create-problem</loc>
     <lastmod>2025-11-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

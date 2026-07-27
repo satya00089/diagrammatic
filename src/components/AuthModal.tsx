@@ -210,9 +210,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <p className="text-muted mb-6">
               {mode === "login"
-                ? "Sign in to save and manage your designs"
-                : "Create an account to start saving your work"}
+                ? "Sign in to save, sync, and share your diagrams across devices"
+                : "Create an account to save your work, sync it across devices, and unlock sharing"}
             </p>
+
+            <div className="mb-6 rounded-xl border border-theme/10 bg-[var(--bg-hover)]/60 px-4 py-3 text-sm text-muted">
+              Signing in enables cloud saves, shared diagrams, and collaboration-ready workflows.
+            </div>
 
             {/* Error message */}
             {error && (

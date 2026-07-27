@@ -23,6 +23,8 @@ const routes = {
       "Master system design with Diagrammatic - an interactive playground featuring 1k+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and 90+ practice problems. Free system architecture tool for students, professionals, and educators.",
     keywords:
       "system design, architecture diagram, system design interview, software architecture, distributed systems, AWS architecture, Azure architecture, GCP architecture, cloud design, ER diagram, UML diagram",
+    image: "https://diagrammatic.next-zen.dev/og/home.png",
+    imageAlt: "Diagrammatic homepage preview",
     content: `
       <h1>Diagrammatic - Interactive System Design Playground</h1>
       <p>Master system design with our interactive playground. Learn to design scalable, production-ready architectures with cloud provider support.</p>
@@ -46,20 +48,33 @@ const routes = {
       "Create unlimited system architecture diagrams for free. 1k+ components including AWS, Azure, GCP cloud components, load balancers, databases, caches, queues, and more. Export as PNG, JPEG, SVG, JSON, or XML. No signup required.",
     keywords:
       "free system design tool, architecture diagram maker, cloud architecture, microservices design, AWS diagram, Azure diagram, GCP diagram, ER diagram, UML diagram",
+    image: "https://diagrammatic.next-zen.dev/og/playground.png",
+    imageAlt: "Diagrammatic design playground preview",
     content: `
       <h1>Free Design Studio</h1>
       <p>Create unlimited architecture diagrams with 1k+ professional components including AWS, Azure & GCP cloud services. Export in multiple formats. No signup required.</p>
     `,
   },
-  "/#/problems": {
+  "/problems": {
     title: "Practice Problems | Diagrammatic",
     description:
       "Practice system design with 90+ real-world challenges. Get AI-powered feedback and recommendations on your architecture designs. Perfect for FAANG interview preparation.",
     keywords:
       "system design interview, system design practice, distributed systems problems, scalable architecture, FAANG interview, tech interview prep",
+    image: "https://diagrammatic.next-zen.dev/og/problems.png",
+    imageAlt: "Diagrammatic practice problems preview",
     content: `
       <h1>System Design Practice Problems</h1>
       <p>Practice with 90+ real-world system design challenges. Get instant AI-powered assessment and smart recommendations on your solutions.</p>
+      <section>
+        <h2>Problem categories</h2>
+        <ul>
+          <li>Distributed systems, scaling, and reliability</li>
+          <li>AI / ML and MLOps architecture problems</li>
+          <li>Application and product design scenarios</li>
+          <li>Infrastructure, caching, queues, and search</li>
+        </ul>
+      </section>
     `,
   },
   "/learning-paths": {
@@ -67,6 +82,8 @@ const routes = {
     description:
       "Structured learning paths that guide you through system design concepts, examples, and exercises.",
     keywords: "system design learning path, system design tutorial, system architecture learning",
+    image: "https://diagrammatic.next-zen.dev/og/learning-paths.png",
+    imageAlt: "Diagrammatic learning paths preview",
     content: `
       <h1>Learning Paths</h1>
       <p>Follow curated learning paths that teach system design from first principles through practical examples.</p>
@@ -76,6 +93,8 @@ const routes = {
     title: "System Design Foundations | Diagrammatic",
     description: "Introductory path: What is System Design and key trade-offs to consider.",
     keywords: "what is system design, system design foundations, scalability, reliability",
+    image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
+    imageAlt: "System Design Foundations learning path preview",
     content: `
       <h1>System Design Foundations</h1>
       <p>Start with the basics: goals of system design, core concepts, and common trade-offs.</p>
@@ -87,6 +106,8 @@ const routes = {
       "Learn cache tiers, cache-aside, read-through, write-through, TTLs, eviction, invalidation, cache stampede handling, and CDN boundaries.",
     keywords:
       "cache fundamentals, cache aside, read through, write through, write back, cache stampede, cache invalidation, ttl, eviction policy, cdn cache",
+    image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
+    imageAlt: "Cache Fundamentals learning path preview",
     content: `
       <h1>Cache Fundamentals</h1>
       <p>Learn how cache tiers, cache-aside, freshness rules, stampede protection, and CDN boundaries improve performance while keeping systems predictable.</p>
@@ -146,6 +167,16 @@ Object.entries(routes).forEach(([route, data]) => {
     `<meta property="og:description" content="${data.description}">`,
   );
 
+  // Update OG image metadata
+  html = html.replace(
+    /<meta\s+property="og:image"[\s\S]*?\/>/,
+    `<meta property="og:image" content="${data.image}">`,
+  );
+  html = html.replace(
+    /<meta\s+property="og:image:alt"[\s\S]*?\/>/,
+    `<meta property="og:image:alt" content="${data.imageAlt || data.title}">`,
+  );
+
   // Update OG URL and canonical URL
   html = html.replace(
     /<meta\s+property="og:url"[\s\S]*?\/>/,
@@ -168,6 +199,14 @@ Object.entries(routes).forEach(([route, data]) => {
   html = html.replace(
     /<meta\s+name="twitter:description"[\s\S]*?\/>/,
     `<meta name="twitter:description" content="${data.description}" />`,
+  );
+  html = html.replace(
+    /<meta\s+name="twitter:image"[\s\S]*?\/>/,
+    `<meta name="twitter:image" content="${data.image}" />`,
+  );
+  html = html.replace(
+    /<meta\s+name="twitter:image:alt"[\s\S]*?\/>/,
+    `<meta name="twitter:image:alt" content="${data.imageAlt || data.title}" />`,
   );
 
   // Inject prerendered content into the SEO content div

@@ -576,7 +576,9 @@ const Home: React.FC = () => {
         title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
         description="Master system design with Diagrammatic — an interactive playground featuring 1k+ components and 140+ curated practice problems across cloud, AI/ML, and architecture topics. Free system architecture tool for students, professionals, and educators."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
-        url="https://satya00089.github.io/diagrammatic/"
+        image="https://diagrammatic.next-zen.dev/og/home.png"
+        imageAlt="Diagrammatic homepage preview"
+        url="https://diagrammatic.next-zen.dev/"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
@@ -606,7 +608,7 @@ const Home: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">
                   Diagrammatic
                 </span>
               </button>
@@ -793,14 +795,14 @@ const Home: React.FC = () => {
                     <span className="text-green-400 animate-pulse text-base sm:text-xl">
                       ●
                     </span>
-                    <span>{" 1,000+ components"}</span>
+                    <span>{" Practice system design in one workspace"}</span>
                     <span className="hidden sm:inline">
-                      {" · AWS, Azure & GCP · AI assessment"}
+                      {" · 1K+ components · AI feedback"}
                     </span>
                   </span>
                 </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight text-white">
-                  System Design
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold uppercase mb-6 leading-tight tracking-wide text-white">
+                  System design
                   <br />
                   <span className="text-white/85 inline-block">
                     {displayedText}
@@ -808,9 +810,9 @@ const Home: React.FC = () => {
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base lg:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
-                  The interactive playground for system design, ER diagrams, and
-                  UML — featuring AWS, Azure & GCP cloud components, cloud
-                  infrastructure problems, and AI-powered assessment
+                  Learn system architecture, sketch diagrams, and practice
+                  interview problems in one focused playground with cloud
+                  components, ER support, and AI-powered assessment.
                 </p>
 
                 {/* Stats Bar */}
@@ -854,7 +856,7 @@ const Home: React.FC = () => {
                     onClick={() => handleNavigate("/playground/free")}
                     className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-lg cursor-pointer btn-shimmer"
                   >
-                    Design Studio →
+                    Start Designing →
                   </button>
                   <button
                     type="button"
@@ -862,13 +864,13 @@ const Home: React.FC = () => {
                     onClick={() => handleNavigate("/problems", false)}
                     className="px-7 py-3.5 bg-white/10 border border-white/25 text-white/85 text-base font-medium rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
                   >
-                    Explore Problems →
+                    Practice Problems →
                   </button>
                 </div>
 
-                <p className="mt-5 text-xs text-white/65">
-                  Trusted by 1000+ developers · AI-powered feedback · Open
-                  source
+                <p className="mt-5 text-xs text-white/65 max-w-xl mx-auto">
+                  Start with practice or a blank canvas. Sign in when you want
+                  to save, sync, or share your work.
                 </p>
               </div>
             </div>
@@ -1293,11 +1295,11 @@ const Home: React.FC = () => {
         {/* Use Cases */}
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-            <h2
-              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
-              data-reveal
-            >
-              Perfect For Every Role
+              <h2
+                className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
+                data-reveal
+              >
+              Built for learners and builders
             </h2>
             <div
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10"
@@ -1347,9 +1349,9 @@ const Home: React.FC = () => {
                     Let&apos;s build from here
                   </h2>
                   <p className="mt-5 max-w-xl text-base sm:text-lg leading-relaxed text-white/82">
-                    Harnessed for productivity. Designed for collaboration.
-                    Celebrated for built-in security. Welcome to the platform
-                    developers love.
+                    Practice system design, map architectures, and turn ideas
+                    into diagrams with a focused workspace that keeps the core
+                    workflow simple.
                   </p>
                 </div>
 
@@ -1360,7 +1362,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded border px-8 font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer"
                     >
-                      Explore Problems
+                      Browse Problems
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>
@@ -1370,7 +1372,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
                     >
-                      Design Studio
+                      Open Design Studio
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>

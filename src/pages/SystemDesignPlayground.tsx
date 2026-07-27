@@ -3928,7 +3928,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         title={pageTitle}
         description={pageDescription}
         keywords={`system design playground, ${problem?.title || "free canvas"}, architecture diagram tool, ${problem?.category || "design tool"}`}
-        url={`https://satya00089.github.io/diagrammatic/#/playground/${idFromUrl || "free"}`}
+        image="https://diagrammatic.next-zen.dev/og/playground.png"
+        imageAlt={
+          problem?.title
+            ? `${problem.title} playground preview`
+            : "Diagrammatic design playground preview"
+        }
+        url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}
@@ -3947,7 +3953,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     alt="Logo"
                     className="h-8 transition-transform group-hover:scale-110 duration-300"
                   />
-                  <span className="text-lg font-bold text-white">
+                  <span className="text-3xl font-bold text-white uppercase tracking-wide">
                     Diagrammatic
                   </span>
                 </button>

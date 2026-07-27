@@ -33,10 +33,12 @@ Practice system design interviews, learn distributed systems architecture, and c
 - 🖼️ **Export Diagrams** - Save your designs as PNG, JPEG, or SVG images
 - � **Export/Import** - Export as JSON or XML/DrawIO format for sharing and backup
 - �📊 **Inspector Panel** - Configure component properties in real-time
-- 🔐 **Authentication** - Optional Google Sign-In or email/password authentication
+- 🔐 **Authentication** - Optional Google Sign-In or email/password authentication for saving, syncing, and sharing diagrams
 - ☁️ **Cloud Storage** - Save and load diagrams to the cloud (requires backend setup)
 - 🔗 **Share Designs** - Share your designs via compressed URLs
 - ⚡ **Modern Tech Stack** - React 19 + TypeScript + Tailwind CSS 4 + Framer Motion
+
+Note: collaboration, AI-assisted suggestions, and other beta capabilities are clearly labeled in the app and may require backend setup.
 
 ## 🆕 What's New (v1.1.0 — 2026-05-05)
 

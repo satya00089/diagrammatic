@@ -92,7 +92,13 @@ const LearningPath: React.FC = () => {
           "Deep dive lessons and modules for system design learning."
         }
         keywords="system design learning path, system design module, system architecture lessons"
-        url={slug ? `/learning-paths/${slug}` : "/learning-paths"}
+        image="https://diagrammatic.next-zen.dev/og/learning-path.png"
+        imageAlt={path?.title ? `${path.title} learning path preview` : "Diagrammatic learning path preview"}
+        url={
+          slug
+            ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}`
+            : "https://diagrammatic.next-zen.dev/learning-paths"
+        }
       />
 
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
@@ -113,7 +119,7 @@ const LearningPath: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">
                   Diagrammatic
                 </span>
               </button>

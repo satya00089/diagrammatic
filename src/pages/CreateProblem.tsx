@@ -110,7 +110,9 @@ const CreateProblem: React.FC = () => {
         title="Create Custom System Design Problem | Diagrammatic"
         description="Create and share custom system design problems with your students or team. Define requirements, constraints, and evaluation criteria for personalized learning experiences."
         keywords="create system design problem, custom architecture challenge, teaching system design, system design assignment creator"
-        url="https://satya00089.github.io/diagrammatic/#/create-problem"
+        image="https://diagrammatic.next-zen.dev/og/create-problem.png"
+        imageAlt="Diagrammatic custom problem creation preview"
+        url="https://diagrammatic.next-zen.dev/create-problem"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
@@ -127,7 +129,7 @@ const CreateProblem: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">
                   Diagrammatic
                 </span>
               </button>

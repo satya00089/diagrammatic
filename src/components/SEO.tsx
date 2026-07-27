@@ -5,6 +5,7 @@ interface SEOProps {
   description?: string;
   keywords?: string;
   image?: string;
+  imageAlt?: string;
   url?: string;
   type?: string;
 }
@@ -16,8 +17,9 @@ const DEFAULT_SEO = {
     "Master system design with Diagrammatic - an interactive playground featuring 1k+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators.",
   keywords:
     "system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture",
-  image: "https://satya00089.github.io/diagrammatic/logo.png",
-  url: "https://satya00089.github.io/diagrammatic/",
+  image: "https://diagrammatic.next-zen.dev/og/home.png",
+  imageAlt: "Diagrammatic homepage preview",
+  url: "https://diagrammatic.next-zen.dev/",
   type: "website",
 };
 
@@ -26,6 +28,7 @@ export const SEO: React.FC<SEOProps> = ({
   description,
   keywords,
   image,
+  imageAlt,
   url,
   type = "website",
 }) => {
@@ -66,6 +69,11 @@ export const SEO: React.FC<SEOProps> = ({
       true,
     );
     updateMetaTag("og:image", image || DEFAULT_SEO.image, true);
+    updateMetaTag(
+      "og:image:alt",
+      imageAlt || title || DEFAULT_SEO.title,
+      true,
+    );
     updateMetaTag("og:url", url || DEFAULT_SEO.url, true);
     updateMetaTag("og:type", type, true);
 
@@ -76,6 +84,10 @@ export const SEO: React.FC<SEOProps> = ({
       description || DEFAULT_SEO.description,
     );
     updateMetaTag("twitter:image", image || DEFAULT_SEO.image);
+    updateMetaTag(
+      "twitter:image:alt",
+      imageAlt || title || DEFAULT_SEO.title,
+    );
     updateMetaTag("twitter:url", url || DEFAULT_SEO.url);
 
     // Update canonical link
@@ -90,7 +102,7 @@ export const SEO: React.FC<SEOProps> = ({
       canonical.href = url || DEFAULT_SEO.url;
       document.head.appendChild(canonical);
     }
-  }, [title, description, keywords, image, url, type]);
+  }, [title, description, keywords, image, imageAlt, url, type]);
 
   return null;
 };

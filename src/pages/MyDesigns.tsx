@@ -159,7 +159,9 @@ const MyDesigns: React.FC = () => {
       <SEO
         title="My Designs | Diagrammatic"
         description="View and manage your saved system design projects and diagrams shared with you"
-        url="https://satya00089.github.io/diagrammatic/#/diagrams"
+        image="https://diagrammatic.next-zen.dev/og/diagrams.png"
+        imageAlt="Diagrammatic saved designs preview"
+        url="https://diagrammatic.next-zen.dev/diagrams"
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
@@ -176,7 +178,7 @@ const MyDesigns: React.FC = () => {
                   alt="Logo"
                   className="h-10 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-xl font-bold text-white">
+                <span className="text-3xl font-bold text-white uppercase tracking-wide">
                   Diagrammatic
                 </span>
               </button>
