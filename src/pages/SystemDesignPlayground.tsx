@@ -3938,22 +3938,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}
-        <header className="bg-[var(--brand)] shadow-lg overflow-visible">
+        <header className="bg-[var(--brand)] shadow-md overflow-visible">
           <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
-            <div className="flex items-center justify-between h-12 overflow-visible">
+            <div className="flex items-center justify-between h-14 overflow-visible">
               {/* Left side - Logo and Title */}
               <div className="flex items-center space-x-4">
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex items-center space-x-3 group cursor-pointer"
+                  className="flex items-center gap-2.5 group cursor-pointer"
                 >
                   <img
                     src="/logo.png"
                     alt="Logo"
-                    className="h-8 transition-transform group-hover:scale-110 duration-300"
+                    className="h-7 transition-transform group-hover:scale-110 duration-300"
                   />
-                  <span className="text-3xl font-bold text-white uppercase tracking-wide">
+                  <span className="text-lg font-bold text-white tracking-wide leading-none">
                     Diagrammatic
                   </span>
                 </button>
