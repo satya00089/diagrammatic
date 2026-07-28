@@ -474,7 +474,7 @@ export default function ComponentPalette({
               )}
             </div>
 
-            <div className="space-y-1 flex-1 overflow-y-auto">
+            <div className="space-y-1 flex-1 overflow-y-auto component-palette">
               {groupedByProvider.size === 0 ? (
                 <div className="text-center py-8 text-muted text-sm">
                   No components found
