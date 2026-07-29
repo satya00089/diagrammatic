@@ -5,14 +5,24 @@ import type { UserIntent } from "../types/chatBot";
 interface ProjectIntentDialogProps {
   onSubmit: (intent: UserIntent) => void;
   onSkip: () => void;
+  initialTitle?: string;
+  initialDescription?: string;
+  heading?: string;
+  subheading?: string;
+  submitLabel?: string;
 }
 
 export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
   onSubmit,
   onSkip,
+  initialTitle = "",
+  initialDescription = "",
+  heading = "🎨 What are you designing today?",
+  subheading = "Help us provide better suggestions by sharing what you're building",
+  submitLabel = "Continue",
 }) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,12 +47,8 @@ export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className="px-6 py-4 border-b border-theme/10">
-            <h2 className="text-xl font-bold text-theme">
-              🎨 What are you designing today?
-            </h2>
-            <p className="text-sm text-muted mt-1">
-              Help us provide better suggestions by sharing what you're building
-            </p>
+            <h2 className="text-xl font-bold text-theme">{heading}</h2>
+            <p className="text-sm text-muted mt-1">{subheading}</p>
           </div>
 
           {/* Content */}
@@ -110,10 +116,10 @@ export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium bg-accent hover:brightness-90 
+              className="px-4 py-2 text-sm font-medium bg-accent hover:brightness-90
                 text-white rounded-md transition-all"
             >
-              Continue
+              {submitLabel}
             </button>
           </div>
         </form>

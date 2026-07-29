@@ -139,6 +139,16 @@ import CustomPropertyInput, {
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
 
+// Persists the user's "Skip for now" / submit choice on the project intent
+// dialog so it doesn't reappear after a remount or after the canvas briefly
+// goes non-blank and back (e.g. add then delete a node).
+const PROJECT_INTENT_DISMISSED_KEY = "diagrammatic:projectIntentDismissed";
+
+// Persists that the user dismissed the "Save Your Design" prompt for the
+// current unsaved diagram, so navigating away and back (which remounts this
+// component and resets the in-memory ref) doesn't re-prompt on every change.
+const SAVE_DIALOG_DISMISSED_KEY = "diagrammatic:saveDialogDismissed";
+
 interface SystemDesignPlaygroundProps {
   problem?: SystemDesignProblem | null;
   onBack?: () => void;
@@ -385,8 +395,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Title/Description dialog state for first save
   const [showTitleDialog, setShowTitleDialog] = useState(false);
-  const [dialogTitle, setDialogTitle] = useState("");
-  const [dialogDescription, setDialogDescription] = useState("");
 
   // Sharing state
   const [showShareModal, setShowShareModal] = useState(false);
@@ -687,7 +695,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       const isBlankCanvas =
         !currentDiagramId && !diagramIdFromUrl && nodes.length === 0;
 
-      if (isBlankCanvas && !hasShownProjectIntentRef.current) {
+      const alreadyDismissed =
+        localStorage.getItem(PROJECT_INTENT_DISMISSED_KEY) === "true";
+
+      if (
+        isBlankCanvas &&
+        !hasShownProjectIntentRef.current &&
+        !alreadyDismissed
+      ) {
         // Reset chat bot for fresh start on blank canvas
         resetChatBot();
 
@@ -861,7 +876,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           !userIntent?.title &&
           !userIntent?.description
         ) {
-          if (!userDeclinedSaveRef.current) {
+          const saveDialogDismissed =
+            localStorage.getItem(SAVE_DIALOG_DISMISSED_KEY) === "true";
+
+          if (!userDeclinedSaveRef.current && !saveDialogDismissed) {
             // No user intent - prompt for title and description (first time only)
             setShowTitleDialog(true);
             setAutoSaveStatus("idle");
@@ -977,17 +995,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }, 0);
   }, [canvasState, setNodes, setEdges]);
 
-  // Pre-populate dialog with user intent when it opens
-  useEffect(() => {
-    if (showTitleDialog && userIntent) {
-      if (userIntent.title && !dialogTitle) {
-        setDialogTitle(userIntent.title);
-      }
-      if (userIntent.description && !dialogDescription) {
-        setDialogDescription(userIntent.description);
-      }
-    }
-  }, [showTitleDialog, userIntent, dialogTitle, dialogDescription]);
 
   // Timer effect - runs continuously every second (only for problems, not free mode)
   useEffect(() => {
@@ -3365,6 +3372,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         // Free mode: clear last-diagram key from localStorage
         const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
         localStorage.removeItem(lastDiagramKey);
+        // Starting a fresh blank canvas — let the intent/save prompts show again
+        localStorage.removeItem(PROJECT_INTENT_DISMISSED_KEY);
+        localStorage.removeItem(SAVE_DIALOG_DISMISSED_KEY);
+        userDeclinedSaveRef.current = false;
       } else if (idFromUrl && idFromUrl !== "free") {
         // Problem attempt: delete saved attempt on server (requires auth)
         if (isAuthenticated) {
@@ -3657,24 +3668,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const handleProjectIntentSubmit = (intent: UserIntent) => {
     setUserIntent(intent);
     setShowProjectIntentDialog(false);
+    localStorage.setItem(PROJECT_INTENT_DISMISSED_KEY, "true");
     toast.success("Great! I'll provide suggestions based on your project.");
   };
 
   const handleProjectIntentSkip = () => {
     setShowProjectIntentDialog(false);
+    localStorage.setItem(PROJECT_INTENT_DISMISSED_KEY, "true");
   };
 
   // Handle title dialog confirmation
-  const handleTitleDialogConfirm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dialogTitle.trim()) return;
+  const handleTitleDialogConfirm = async (intent: UserIntent) => {
+    if (!intent.title.trim()) return;
 
     try {
       setAutoSaveStatus("saving");
 
       const diagramData = {
-        title: dialogTitle.trim(),
-        description: dialogDescription.trim() || undefined,
+        title: intent.title.trim(),
+        description: intent.description.trim() || undefined,
         nodes,
         edges,
       };
@@ -3690,8 +3702,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       setAutoSaveStatus("saved");
       setLastSavedAt(new Date());
       setShowTitleDialog(false);
-      setDialogTitle("");
-      setDialogDescription("");
 
       toast.success("Design saved successfully!");
     } catch (error) {
@@ -3703,15 +3713,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const handleTitleDialogCancel = () => {
     userDeclinedSaveRef.current = true; // Stop auto-prompting; user can click Save when ready
+    localStorage.setItem(SAVE_DIALOG_DISMISSED_KEY, "true");
     setShowTitleDialog(false);
     setAutoSaveStatus("idle");
-    setDialogTitle("");
-    setDialogDescription("");
   };
 
   // Explicitly triggered save — resets the declined flag and opens the dialog
   const handleManualSave = () => {
     userDeclinedSaveRef.current = false;
+    localStorage.removeItem(SAVE_DIALOG_DISMISSED_KEY);
     setShowTitleDialog(true);
   };
 
@@ -4630,75 +4640,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           />
         )}
 
-        {/* Title and Description Dialog */}
+        {/* Save Design Dialog (reuses ProjectIntentDialog) */}
         {showTitleDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-surface rounded-lg shadow-xl border border-theme/10 w-full max-w-md mx-4">
-              <form onSubmit={handleTitleDialogConfirm}>
-                {/* Header */}
-                <div className="px-6 py-4 border-b border-theme/10">
-                  <h2 className="text-lg font-semibold text-theme">
-                    Save Your Design
-                  </h2>
-                </div>
-
-                {/* Content */}
-                <div className="px-6 py-4 space-y-4">
-                  <div>
-                    <label
-                      htmlFor="title-input"
-                      className="block text-sm font-medium text-theme mb-2"
-                    >
-                      Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="title-input"
-                      type="text"
-                      value={dialogTitle}
-                      onChange={(e) => setDialogTitle(e.target.value)}
-                      placeholder="Enter a title for your design"
-                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="description-input"
-                      className="block text-sm font-medium text-theme mb-2"
-                    >
-                      Description
-                    </label>
-                    <textarea
-                      id="description-input"
-                      value={dialogDescription}
-                      onChange={(e) => setDialogDescription(e.target.value)}
-                      placeholder="Describe your design (optional)"
-                      className="w-full px-3 py-2 border border-theme/20 rounded-md focus:outline-none focus:ring-2 focus:ring-accent/50 bg-theme text-theme resize-none"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-theme/10 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={handleTitleDialogCancel}
-                    className="px-4 py-2 text-sm font-medium text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!dialogTitle.trim()}
-                    className="px-4 py-2 text-sm font-medium bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Save Design
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <ProjectIntentDialog
+            onSubmit={handleTitleDialogConfirm}
+            onSkip={handleTitleDialogCancel}
+            initialTitle={userIntent?.title}
+            initialDescription={userIntent?.description}
+            heading="Save Your Design"
+            subheading="Give your design a title so you can find it again later"
+            submitLabel="Save Design"
+          />
         )}
 
         {/* Share Design Modal */}
