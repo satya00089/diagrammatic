@@ -127,9 +127,9 @@ const CreateProblem: React.FC = () => {
                 <img
                   src="/logo.png"
                   alt="Logo"
-                  className="h-10 transition-transform group-hover:scale-110 duration-300"
+                  className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-3xl font-bold text-white uppercase tracking-wide">
+                <span className="text-lg font-bold text-white tracking-wide leading-none">
                   Diagrammatic
                 </span>
               </button>
