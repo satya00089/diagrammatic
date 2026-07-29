@@ -77,7 +77,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({
       {/* Chat Bot Icon */}
       <motion.button
         onClick={toggleChatBot}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[var(--brand)]
+        className="fixed bottom-4 right-4 w-14 h-14 bg-[var(--brand)]/70 hover:bg-[var(--brand)]
           text-white rounded-full shadow-lg flex items-center justify-center
           z-50 transition-all hover:shadow-xl"
         whileHover={{ scale: 1.05 }}
@@ -103,7 +103,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
-            className="fixed bottom-20 right-6 w-88 max-h-[560px]
+            className="fixed bottom-20 right-4 w-88 max-h-[560px]
               bg-[var(--surface)] rounded-xl shadow-xl
               border border-theme/10
               flex flex-col z-50 overflow-hidden"

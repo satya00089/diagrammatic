@@ -12,6 +12,8 @@ import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import { FieldWrapper } from "./AnimatedFieldBase";
 import { useFocus } from "./useFocus";
+import { useAudioTranscription } from "./useAudioTranscription";
+import MicLevelVisualizer from "./MicLevelVisualizer";
 import {
   MdFormatAlignLeft,
   MdFormatAlignCenter,
@@ -25,6 +27,9 @@ import {
   MdCode,
   MdFullscreen,
   MdFullscreenExit,
+  MdMic,
+  MdClose,
+  MdStop,
 } from "react-icons/md";
 
 export interface AnimatedTextareaProps {
@@ -190,6 +195,20 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
     editor.setEditable(!disabled);
   }, [value, disabled, editor]);
 
+  const {
+    isRecording,
+    isTranscribing,
+    error: transcriptionError,
+    micAnalyser,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useAudioTranscription({
+    onTranscript: (text) => {
+      editor?.chain().focus().insertContent(text).run();
+    },
+  });
+
   // Handle ESC key to exit fullscreen
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -300,6 +319,13 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
 
   const utilityButtons = [
     {
+      key: "mic",
+      title: "Record voice input",
+      onClick: startRecording,
+      active: false,
+      node: <MdMic size={16} />,
+    },
+    {
       key: "fullscreen",
       title: isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen",
       onClick: toggleFullscreen,
@@ -311,6 +337,32 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
       ),
     },
   ];
+
+  const isRecordingOrTranscribing = isRecording || isTranscribing;
+
+  const recordingBar = (
+    <div className="flex flex-1 min-w-0 items-center gap-2 py-0.5">
+      <ToolbarButton
+        onClick={cancelRecording}
+        disabled={isTranscribing}
+        title="Cancel recording"
+      >
+        <MdClose size={16} />
+      </ToolbarButton>
+      <div className="flex-1 min-w-0">
+        {isRecording ? (
+          <MicLevelVisualizer analyser={micAnalyser} active={isRecording} />
+        ) : (
+          <span className="px-1 text-xs text-muted">Transcribing…</span>
+        )}
+      </div>
+      {isRecording && (
+        <ToolbarButton onClick={stopRecording} active title="Stop and transcribe">
+          <MdStop size={16} />
+        </ToolbarButton>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -334,47 +386,58 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
             <div className="flex items-center gap-2 mr-4">
               {label && <span className="font-medium text-theme">{label}</span>}
             </div>
-            <HeadingSelect editor={editor} disabled={disabled} />
+            {isRecordingOrTranscribing ? (
+              recordingBar
+            ) : (
+              <>
+                <HeadingSelect editor={editor} disabled={disabled} />
 
-            {inlineButtons.map((b) => (
-              <ToolbarButton
-                key={b.key}
-                onClick={b.onClick}
-                disabled={disabled}
-                active={b.active}
-                title={b.title}
-              >
-                {b.node}
-              </ToolbarButton>
-            ))}
+                {inlineButtons.map((b) => (
+                  <ToolbarButton
+                    key={b.key}
+                    onClick={b.onClick}
+                    disabled={disabled}
+                    active={b.active}
+                    title={b.title}
+                  >
+                    {b.node}
+                  </ToolbarButton>
+                ))}
 
-            {alignmentButtons.map((b) => (
-              <ToolbarButton
-                key={b.key}
-                onClick={b.onClick}
-                disabled={disabled}
-                active={b.active}
-                title={b.title}
-              >
-                {b.node}
-              </ToolbarButton>
-            ))}
+                {alignmentButtons.map((b) => (
+                  <ToolbarButton
+                    key={b.key}
+                    onClick={b.onClick}
+                    disabled={disabled}
+                    active={b.active}
+                    title={b.title}
+                  >
+                    {b.node}
+                  </ToolbarButton>
+                ))}
 
-            {/* Separator */}
-            <div className="w-px h-6 bg-[var(--border)] mx-1" />
+                {/* Separator */}
+                <div className="w-px h-6 bg-[var(--border)] mx-1" />
 
-            {utilityButtons.map((b) => (
-              <ToolbarButton
-                key={b.key}
-                onClick={b.onClick}
-                disabled={disabled}
-                active={b.active}
-                title={b.title}
-              >
-                {b.node}
-              </ToolbarButton>
-            ))}
+                {utilityButtons.map((b) => (
+                  <ToolbarButton
+                    key={b.key}
+                    onClick={b.onClick}
+                    disabled={disabled}
+                    active={b.active}
+                    title={b.title}
+                  >
+                    {b.node}
+                  </ToolbarButton>
+                ))}
+              </>
+            )}
           </div>
+          {transcriptionError && (
+            <div className="px-2 pt-1 text-xs text-red-500 shrink-0">
+              {transcriptionError}
+            </div>
+          )}
 
           {/* Fullscreen Content */}
           <div className="flex-1 overflow-hidden">
@@ -407,47 +470,58 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
           >
             {/* Normal Toolbar */}
             <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-1 text-sm">
-              <HeadingSelect editor={editor} disabled={disabled} />
+              {isRecordingOrTranscribing ? (
+                recordingBar
+              ) : (
+                <>
+                  <HeadingSelect editor={editor} disabled={disabled} />
 
-              {inlineButtons.map((b) => (
-                <ToolbarButton
-                  key={b.key}
-                  onClick={b.onClick}
-                  disabled={disabled}
-                  active={b.active}
-                  title={b.title}
-                >
-                  {b.node}
-                </ToolbarButton>
-              ))}
+                  {inlineButtons.map((b) => (
+                    <ToolbarButton
+                      key={b.key}
+                      onClick={b.onClick}
+                      disabled={disabled}
+                      active={b.active}
+                      title={b.title}
+                    >
+                      {b.node}
+                    </ToolbarButton>
+                  ))}
 
-              {alignmentButtons.map((b) => (
-                <ToolbarButton
-                  key={b.key}
-                  onClick={b.onClick}
-                  disabled={disabled}
-                  active={b.active}
-                  title={b.title}
-                >
-                  {b.node}
-                </ToolbarButton>
-              ))}
+                  {alignmentButtons.map((b) => (
+                    <ToolbarButton
+                      key={b.key}
+                      onClick={b.onClick}
+                      disabled={disabled}
+                      active={b.active}
+                      title={b.title}
+                    >
+                      {b.node}
+                    </ToolbarButton>
+                  ))}
 
-              {/* Separator */}
-              <div className="w-px h-6 bg-[var(--border)] mx-1" />
+                  {/* Separator */}
+                  <div className="w-px h-6 bg-[var(--border)] mx-1" />
 
-              {utilityButtons.map((b) => (
-                <ToolbarButton
-                  key={b.key}
-                  onClick={b.onClick}
-                  disabled={disabled}
-                  active={b.active}
-                  title={b.title}
-                >
-                  {b.node}
-                </ToolbarButton>
-              ))}
+                  {utilityButtons.map((b) => (
+                    <ToolbarButton
+                      key={b.key}
+                      onClick={b.onClick}
+                      disabled={disabled}
+                      active={b.active}
+                      title={b.title}
+                    >
+                      {b.node}
+                    </ToolbarButton>
+                  ))}
+                </>
+              )}
             </div>
+            {transcriptionError && (
+              <div className="px-2 pt-1 text-xs text-red-500">
+                {transcriptionError}
+              </div>
+            )}
 
             {/* Normal Content */}
             <div className="p-3 min-h-[8rem] prose prose-invert max-w-none">
