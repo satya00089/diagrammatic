@@ -208,12 +208,7 @@ const LearningPaths: React.FC = () => {
                 </div>
               ) : (
                 paths.map((p) => (
-                  <LearningPathCard
-                    key={p.id}
-                    path={p}
-                    isAuthenticated={isAuth}
-                    onRequireAuth={() => setShowAuthModal(true)}
-                  />
+                  <LearningPathCard key={p.id} path={p} />
                 ))
               )}
             </div>

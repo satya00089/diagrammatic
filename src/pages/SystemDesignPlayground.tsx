@@ -2705,7 +2705,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   if (inspectedEdgeId) {
     const currentEdgeColor = (edgeProps["color"] as string) || "";
     const currentStrokeWidth = (edgeProps["strokeWidth"] as number) ?? 2;
-    const currentPathType = (edgeProps["pathType"] as string) || "bezier";
+    const currentPathType = (edgeProps["pathType"] as string) || "smoothstep";
     const currentAnimated = (edgeProps["animated"] as boolean) || false;
     const currentBidirectional =
       (edgeProps["bidirectional"] as boolean) || false;

@@ -44,7 +44,7 @@ const computeEdgeParams = (
     targetPosition: Position;
   },
   isBiDirectionEdge: boolean,
-  pathType: EdgePathType = "bezier",
+  pathType: EdgePathType = "smoothstep",
 ) => {
   const { sourceX, sourceY, targetX, targetY } = params;
 
@@ -153,7 +153,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   );
 
   // Calculate path and center using extracted helper
-  const pathType: EdgePathType = (edgeData?.pathType) || "bezier";
+  const pathType: EdgePathType = (edgeData?.pathType) || "smoothstep";
   const edgeColor = edgeData?.color || (selected ? resolvedColors.brand : resolvedColors.text + "99");
   const strokeW = edgeData?.strokeWidth ?? (selected ? 3 : 2);
   const isBidirectional = edgeData?.bidirectional ?? false;

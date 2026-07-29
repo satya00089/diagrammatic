@@ -21,7 +21,6 @@ const LearningPath: React.FC = () => {
   const {
     user,
     isAuthenticated: isAuth,
-    isLoading: isAuthLoading,
     login,
     signup,
     googleLogin,
@@ -69,15 +68,6 @@ const LearningPath: React.FC = () => {
       })
       .catch((err) => console.error(err));
   }, [slug, location.search]);
-
-  // If a user lands directly on a learning-path URL while unauthenticated,
-  // open the auth modal so they are prompted to sign in before interacting.
-  useEffect(() => {
-    // Only prompt for auth after the auth initialization finishes.
-    if (slug && !isAuth && !isAuthLoading) {
-      setShowAuthModal(true);
-    }
-  }, [slug, isAuth, isAuthLoading]);
 
   return (
     <>
@@ -418,10 +408,7 @@ const LearningPath: React.FC = () => {
       {showAuthModal && (
         <AuthModal
           isOpen={showAuthModal}
-          onClose={() => {
-            setShowAuthModal(false);
-            navigate("/learning-paths");
-          }}
+          onClose={() => setShowAuthModal(false)}
           onLogin={async (email, password) => {
             await login({ email, password });
             setShowAuthModal(false);
