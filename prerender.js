@@ -115,6 +115,39 @@ const routes = {
   },
 };
 
+// Try to discover learning-paths from the built dist JSON and add them to routes
+try {
+  const lpPath = path.join(distDir, "learning-paths", "learning-paths.json");
+  if (fs.existsSync(lpPath)) {
+    const lpRaw = fs.readFileSync(lpPath, "utf-8");
+    const lpList = JSON.parse(lpRaw);
+    if (Array.isArray(lpList)) {
+        lpList.forEach((item) => {
+          const slug = item?.slug;
+          if (slug) {
+            const routeKey = `/learning-paths/${slug}`;
+            if (!routes[routeKey]) {
+              const title = item?.title ?? slug;
+              const summary = item?.summary ?? "";
+              const keywords = item?.tags?.join(", ") ?? "system design, learning path";
+              routes[routeKey] = {
+                title,
+                description: item?.summary ?? item?.title ?? "",
+                keywords,
+                image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
+                imageAlt: title,
+                content: `<h1>${title}</h1><p>${summary.replace(/\n/g, " ")}</p>`,
+              };
+            }
+          }
+        });
+      console.log(`ℹ️ Added ${lpList.length} learning-path routes from ${lpPath}`);
+    }
+  }
+} catch (err) {
+  console.warn("⚠️ Could not load learning-paths JSON:", err.message);
+}
+
 // Check if dist exists
 if (!fs.existsSync(distDir)) {
   console.error('❌ Dist directory not found. Run "npm run build" first.');
