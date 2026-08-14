@@ -219,11 +219,17 @@ Object.entries(routes).forEach(([route, data]) => {
   let outputPath;
   if (route === "/") {
     outputPath = indexPath;
-  } else {
-    // For hash routes, we can't create separate files, but we update the main index
-    // Replace all slashes with hyphens and strip leading hyphens to create a safe filename
+  } else if (route.startsWith("/#/")) {
+    // For hash routes, create a flat file using hyphenated name (can't map to nested path)
     const routeName = (route.replace("/#/", "").replace(/\//g, "-") || "index").replace(/^-+/, "");
     outputPath = path.join(distDir, `${routeName}.html`);
+  } else {
+    // Create nested folders so URLs like /learning-paths/slug/ map to
+    // dist/learning-paths/slug/index.html which most static hosts serve
+    const parts = route.split("/").filter(Boolean); // ['learning-paths','system-design-foundations']
+    const outDir = path.join(distDir, ...parts);
+    fs.mkdirSync(outDir, { recursive: true });
+    outputPath = path.join(outDir, "index.html");
   }
 
   // Write the file
