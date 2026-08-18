@@ -105,14 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const signup = useCallback(async (credentials: SignupCredentials) => {
-    const { user, token } = await apiService.signup(credentials);
-    localStorage.setItem("auth_token", token);
-    setState({
-      user,
-      token,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    // Email/password accounts must be activated before they receive a session.
+    await apiService.signup(credentials);
   }, []);
 
   const googleLogin = useCallback(async (credential: string) => {

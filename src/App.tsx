@@ -14,6 +14,7 @@ import { OnboardingProvider } from "./contexts/OnboardingContext";
 import OnboardingChecklist from "./components/OnboardingChecklist";
 import FeatureAnnouncement from "./components/FeatureAnnouncement";
 import QuickSetupModal from "./components/QuickSetupModal";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
@@ -33,6 +34,7 @@ const App: React.FC = () => {
               <Route path="/learning-paths" element={<LearningPaths />} />
               <Route path="/learning-paths/:slug" element={<LearningPath />} />
               <Route path="/diagrams" element={<MyDesigns />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route
                 path="/playground/:id"
                 element={<SystemDesignPlayground />}

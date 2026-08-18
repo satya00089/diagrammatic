@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MdClose } from "react-icons/md";
 import { useTheme } from "../hooks/useTheme";
+import { apiService } from "../services/api";
 
 const GOOGLE_IDENTITY_SCRIPT_ID = "google-identity-services";
 let googleIdentityScriptPromise: Promise<void> | null = null;
@@ -68,6 +69,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
   const { theme } = useTheme();
   const googleResponseRef = useRef<(response: GoogleCredentialResponse) => void>(
     () => {},
@@ -159,16 +162,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       if (mode === "login") {
         await onLogin(email, password);
+        onClose();
       } else {
         await onSignup(email, password, name || undefined);
+        setVerificationEmail(email);
       }
-      onClose();
       // Reset form
       setEmail("");
       setPassword("");
       setName("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Authentication failed";
+        if (mode === "login" && message.toLowerCase().includes("activate your account")) {
+          setVerificationEmail(email);
+        } else {
+          setError(message);
+        }
     } finally {
       setIsLoading(false);
     }
@@ -177,6 +186,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const switchMode = () => {
     setMode((m) => (m === "login" ? "signup" : "login"));
     setError("");
+    setVerificationEmail("");
+    setResendMessage("");
   };
 
   if (!isOpen) return null;
@@ -233,6 +244,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
+            {verificationEmail ? (
+              <div className="space-y-4 rounded-xl border border-[var(--brand)]/30 bg-[var(--brand)]/10 p-5 text-center">
+                <h3 className="text-lg font-bold text-theme">Check your inbox</h3>
+                <p className="text-sm text-muted">
+                  We sent an activation link to <strong className="text-theme">{verificationEmail}</strong>.
+                  Open it within 20 minutes, then sign in.
+                </p>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setIsLoading(true);
+                    setError("");
+                    try {
+                      const response = await apiService.resendVerification(verificationEmail);
+                      setResendMessage(response.message);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Unable to resend activation email");
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="text-sm font-medium text-[var(--brand)] hover:underline disabled:opacity-50"
+                >
+                  Resend activation email
+                </button>
+                {resendMessage && <p className="text-xs text-muted">{resendMessage}</p>}
+              </div>
+            ) : <>
             {/* Google Sign-In Button */}
             {onGoogleLogin && (
               <>
@@ -329,9 +369,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     : "Create Account"}
               </button>
             </form>
+            </>}
 
             {/* Switch mode */}
-            <div className="mt-6 text-center">
+            {!verificationEmail && <div className="mt-6 text-center">
               <p className="text-muted text-sm">
                 {mode === "login"
                   ? "Don't have an account?"
@@ -344,14 +385,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {mode === "login" ? "Sign up" : "Sign in"}
                 </button>
               </p>
-            </div>
+            </div>}
 
             {/* Optional note */}
-            <div className="mt-6 p-3 bg-theme/5 rounded-lg">
+            {!verificationEmail && <div className="mt-6 p-3 bg-theme/5 rounded-lg">
               <p className="text-xs text-muted text-center">
                 🔒 Your designs are securely stored and only accessible to you
               </p>
-            </div>
+            </div>}
           </motion.div>
         </div>
       )}
