@@ -1,6 +1,7 @@
 import type {
   User,
   AuthResponse,
+  SignupPendingResponse,
   LoginCredentials,
   SignupCredentials,
   SavedDiagram,
@@ -9,7 +10,17 @@ import type {
 } from "../types/auth";
 import type { CanvasContext, UserIntent } from "../types/chatBot";
 
-const API_BASE_URL = import.meta.env.VITE_ASSESSMENT_API_URL || "";
+// VITE_API_URL is the application's documented API endpoint. Keep the older
+// assessment-specific name as a fallback for existing deployments.
+export const getApiBaseUrl = (
+  apiUrl?: string,
+  legacyApiUrl?: string,
+): string => apiUrl || legacyApiUrl || "";
+
+const API_BASE_URL = getApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+  import.meta.env.VITE_ASSESSMENT_API_URL,
+);
 
 class ApiService {
   private getAuthHeaders(): HeadersInit {
@@ -76,7 +87,7 @@ class ApiService {
     return response.json();
   }
 
-  async signup(credentials: SignupCredentials): Promise<AuthResponse> {
+  async signup(credentials: SignupCredentials): Promise<SignupPendingResponse> {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -87,6 +98,30 @@ class ApiService {
       throw new Error(await this.getErrorMessage(response, "Signup failed"));
     }
 
+    return response.json();
+  }
+
+  async verifyEmail(userId: string, token: string): Promise<SignupPendingResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, token }),
+    });
+    if (!response.ok) {
+      throw new Error(await this.getErrorMessage(response, "Unable to activate your account"));
+    }
+    return response.json();
+  }
+
+  async resendVerification(email: string): Promise<SignupPendingResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/resend-verification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) {
+      throw new Error(await this.getErrorMessage(response, "Unable to resend activation email"));
+    }
     return response.json();
   }
 

@@ -5,6 +5,7 @@ export interface User {
   picture?: string | null;
   createdAt?: string;
   preferences?: Record<string, unknown> | null;
+  emailVerified?: boolean;
 }
 
 export interface AuthState {
@@ -28,6 +29,11 @@ export interface SignupCredentials {
 export interface AuthResponse {
   user: User;
   token: string;
+}
+
+export interface SignupPendingResponse {
+  message: string;
+  email: string;
 }
 
 export interface DiagramOwner {

@@ -415,7 +415,6 @@ const LearningPath: React.FC = () => {
           }}
           onSignup={async (email, password, name) => {
             await signup({ email, password, name });
-            setShowAuthModal(false);
           }}
           onGoogleLogin={async (credential) => {
             await googleLogin(credential);
