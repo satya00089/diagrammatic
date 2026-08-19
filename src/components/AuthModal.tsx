@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdClose } from "react-icons/md";
+import { MdClose, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { useTheme } from "../hooks/useTheme";
 import { apiService } from "../services/api";
 
@@ -66,6 +66,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +160,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Passwords do not match. Please re-enter them.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -170,6 +179,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       // Reset form
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
       setName("");
       } catch (err) {
         const message = err instanceof Error ? err.message : "Authentication failed";
@@ -188,6 +198,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError("");
     setVerificationEmail("");
     setResendMessage("");
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   if (!isOpen) return null;
@@ -340,22 +354,72 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 >
                   Password
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="w-full px-4 py-2 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="w-full px-4 py-2 pr-12 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-r-lg"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <MdVisibilityOff className="h-5 w-5" /> : <MdVisibility className="h-5 w-5" />}
+                  </button>
+                </div>
                 {mode === "signup" && (
                   <p className="mt-1 text-xs text-muted">
                     Minimum 6 characters
                   </p>
                 )}
               </div>
+
+              {mode === "signup" && (
+                <div>
+                  <label
+                    htmlFor="confirm-password"
+                    className="block text-sm font-medium text-theme mb-2"
+                  >
+                    Confirm password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      aria-invalid={confirmPassword.length > 0 && password !== confirmPassword}
+                      aria-describedby="confirm-password-help"
+                      className="w-full px-4 py-2 pr-12 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+                      placeholder="Re-enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((visible) => !visible)}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-r-lg"
+                      aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
+                      title={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
+                    >
+                      {showConfirmPassword ? <MdVisibilityOff className="h-5 w-5" /> : <MdVisibility className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  <p id="confirm-password-help" className="mt-1 text-xs text-muted">
+                    {confirmPassword.length > 0 && password !== confirmPassword
+                      ? "Passwords do not match"
+                      : "Re-enter your password to confirm it"}
+                  </p>
+                </div>
+              )}
 
               <button
                 type="submit"
