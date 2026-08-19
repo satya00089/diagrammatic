@@ -119,9 +119,6 @@ export async function assessSolution(
         : null,
     };
 
-    console.log("Calling assessment API:", `${apiUrl}/api/v1/assess`);
-    console.log("Request payload:", requestPayload);
-
     const response = await fetch(`${apiUrl}/api/v1/assess`, {
       method: "POST",
       headers: {
@@ -139,7 +136,6 @@ export async function assessSolution(
     }
 
     const result = await response.json();
-    console.log("Assessment API response:", result);
 
     // Transform FastAPI response to match frontend ValidationResult interface
     return transformApiResponse(result);
