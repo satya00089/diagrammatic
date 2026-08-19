@@ -1211,8 +1211,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     try {
-      console.log("Running AI assessment with solution:", solution);
-
       // Call AI assessor (now returns Promise) with problem context
       const res = await assessSolution(solution, problem);
       setAssessment(res);
@@ -1221,7 +1219,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // Save assessment to database for problem-solving mode
       if (idFromUrl && idFromUrl !== "free" && isAuthenticated) {
         try {
-          console.log("Saving assessment to database:", res);
           const savedAttempt = (await apiService.saveAttempt({
             problemId: idFromUrl,
             title: problem?.title || "Unknown Problem",
@@ -1235,7 +1232,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
           }
-          console.log("Assessment saved successfully");
         } catch (error) {
           console.error("Failed to save assessment:", error);
         }

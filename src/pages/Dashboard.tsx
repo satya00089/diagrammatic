@@ -547,7 +547,7 @@ const Dashboard: React.FC = () => {
                       <div
                         key={problem.id}
                         data-tour={index === 0 ? "problem-card" : undefined}
-                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative ${delayClass}`}
+                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative h-full flex flex-col ${delayClass}`}
                       >
                         {problem.has_guided_walkthrough ? (
                           <div className="flex items-center justify-between px-4 py-2 bg-sky-100 rounded-t-2xl">
@@ -565,7 +565,7 @@ const Dashboard: React.FC = () => {
                             </span>
                           </div>
                         ) : null}
-                        <div className="relative p-6">
+                        <div className="relative p-6 flex flex-col flex-1">
                           {!problem.has_guided_walkthrough && score > 0 && (
                             <div className="flex items-center justify-between mb-3">
                               <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">
@@ -629,7 +629,7 @@ const Dashboard: React.FC = () => {
                               navigate(`/playground/${problem.id}`);
                             }}
                             aria-label={`Start ${problem.title}`}
-                            className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
+                            className={`w-full px-6 py-3 mt-auto font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
                               isAuth && attemptedProblems.has(problem.id)
                                 ? "bg-blue-600 text-white hover:shadow-md"
                                 : "bg-[var(--brand)] text-white hover:shadow-md"
