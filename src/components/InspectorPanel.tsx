@@ -7,6 +7,7 @@ import {
   PiCaretDownBold,
   PiCaretLeftBold,
   PiCaretRightBold,
+  PiWarningCircle,
 } from "react-icons/pi";
 import { MdAdd } from "react-icons/md";
 import { FiShare2 } from "react-icons/fi";
@@ -776,12 +777,16 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         (assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0) ||
                         (assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0)) && (
                         <div className="p-4 border border-red-500/20 rounded-xl bg-red-500/5">
-                          <div className="font-semibold text-red-400 text-sm mb-3 flex items-center gap-2">
-                            <span>⚠</span><span>Gaps Identified</span>
+                          <div className="font-semibold text-red-400 text-sm mb-1 flex items-center gap-2">
+                            <PiWarningCircle aria-hidden="true" className="text-base" />
+                            <span>Design details to add</span>
                           </div>
+                          <p className="text-xs text-theme/70 leading-relaxed mb-3">
+                            A little more context will help explain and evaluate your design.
+                          </p>
                           {assessmentResult.missingComponents && assessmentResult.missingComponents.length > 0 && (
                             <div className="mb-2">
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Missing Components</div>
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Components to add</div>
                               <ul className="space-y-1">
                                 {assessmentResult.missingComponents.map((m) => (
                                   <li key={m} className="text-xs text-theme flex items-start gap-1.5">
@@ -793,7 +798,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           )}
                           {assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0 && (
                             <div className="mb-2">
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Missing Descriptions</div>
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Add component context</div>
+                              <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
+                                Describe each component’s role and why you chose it for this design.
+                              </p>
                               <ul className="space-y-1">
                                 {assessmentResult.missingDescriptions.map((m) => (
                                   <li key={m} className="text-xs text-theme flex items-start gap-1.5">
@@ -805,7 +813,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           )}
                           {assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0 && (
                             <div>
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Unclear Connections</div>
+                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Clarify component connections</div>
+                              <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
+                                Explain how the components communicate or what data flows between them.
+                              </p>
                               <ul className="space-y-1">
                                 {assessmentResult.unclearConnections.map((m) => (
                                   <li key={m} className="text-xs text-theme flex items-start gap-1.5">
