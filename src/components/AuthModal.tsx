@@ -161,6 +161,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setError("");
 
+    if (mode === "signup" && password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     if (mode === "signup" && password !== confirmPassword) {
       setError("Passwords do not match. Please re-enter them.");
       return;
@@ -209,13 +214,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="bg-surface rounded-2xl shadow-2xl p-8 max-w-md w-full border border-theme/10"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-theme/10 bg-surface p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
