@@ -17,6 +17,7 @@ import {
   type MinimalComponent,
 } from "../store/slices/componentsSlice";
 import { loadSpriteManifest } from "../store/slices/spritesSlice";
+import { shouldUseDirectIcon } from "../utils/iconRendering";
 import SpriteIcon from "./SpriteIcon";
 
 interface Props {
@@ -615,6 +616,15 @@ export default function ComponentPalette({
                                                 {"iconUrl" in c && c.iconUrl ? (
                                                   <div className="w-10 h-10 mb-1 relative flex items-center justify-center">
                                                     {(() => {
+                                                      if (shouldUseDirectIcon(c.id)) {
+                                                        return (
+                                                          <img
+                                                            src={c.iconUrl}
+                                                            alt={c.label}
+                                                            className="w-10 h-10 object-contain"
+                                                          />
+                                                        );
+                                                      }
                                                       if (spriteIcons[c.id]) {
                                                         return (
                                                           <SpriteIcon
