@@ -17,24 +17,23 @@ const indexPath = path.join(distDir, "index.html");
 // Routes to prerender with their content
 const routes = {
   "/": {
-    title:
-      "Diagrammatic — Interactive System Design Playground | Learn Architecture Design",
+    title: "Diagrammatic — Design architectures. Get them reviewed.",
     description:
-      "Master system design with Diagrammatic - an interactive playground featuring 1k+ components including AWS, Azure & GCP cloud components, AI assessment, UML & ER diagrams, and 90+ practice problems. Free system architecture tool for students, professionals, and educators.",
+      "Practice system design by building architectures visually, explaining assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
     keywords:
       "system design, architecture diagram, system design interview, software architecture, distributed systems, AWS architecture, Azure architecture, GCP architecture, cloud design, ER diagram, UML diagram",
     image: "https://diagrammatic.next-zen.dev/og/home.png",
     imageAlt: "Diagrammatic homepage preview",
     content: `
-      <h1>Diagrammatic - Interactive System Design Playground</h1>
-      <p>Master system design with our interactive playground. Learn to design scalable, production-ready architectures with cloud provider support.</p>
+      <h1>Diagrammatic - Design architectures. Get them reviewed.</h1>
+      <p>Build a system design, explain the decisions behind it, and get structured feedback on scalability, reliability, data design, and trade-offs.</p>
       <h2>Key Features</h2>
       <ul>
-        <li>1k+ System Design Components</li>
+        <li>Architecture components for system design practice</li>
         <li>AWS, Azure & GCP Cloud Components</li>
-        <li>AI-Powered Assessment & Recommendations</li>
-        <li>90+ Practice Problems</li>
-        <li>35+ Cloud Infrastructure Design Challenges</li>
+        <li>Structured architecture review and practical next steps</li>
+        <li>Real-world system design practice problems</li>
+        <li>Cloud infrastructure design challenges</li>
         <li>Real-time Collaboration</li>
         <li>UML & ER Diagrams</li>
         <li>Export as PNG, JPEG, SVG, JSON, XML</li>
@@ -45,27 +44,27 @@ const routes = {
   "/#/playground/free": {
     title: "Free Design Studio | Diagrammatic",
     description:
-      "Create unlimited system architecture diagrams for free. 1k+ components including AWS, Azure, GCP cloud components, load balancers, databases, caches, queues, and more. Export as PNG, JPEG, SVG, JSON, or XML. No signup required.",
+      "Create system architecture diagrams for free with generic and cloud components, then export your work as PNG, JPEG, SVG, JSON, or XML. No signup required.",
     keywords:
       "free system design tool, architecture diagram maker, cloud architecture, microservices design, AWS diagram, Azure diagram, GCP diagram, ER diagram, UML diagram",
     image: "https://diagrammatic.next-zen.dev/og/playground.png",
     imageAlt: "Diagrammatic design playground preview",
     content: `
       <h1>Free Design Studio</h1>
-      <p>Create unlimited architecture diagrams with 1k+ professional components including AWS, Azure & GCP cloud services. Export in multiple formats. No signup required.</p>
+      <p>Create architecture diagrams with generic building blocks and AWS, Azure, or GCP cloud services. Export in multiple formats. No signup required.</p>
     `,
   },
   "/problems": {
     title: "Practice Problems | Diagrammatic",
     description:
-      "Practice system design with 90+ real-world challenges. Get AI-powered feedback and recommendations on your architecture designs. Perfect for FAANG interview preparation.",
+      "Practice system design with real-world challenges. Get structured feedback and practical next steps on the architecture decisions behind your design.",
     keywords:
       "system design interview, system design practice, distributed systems problems, scalable architecture, FAANG interview, tech interview prep",
     image: "https://diagrammatic.next-zen.dev/og/problems.png",
     imageAlt: "Diagrammatic practice problems preview",
     content: `
       <h1>System Design Practice Problems</h1>
-      <p>Practice with 90+ real-world system design challenges. Get instant AI-powered assessment and smart recommendations on your solutions.</p>
+      <p>Practice with real-world system design challenges. Get structured assessment and practical recommendations on your solutions.</p>
       <section>
         <h2>Problem categories</h2>
         <ul>

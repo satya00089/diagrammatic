@@ -73,6 +73,8 @@ export interface ValidationResult {
   isValid: boolean;
   score: number;
   feedback: ValidationFeedback[];
+  summary?: string;
+  findings?: ReviewFinding[];
   suggestions: string[];
   missingComponents: string[];
   architectureStrengths: string[];
@@ -83,6 +85,20 @@ export interface ValidationResult {
   missingDescriptions?: string[];
   unclearConnections?: string[];
   processingTimeMs?: number;
+  source?: "ai" | "rule_based";
+}
+
+export type ReviewFindingSeverity =
+  | "critical"
+  | "important"
+  | "improvement"
+  | "positive";
+
+export interface ReviewFinding {
+  title: string;
+  explanation: string;
+  recommendation?: string;
+  severity: ReviewFindingSeverity;
 }
 
 export interface ScoreBreakdown {
