@@ -390,7 +390,7 @@ const ERNode: React.FC<Props> = React.memo(
             attributesList.length > 0 && (
               <div className="px-3 py-2 border-t border-theme/20">
                 <div className="space-y-1 text-xs">
-                  {attributesList.map((attr, index) => {
+                  {attributesList.map((attr) => {
                     const isPrimaryKey =
                       data.primaryKey && attr.includes(data.primaryKey);
                     const isForeignKey = data?.foreignKeys
@@ -399,7 +399,7 @@ const ERNode: React.FC<Props> = React.memo(
 
                     return (
                       <div
-                        key={index}
+                        key={attr}
                         className={`font-mono ${
                           isPrimaryKey
                             ? "font-bold text-yellow-600 dark:text-yellow-400"

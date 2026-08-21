@@ -50,11 +50,11 @@ const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({ findings }) => 
       </div>
 
       <div className="space-y-2.5">
-        {findings.map((finding, index) => {
+        {findings.map((finding) => {
           const severity = finding.severity;
           return (
             <article
-              key={`${finding.title}-${index}`}
+              key={`${finding.severity}:${finding.title}`}
               className={`rounded-lg border p-3 ${SEVERITY_STYLES[severity]}`}
             >
               <div className="flex items-start justify-between gap-2">

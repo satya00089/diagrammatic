@@ -120,7 +120,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const container = document.getElementById("google-signin-button");
       if (!container || !window.google) return;
 
-      container.innerHTML = "";
+      container.replaceChildren();
       window.google.accounts.id.renderButton(container, {
         theme: resolvedDarkMode ? "filled_black" : "outline",
         size: "large",

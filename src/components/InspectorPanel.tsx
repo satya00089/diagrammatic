@@ -758,13 +758,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                       {text}
                                     </div>
                                     {/* Feedback items for this dimension */}
-                                    {dimFeedback.map((f, i) => (
+                                    {dimFeedback.map((feedback) => (
                                       <div
-                                        key={`${dim}-fb-${i}`}
-                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"}`}
+                                        key={`${dim}:${feedback.type}:${feedback.message}`}
+                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}
                                       >
-                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[f.type]}</span>
-                                        <span className="text-xs text-theme leading-relaxed">{f.message}</span>
+                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[feedback.type]}</span>
+                                        <span className="text-xs text-theme leading-relaxed">{feedback.message}</span>
                                       </div>
                                     ))}
                                   </div>
