@@ -7,7 +7,6 @@ import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
-// learning paths preview removed — navigation via card in 'Choose Your Path'
 import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
@@ -20,7 +19,6 @@ import { FaServer, FaBolt, FaNetworkWired, FaCloud } from "react-icons/fa";
 import {
   HiAcademicCap,
   HiPencilSquare,
-  HiDocumentPlus,
   HiCube,
   HiCloud,
   HiArrowsRightLeft,
@@ -148,7 +146,6 @@ const Home: React.FC = () => {
   const [heroMessageIndex, setHeroMessageIndex] = useState(0);
   const [heroMessage, setHeroMessage] = useState("");
   const [isDeletingHeroMessage, setIsDeletingHeroMessage] = useState(false);
-  // preview state removed; learning paths accessible from the 'Choose Your Path' card
   const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -244,8 +241,6 @@ const Home: React.FC = () => {
 
     return () => clearTimeout(timeoutId);
   }, [heroMessage, heroMessageIndex, isDeletingHeroMessage]);
-
-  // Learning path preview removed — users can browse paths via the card below
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -397,6 +392,15 @@ const Home: React.FC = () => {
 
   const features = [
     {
+      icon: <HiAcademicCap className="w-8 h-8" />,
+      title: "Follow a learning path",
+      description:
+        "Build system design fundamentals step by step with structured modules and hands-on lessons.",
+      action: "Browse learning paths",
+      route: "/learning-paths",
+      requiresAuth: false,
+    },
+    {
       icon: <HiDocumentText className="w-8 h-8" />,
       title: "Practice system design",
       description:
@@ -406,7 +410,7 @@ const Home: React.FC = () => {
       requiresAuth: false,
     },
     {
-      icon: <HiAcademicCap className="w-8 h-8" />,
+      icon: <HiSparkles className="w-8 h-8" />,
       title: "Review your architecture",
       description:
         "Get feedback on scalability, reliability, data design, performance, security, and trade-offs.",
@@ -420,15 +424,6 @@ const Home: React.FC = () => {
       description:
         "Sketch freely when you already know what you want to explore. Save and share when you are ready.",
       action: "Open Canvas",
-      route: "/playground/free",
-      requiresAuth: true,
-    },
-    {
-      icon: <HiDocumentPlus className="w-8 h-8" />,
-      title: "Defend the decisions",
-      description:
-        "Use the review questions to spot weak assumptions and practice the follow-ups an interviewer will ask.",
-      action: "Open your workspace",
       route: "/playground/free",
       requiresAuth: true,
     },
@@ -547,13 +542,23 @@ const Home: React.FC = () => {
                   Diagrammatic
                 </span>
               </button>
-              <div className="flex items-center gap-4">
+              <nav
+                aria-label="Primary navigation"
+                className="flex items-center gap-2 lg:gap-4"
+              >
                 <button
                   type="button"
                   onClick={() => handleNavigate("/problems", false)}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                 >
                   Problems
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/learning-paths", false)}
+                  className="hidden lg:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand)]"
+                >
+                  Learning Paths
                 </button>
                 {isAuthenticated && (
                   <button
@@ -665,7 +670,7 @@ const Home: React.FC = () => {
                     </button>
                   )}
                 </div>
-              </div>
+              </nav>
             </div>
           </div>
         </header>
@@ -766,6 +771,13 @@ const Home: React.FC = () => {
                   Try the workflow before signing in. Create an account when
                   you want to save, sync, or share your work.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/learning-paths", false)}
+                  className="mt-3 inline-flex items-center justify-center text-sm font-medium text-white/85 underline decoration-white/35 underline-offset-4 transition-colors hover:text-white hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--brand)]"
+                >
+                  New to system design? Browse learning paths →
+                </button>
               </div>
             </div>
             <div className="absolute bottom-5 left-1/2 -translate-x-1/2 opacity-40 pointer-events-none scroll-cue">
@@ -894,8 +906,6 @@ const Home: React.FC = () => {
             </div>
           </div>
         </section>
-
-        {/* Learning Path Preview removed — use the 'Learning Paths' card in Choose Your Path */}
 
         {/* My Diagrams Section - Only shown when authenticated */}
         {isAuthenticated && (
@@ -1155,8 +1165,8 @@ const Home: React.FC = () => {
               Choose Your Path
             </h2>
             <p className="text-muted text-center mb-12 max-w-xl mx-auto leading-relaxed">
-              Whether you're learning, building, or teaching — we've got you
-              covered
+              Choose the route that matches how you want to build your system
+              design skills.
             </p>
             <div
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
@@ -1168,7 +1178,7 @@ const Home: React.FC = () => {
                 return (
                   <div
                     key={feature.title}
-                    className={`group ${landingCardClass} p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${delay}`}
+                    className={`group ${landingCardClass} p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--bg)] ${delay}`}
                     onClick={() =>
                       handleNavigate(feature.route, feature.requiresAuth)
                     }
@@ -1178,6 +1188,7 @@ const Home: React.FC = () => {
                     }
                     role="button"
                     tabIndex={0}
+                    aria-label={`${feature.action}: ${feature.title}`}
                   >
                     <div className="mb-5 text-[var(--brand)]">
                       {feature.icon}
