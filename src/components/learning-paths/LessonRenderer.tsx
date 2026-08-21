@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import type { Lesson, Exercise } from "../../services/contentLoader";
 
 function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) {
@@ -71,8 +72,8 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
         <div className="rounded-xl border border-theme/10 bg-[var(--bg)] p-4 shadow-sm">
           <div className="font-medium">Assumptions</div>
           <ul className="list-disc list-inside mt-2 text-sm text-theme/90">
-            {ex.assumptions.map((a, i) => (
-              <li key={i}>{a}</li>
+            {ex.assumptions.map((assumption) => (
+              <li key={assumption}>{assumption}</li>
             ))}
           </ul>
         </div>
@@ -160,14 +161,22 @@ const LessonRenderer: React.FC<{
       <div className="flex-1 overflow-auto component-palette" ref={contentRef}>
         {lesson.type === "article" && (
           <div className="prose max-w-none prose-headings:text-theme prose-p:text-theme prose-strong:text-theme prose-li:text-theme prose-code:text-theme dark:prose-invert">
-            <div dangerouslySetInnerHTML={{ __html: marked.parse(lesson.content || "") }} />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(marked.parse(lesson.content || "")),
+              }}
+            />
           </div>
         )}
 
         {lesson.type === "exercise" && (
           <div>
             <div className="prose max-w-none prose-headings:text-theme prose-p:text-theme prose-strong:text-theme prose-li:text-theme prose-code:text-theme dark:prose-invert mb-6">
-              <div dangerouslySetInnerHTML={{ __html: marked.parse(lesson.content || "") }} />
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(marked.parse(lesson.content || "")),
+                }}
+              />
             </div>
             <ExerciseRunner exercise={lesson.exercise} />
           </div>

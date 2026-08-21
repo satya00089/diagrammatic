@@ -12,9 +12,9 @@ interface SEOProps {
 
 const DEFAULT_SEO = {
   title:
-    "Diagrammatic — Interactive System Design Playground | Learn Architecture Design",
+    "Diagrammatic — Design architectures. Get them reviewed.",
   description:
-    "Master system design with Diagrammatic - an interactive playground featuring 1k+ components, AI assessment, and real-world practice problems. Free system architecture tool for students, professionals, and educators.",
+    "Practice system design by building architectures visually, explaining your assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
   keywords:
     "system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture",
   image: "https://diagrammatic.next-zen.dev/og/home.png",

@@ -3,6 +3,7 @@ import type {
   SystemDesignProblem,
   ValidationResult,
   ValidationFeedback,
+  ReviewFinding,
 } from "../types/systemDesign";
 
 // AI-powered assessor that calls your FastAPI service
@@ -14,6 +15,8 @@ export async function assessSolution(
     return {
       isValid: false,
       score: 0,
+      summary: "No design was submitted for review.",
+      findings: [],
       feedback: [
         {
           type: "error",
@@ -156,6 +159,7 @@ export async function assessSolution(
       suggestions: [
         "Please ensure the assessment service is running and try again.",
       ],
+      source: undefined,
       missingComponents: [],
       architectureStrengths: [],
       improvements: [],
@@ -164,7 +168,7 @@ export async function assessSolution(
 }
 
 // Transform FastAPI response to frontend ValidationResult format
-function transformApiResponse(apiResult: unknown): ValidationResult {
+export function transformApiResponse(apiResult: unknown): ValidationResult {
   const result = apiResult as {
     is_valid?: boolean;
     overall_score?: number;
@@ -181,6 +185,14 @@ function transformApiResponse(apiResult: unknown): ValidationResult {
     scores?: import("../types/systemDesign").ScoreBreakdown;
     detailed_analysis?: Record<string, string>;
     interview_questions?: string[];
+    summary?: string;
+    findings?: Array<{
+      title?: unknown;
+      explanation?: unknown;
+      recommendation?: unknown;
+      severity?: unknown;
+    }>;
+    source?: string;
     missing_descriptions?: string[];
     unclear_connections?: string[];
     processing_time_ms?: number;
@@ -193,10 +205,40 @@ function transformApiResponse(apiResult: unknown): ValidationResult {
     priority: fb.priority,
   }));
 
+  const validSeverities = new Set<ReviewFinding["severity"]>([
+    "critical",
+    "important",
+    "improvement",
+    "positive",
+  ]);
+  const findings: ReviewFinding[] = (result.findings ?? []).flatMap((finding) => {
+    if (
+      typeof finding.title !== "string" ||
+      typeof finding.explanation !== "string" ||
+      typeof finding.severity !== "string" ||
+      !validSeverities.has(finding.severity as ReviewFinding["severity"])
+    ) {
+      return [];
+    }
+    return [
+      {
+        title: finding.title,
+        explanation: finding.explanation,
+        recommendation:
+          typeof finding.recommendation === "string"
+            ? finding.recommendation
+            : undefined,
+        severity: finding.severity as ReviewFinding["severity"],
+      },
+    ];
+  });
+
   return {
     isValid: result.is_valid || false,
     score: result.overall_score || 0,
     feedback,
+    summary: typeof result.summary === "string" ? result.summary : undefined,
+    findings,
     suggestions: result.suggestions || [],
     missingComponents: result.missing_components || [],
     architectureStrengths: result.strengths || [],
@@ -207,6 +249,7 @@ function transformApiResponse(apiResult: unknown): ValidationResult {
     missingDescriptions: result.missing_descriptions || [],
     unclearConnections: result.unclear_connections || [],
     processingTimeMs: result.processing_time_ms,
+    source: result.source === "rule_based" ? "rule_based" : "ai",
   };
 }
 

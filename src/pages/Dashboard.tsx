@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
     <>
       <SEO
         title="System Design & AI/ML Practice Problems | Diagrammatic"
-        description="Master system design, AI/ML architectures, and MLOps with 140+ curated problems. Practice infrastructure design, application architecture, machine learning systems, and AIOps with real-world scenarios and interactive diagrams."
+        description="Practice infrastructure, application, AI/ML, and MLOps architecture problems with clear requirements, interactive diagrams, and feedback on the decisions behind your design."
         keywords="system design problems, AI ML design problems, machine learning architecture, MLOps, AIOps, recommendation systems, fraud detection, NLP, computer vision, distributed systems, scalable architecture, system design interview prep, infrastructure design, application architecture"
         image="https://diagrammatic.next-zen.dev/og/problems.png"
         imageAlt="Diagrammatic practice problems preview"
@@ -397,7 +397,7 @@ const Dashboard: React.FC = () => {
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
                 Master Infrastructure, Application, AI & ML architectures.
-                Practice with 140+ curated problems in an interactive canvas.
+                Practice with realistic architecture problems in an interactive canvas.
               </p>
             </div>
 

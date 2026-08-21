@@ -160,6 +160,34 @@ const edgeTypes = {
   erRelationship: ERRelationshipEdge,
 };
 
+type AttemptContentSnapshotInput = {
+  problemId: string;
+  title: string;
+  difficulty?: string;
+  category?: string;
+  nodes: Node[];
+  edges: Edge[];
+};
+
+// elapsedTime is intentionally excluded so timer ticks can trigger the
+// auto-save check without making an unchanged canvas dirty.
+const getAttemptContentSnapshot = ({
+  problemId,
+  title,
+  difficulty,
+  category,
+  nodes,
+  edges,
+}: AttemptContentSnapshotInput): string =>
+  JSON.stringify({
+    problemId,
+    title,
+    difficulty,
+    category,
+    nodes,
+    edges,
+  });
+
 // Create a wrapper component for CustomNode with onCopy prop
 const NodeWithCopy = React.memo(
   (props: {
@@ -372,6 +400,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Track if user dismissed the save dialog — don't auto-prompt again until they click Save
   const userDeclinedSaveRef = useRef(false);
+
+  // Track the last successfully persisted problem attempt content so timer
+  // updates can skip redundant requests.
+  const lastSavedAttemptContentRef = useRef<string | null>(null);
+  const attemptSaveInFlightRef = useRef(false);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(globalThis.location.search);
@@ -737,6 +770,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   // Load diagram from URL parameter if diagramId is present, or load saved progress for problems
   useEffect(() => {
+    lastSavedAttemptContentRef.current = null;
+
     if (diagramIdFromUrl) {
       // Load specific diagram from URL (allow for both authenticated and unauthenticated users for shared diagrams)
       const loadDiagramFromUrl = async () => {
@@ -808,6 +843,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         try {
           const attempt = (await apiService.getAttemptByProblem(idFromUrl)) as {
             id?: string;
+            title?: string;
+            difficulty?: string;
+            category?: string;
             nodes: Node[];
             edges: Edge[];
             elapsedTime: number;
@@ -825,6 +863,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
             setNodes(restoredNodes);
             setEdges(loadedEdges);
+
+            lastSavedAttemptContentRef.current = getAttemptContentSnapshot({
+              problemId: idFromUrl,
+              title: attempt.title || problem?.title || "Unknown Problem",
+              difficulty: attempt.difficulty ?? problem?.difficulty,
+              category: attempt.category ?? problem?.category,
+              nodes: restoredNodes,
+              edges: loadedEdges,
+            });
 
             // Restore timer progress if available
             if (attempt.elapsedTime) {
@@ -867,6 +914,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Auto-save effect - save canvas state when diagram content changes
   useEffect(() => {
     if (!autoSaveEnabled || nodes.length === 0) return;
+
+    const isProblemAttempt = Boolean(idFromUrl && idFromUrl !== "free");
+    const attemptContentSnapshot =
+      isProblemAttempt && idFromUrl
+        ? getAttemptContentSnapshot({
+            problemId: idFromUrl,
+            title: problem?.title || "Unknown Problem",
+            difficulty: problem?.difficulty,
+            category: problem?.category,
+            nodes,
+            edges,
+          })
+        : null;
+
+    // Keep elapsedTime as a dependency/trigger, but do not save when the
+    // persisted attempt content has not changed since the last successful save.
+    if (
+      isProblemAttempt &&
+      (attemptSaveInFlightRef.current ||
+        attemptContentSnapshot === lastSavedAttemptContentRef.current)
+    ) {
+      return;
+    }
 
     const autoSave = async () => {
       try {
@@ -924,18 +994,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           }
         } else {
           // For Problem-solving: save progress to database
-          if (!idFromUrl) return; // Safety check
+          if (!idFromUrl || !attemptContentSnapshot) return; // Safety check
+          if (
+            attemptSaveInFlightRef.current ||
+            attemptContentSnapshot === lastSavedAttemptContentRef.current
+          ) {
+            return;
+          }
 
-          await apiService.saveAttempt({
-            problemId: idFromUrl,
-            title: problem?.title || "Unknown Problem",
-            difficulty: problem?.difficulty,
-            category: problem?.category,
-            nodes,
-            edges,
-            elapsedTime,
-            // Don't save assessment in auto-save, only when assessment is explicitly run
-          });
+          attemptSaveInFlightRef.current = true;
+          try {
+            await apiService.saveAttempt({
+              problemId: idFromUrl,
+              title: problem?.title || "Unknown Problem",
+              difficulty: problem?.difficulty,
+              category: problem?.category,
+              nodes,
+              edges,
+              elapsedTime,
+              // Don't save assessment in auto-save, only when assessment is explicitly run
+            });
+            lastSavedAttemptContentRef.current = attemptContentSnapshot;
+          } finally {
+            attemptSaveInFlightRef.current = false;
+          }
         }
 
         setAutoSaveStatus("saved");
@@ -1232,6 +1314,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
           }
+
+          lastSavedAttemptContentRef.current = getAttemptContentSnapshot({
+            problemId: idFromUrl,
+            title: problem?.title || "Unknown Problem",
+            difficulty: problem?.difficulty,
+            category: problem?.category,
+            nodes,
+            edges,
+          });
         } catch (error) {
           console.error("Failed to save assessment:", error);
         }
@@ -3925,7 +4016,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const pageDescription =
     idFromUrl === "free"
-      ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with 1k+ components."
+      ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with architecture components."
       : `Solve the ${problem?.title || "system design"} challenge. ${problem?.description?.substring(0, 150) || "Practice system design skills"}...`;
 
   return (

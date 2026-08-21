@@ -18,6 +18,7 @@ import TableNode from "../components/TableNode";
 import GroupNode from "../components/GroupNode";
 import CustomEdge from "../components/CustomEdge";
 import ERRelationshipEdge from "../components/ERRelationshipEdge";
+import AssessmentFindings from "../components/AssessmentFindings";
 import SEO from "../components/SEO";
 import type { ValidationResult } from "../types/systemDesign";
 
@@ -176,14 +177,20 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
         </span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-theme text-base">Assessment Score</div>
+        <div className="font-semibold text-theme text-base">Architecture review</div>
         <div className="flex items-center gap-2 mt-1">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
             assessment.isValid ? "bg-green-500/15 text-green-500" : "bg-amber-500/15 text-amber-500"
           }`}>
             {assessment.isValid ? "✅ Pass" : "⚠️ Needs Work"}
           </span>
+          <span className="text-[10px] text-muted">
+            {assessment.source === "rule_based" ? "Basic structural check" : "AI review"}
+          </span>
         </div>
+        {assessment.summary && (
+          <p className="text-xs text-theme/80 leading-relaxed mt-2">{assessment.summary}</p>
+        )}
         {assessment.processingTimeMs && (
           <div className="text-[10px] text-muted mt-1">
             Analysed in {(assessment.processingTimeMs / 1000).toFixed(1)}s
@@ -191,6 +198,12 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
         )}
       </div>
     </div>
+    <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">
+      <summary className="cursor-pointer font-semibold text-theme">How this score works</summary>
+      <p className="mt-2 leading-relaxed text-muted">
+        This is a directional learning signal: the API computes a weighted average of the scored architecture dimensions, with scalability, reliability, security, and maintainability weighted more heavily. A score of 50 or higher meets the current baseline; it is not a production-readiness approval.
+      </p>
+    </details>
 
     {/* Score breakdown */}
     {assessment.scores && (
@@ -230,15 +243,17 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
           <span className="text-green-500">✓</span><span>What Went Well</span>
         </div>
         <ul className="space-y-1.5">
-          {assessment.architectureStrengths.map((s, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
+          {assessment.architectureStrengths.map((strength) => (
+            <li key={strength} className="flex items-start gap-2 text-sm">
               <span className="text-green-500 mt-0.5 flex-shrink-0">•</span>
-              <span className="text-theme">{s}</span>
+              <span className="text-theme">{strength}</span>
             </li>
           ))}
         </ul>
       </div>
     )}
+
+    <AssessmentFindings findings={assessment.findings ?? []} />
 
     {/* Where to improve */}
     {(assessment.improvements.length > 0 || (assessment.suggestions && assessment.suggestions.length > 0)) && (
@@ -248,10 +263,10 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
         </div>
         {assessment.improvements.length > 0 && (
           <ul className="space-y-1.5 mb-3">
-            {assessment.improvements.map((imp, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
+            {assessment.improvements.map((improvement) => (
+              <li key={improvement} className="flex items-start gap-2 text-sm">
                 <span className="text-orange-500 mt-0.5 flex-shrink-0">•</span>
-                <span className="text-theme">{imp}</span>
+                <span className="text-theme">{improvement}</span>
               </li>
             ))}
           </ul>
@@ -260,10 +275,10 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
           <>
             <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Suggestions</div>
             <ul className="space-y-1.5">
-              {assessment.suggestions.map((s, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
+              {assessment.suggestions.map((suggestion) => (
+                <li key={suggestion} className="flex items-start gap-2 text-sm">
                   <span className="text-[var(--brand)] mt-0.5 flex-shrink-0">→</span>
-                  <span className="text-muted">{s}</span>
+                  <span className="text-muted">{suggestion}</span>
                 </li>
               ))}
             </ul>
@@ -300,19 +315,19 @@ const AssessmentPanel: React.FC<{ assessment: ValidationResult }> = ({ assessmen
                     {DIM_LABELS[dim] ?? dim}
                   </div>
                   <div className="text-xs text-theme leading-relaxed pl-2 border-l-2 border-[var(--brand)]/30">{text}</div>
-                  {dimFeedback.map((f, i) => (
-                    <div key={i} className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"}`}>
-                      <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[f.type]}</span>
-                      <span className="text-xs text-theme leading-relaxed">{f.message}</span>
+                  {dimFeedback.map((feedback) => (
+                    <div key={`${feedback.type}:${feedback.message}`} className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}>
+                      <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[feedback.type]}</span>
+                      <span className="text-xs text-theme leading-relaxed">{feedback.message}</span>
                     </div>
                   ))}
                 </div>
               );
             })}
-          {uncategorised.map((f, i) => (
-            <div key={i} className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"}`}>
-              <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[f.type]}</span>
-              <span className="text-xs text-theme leading-relaxed">{f.message}</span>
+          {uncategorised.map((feedback) => (
+            <div key={`${feedback.type}:${feedback.message}`} className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}>
+              <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[feedback.type]}</span>
+              <span className="text-xs text-theme leading-relaxed">{feedback.message}</span>
             </div>
           ))}
         </div>

@@ -24,7 +24,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Browse Practice Problems",
           description:
-            "140+ curated system design problems across Infrastructure, Application, and AI & ML domains.",
+            "Curated system design problems across Infrastructure, Application, and AI & ML domains.",
           side: "bottom",
           align: "start",
         },
@@ -34,7 +34,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Design Studio",
           description:
-            "Start with a blank canvas and 1000+ cloud components. No account required to explore.",
+            "Start with a blank canvas and browse architecture components. No account required to explore.",
           side: "bottom",
           align: "start",
         },
@@ -131,7 +131,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Component Palette",
           description:
-            "1000+ components live here — architectural primitives and cloud provider services. Drag any item onto the canvas to add it to your design.",
+            "Architecture components live here — generic building blocks and cloud provider services. Drag any item onto the canvas to add it to your design.",
           side: "right",
           align: "start",
         },
@@ -237,7 +237,7 @@ export const TOURS: Record<string, TourDefinition> = {
         popover: {
           title: "Component Palette",
           description:
-            "1000+ components live here — architectural primitives and cloud provider services. Drag any item onto the canvas to add it to your design.",
+            "Architecture components live here — generic building blocks and cloud provider services. Drag any item onto the canvas to add it to your design.",
           side: "right",
           align: "start",
         },

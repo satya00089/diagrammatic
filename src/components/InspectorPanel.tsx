@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import GuidedHelpPanel from "./GuidedHelpPanel";
 import type { ApplyStepPayload } from "./GuidedHelpPanel";
+import AssessmentFindings from "./AssessmentFindings";
 import {
   PiDotsSixVerticalBold,
   PiCaretDownBold,
@@ -587,7 +588,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-theme text-base">Assessment Score</div>
+                          <div className="font-semibold text-theme text-base">Architecture review</div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                               assessmentResult.isValid
@@ -596,7 +597,17 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             }`}>
                               {assessmentResult.isValid ? "✅ Pass" : "⚠️ Needs Work"}
                             </span>
+                            <span className="text-[10px] text-muted">
+                              {assessmentResult.source === "rule_based"
+                                ? "Basic structural check"
+                                : "AI review"}
+                            </span>
                           </div>
+                          {assessmentResult.summary && (
+                            <p className="text-xs text-theme/80 leading-relaxed mt-2">
+                              {assessmentResult.summary}
+                            </p>
+                          )}
                           {assessmentResult.processingTimeMs && (
                             <div className="text-[10px] text-muted mt-1">
                               Analysed in {(assessmentResult.processingTimeMs / 1000).toFixed(1)}s
@@ -604,6 +615,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           )}
                         </div>
                       </div>
+
+                      <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">
+                        <summary className="cursor-pointer font-semibold text-theme">
+                          How this score works
+                        </summary>
+                        <p className="mt-2 leading-relaxed text-muted">
+                          This is a directional learning signal: the API computes a weighted average of the scored architecture dimensions, with scalability, reliability, security, and maintainability weighted more heavily. A score of 50 or higher meets the current baseline; it is not a production-readiness approval.
+                        </p>
+                      </details>
 
                       {/* ── 2. Score Breakdown ── */}
                       {assessmentResult.scores && (
@@ -665,6 +685,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           <p className="text-sm text-muted">No notable strengths detected.</p>
                         )}
                       </div>
+
+                      <AssessmentFindings findings={assessmentResult.findings ?? []} />
 
                       {/* ── 4. Where to Improve ── */}
                       <div className="p-4 border rounded-xl bg-[var(--surface)]">
@@ -736,13 +758,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                       {text}
                                     </div>
                                     {/* Feedback items for this dimension */}
-                                    {dimFeedback.map((f, i) => (
+                                    {dimFeedback.map((feedback) => (
                                       <div
-                                        key={`${dim}-fb-${i}`}
-                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"}`}
+                                        key={`${dim}:${feedback.type}:${feedback.message}`}
+                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}
                                       >
-                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[f.type]}</span>
-                                        <span className="text-xs text-theme leading-relaxed">{f.message}</span>
+                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[feedback.type]}</span>
+                                        <span className="text-xs text-theme leading-relaxed">{feedback.message}</span>
                                       </div>
                                     ))}
                                   </div>

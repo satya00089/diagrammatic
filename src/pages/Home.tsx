@@ -32,11 +32,11 @@ import {
   HiBriefcase,
 } from "react-icons/hi2";
 
-const HERO_WORDS = [
-  "Visually, Intuitively",
-  "Clearly, Collaboratively",
-  "Quickly, Confidently",
-  "Precisely, Purposefully",
+const HERO_MESSAGES = [
+  "Get them reviewed.",
+  "Defend the decisions.",
+  "Improve the design.",
+  "Practice for interviews.",
 ];
 
 const HERO_ICONS: {
@@ -145,11 +145,10 @@ const Home: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
-  const [heroWordIndex, setHeroWordIndex] = useState(0);
-  const [displayedText, setDisplayedText] = useState("");
+  const [heroMessageIndex, setHeroMessageIndex] = useState(0);
+  const [heroMessage, setHeroMessage] = useState("");
+  const [isDeletingHeroMessage, setIsDeletingHeroMessage] = useState(false);
   // preview state removed; learning paths accessible from the 'Choose Your Path' card
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [statCounts, setStatCounts] = useState([0, 0, 0]);
   const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -223,53 +222,30 @@ const Home: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const currentWord = HERO_WORDS[heroWordIndex];
-    let timeoutId: ReturnType<typeof setTimeout>;
+    const message = HERO_MESSAGES[heroMessageIndex];
+    if (!message) return;
 
-    if (!isDeleting && displayedText === currentWord) {
-      timeoutId = setTimeout(() => setIsDeleting(true), 1800);
-    } else if (isDeleting && displayedText === "") {
-      const next = (heroWordIndex + 1) % HERO_WORDS.length;
-      setIsDeleting(false);
-      setHeroWordIndex(next);
-    } else if (isDeleting) {
-      timeoutId = setTimeout(
-        () => setDisplayedText(displayedText.slice(0, -1)),
-        40,
-      );
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setHeroMessage(message);
+      return;
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (!isDeletingHeroMessage && heroMessage === message) {
+      timeoutId = setTimeout(() => setIsDeletingHeroMessage(true), 2200);
+    } else if (isDeletingHeroMessage && heroMessage === "") {
+      setIsDeletingHeroMessage(false);
+      setHeroMessageIndex((index) => (index + 1) % HERO_MESSAGES.length);
+    } else if (isDeletingHeroMessage) {
+      timeoutId = setTimeout(() => setHeroMessage((value) => value.slice(0, -1)), 32);
     } else {
-      timeoutId = setTimeout(
-        () => setDisplayedText(currentWord.slice(0, displayedText.length + 1)),
-        70,
-      );
+      timeoutId = setTimeout(() => setHeroMessage(message.slice(0, heroMessage.length + 1)), 58);
     }
 
     return () => clearTimeout(timeoutId);
-  }, [displayedText, isDeleting, heroWordIndex]);
+  }, [heroMessage, heroMessageIndex, isDeletingHeroMessage]);
 
   // Learning path preview removed — users can browse paths via the card below
-
-  useEffect(() => {
-    const targets = [1000, 140, 1000];
-    const duration = 1600;
-    const startTime = Date.now();
-    let rafId: number;
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setStatCounts([
-        Math.round(targets[0] * eased),
-        Math.round(targets[1] * eased),
-        Math.round(targets[2] * eased),
-      ]);
-      if (progress < 1) {
-        rafId = requestAnimationFrame(tick);
-      }
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
 
   useEffect(() => {
     const hero = heroRef.current;
@@ -419,48 +395,41 @@ const Home: React.FC = () => {
     handleNavigate(`/playground/free?diagramId=${diagramId}`);
   };
 
-  const getStatDisplayValue = (index: number): string => {
-    if (index === 0) return statCounts[0] >= 1000 ? "1k+" : `${statCounts[0]}`;
-    if (index === 1) return statCounts[1] >= 140 ? "140+" : `${statCounts[1]}`;
-    if (index === 2) return statCounts[2] >= 1000 ? "1k+" : `${statCounts[2]}`;
-    return "\u221e";
-  };
-
   const features = [
     {
       icon: <HiDocumentText className="w-8 h-8" />,
-      title: "Learning Paths",
+      title: "Practice system design",
       description:
-        "Guided multi-lesson learning paths with exercises, progress tracking, and deep links.",
-      action: "Browse Paths",
-      route: "/learning-paths",
+        "Choose a realistic architecture prompt with requirements, constraints, and a workspace for your answer.",
+      action: "Choose a challenge",
+      route: "/problems",
       requiresAuth: false,
     },
     {
       icon: <HiAcademicCap className="w-8 h-8" />,
-      title: "Practice Problems",
+      title: "Review your architecture",
       description:
-        "Work through curated system design problems with real-world scenarios and guided requirements.",
-      action: "Browse Problems",
+        "Get feedback on scalability, reliability, data design, performance, security, and trade-offs.",
+      action: "See how review works",
       route: "/problems",
       requiresAuth: false,
     },
     {
       icon: <HiPencilSquare className="w-8 h-8" />,
-      title: "Design Studio",
+      title: "Start from a blank canvas",
       description:
-        "Build system designs, ER diagrams, and UML diagrams on a free-form canvas. Start from scratch.",
+        "Sketch freely when you already know what you want to explore. Save and share when you are ready.",
       action: "Open Canvas",
       route: "/playground/free",
       requiresAuth: true,
     },
     {
       icon: <HiDocumentPlus className="w-8 h-8" />,
-      title: "Custom Problems",
+      title: "Defend the decisions",
       description:
-        "Define your own problem statement, then solve it in an interactive canvas with AI assessment.",
-      action: "Create Problem",
-      route: "/create-problem",
+        "Use the review questions to spot weak assumptions and practice the follow-ups an interviewer will ask.",
+      action: "Open your workspace",
+      route: "/playground/free",
       requiresAuth: true,
     },
   ];
@@ -468,9 +437,9 @@ const Home: React.FC = () => {
   const capabilities = [
     {
       icon: <HiCube className="w-6 h-6" />,
-      title: "1,000+ Components",
+      title: "Architecture components",
       description:
-        "System design, ER, UML, and cloud components all in one palette.",
+        "Start with generic architecture building blocks, then filter into cloud, ER, UML, or provider-specific components.",
     },
     {
       icon: <HiCloud className="w-6 h-6" />,
@@ -492,48 +461,14 @@ const Home: React.FC = () => {
     },
     {
       icon: <HiSparkles className="w-6 h-6" />,
-      title: "AI Assessment",
+      title: "Structured AI assessment",
       description:
-        "Get instant AI feedback on your design's quality and trade-offs.",
+        "See what is strong, what is risky, and what to improve next — with interview follow-up questions tailored to your design.",
     },
     {
       icon: <HiArrowUpTray className="w-6 h-6" />,
       title: "Export & Share",
       description: "Export as an image or share a live link with teammates.",
-    },
-  ];
-
-  const stats = [
-    { value: "1k+", label: "Components", icon: <HiCube className="w-5 h-5" /> },
-    {
-      value: "140+",
-      label: "Problems",
-      icon: <HiDocumentText className="w-5 h-5" />,
-    },
-    { value: "1k+", label: "Users", icon: <HiUserGroup className="w-5 h-5" /> },
-    {
-      value: "∞",
-      label: "Possibilities",
-      icon: <HiSparkles className="w-5 h-5" />,
-    },
-  ];
-
-  const testimonials = [
-    {
-      quote:
-        "This tool transformed how I prepare for system design interviews.",
-      author: "Software Engineer",
-      role: "FAANG Company",
-    },
-    {
-      quote: "Perfect for teaching distributed systems to my students.",
-      author: "Professor",
-      role: "University CS Dept",
-    },
-    {
-      quote: "I use it daily to plan architecture for client projects.",
-      author: "Solutions Architect",
-      role: "Tech Consulting",
     },
   ];
 
@@ -573,8 +508,8 @@ const Home: React.FC = () => {
   return (
     <>
       <SEO
-        title="Diagrammatic — Interactive System Design Playground | Learn Architecture Design"
-        description="Master system design with Diagrammatic — an interactive playground featuring 1k+ components and 140+ curated practice problems across cloud, AI/ML, and architecture topics. Free system architecture tool for students, professionals, and educators."
+        title="Diagrammatic — Design architectures. Get them reviewed."
+        description="Practice system design by building architectures visually, explaining your assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
         image="https://diagrammatic.next-zen.dev/og/home.png"
         imageAlt="Diagrammatic homepage preview"
@@ -790,61 +725,20 @@ const Home: React.FC = () => {
                     : "opacity-0 translate-y-10"
                 }`}
               >
-                <div className="inline-block mb-6">
-                  <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/15 text-white/90 text-xs sm:text-sm font-medium rounded-full inline-flex items-center gap-1 flex-wrap justify-center">
-                    <span className="text-green-400 animate-pulse text-base sm:text-xl">
-                      ●
-                    </span>
-                    <span>{" Practice system design in one workspace"}</span>
-                    <span className="hidden sm:inline">
-                      {" · 1K+ components · AI feedback"}
-                    </span>
-                  </span>
-                </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold uppercase mb-6 leading-tight tracking-wide text-white">
-                  System design
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
+                  Design architectures.
                   <br />
-                  <span className="text-white/85 inline-block">
-                    {displayedText}
-                    <span className="cursor-blink">|</span>
+                  <span className="text-white/80 inline-block min-h-[1.05em]" aria-live="polite">
+                    {heroMessage}
+                    <span className="cursor-blink" aria-hidden="true">|</span>
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base lg:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
-                  Learn system architecture, sketch diagrams, and practice
-                  interview problems in one focused playground with cloud
-                  components, ER support, and AI-powered assessment.
+                  Build a real architecture, explain the decisions behind it,
+                  and see where it breaks before the interviewer does. Practice
+                  scalability, reliability, data design, and trade-offs with
+                  feedback grounded in your diagram.
                 </p>
-
-                {/* Stats Bar */}
-                <div className="flex flex-wrap justify-center gap-3 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
-                  {stats.map((stat, index) => {
-                    const delay =
-                      [
-                        "fade-in-up-delay-100",
-                        "fade-in-up-delay-200",
-                        "fade-in-up-delay-300",
-                        "fade-in-up-delay-400",
-                      ][index] ?? "fade-in-up-delay-400";
-                    return (
-                      <div
-                        key={stat.label}
-                        className={`text-center transition-all duration-300 bg-white/10 rounded-xl px-3 py-2 sm:px-5 sm:py-3 hover:bg-white/15 ${
-                          isVisible ? "fade-in-up" : "opacity-0 translate-y-5"
-                        } ${delay}`}
-                      >
-                        <div className="flex justify-center mb-1 text-white/80">
-                          {stat.icon}
-                        </div>
-                        <div className="text-xl sm:text-2xl font-bold text-white tabular-nums">
-                          {getStatDisplayValue(index)}
-                        </div>
-                        <div className="text-xs text-white/70 tracking-wide">
-                          {stat.label}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
 
                 <div
                   className="flex flex-col sm:flex-row gap-4 justify-center items-center"
@@ -852,29 +746,29 @@ const Home: React.FC = () => {
                 >
                   <button
                     type="button"
-                    data-tour="nav-studio"
-                    onClick={() => handleNavigate("/playground/free")}
+                    data-tour="nav-problems"
+                    onClick={() => handleNavigate("/problems", false)}
                     className="px-7 py-3.5 bg-white text-[var(--brand)] text-base font-semibold rounded-lg hover:shadow-lg cursor-pointer btn-shimmer"
                   >
-                    Start Designing →
+                    Start a design challenge →
                   </button>
                   <button
                     type="button"
-                    data-tour="nav-problems"
-                    onClick={() => handleNavigate("/problems", false)}
+                    data-tour="nav-studio"
+                    onClick={() => handleNavigate("/playground/free")}
                     className="px-7 py-3.5 bg-white/10 border border-white/25 text-white/85 text-base font-medium rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
                   >
-                    Practice Problems →
+                    Open blank canvas
                   </button>
                 </div>
 
                 <p className="mt-5 text-xs text-white/65 max-w-xl mx-auto">
-                  Start with practice or a blank canvas. Sign in when you want
-                  to save, sync, or share your work.
+                  Try the workflow before signing in. Create an account when
+                  you want to save, sync, or share your work.
                 </p>
               </div>
             </div>
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 animate-bounce opacity-40 pointer-events-none">
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 opacity-40 pointer-events-none scroll-cue">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -888,6 +782,115 @@ const Home: React.FC = () => {
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
+            </div>
+          </div>
+        </section>
+
+        {/* The product loop: a concrete preview of what happens after the click. */}
+        <section className="relative px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="relative z-10 mx-auto max-w-7xl">
+            <div className="mb-10 max-w-2xl">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
+                The learning loop
+              </p>
+              <h2 className="text-3xl font-bold tracking-[-0.03em] text-theme sm:text-4xl">
+                Don&apos;t just draw the boxes. Defend the decisions.
+              </h2>
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
+                Diagrammatic turns an interview prompt into a design you can
+                inspect, explain, and improve.
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
+              <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Problem</span>
+                  <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-1 text-xs font-medium text-[var(--brand)]">Medium</span>
+                </div>
+                <h3 className="text-lg font-semibold text-theme">Design a video-sharing platform</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">Support millions of uploads and global playback while keeping video processing asynchronous.</p>
+                <div className="mt-6 space-y-2 text-xs text-muted">
+                  <div className="flex justify-between border-b border-theme/10 pb-2"><span>Scale</span><span className="font-medium text-theme">10M DAU</span></div>
+                  <div className="flex justify-between border-b border-theme/10 pb-2"><span>Latency</span><span className="font-medium text-theme">p95 &lt; 200ms</span></div>
+                  <div className="flex justify-between"><span>Availability</span><span className="font-medium text-theme">99.99%</span></div>
+                </div>
+              </div>
+
+              <div className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex" aria-hidden="true">→</div>
+
+              <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Your architecture</span>
+                  <span className="text-xs text-muted">5 components</span>
+                </div>
+                <div className="h-40 overflow-hidden rounded-xl bg-[var(--bg)] p-2">
+                  <svg
+                    className="h-full w-full"
+                    viewBox="0 0 600 280"
+                    preserveAspectRatio="xMidYMid meet"
+                    role="img"
+                    aria-labelledby="architecture-preview-title architecture-preview-description"
+                  >
+                    <title id="architecture-preview-title">Video upload architecture</title>
+                    <desc id="architecture-preview-description">API Gateway routes uploads to an Upload Service, which stores video objects and sends processing work through a queue to a metadata database.</desc>
+                    <defs>
+                      <marker id="architecture-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                        <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--brand)" opacity="0.72" />
+                      </marker>
+                    </defs>
+
+                    <g fill="none" stroke="var(--brand)" strokeOpacity="0.52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#architecture-arrow)">
+                      <path d="M 140 136 H 175 Q 190 136 190 121 V 82 Q 190 66 206 66 H 220" />
+                      <path d="M 370 66 H 440" />
+                      <path d="M 295 92 V 190" />
+                      <path d="M 355 216 H 430" />
+                    </g>
+                    <circle cx="295" cy="122" r="4" fill="var(--brand)" opacity="0.72" />
+
+                    <g>
+                      <rect x="20" y="110" width="120" height="52" rx="12" fill="rgba(14,165,233,0.12)" stroke="rgba(14,165,233,0.72)" strokeWidth="1.5" />
+                      <text x="80" y="141" textAnchor="middle" fill="#38bdf8" fontSize="15" fontWeight="600">API Gateway</text>
+                    </g>
+                    <g>
+                      <rect x="220" y="40" width="150" height="52" rx="12" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.72)" strokeWidth="1.5" />
+                      <text x="295" y="71" textAnchor="middle" fill="#a78bfa" fontSize="15" fontWeight="600">Upload Service</text>
+                    </g>
+                    <g>
+                      <rect x="235" y="190" width="120" height="52" rx="12" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.72)" strokeWidth="1.5" />
+                      <text x="295" y="221" textAnchor="middle" fill="#fbbf24" fontSize="15" fontWeight="600">Queue</text>
+                    </g>
+                    <g>
+                      <rect x="440" y="40" width="140" height="52" rx="12" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.72)" strokeWidth="1.5" />
+                      <text x="510" y="71" textAnchor="middle" fill="#34d399" fontSize="15" fontWeight="600">Object Storage</text>
+                    </g>
+                    <g>
+                      <rect x="430" y="190" width="150" height="52" rx="12" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.72)" strokeWidth="1.5" />
+                      <text x="505" y="221" textAnchor="middle" fill="#fb7185" fontSize="15" fontWeight="600">Metadata DB</text>
+                    </g>
+                  </svg>
+                </div>
+                <p className="mt-4 text-xs leading-relaxed text-muted">Add components, label data flow, and write down the assumptions behind each choice.</p>
+              </div>
+
+              <div className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex" aria-hidden="true">→</div>
+
+              <div
+                className="rounded-2xl border border-[var(--brand)]/20 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]"
+                style={{ background: "color-mix(in srgb, var(--brand) 8%, var(--surface))" }}
+              >
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Architecture review</span>
+                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600">Needs work</span>
+                </div>
+                <p className="text-sm font-semibold text-theme">Strong asynchronous boundary. Reliability needs attention.</p>
+                <div className="mt-4 space-y-3 text-xs">
+                  <div className="flex gap-2"><span className="text-emerald-500">✓</span><span className="text-muted"><strong className="text-theme">Good:</strong> object storage and a queue keep uploads off the request path.</span></div>
+                  <div className="flex gap-2"><span className="text-amber-500">!</span><span className="text-muted"><strong className="text-theme">Important:</strong> the queue is a single point of failure.</span></div>
+                  <div className="flex gap-2"><span className="text-rose-500">!</span><span className="text-muted"><strong className="text-theme">Missing:</strong> rate limiting and cache-failure behavior.</span></div>
+                </div>
+                <button type="button" onClick={() => handleNavigate("/problems", false)} className="mt-6 text-sm font-semibold text-[var(--brand)] hover:underline">Try a challenge →</button>
+              </div>
             </div>
           </div>
         </section>
@@ -1242,52 +1245,6 @@ const Home: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
-          <div className="max-w-7xl mx-auto relative z-10">
-            <h2
-              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
-              data-reveal
-            >
-              Loved by Designers Worldwide
-            </h2>
-            <p className="text-muted text-center mb-12 max-w-xl mx-auto leading-relaxed">
-              Join thousands who trust Diagrammatic for their system design
-              needs
-            </p>
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8"
-              data-reveal-group
-            >
-              {testimonials.map((testimonial) => (
-                <div
-                  key={`${testimonial.author}-${testimonial.role}`}
-                  className="group relative overflow-hidden rounded-[1.5rem] border border-theme/10 elevated-card-bg p-6 shadow-[0_18px_50px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-                >
-                  <div className="relative z-10">
-                    <p className="text-muted mb-5 leading-relaxed text-sm italic">
-                      "{testimonial.quote}"
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[var(--brand)]/15 flex items-center justify-center text-[var(--brand)] font-semibold text-sm">
-                        {testimonial.author.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-theme">
-                          {testimonial.author}
-                        </div>
-                        <div className="text-muted text-xs">
-                          {testimonial.role}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </section>
