@@ -546,6 +546,71 @@
     ]
   },
   {
+    "id": "latency-vs-throughput",
+    "slug": "latency-vs-throughput",
+    "title": "Latency vs Throughput",
+    "summary": "Deep dive into latency, throughput measurement and mitigation techniques.",
+    "difficulty": "Intermediate",
+    "tags": ["latency", "throughput", "performance"],
+    "modules": [
+      {
+        "id": "latency-vs-throughput",
+        "title": "Latency vs Throughput",
+        "order": 1,
+        "lessons": [
+          {
+            "id": "latency-vs-throughput-intro",
+            "title": "Latency vs Throughput",
+            "type": "article",
+            "content": "# Latency vs Throughput\n\nLatency is the time taken to complete a single operation. Throughput is the number of operations completed per unit time. They are related but distinct metrics.\n\n- High throughput systems may accept higher latency per request if overall work per second increases.\n- Low latency often requires efficient I/O, warm caches, and minimal coordination.\n\nWhen designing systems, measure both latency percentiles (p50, p95, p99) and throughput under representative load."
+          },
+          {
+            "id": "latency-vs-throughput-signals",
+            "title": "Signals & Measurement",
+            "type": "article",
+            "content": "# Signals & Measurement\n\nKey signals to measure: latency histograms (p50/p95/p99), throughput (RPS), concurrency, resource utilization, and queue lengths.\n\n- Use HDR histograms or equivalent to capture percentiles accurately.\n- Trace p99 requests end-to-end to find hotspots (DB, network, GC).\n- Define SLIs and SLOs early (for example, 'p95 < 200 ms').\n\nCollecting the right signals enables evidence-based decisions rather than guesswork."
+          },
+          {
+            "id": "latency-vs-throughput-batching-parallelism",
+            "title": "Batching & Parallelism",
+            "type": "article",
+            "content": "# Batching & Parallelism\n\nBatching reduces per-item overhead and increases throughput by amortizing fixed costs, but it increases per-item latency because items wait for the batch to fill or a timer to expire.\n\nParallelism increases throughput by doing work concurrently, but can raise tail latency due to contention (locks, GC, IO).\n\nDesign trade-offs:\n- Choose batch sizes that balance latency targets and throughput needs.\n- Use parallelism carefully; measure tail percentiles under concurrency."
+          },
+          {
+            "id": "latency-vs-throughput-tail-latency",
+            "title": "Tail-Latency Causes & Mitigation",
+            "type": "article",
+            "content": "# Tail-Latency Causes & Mitigation\n\nCommon causes of high tail latency: GC pauses, noisy neighbors, slow downstream dependencies, queueing, and retries.\n\nMitigation techniques:\n- Hedged requests or request duplication with care.\n- Request coalescing to avoid redundant work.\n- Bulkheads to isolate resources and reduce cascading failures.\n- Timeouts and exponential backoff to stop retry storms.\n\nMeasure the impact of any mitigation with p99/p999 traces."
+          },
+          {
+            "id": "latency-vs-throughput-benchmarking",
+            "title": "Benchmarking & Load Testing",
+            "type": "article",
+            "content": "# Benchmarking & Load Testing\n\nRun realistic load tests: steady-state, spikes, ramps, and soak tests. Use tools like k6, locust, or JMeter.\n\n- Reproduce production-like traffic patterns and payload sizes.\n- Test both latency SLOs and throughput under load.\n- Record resource metrics and traces during tests.\n\nUse test results to validate autoscaling rules and capacity planning."
+          },
+          {
+            "id": "latency-vs-throughput-patterns",
+            "title": "Design Patterns & Techniques",
+            "type": "article",
+            "content": "# Design Patterns & Techniques\n\nUseful patterns: asynchronous processing (queues + workers), backpressure and rate-limiting, circuit breakers, caching, batching, and idempotent APIs.\n\n- Apply backpressure to protect downstream systems.\n- Use caches to reduce repeated work and improve latency.\n- Make critical paths as stateless and fast as possible."
+          },
+          {
+            "id": "latency-vs-throughput-examples",
+            "title": "Worked Examples",
+            "type": "article",
+            "content": "# Worked Examples\n\n1) Concurrency from latency (Little's Law): L = λ W. Example: λ=1000 RPS, W=0.05s → L=50 concurrent requests.\n\n2) Batch sizing: choose a batch size that keeps average wait < latency budget while delivering target throughput.\n\n3) Throughput vs latency: measure p50/p95/p99 at different concurrency levels to find optimal operating point."
+          },
+          {
+            "id": "latency-vs-throughput-exercises",
+            "title": "Exercises",
+            "type": "article",
+            "content": "# Exercises\n\n- Given λ=5000 RPS and p95 target 100 ms, compute expected concurrency using Little's Law.\n- Propose a batch size if average per-item processing is 2 ms and you want to keep per-item wait < 20 ms.\n- Given observed p99 spikes correlated with GC pauses, list 3 mitigation steps and how to validate them."
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "cache-fundamentals",
     "slug": "cache-fundamentals",
     "title": "Cache Fundamentals",
@@ -761,44 +826,69 @@
     "id": "observability-and-automation",
     "slug": "observability-and-automation",
     "title": "Logging, Metrics & Automation",
-    "summary": "Operational visibility and automation for growing systems.",
+    "summary": "Use logs, metrics, traces, service objectives, alerts, and deployment automation to operate distributed systems safely.",
     "difficulty": "Intermediate",
-    "tags": ["observability", "logging", "metrics", "automation"],
+    "tags": ["observability", "logging", "metrics", "tracing", "automation"],
     "modules": [
       {
         "id": "core-concepts",
-        "title": "Core Concepts",
+        "title": "Observability Signals",
         "order": 1,
         "lessons": [
           {
             "id": "obs-overview",
             "title": "Overview: Logging, Metrics & Automation",
             "type": "article",
-            "content": "# Logging, Metrics & Automation\n\nAs a system grows, ad hoc debugging is no longer enough. Logging tells you what happened, metrics tell you how the system is behaving over time, and automation helps you build, test, and deploy changes safely and repeatedly.\n\nThese tools are not optional at scale because the number of servers, failures, and deployment steps grows too large for manual handling.\n\n**Next:** Start with logging, then add metrics and automation."
+            "content": "# Logging, Metrics & Automation\n\nA distributed system is observable when operators can understand its internal state from the signals it produces. That matters because a slow request may cross a load balancer, several services, a cache, a queue, and a database. Inspecting one server rarely explains the whole failure.\n\nThree complementary signals provide the evidence:\n\n- **Logs** record discrete events with context.\n- **Metrics** summarize behavior over time and make trends visible.\n- **Traces** connect the work performed for one request across service boundaries.\n\nObservability helps people detect and diagnose problems. Automation addresses a related operational problem: making builds, tests, deployments, rollback, and recovery repeatable. Neither replaces sound architecture, but together they reduce the time between a problem beginning and the system returning to a healthy state.\n\n**Learning goal:** Use signals to answer what failed, where it failed, who was affected, and whether a change improved the system."
           },
           {
             "id": "obs-logging",
             "title": "Logging",
             "type": "article",
-            "content": "# Logging\n\nLogs capture events, warnings, and errors from each server. At small scale, per-server logs may be enough, but as the fleet grows it becomes much more useful to aggregate them into a centralized service for search, filtering, and retention.\n\n## Practical guidance\n\n- Log errors with enough context to debug the issue.\n- Centralize logs so operators can search across the whole system.\n- Use structured fields when possible so log analysis is easier.\n\nLogging is usually your first line of investigation during incidents."
+            "content": "# Logging\n\nLogs capture discrete events such as a request arriving, a payment being rejected, or a worker exhausting its retries. In a fleet of short-lived instances, local files are difficult to search and may disappear with the instance, so production logs are normally shipped to a centralized service.\n\n## Prefer structured events\n\nA useful log event has named fields such as timestamp, service, environment, severity, request ID, operation, outcome, and error category. A shared request or trace ID lets an operator correlate events produced by different services. Log enough context to explain the event, but do not record passwords, tokens, payment details, or unnecessary personal data.\n\n## Make logs sustainable\n\n- Use severity levels consistently; not every expected failure is an error.\n- Define retention and access controls based on debugging, compliance, and cost needs.\n- Sample high-volume informational events when complete retention has little value.\n- Avoid logging the same exception at every layer because it creates noise without new evidence.\n\nLogs are strongest for detailed investigation. They are usually too expensive and irregular to be the only source for dashboards or alerts."
           },
           {
             "id": "obs-metrics",
             "title": "Metrics",
             "type": "article",
-            "content": "# Metrics\n\nMetrics summarize the health of the system over time. Useful examples include host-level metrics such as CPU, memory, and disk I/O, tier-level metrics such as database or cache performance, and business metrics such as daily active users, retention, and revenue.\n\n## Why metrics matter\n\n- They show trends before users feel pain.\n- They support dashboards and alerting.\n- They let teams compare normal load, spikes, and regressions.\n\n## Practical guidance\n\n- Track both infrastructure and business metrics.\n- Watch the health of the whole tier, not only one server.\n- Choose alerts that reflect user impact rather than raw resource noise."
+            "content": "# Metrics\n\nMetrics aggregate measurements into time series. Counters track totals such as requests or failures, gauges represent current values such as queue depth, and histograms describe distributions such as request latency. Histograms matter because an average can look healthy while a significant group of users experiences very slow requests.\n\nStart with signals that describe user-facing behavior:\n\n- **Traffic:** requests, jobs, or bytes processed per unit of time.\n- **Errors:** failed or incorrect operations as a count or rate.\n- **Latency:** p50, p95, and p99 duration for important operations.\n- **Saturation:** how close a constrained resource is to its useful limit.\n\nAdd dependency and business metrics when they help explain impact: cache hit rate, replication lag, queue age, successful checkouts, or active sessions. Labels make metrics filterable, but unbounded values such as user IDs create high cardinality and can make the monitoring system costly or unusable.\n\nA dashboard should support a decision. Group signals by service or user journey, compare current behavior with a baseline, and avoid panels that nobody uses during diagnosis or planning."
           },
+          {
+            "id": "obs-tracing",
+            "title": "Distributed Tracing",
+            "type": "article",
+            "content": "# Distributed Tracing\n\nA trace follows one request or job through the system. Each unit of work is represented by a span containing its operation, duration, status, and relationship to parent and child spans. Together, the spans show where time was spent and which dependency returned an error.\n\nFor example, a slow checkout trace might reveal 40 ms in the API, 60 ms in inventory, and 1.4 seconds waiting for a payment provider. A latency metric reveals that checkout is slow; the trace narrows the problem to one part of the request path; correlated logs then provide detailed failure context.\n\nPropagate trace context across HTTP, messaging, and background jobs. Because recording every trace can be expensive, systems often sample them. Head-based sampling decides near the start of a request, while tail-based sampling can retain unusual traces after seeing their outcome. Sampling must preserve enough errors and slow requests to support diagnosis."
+          },
+          {
+            "id": "obs-slos-alerting",
+            "title": "SLIs, SLOs & Actionable Alerts",
+            "type": "article",
+            "content": "# SLIs, SLOs & Actionable Alerts\n\nA service-level indicator, or SLI, measures behavior users care about, such as the proportion of successful requests or the proportion completed within 300 ms. A service-level objective, or SLO, sets a target for that indicator over a time window. An error budget is the amount of unreliability the objective permits.\n\nFor example, an availability SLO of 99.9% over 30 days permits roughly 43 minutes of unsuccessful service during that window. The target is a product and engineering decision, not a claim that every component must individually reach the same number.\n\nAlerts should indicate a condition that needs action. Page a person when user impact is urgent or the error budget is being consumed dangerously fast. Use tickets or dashboards for slower trends. CPU usage by itself is rarely a good page: high CPU may be efficient, while low CPU does not prove that requests are succeeding. Every page should identify the affected service or journey, link to relevant evidence, and suggest a first diagnostic step."
+          }
+        ]
+      },
+      {
+        "id": "operational-automation",
+        "title": "Operational Automation",
+        "order": 2,
+        "lessons": [
           {
             "id": "obs-automation",
             "title": "Automation",
             "type": "article",
-            "content": "# Automation\n\nOnce the system gets large and complex, automation becomes a force multiplier. Continuous integration verifies code changes automatically, while automated build, test, and deploy pipelines reduce human error and speed up delivery.\n\n## Practical guidance\n\n- Verify each check-in through CI.\n- Automate build, test, and deploy steps.\n- Use automation to catch errors early and improve developer productivity.\n\nAutomation makes operations repeatable and safer as the release cadence increases."
+            "content": "# Automation\n\nAutomation turns a documented operational procedure into a repeatable process. Continuous integration builds and tests each change. A delivery pipeline creates a versioned artifact, applies configuration, deploys it to a controlled audience, verifies health, and either continues or rolls back.\n\nUseful safety mechanisms include:\n\n- **Canary deployments:** expose a small share of traffic before broad rollout.\n- **Blue-green deployments:** prepare a parallel environment and switch traffic after verification.\n- **Feature flags:** separate code deployment from feature exposure.\n- **Infrastructure as code:** review and reproduce infrastructure changes.\n- **Automated rollback:** restore a known-good version when defined health checks fail.\n\nAutomation can repeat a mistake faster, so pipelines need approvals for high-risk changes, immutable artifacts, audit history, secret management, and tests that reflect real failure modes. Prefer small, reversible changes over complex releases that are difficult to diagnose."
+          },
+          {
+            "id": "obs-incident-workflow",
+            "title": "From Alert to Recovery",
+            "type": "article",
+            "content": "# From Alert to Recovery\n\nDuring an incident, first establish user impact and stabilize the system. A practical investigation moves from broad signals to specific evidence:\n\n1. Confirm which user journey and region are affected.\n2. Check recent deployments, configuration changes, and dependency health.\n3. Use metrics to locate the service and time window where behavior changed.\n4. Inspect representative traces to isolate the slow or failing span.\n5. Use correlated logs to understand the exact error.\n6. Mitigate with rollback, traffic reduction, failover, or feature disablement.\n7. After recovery, document the contributing conditions and improve the system.\n\nA runbook can make the first checks repeatable, but it should support judgment rather than hide the evidence. The goal of a post-incident review is learning: identify architectural and operational changes that reduce either the probability of recurrence or the time required to recover."
           },
           {
             "id": "obs-exercises",
             "title": "Exercises",
             "type": "exercise",
-            "content": "# Exercises\n\n1) Why are centralized logs useful at scale?\n2) List one host-level metric, one tier-level metric, and one business metric.\n3) What problem does CI solve in a growing system?\n4) Name one build or deploy step that should be automated."
+            "content": "# Exercises\n\nA checkout API normally has a p99 latency of 250 ms. Ten minutes after a deployment, p99 rises to 1.8 seconds in one region. CPU remains normal, database connection wait time increases, and the checkout error rate begins to climb.\n\n1. Which metrics would you place on the first diagnostic dashboard, and why?\n2. Describe the trace spans and structured log fields needed to follow one checkout across the API, inventory service, payment service, and database.\n3. Define one availability SLI and one latency SLI for checkout. Propose an SLO for each and explain the product trade-off.\n4. Write an actionable alert: state the condition, urgency, affected user journey, and first diagnostic link or step.\n5. Describe a deployment strategy that could limit impact and trigger a safe rollback.\n6. A team proposes adding customer email as a metric label. Explain why this is unsafe and choose a better place to record the detail."
           }
         ]
       }
@@ -808,44 +898,75 @@
     "id": "database-scaling",
     "slug": "database-scaling",
     "title": "Database Scaling",
-    "summary": "Vertical scaling, sharding, hot keys, and offloading work from the primary database.",
+    "summary": "Diagnose database bottlenecks, scale reads and writes, choose shard keys, and manage the trade-offs of distributed data.",
     "difficulty": "Intermediate",
-    "tags": ["database", "scaling", "sharding", "nosql"],
+    "tags": ["database", "scaling", "replication", "partitioning", "sharding"],
     "modules": [
       {
         "id": "core-concepts",
-        "title": "Core Concepts",
+        "title": "Diagnose and Add Capacity",
         "order": 1,
         "lessons": [
           {
             "id": "db-scaling-overview",
             "title": "Overview: Database Scaling",
             "type": "article",
-            "content": "# Database Scaling\n\nAs data and traffic grow, the database tier eventually becomes the bottleneck. Database scaling is the process of adding capacity and reducing contention so the storage layer can keep up with the application.\n\nTwo broad approaches exist: vertical scaling, where you add more resources to one machine, and horizontal scaling, where you add more database servers and partition the workload.\n\n**Next:** Compare scale-up and scale-out strategies."
+            "content": "# Database Scaling\n\nA database needs to scale when its current design can no longer meet a measurable requirement for latency, throughput, storage, or availability. The first step is not automatically adding servers: identify which resource or access pattern is limiting the workload.\n\nCommon strategies address different constraints:\n\n- Improve queries, indexes, schemas, and connection use to remove avoidable work.\n- Scale up a database instance when one node can still serve the workload economically.\n- Add replicas or caches to distribute read traffic.\n- Partition or shard data when write throughput, storage, or maintenance can no longer fit on one node.\n\nEach strategy moves complexity. A read replica introduces lag; a cache introduces invalidation; sharding introduces routing and cross-shard coordination. The correct design follows from workload measurements and correctness requirements rather than a target user count."
+          },
+          {
+            "id": "db-diagnose-bottleneck",
+            "title": "Diagnose Before Scaling",
+            "type": "article",
+            "content": "# Diagnose Before Scaling\n\nStart with the workload: query rate, read/write ratio, dataset and index size, growth rate, connection count, row access patterns, and latency percentiles. Then inspect database signals such as CPU, memory pressure, disk latency, lock waits, slow queries, cache hit rate, replication lag, and connection-pool saturation.\n\nA slow database may be doing unnecessary work rather than lacking hardware. Before changing topology:\n\n- Use query plans to find table scans, poor join order, or indexes that are missing or unused.\n- Return only the columns and rows the caller needs.\n- Batch writes carefully and avoid repeated queries inside loops.\n- Bound connection pools so excessive concurrency does not overwhelm the database.\n- Archive or partition historical data when most requests target recent records.\n\nOptimization has limits, but it establishes a clean baseline. Without it, scaling can multiply an inefficient workload and make the eventual architecture harder to operate."
           },
           {
             "id": "db-vertical-scaling",
             "title": "Vertical Scaling",
             "type": "article",
-            "content": "# Vertical Scaling\n\nVertical scaling, or scaling up, means adding CPU, RAM, disk, or faster hardware to an existing database server. It can work well for a while because powerful machines can handle significant load.\n\n## Pros\n\n- Simple to implement\n- No data partitioning required\n- Useful when the workload still fits on one strong machine\n\n## Cons\n\n- Hardware limits eventually appear\n- A single server remains a single point of failure\n- Large machines are expensive\n\nVertical scaling is often the first step, but it does not solve growth forever."
+            "content": "# Vertical Scaling\n\nVertical scaling, or scaling up, gives a database node more CPU, memory, I/O bandwidth, or faster storage. It preserves a simple data model and can be the lowest-risk choice while the workload fits comfortably on one primary node. More memory may keep a larger working set in cache; faster storage may reduce query and checkpoint latency.\n\n## Advantages\n\n- Minimal application and routing changes\n- Local joins and transactions remain straightforward\n- Operational behavior is easier to understand than a partitioned system\n\n## Limits\n\n- Hardware has a finite ceiling and larger tiers can become disproportionately expensive.\n- Resizing may require maintenance or a failover.\n- One primary still limits write throughput even when replicas provide high availability.\n\nVertical scaling does not inherently mean accepting a single point of failure: replication and automated failover can protect a large primary. It does mean that one node remains the capacity boundary for the work assigned to it."
           },
+          {
+            "id": "db-read-scaling",
+            "title": "Scale Reads and Offload the Primary",
+            "type": "article",
+            "content": "# Scale Reads and Offload the Primary\n\nWhen reads dominate, replicas can serve queries while the primary continues to accept writes. Route reports, feeds, or other staleness-tolerant queries to replicas, but account for replication lag: a user may write a value and then fail to see it immediately on a replica. Read-after-write requirements may require temporarily routing that user to the primary or waiting for a replication position.\n\nOther forms of offloading include:\n\n- Caches for frequently reused results with an acceptable freshness window\n- Search indexes for full-text and faceted queries\n- Analytics stores for large scans and aggregations\n- Queues and workers for non-interactive processing\n\nThese systems are derived views, so teams must define how they are populated, how stale they may become, and how they recover after missed updates. Offloading protects the primary only when it removes meaningful work rather than adding dual-write inconsistency."
+          }
+        ]
+      },
+      {
+        "id": "horizontal-scaling",
+        "title": "Horizontal Scaling and Sharding",
+        "order": 2,
+        "lessons": [
           {
             "id": "db-horizontal-scaling",
             "title": "Horizontal Scaling and Sharding",
             "type": "article",
-            "content": "# Horizontal Scaling and Sharding\n\nHorizontal scaling adds more database servers and partitions the workload across shards. The sharding key determines where each record lives and which server handles a given request."
+            "content": "# Horizontal Scaling and Sharding\n\nHorizontal scaling distributes work across multiple database nodes. Replication distributes reads while keeping copies of the same data. Sharding distributes different subsets of data, allowing storage and write traffic to grow beyond the capacity of one node. The two techniques are commonly combined so each shard also has replicas.\n\nA routing layer maps a sharding key to a shard. Routing may live in the application, a proxy, or the database system itself. Common placement strategies include hash-based distribution for even load, range-based distribution for efficient range scans, and directory-based placement when assignments need explicit control.\n\nSharding is a major architectural boundary. Queries that include the shard key can be routed directly; queries without it may need to contact every shard. Introduce it when measurements show that simpler approaches cannot meet the workload, not merely because the system is expected to grow."
+          },
+          {
+            "id": "db-shard-key-design",
+            "title": "Choosing a Shard Key",
+            "type": "article",
+            "content": "# Choosing a Shard Key\n\nA good shard key has enough distinct values to spread data, distributes traffic rather than only record counts, and appears in the system's important access patterns.\n\nConsider an application that stores posts. Sharding by `created_at` groups recent writes into the newest range and can create a write hotspot. Hashing `user_id` spreads users more evenly and makes one user's posts easy to retrieve, but a global recent-post feed must query many shards or use a separate feed index. Large celebrity accounts can still become hot even with a generally good key.\n\nEvaluate candidate keys with concrete questions:\n\n- Do writes distribute during peak traffic?\n- Can the most frequent reads identify one shard?\n- Can one tenant or key grow far larger than the rest?\n- Can data be moved when shards are added or removed?\n- Do locality, privacy, or residency rules constrain placement?\n\nThere is rarely a perfect key. The goal is to make dominant operations efficient while creating an explicit plan for exceptions."
           },
           {
             "id": "db-sharding-challenges",
             "title": "Sharding Challenges",
             "type": "article",
-            "content": "# Sharding Challenges\n\nSharding introduces resharding, hotspot keys, and cross-shard query complexity. A good sharding key distributes data evenly and matches the access pattern."
+            "content": "# Sharding Challenges\n\nSharding moves capacity limits but creates distributed-systems problems:\n\n- **Hotspots:** one key or range receives disproportionate traffic. Mitigations include salting a key, splitting a large tenant, caching, or isolating exceptional workloads.\n- **Resharding:** adding capacity requires moving data while reads and writes continue. Consistent hashing, virtual shards, or managed split operations can reduce movement, but migrations still need monitoring and rollback.\n- **Scatter-gather queries:** requests without a shard key contact many nodes, increasing cost and tail latency. Derived indexes or denormalized views may serve these access patterns better.\n- **Operational fan-out:** schema changes, backups, restores, and incident response must work across every shard.\n\nBalanced storage does not guarantee balanced load. Test placement with realistic traffic, observe per-shard latency and utilization, and retain enough headroom to move or isolate hot data safely."
+          },
+          {
+            "id": "db-distributed-correctness",
+            "title": "Transactions, Consistency & Data Integrity",
+            "type": "article",
+            "content": "# Transactions, Consistency & Data Integrity\n\nOperations within one shard can often use ordinary database transactions. Operations spanning shards require coordination, an asynchronous workflow, or a redesigned data boundary. Distributed transactions can preserve strong atomicity but add latency and reduce availability when participants are slow. Many systems instead use idempotent steps, an outbox, compensating actions, and reconciliation.\n\nSecondary indexes and uniqueness constraints also become harder. A uniqueness rule scoped to one tenant is simple when all tenant data shares a shard; global username uniqueness may require a dedicated ownership service or globally coordinated index.\n\nState the correctness requirement before selecting a mechanism. A social feed may tolerate delayed updates, while deducting funds requires durable invariants. Sharding should not silently weaken those guarantees: document which reads may be stale, which operations can retry, and how partial failures are detected and repaired."
           },
           {
             "id": "db-exercises",
             "title": "Exercises",
             "type": "exercise",
-            "content": "# Exercises\n\n1) Why does vertical scaling eventually stop working?\n2) What is a sharding key?\n3) Name one problem that sharding introduces."
+            "content": "# Exercises\n\nA project-management service stores 8 TB of task data and grows by 250 GB each month. Traffic is 85% reads. Most requests access tasks by `workspace_id`; a small number of enterprise workspaces are 100 times larger than the median. Users must see their own edits immediately, while search results may be up to 30 seconds stale. The primary is I/O-bound during reporting jobs.\n\n1. Which measurements would you collect before changing the architecture?\n2. Propose two changes that offload the primary without sharding. State the consistency effect of each.\n3. Compare `workspace_id`, `task_id`, and `created_at` as shard keys. Which would you start with, and how would you handle very large workspaces?\n4. Explain how you would provide read-after-write behavior for the user who edited a task.\n5. Reporting needs data across all workspaces. Design a solution that avoids frequent scatter-gather queries on the request path.\n6. Outline a resharding plan, including routing, data movement, verification, cutover, and rollback."
           }
         ]
       }
@@ -855,91 +976,76 @@
     "id": "millions-of-users-and-beyond",
     "slug": "millions-of-users-and-beyond",
     "title": "Millions of Users and Beyond",
-    "summary": "A roadmap for scaling web systems to large audiences and multiple data centers.",
-    "difficulty": "Intermediate",
-    "tags": ["scalability", "cdn", "multi-dc", "monitoring"],
+    "summary": "An advanced capstone for evolving a measured workload into a resilient, globally distributed, and operable system.",
+    "difficulty": "Advanced",
+    "tags": ["scalability", "capacity-planning", "resilience", "cdn", "multi-region"],
     "modules": [
       {
         "id": "core-concepts",
-        "title": "Core Concepts",
+        "title": "Workload and Architecture Evolution",
         "order": 1,
         "lessons": [
           {
             "id": "mub-overview",
             "title": "Overview: Millions of Users and Beyond",
             "type": "article",
-            "content": "# Millions of Users and Beyond\n\nScaling to a large audience is an iterative process. Keep the web tier stateless, add redundancy, cache aggressively, support multiple data centers, serve static assets from a CDN, and automate operations as the system grows."
+            "content": "# Millions of Users and Beyond\n\nLarge-scale architecture is not a checklist triggered by a user count. One million registered users may produce very little traffic, while a smaller real-time application may generate extreme concurrency and fan-out. Scale is defined by workload, growth, reliability objectives, geographic reach, and the cost of serving them.\n\nA sound architecture evolves in measured steps. Remove the current bottleneck, preserve correctness, observe the result, and add complexity only when its benefit exceeds its operational cost. Stateless services, caches, replicas, queues, sharding, CDNs, and multiple regions solve different problems; none is automatically required.\n\nThis capstone combines the earlier learning paths. You should already understand estimation, load balancing, replication, caching, stateless services, message queues, database scaling, latency, and observability. The goal is to justify an architecture from requirements rather than draw every available component."
+          },
+          {
+            "id": "mub-workload-model",
+            "title": "Define the Workload and Targets",
+            "type": "article",
+            "content": "# Define the Workload and Targets\n\nBefore choosing components, convert product behavior into engineering constraints. Estimate peak requests per second rather than relying on daily averages. Separate reads from writes, identify burst patterns, estimate payload and media sizes, and project storage and bandwidth growth. Record the geographic distribution of users and which actions require immediate consistency.\n\nDefine measurable targets:\n\n- Latency objectives for important user journeys, including tail percentiles\n- Availability and durability objectives\n- Recovery time and recovery point objectives for disasters\n- Freshness limits for replicas, caches, search, and analytics\n- Security, privacy, and data-residency constraints\n- A cost envelope and expected growth horizon\n\nThese values expose the real design tensions. A global read-only catalog can use aggressive edge caching, while a collaborative editor needs low-latency coordination and clear conflict semantics. Estimates do not need false precision; they need explicit assumptions and enough headroom for peaks, failures, and growth."
+          },
+          {
+            "id": "mub-staged-evolution",
+            "title": "Evolve the Architecture in Stages",
+            "type": "article",
+            "content": "# Evolve the Architecture in Stages\n\nA typical web system can grow through the following stages, but measurements may change the order:\n\n1. **Strengthen the simple system.** Optimize slow queries, establish backups, add monitoring, and automate deployments.\n2. **Add redundancy and horizontal compute.** Put multiple stateless application instances behind a load balancer and move sessions or durable state to shared services.\n3. **Reduce repeated work.** Cache frequently reused data when freshness and invalidation behavior are understood. Serve suitable assets and responses through a CDN.\n4. **Separate workloads.** Use replicas for staleness-tolerant reads, queues and workers for asynchronous jobs, and specialized stores for search or analytics.\n5. **Partition constrained data.** Shard only when storage or write throughput cannot be handled by a well-tuned primary topology.\n6. **Expand geographically when requirements demand it.** Add regional serving, replication, and failover with explicit consistency and recovery behavior.\n\nAt every stage, run load tests, compare results with objectives, and keep rollback possible. Scaling one tier often exposes the next bottleneck."
+          }
+        ]
+      },
+      {
+        "id": "resilience-and-global-scale",
+        "title": "Resilience and Global Scale",
+        "order": 2,
+        "lessons": [
+          {
+            "id": "mub-resilience-overload",
+            "title": "Design for Failure and Overload",
+            "type": "article",
+            "content": "# Design for Failure and Overload\n\nRedundancy protects a critical request path only when failures are detected and traffic can move to healthy capacity. Remove single points of failure for capabilities required to meet the availability objective, and test that failover works under realistic load. More copies alone do not help if they share the same power, network, deployment defect, or control plane.\n\nOverload requires control rather than unlimited retries:\n\n- Set timeouts from the caller's remaining latency budget.\n- Retry only transient, safe operations with exponential backoff and jitter.\n- Use idempotency keys when an operation may be submitted more than once.\n- Apply rate limits, bounded queues, and backpressure before resources are exhausted.\n- Isolate dependencies with bulkheads and circuit breakers.\n- Shed optional work so essential journeys remain available.\n\nPlan degraded modes such as stale reads, delayed notifications, or disabled recommendations. A deliberate degraded experience is safer than an uncontrolled cascade in which every tier becomes saturated."
+          },
+          {
+            "id": "mub-cdn-edge",
+            "title": "CDNs and Edge Delivery",
+            "type": "article",
+            "content": "# CDNs and Edge Delivery\n\nA content delivery network stores cacheable responses near users, reducing origin traffic and network distance. Static assets are the simplest candidates, but public API responses, images transformed at the edge, and other deterministic content may also be cacheable.\n\nDesign the caching contract explicitly:\n\n- Choose cache keys that include every request property affecting the response.\n- Set freshness and stale-serving behavior from product requirements.\n- Version asset URLs or provide a reliable invalidation mechanism.\n- Prevent private or personalized data from entering shared caches.\n- Protect the origin from cache misses, stampedes, and abusive traffic.\n\nA CDN improves delivery, not the correctness of the source data. Measure hit ratio, origin offload, edge error rate, and regional latency. A low hit ratio may mean the content is unsuitable for caching or that the cache key fragments equivalent requests."
+          },
+          {
+            "id": "mub-multi-region",
+            "title": "Multi-Region Architecture",
+            "type": "article",
+            "content": "# Multi-Region Architecture\n\nMultiple regions may be justified by latency, availability, disaster recovery, regulation, or data residency. They also introduce replication delay, split-brain risk, more complex deployments, and difficult failover decisions. Use the simplest topology that meets the requirement.\n\nIn an active-passive design, one region serves writes while another is prepared for recovery. This simplifies conflict handling but requires a tested promotion process and a clear recovery point. In an active-active design, multiple regions serve traffic concurrently. It can reduce latency and improve regional resilience, but writes need ownership, coordination, or conflict-resolution rules.\n\nDecide where each piece of data has authority. Some systems assign each user or tenant a home region; others use globally coordinated storage for a narrow set of strongly consistent records and asynchronous replication for the rest. Route users using health-aware DNS, anycast, or a global traffic manager, and ensure that failover capacity is actually available. Regular exercises should test regional isolation, data recovery, routing changes, and the return to normal operation."
+          }
+        ]
+      },
+      {
+        "id": "operate-and-capstone",
+        "title": "Operate and Validate the Design",
+        "order": 3,
+        "lessons": [
+          {
+            "id": "mub-operating-at-scale",
+            "title": "Operations, Capacity and Cost",
+            "type": "article",
+            "content": "# Operations, Capacity and Cost\n\nAt scale, architecture includes how the system is changed and recovered. Define SLIs and SLOs for critical journeys, propagate request context across services, and connect alerts to runbooks. Use canary or staged deployments so a defect reaches limited traffic, and automate rollback when trusted health signals cross a threshold.\n\nCapacity planning should account for normal peaks, failover, maintenance, and growth. Autoscaling helps with variable demand but is not instantaneous: keep headroom for startup delay and protect stateful dependencies from a sudden increase in concurrency. Run steady-state, spike, failover, and soak tests using realistic payloads.\n\nTrack cost per useful unit such as request, active tenant, or processed gigabyte. Replication, unused failover capacity, low-value logs, cache fragmentation, and cross-region transfer can dominate cost. Optimize only after preserving the reliability and product requirements the architecture exists to serve. Complexity is also a cost: every new component needs ownership, monitoring, upgrades, security, and recovery procedures."
           },
           {
             "id": "mub-exercises",
-            "title": "Exercises",
+            "title": "Capstone Exercise",
             "type": "exercise",
-            "content": "# Exercises\n\n1) Why is statelessness important at scale?\n2) Name one reason redundancy is required at every tier.\n3) What role does CDN play in a large system?\n4) Why do monitoring and automation become essential as usage grows?"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "id": "latency-vs-throughput",
-    "slug": "latency-vs-throughput",
-    "title": "Latency vs Throughput",
-    "summary": "Deep dive into latency, throughput measurement and mitigation techniques.",
-    "difficulty": "Intermediate",
-    "tags": ["latency", "throughput", "performance"],
-    "modules": [
-      {
-        "id": "latency-vs-throughput",
-        "title": "Latency vs Throughput",
-        "order": 1,
-        "lessons": [
-          {
-            "id": "latency-vs-throughput-intro",
-            "title": "Latency vs Throughput",
-            "type": "article",
-            "content": "# Latency vs Throughput\n\nLatency is the time taken to complete a single operation. Throughput is the number of operations completed per unit time. They are related but distinct metrics.\n\n- High throughput systems may accept higher latency per request if overall work per second increases.\n- Low latency often requires efficient I/O, warm caches, and minimal coordination.\n\nWhen designing systems, measure both latency percentiles (p50, p95, p99) and throughput under representative load."
-          },
-          {
-            "id": "latency-vs-throughput-signals",
-            "title": "Signals & Measurement",
-            "type": "article",
-            "content": "# Signals & Measurement\n\nKey signals to measure: latency histograms (p50/p95/p99), throughput (RPS), concurrency, resource utilization, and queue lengths.\n\n- Use HDR histograms or equivalent to capture percentiles accurately.\n- Trace p99 requests end-to-end to find hotspots (DB, network, GC).\n- Define SLIs and SLOs early (for example, 'p95 < 200 ms').\n\nCollecting the right signals enables evidence-based decisions rather than guesswork."
-          },
-          {
-            "id": "latency-vs-throughput-batching-parallelism",
-            "title": "Batching & Parallelism",
-            "type": "article",
-            "content": "# Batching & Parallelism\n\nBatching reduces per-item overhead and increases throughput by amortizing fixed costs, but it increases per-item latency because items wait for the batch to fill or a timer to expire.\n\nParallelism increases throughput by doing work concurrently, but can raise tail latency due to contention (locks, GC, IO).\n\nDesign trade-offs:\n- Choose batch sizes that balance latency targets and throughput needs.\n- Use parallelism carefully; measure tail percentiles under concurrency."
-          },
-          {
-            "id": "latency-vs-throughput-tail-latency",
-            "title": "Tail-Latency Causes & Mitigation",
-            "type": "article",
-            "content": "# Tail-Latency Causes & Mitigation\n\nCommon causes of high tail latency: GC pauses, noisy neighbors, slow downstream dependencies, queueing, and retries.\n\nMitigation techniques:\n- Hedged requests or request duplication with care.\n- Request coalescing to avoid redundant work.\n- Bulkheads to isolate resources and reduce cascading failures.\n- Timeouts and exponential backoff to stop retry storms.\n\nMeasure the impact of any mitigation with p99/p999 traces."
-          },
-          {
-            "id": "latency-vs-throughput-benchmarking",
-            "title": "Benchmarking & Load Testing",
-            "type": "article",
-            "content": "# Benchmarking & Load Testing\n\nRun realistic load tests: steady-state, spikes, ramps, and soak tests. Use tools like k6, locust, or JMeter.\n\n- Reproduce production-like traffic patterns and payload sizes.\n- Test both latency SLOs and throughput under load.\n- Record resource metrics and traces during tests.\n\nUse test results to validate autoscaling rules and capacity planning."
-          },
-          {
-            "id": "latency-vs-throughput-patterns",
-            "title": "Design Patterns & Techniques",
-            "type": "article",
-            "content": "# Design Patterns & Techniques\n\nUseful patterns: asynchronous processing (queues + workers), backpressure and rate-limiting, circuit breakers, caching, batching, and idempotent APIs.\n\n- Apply backpressure to protect downstream systems.\n- Use caches to reduce repeated work and improve latency.\n- Make critical paths as stateless and fast as possible."
-          },
-          {
-            "id": "latency-vs-throughput-examples",
-            "title": "Worked Examples",
-            "type": "article",
-            "content": "# Worked Examples\n\n1) Concurrency from latency (Little's Law): L = λ W. Example: λ=1000 RPS, W=0.05s → L=50 concurrent requests.\n\n2) Batch sizing: choose a batch size that keeps average wait < latency budget while delivering target throughput.\n\n3) Throughput vs latency: measure p50/p95/p99 at different concurrency levels to find optimal operating point."
-          },
-          {
-            "id": "latency-vs-throughput-exercises",
-            "title": "Exercises",
-            "type": "article",
-            "content": "# Exercises\n\n- Given λ=5000 RPS and p95 target 100 ms, compute expected concurrency using Little's Law.\n- Propose a batch size if average per-item processing is 2 ms and you want to keep per-item wait < 20 ms.\n- Given observed p99 spikes correlated with GC pauses, list 3 mitigation steps and how to validate them."
+            "content": "# Capstone Exercise\n\nDesign a global photo-sharing service with 12 million daily active users. At peak it receives 80,000 feed reads and 8,000 photo uploads per second. Photos average 3 MB. Seventy percent of traffic is split between North America and Europe, and users expect feed reads below 300 ms at p95. An uploaded photo may take up to 10 seconds to appear in followers' feeds, but a user must immediately see that their own upload was accepted. The service targets 99.95% availability for feed reads.\n\nProduce an architecture diagram and a written rationale covering:\n\n1. Estimate peak bandwidth and one year of new photo storage. State every assumption.\n2. Separate the synchronous upload path from image processing and feed fan-out. Identify queue boundaries and idempotency requirements.\n3. Choose cache and CDN responsibilities, keys, freshness rules, and origin-protection measures.\n4. Choose the source of truth and a partitioning strategy for photo metadata. Explain how the design handles high-follower accounts.\n5. Decide whether the stated requirements justify multiple active regions. Describe data ownership, replication, routing, and regional failover.\n6. Define two SLIs and SLOs, then list the metrics, traces, and logs required to diagnose a slow feed.\n7. Describe overload behavior when traffic doubles and one dependency is degraded.\n8. Identify the three most expensive parts of the design and one safe optimization for each.\n\nA strong answer connects every component to a requirement, explains consistency and failure behavior, and names at least one simpler alternative that was deliberately rejected."
           }
         ]
       }
