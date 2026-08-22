@@ -53,6 +53,8 @@ export interface SavedDiagram {
   createdAt: string;
   updatedAt: string;
   isPublic?: boolean;
+  publishedAt?: string | null;
+  viewCount?: number;
   collaborators?: Collaborator[];
   // New fields from backend enhancement
   isOwner: boolean;

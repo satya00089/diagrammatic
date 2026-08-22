@@ -1,11 +1,30 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MdClose, MdCheck, MdContentCopy, MdOpenInNew } from "react-icons/md";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  MdCheck,
+  MdClose,
+  MdContentCopy,
+  MdImage,
+  MdLockOutline,
+  MdOpenInNew,
+  MdPublic,
+  MdRefresh,
+  MdVisibilityOff,
+} from "react-icons/md";
 import { FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { SiMedium } from "react-icons/si";
 import { apiService } from "../services/api";
-import type { ValidationResult, SystemDesignProblem } from "../types/systemDesign";
+import type {
+  ValidationResult,
+  SystemDesignProblem,
+} from "../types/systemDesign";
 import type { User } from "../types/auth";
 
 interface ShareToWorldModalProps {
@@ -14,38 +33,41 @@ interface ShareToWorldModalProps {
   assessment: ValidationResult | null;
   problem: SystemDesignProblem | null;
   savedAttemptId: string | null;
-  /** Pass the current free-design diagram ID to enable sharing from Design Studio */
+  /** Pass the current free-design diagram ID to enable sharing from Design Studio. */
   diagramId?: string | null;
-  /** Title shown in the modal header when sharing a free diagram */
+  /** Title shown when sharing a free-form diagram. */
   diagramTitle?: string;
   user: User | null;
   captureCanvasPng: () => Promise<string>;
+  initiallyPublished?: boolean;
+  onVisibilityChange?: (isPublic: boolean) => void;
 }
 
-const ScoreRing: React.FC<{ score: number }> = ({ score }) => {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  let color = "#ef4444";
-  if (score >= 80) color = "#10b981";
-  else if (score >= 60) color = "#f59e0b";
-  return (
-    <div className="relative w-24 h-24 flex-shrink-0">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 88 88">
-        <circle cx="44" cy="44" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-theme/10" />
-        <circle
-          cx="44" cy="44" r={r} fill="none" stroke={color}
-          strokeWidth="6" strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={circ - (score / 100) * circ}
-          style={{ transition: "stroke-dashoffset 1s ease-out" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold leading-none" style={{ color }}>{score}</span>
-        <span className="text-[10px] text-[color:var(--share-text)]/90 leading-none mt-0.5">/100</span>
-      </div>
-    </div>
-  );
+type SharePhase =
+  | "preview"
+  | "publishing"
+  | "published"
+  | "unpublishing"
+  | "error";
+
+const PREVIEW_TIMEOUT_MS = 3000;
+
+const getPublicUrl = (id: string) => {
+  if (typeof window === "undefined") return `/public/${encodeURIComponent(id)}`;
+  return `${window.location.origin}/public/${encodeURIComponent(id)}`;
+};
+
+const fallbackCopy = (value: string) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(textArea);
+  if (!copied) throw new Error("Copy command was rejected");
 };
 
 const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
@@ -57,266 +79,614 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   diagramId,
   diagramTitle,
   user,
+  captureCanvasPng,
+  initiallyPublished = false,
+  onVisibilityChange,
 }) => {
-  const [publicUrl, setPublicUrl] = useState<string | null>(null);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [messageCopied, setMessageCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const publishedRef = useRef(false); // guard against double-publish
+  const reduceMotion = useReducedMotion();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previewRequestRef = useRef(0);
+  const captureCanvasPngRef = useRef(captureCanvasPng);
 
-  // Determine sharing mode
+  const [phase, setPhase] = useState<SharePhase>("preview");
+  const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [messageCopied, setMessageCopied] = useState<string | null>(null);
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
+
+  useEffect(() => {
+    captureCanvasPngRef.current = captureCanvasPng;
+  }, [captureCanvasPng]);
+
   const mode: "attempt" | "diagram" | null = savedAttemptId
     ? "attempt"
     : diagramId
-    ? "diagram"
-    : null;
+      ? "diagram"
+      : null;
+  const entityId = savedAttemptId ?? diagramId ?? null;
+  const sharedTitle =
+    mode === "attempt"
+      ? (problem?.title ?? "System design solution")
+      : diagramTitle?.trim() || "Untitled design";
+  const score = assessment?.score ?? null;
+  const isBusy = phase === "publishing" || phase === "unpublishing";
+  const isPublished = phase === "published" || phase === "unpublishing";
 
-  const score = assessment?.score ?? 0;
-  const problemTitle = problem?.title ?? "System Design";
-  const sharedTitle = mode === "attempt" ? problemTitle : (diagramTitle || "My Design");
-  const scoreLabel =
-    score >= 80 ? "Outstanding work!" : score >= 60 ? "Solid design!" : "Keep improving!";
+  const statusCopy = useMemo(() => {
+    if (score == null) return null;
+    if (score >= 80) return "Strong architecture";
+    if (score >= 60) return "Solid foundation";
+    return "Work in progress";
+  }, [score]);
 
-  // Auto-publish when the modal opens (one-shot guard via ref)
+  const defaultPost = useMemo(() => {
+    const link = publicUrl ?? "";
+    if (mode === "attempt") {
+      return `I just completed “${sharedTitle}” on Diagrammatic${score == null ? "" : ` with a score of ${score}/100`}. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
+    }
+    return `I published my system design “${sharedTitle}” on Diagrammatic. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
+  }, [mode, publicUrl, score, sharedTitle]);
+
+  const copyText = useCallback(async (value: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        fallbackCopy(value);
+      }
+    } catch {
+      fallbackCopy(value);
+    }
+  }, []);
+
+  const capturePreview = useCallback(async () => {
+    const requestId = ++previewRequestRef.current;
+    let timeoutId: number | undefined;
+    setPreviewLoading(true);
+    setPreviewError(false);
+    try {
+      const image = await Promise.race([
+        captureCanvasPngRef.current(),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(
+            () => reject(new Error("Preview capture timed out")),
+            PREVIEW_TIMEOUT_MS,
+          );
+        }),
+      ]);
+      if (previewRequestRef.current === requestId) setPreviewUrl(image);
+    } catch {
+      if (previewRequestRef.current === requestId) setPreviewError(true);
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      if (previewRequestRef.current === requestId) setPreviewLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
-      setPublicUrl(null);
-      setLinkCopied(false);
-      setMessageCopied(false);
-      setError(null);
-      publishedRef.current = false;
+      previewRequestRef.current += 1;
       return;
     }
-    if (!mode || publishedRef.current) return;
-    publishedRef.current = true;
-    let cancelled = false;
-    setIsPublishing(true);
+
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    setPhase(initiallyPublished ? "published" : "preview");
+    setPublicUrl(
+      initiallyPublished && entityId ? getPublicUrl(entityId) : null,
+    );
     setError(null);
+    setLinkCopied(false);
+    setMessageCopied(null);
+    setConfirmUnpublish(false);
+    setPreviewUrl(null);
+    void capturePreview();
 
-    const publishPromise =
-      mode === "attempt" && savedAttemptId
-        ? apiService.publishAttempt(savedAttemptId).then((res) => res.publicUrl)
-        : mode === "diagram" && diagramId
-        ? apiService.publishDiagram(diagramId).then((res) => res.publicUrl)
-        : Promise.reject(new Error("Nothing to publish"));
+    const focusTimer = window.setTimeout(() => dialogRef.current?.focus(), 0);
+    return () => {
+      window.clearTimeout(focusTimer);
+      previousFocusRef.current?.focus();
+    };
+  }, [capturePreview, entityId, initiallyPublished, isOpen]);
 
-    publishPromise
-      .then((url) => { if (!cancelled) setPublicUrl(url); })
-      .catch(() => { if (!cancelled) setError("Couldn't publish. Please try again."); })
-      .finally(() => { if (!cancelled) setIsPublishing(false); });
-    return () => { cancelled = true; };
-  }, [isOpen, mode, savedAttemptId, diagramId]);
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isBusy) {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isBusy, isOpen, onClose]);
+
+  const handlePublish = useCallback(async () => {
+    if (!mode || !entityId || phase === "publishing") return;
+    setPhase("publishing");
+    setError(null);
+    try {
+      const result =
+        mode === "attempt"
+          ? await apiService.publishAttempt(entityId)
+          : await apiService.publishDiagram(entityId);
+      setPublicUrl(result.publicUrl);
+      setPhase("published");
+      onVisibilityChange?.(true);
+    } catch (publishError) {
+      setError(
+        publishError instanceof Error
+          ? publishError.message
+          : "The design could not be published. Check your connection and try again.",
+      );
+      setPhase("error");
+    }
+  }, [entityId, mode, onVisibilityChange, phase]);
+
+  const handleUnpublish = useCallback(async () => {
+    if (!mode || !entityId || phase === "unpublishing") return;
+    setPhase("unpublishing");
+    setError(null);
+    try {
+      if (mode === "attempt") await apiService.unpublishAttempt(entityId);
+      else await apiService.unpublishDiagram(entityId);
+      setPublicUrl(null);
+      setConfirmUnpublish(false);
+      setPhase("preview");
+      onVisibilityChange?.(false);
+    } catch {
+      setError(
+        "The design is still public. Check your connection and try unpublishing again.",
+      );
+      setPhase("published");
+    }
+  }, [entityId, mode, onVisibilityChange, phase]);
 
   const handleCopyLink = useCallback(async () => {
     if (!publicUrl) return;
-    await navigator.clipboard.writeText(publicUrl);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  }, [publicUrl]);
+    try {
+      await copyText(publicUrl);
+      setLinkCopied(true);
+      setError(null);
+      window.setTimeout(() => setLinkCopied(false), 2200);
+    } catch {
+      setError(
+        "Your browser blocked automatic copying. Select the link and copy it manually.",
+      );
+    }
+  }, [copyText, publicUrl]);
 
-  const defaultPost =
-    mode === "attempt"
-      ? `?? Just solved "${sharedTitle}" on Diagrammatic!\n\nScore: ${score}/100 ?? ${scoreLabel}\n\nCheck it out: ${publicUrl ?? ""}\n\n#SystemDesign #SoftwareArchitecture`
-      : `?? Just shared my system design "${sharedTitle}" on Diagrammatic!\n\nCheck it out: ${publicUrl ?? ""}\n\n#SystemDesign #SoftwareArchitecture`;
-
-  const handleLinkedIn = useCallback(() => {
+  const handleLinkedIn = useCallback(async () => {
     if (!publicUrl) return;
-    navigator.clipboard.writeText(defaultPost).catch(() => {});
+    try {
+      await copyText(defaultPost);
+      setMessageCopied("LinkedIn post copied");
+    } catch {
+      setMessageCopied(null);
+    }
     window.open(
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicUrl)}`,
-      "_blank", "noopener,noreferrer"
+      "_blank",
+      "noopener,noreferrer",
     );
-  }, [publicUrl, defaultPost]);
+  }, [copyText, defaultPost, publicUrl]);
 
   const handleTwitter = useCallback(() => {
     if (!publicUrl) return;
-    const tweet =
+    const post =
       mode === "attempt"
-        ? `?? Solved "${sharedTitle}" ?? ${score}/100 on Diagrammatic!`
-        : `?? Shared my system design "${sharedTitle}" on Diagrammatic!`;
+        ? `I completed “${sharedTitle}” on Diagrammatic${score == null ? "" : ` — ${score}/100`}.`
+        : `Explore my system design “${sharedTitle}” on Diagrammatic.`;
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}&url=${encodeURIComponent(publicUrl)}`,
-      "_blank", "noopener,noreferrer"
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(post)}&url=${encodeURIComponent(publicUrl)}`,
+      "_blank",
+      "noopener,noreferrer",
     );
-  }, [publicUrl, sharedTitle, score, mode]);
+  }, [mode, publicUrl, score, sharedTitle]);
 
   const handleMedium = useCallback(async () => {
-    const article =
-      mode === "attempt"
-        ? `# My ${sharedTitle} System Design\n\n${defaultPost}`
-        : `# My System Design: ${sharedTitle}\n\n${defaultPost}`;
-    await navigator.clipboard.writeText(article);
-    setMessageCopied(true);
-    setTimeout(() => setMessageCopied(false), 2500);
-    window.open("https://medium.com/new-story", "_blank", "noopener,noreferrer");
-  }, [defaultPost, sharedTitle, mode]);
+    if (!publicUrl) return;
+    const article = `# ${sharedTitle}\n\n${defaultPost}`;
+    try {
+      await copyText(article);
+      setMessageCopied("Article starter copied");
+    } catch {
+      setMessageCopied(null);
+    }
+    window.open(
+      "https://medium.com/new-story",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }, [copyText, defaultPost, publicUrl, sharedTitle]);
 
   if (!isOpen) return null;
 
-  const isReady = !isPublishing && !!publicUrl;
-
   return (
     <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          {/* Backdrop */}
-          <motion.div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
-          />
+      <motion.div
+        className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-6"
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <button
+          type="button"
+          aria-label="Close publish dialog"
+          className="absolute inset-0 cursor-default bg-slate-950/70"
+          onClick={() => !isBusy && onClose()}
+          disabled={isBusy}
+        />
 
-          {/* Panel */}
-          <motion.div
-            className="relative z-10 w-full max-w-md bg-[var(--surface)] rounded-2xl shadow-2xl border border-[var(--border)] overflow-hidden"
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 24, stiffness: 320 }}
-          >
-            {/* -- Header band -- */}
-            <div className="relative bg-[var(--share-bg)] text-[var(--share-text)] dark:bg-[var(--share-bg)] dark:text-[var(--share-text)] px-6 pt-5 pb-5">
-              <button
-                onClick={onClose}
-                className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/25 text-[color:var(--share-text)] transition-colors"
+        <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="public-share-title"
+          aria-describedby="public-share-description"
+          tabIndex={-1}
+          className="relative z-10 flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-[var(--surface)] text-theme shadow-[0_24px_80px_rgba(0,0,0,0.35)] outline-none sm:rounded-2xl"
+          initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.98 }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.22,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        >
+          <header className="flex items-start gap-4 border-b border-[var(--border)] px-5 py-4 sm:px-6 sm:py-5">
+            <div
+              className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
+                isPublished
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "bg-[var(--brand)]/12 text-[var(--brand)]"
+              }`}
+              aria-hidden="true"
+            >
+              {isPublished ? <MdCheck size={22} /> : <MdPublic size={22} />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2
+                  id="public-share-title"
+                  className="text-lg font-bold leading-tight text-theme sm:text-xl"
+                >
+                  {isPublished ? "Your design is live" : "Publish your design"}
+                </h2>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                    isPublished
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                      : "bg-[var(--bg)] text-muted"
+                  }`}
+                >
+                  {isPublished ? (
+                    <MdPublic aria-hidden />
+                  ) : (
+                    <MdLockOutline aria-hidden />
+                  )}
+                  {isPublished ? "Public" : "Private"}
+                </span>
+              </div>
+              <p
+                id="public-share-description"
+                className="mt-1 max-w-2xl text-sm leading-relaxed text-muted"
               >
-                <MdClose size={17} />
-              </button>
-              <div className="flex items-center gap-4">
-                {mode === "attempt" ? (
-                  <ScoreRing score={score} />
+                {isPublished
+                  ? "Anyone with the link can explore this read-only design."
+                  : "Review what people will see. Nothing becomes public until you confirm."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isBusy}
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[var(--bg-hover)] hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Close"
+            >
+              <MdClose size={20} />
+            </button>
+          </header>
+
+          <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)]">
+            <section className="border-b border-[var(--border)] p-5 sm:p-6 lg:border-b-0 lg:border-r">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-[var(--bg)]">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={`Preview of ${sharedTitle}`}
+                    className="h-full w-full object-contain"
+                  />
+                ) : previewLoading ? (
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted"
+                    aria-live="polite"
+                  >
+                    <span className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
+                    <span className="text-sm">Building a quick preview…</span>
+                  </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0 text-3xl">
-                    ?????
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+                    <MdImage size={30} aria-hidden />
+                    <div>
+                      <p className="text-sm font-semibold text-theme">
+                        Preview skipped
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed">
+                        Publishing is ready, and the interactive public canvas
+                        will still be available.
+                      </p>
+                    </div>
+                    {previewError && (
+                      <button
+                        type="button"
+                        onClick={() => void capturePreview()}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                      >
+                        <MdRefresh aria-hidden /> Retry preview
+                      </button>
+                    )}
                   </div>
                 )}
-                <div className="min-w-0">
-                  <p className="text-[color:var(--share-text)]/60 text-[10px] font-semibold uppercase tracking-widest mb-0.5">
-                    {mode === "attempt" ? "Achievement unlocked" : "Sharing your design"}
-                  </p>
-                  <h2 className="text-[color:var(--share-text)] text-base font-bold leading-snug">{sharedTitle}</h2>
-                  {mode === "attempt" && (
-                    <p className="text-[color:var(--share-text)]/80 text-sm mt-0.5">{scoreLabel}</p>
-                  )}
-                  {user?.name && (
-                    <p className="text-[color:var(--share-text)]/50 text-xs mt-1 truncate">by {user.name}</p>
+              </div>
+
+              <div className="mt-4 min-w-0">
+                <h3 className="break-words text-base font-bold leading-snug text-theme">
+                  {sharedTitle}
+                </h3>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+                  <span className="truncate">
+                    by {user?.name?.trim() || user?.email || "Anonymous"}
+                  </span>
+                  <span>
+                    {mode === "attempt"
+                      ? "Reviewed solution"
+                      : "Free-form design"}
+                  </span>
+                  {score != null && (
+                    <span className="font-semibold tabular-nums text-theme">
+                      {score}/100{statusCopy ? ` · ${statusCopy}` : ""}
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* -- Body -- */}
-            <div className="px-5 py-4 space-y-4">
+            <section className="flex min-h-[260px] flex-col p-5 sm:p-6">
+              {!isPublished ? (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex gap-3 rounded-xl bg-[var(--bg)] p-4">
+                      <MdPublic
+                        className="mt-0.5 flex-shrink-0 text-[var(--brand)]"
+                        size={20}
+                        aria-hidden
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-theme">
+                          Anyone with the link can view
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted">
+                          Viewers can pan and zoom, but they cannot edit your
+                          original design. You can unpublish at any time.
+                        </p>
+                      </div>
+                    </div>
 
-              {/* Public link row */}
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[var(--bg)] border border-[var(--border)]">
-                {isPublishing ? (
-                  <div className="flex items-center gap-2 flex-1 text-sm text-muted">
-                    <svg className="animate-spin h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                    Publishing your solution�
+                    {error && (
+                      <div
+                        role="alert"
+                        className="rounded-xl bg-red-500/10 px-4 py-3 text-sm leading-relaxed text-red-700 dark:text-red-300"
+                      >
+                        <p className="font-semibold">
+                          Publishing did not complete
+                        </p>
+                        <p className="mt-1 text-xs">{error}</p>
+                      </div>
+                    )}
                   </div>
-                ) : error ? (
-                  <span className="flex-1 text-xs text-red-400">{error}</span>
-                ) : (
-                  <>
-                    <span className="text-xs text-muted truncate flex-1 font-mono">{publicUrl}</span>
+
+                  <div className="mt-auto pt-6">
                     <button
-                      onClick={handleCopyLink}
-                      className="flex-shrink-0 flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-[var(--brand,#6366f1)]/10 text-[var(--brand,#6366f1)] hover:bg-[var(--brand,#6366f1)]/20 transition-colors"
+                      type="button"
+                      onClick={() => void handlePublish()}
+                      disabled={!mode || phase === "publishing"}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(79,70,229,0.24)] transition-[transform,background-color,box-shadow] hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                     >
-                      {linkCopied ? <MdCheck size={13} /> : <MdContentCopy size={13} />}
-                      {linkCopied ? "Copied!" : "Copy"}
+                      {phase === "publishing" ? (
+                        <>
+                          <span
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                            aria-hidden
+                          />
+                          Publishing…
+                        </>
+                      ) : (
+                        <>
+                          <MdPublic size={18} aria-hidden /> Publish design
+                        </>
+                      )}
                     </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      disabled={isBusy}
+                      className="mt-2 w-full rounded-lg py-2 text-sm font-medium text-muted hover:bg-[var(--bg-hover)] hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                    >
+                      Keep private
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div aria-live="polite">
+                    <label
+                      htmlFor="public-design-link"
+                      className="text-xs font-semibold text-theme"
+                    >
+                      Public link
+                    </label>
+                    <div className="mt-2 flex min-w-0 items-center gap-2 rounded-xl bg-[var(--bg)] p-2">
+                      <input
+                        id="public-design-link"
+                        readOnly
+                        value={publicUrl ?? ""}
+                        onFocus={(event) => event.currentTarget.select()}
+                        className="min-w-0 flex-1 bg-transparent px-2 text-xs text-theme outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyLink()}
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-bold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+                      >
+                        {linkCopied ? (
+                          <MdCheck aria-hidden />
+                        ) : (
+                          <MdContentCopy aria-hidden />
+                        )}
+                        {linkCopied ? "Copied" : "Copy link"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     <a
                       href={publicUrl ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-shrink-0 text-muted hover:text-theme transition-colors"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--bg)] px-3 py-2.5 text-sm font-semibold text-theme hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
                     >
-                      <MdOpenInNew size={15} />
+                      <MdOpenInNew aria-hidden /> Open page
                     </a>
-                  </>
-                )}
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyLink()}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--bg)] px-3 py-2.5 text-sm font-semibold text-theme hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                    >
+                      <MdContentCopy aria-hidden /> Copy again
+                    </button>
+                  </div>
 
-              {/* Share buttons */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-semibold text-muted uppercase tracking-widest">Share on</p>
-
-                {/* LinkedIn */}
-                <button
-                  onClick={handleLinkedIn}
-                  disabled={!isReady}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border)] hover:border-[#0077b5]/50 hover:bg-[#0077b5]/6 disabled:opacity-40 disabled:cursor-not-allowed transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[#0077b5] flex items-center justify-center text-white flex-shrink-0">
-                    <FaLinkedin size={16} />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-semibold text-theme">LinkedIn</p>
-                    <p className="text-xs text-muted">Post copied to clipboard automatically</p>
-                  </div>
-                  <MdOpenInNew size={14} className="text-muted/40 group-hover:text-muted transition-colors flex-shrink-0" />
-                </button>
-
-                {/* Twitter / X */}
-                <button
-                  onClick={handleTwitter}
-                  disabled={!isReady}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border)] hover:border-white/20 hover:bg-theme/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white flex-shrink-0">
-                    <FaXTwitter size={14} />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-semibold text-theme">X / Twitter</p>
-                    <p className="text-xs text-muted">Tweet your achievement</p>
-                  </div>
-                  <MdOpenInNew size={14} className="text-muted/40 group-hover:text-muted transition-colors flex-shrink-0" />
-                </button>
-
-                {/* Medium */}
-                <button
-                  onClick={handleMedium}
-                  disabled={!isReady}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border)] hover:border-gray-400/30 hover:bg-theme/5 disabled:opacity-40 disabled:cursor-not-allowed transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white flex-shrink-0">
-                    <SiMedium size={16} />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-semibold text-theme">Medium</p>
-                    <p className="text-xs text-muted">
-                      {messageCopied
-                        ? "? Article copied � paste into Medium!"
-                        : "Full article copied to clipboard"}
+                  <div className="mt-6">
+                    <p className="text-xs font-semibold text-theme">
+                      Share your work
                     </p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleLinkedIn()}
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-[#0A66C2] px-2 py-3 text-xs font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A66C2] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                      >
+                        <FaLinkedin size={18} aria-hidden /> LinkedIn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTwitter}
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-2 py-3 text-xs font-semibold text-white hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] dark:bg-white dark:text-black"
+                      >
+                        <FaXTwitter size={17} aria-hidden /> X
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleMedium()}
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-2 py-3 text-xs font-semibold text-white hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                      >
+                        <SiMedium size={18} aria-hidden /> Medium
+                      </button>
+                    </div>
+                    {messageCopied && (
+                      <p
+                        className="mt-2 text-center text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                        aria-live="polite"
+                      >
+                        {messageCopied}. Paste it into the new window.
+                      </p>
+                    )}
                   </div>
-                  <MdOpenInNew size={14} className="text-muted/40 group-hover:text-muted transition-colors flex-shrink-0" />
-                </button>
-              </div>
-            </div>
 
-            {/* -- Footer -- */}
-            <div className="px-5 pb-4 pt-1">
-              <button
-                onClick={onClose}
-                className="w-full py-2 text-sm text-muted hover:text-theme transition-colors rounded-xl hover:bg-[var(--bg-hover)]"
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
+                  {error && (
+                    <p
+                      role="alert"
+                      className="mt-4 rounded-xl bg-red-500/10 px-3 py-2 text-xs leading-relaxed text-red-700 dark:text-red-300"
+                    >
+                      {error}
+                    </p>
+                  )}
+
+                  <div className="mt-auto pt-6">
+                    {confirmUnpublish ? (
+                      <div className="rounded-xl bg-red-500/10 p-3">
+                        <p className="text-xs leading-relaxed text-red-800 dark:text-red-200">
+                          The public link will stop working. Your saved design
+                          will not be deleted.
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleUnpublish()}
+                            disabled={phase === "unpublishing"}
+                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-50"
+                          >
+                            {phase === "unpublishing" ? (
+                              <span
+                                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                                aria-hidden
+                              />
+                            ) : (
+                              <MdVisibilityOff aria-hidden />
+                            )}
+                            Unpublish
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmUnpublish(false)}
+                            disabled={phase === "unpublishing"}
+                            className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-theme hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmUnpublish(true)}
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold text-muted hover:bg-red-500/10 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:text-red-300"
+                      >
+                        <MdVisibilityOff aria-hidden /> Manage visibility
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
         </motion.div>
-      )}
+      </motion.div>
     </AnimatePresence>
   );
 };

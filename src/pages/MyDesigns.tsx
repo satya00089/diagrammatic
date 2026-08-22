@@ -9,8 +9,35 @@ import { useTour } from "../hooks/useTour";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
-import { MdSearch, MdSort, MdSearchOff, MdHelpOutline } from "react-icons/md";
+import {
+  MdContentCopy,
+  MdHelpOutline,
+  MdLockOutline,
+  MdOpenInNew,
+  MdPublic,
+  MdSearch,
+  MdSearchOff,
+  MdSort,
+  MdVisibilityOff,
+} from "react-icons/md";
 import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
+
+const copyValue = async (value: string) => {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    const textArea = document.createElement("textarea");
+    textArea.value = value;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    if (!copied) throw new Error("Copy was blocked");
+  }
+};
 
 const MyDesigns: React.FC = () => {
   useTheme();
@@ -30,6 +57,11 @@ const MyDesigns: React.FC = () => {
   const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(
     null,
   );
+  const [diagramToUnpublish, setDiagramToUnpublish] =
+    useState<SavedDiagram | null>(null);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const [unpublishError, setUnpublishError] = useState<string | null>(null);
+  const [copiedDiagramId, setCopiedDiagramId] = useState<string | null>(null);
   const {
     user,
     isAuthenticated: isAuth,
@@ -54,7 +86,7 @@ const MyDesigns: React.FC = () => {
       const t = setTimeout(() => startTour(), 800);
       return () => clearTimeout(t);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load diagrams
@@ -117,6 +149,66 @@ const MyDesigns: React.FC = () => {
     setDiagramToDelete(null);
   };
 
+  const publicUrlFor = (diagramId: string) =>
+    `${window.location.origin}/public/${encodeURIComponent(diagramId)}`;
+
+  const handleCopyPublicLink = async (
+    diagram: SavedDiagram,
+    event: React.MouseEvent,
+  ) => {
+    event.stopPropagation();
+    try {
+      await copyValue(publicUrlFor(diagram.id));
+      setCopiedDiagramId(diagram.id);
+      window.setTimeout(
+        () =>
+          setCopiedDiagramId((current) =>
+            current === diagram.id ? null : current,
+          ),
+        2200,
+      );
+    } catch {
+      window.prompt("Copy this public link:", publicUrlFor(diagram.id));
+    }
+  };
+
+  const handleOpenPublicPage = (
+    diagram: SavedDiagram,
+    event: React.MouseEvent,
+  ) => {
+    event.stopPropagation();
+    window.open(publicUrlFor(diagram.id), "_blank", "noopener,noreferrer");
+  };
+
+  const requestUnpublish = (diagram: SavedDiagram, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setUnpublishError(null);
+    setDiagramToUnpublish(diagram);
+  };
+
+  const confirmUnpublish = async () => {
+    if (!diagramToUnpublish || isUnpublishing) return;
+    setIsUnpublishing(true);
+    setUnpublishError(null);
+    try {
+      await apiService.unpublishDiagram(diagramToUnpublish.id);
+      setSavedDiagrams((current) =>
+        current.map((diagram) =>
+          diagram.id === diagramToUnpublish.id
+            ? { ...diagram, isPublic: false }
+            : diagram,
+        ),
+      );
+      setDiagramToUnpublish(null);
+    } catch {
+      setUnpublishError(
+        "The design is still public. Check your connection and try again.",
+      );
+    } finally {
+      setIsUnpublishing(false);
+    }
+  };
+
   // Filter and sort diagrams
   const filteredDiagrams = savedDiagrams
     .filter((diagram) => {
@@ -165,7 +257,10 @@ const MyDesigns: React.FC = () => {
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300" style={{ top: 'var(--announcement-h, 0px)' }}>
+        <header
+          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
+          style={{ top: "var(--announcement-h, 0px)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -316,7 +411,10 @@ const MyDesigns: React.FC = () => {
             {!loadingDiagrams && (
               <>
                 {/* Filter Tabs */}
-                <div className="flex gap-2 mb-6 justify-center" data-tour="filter-tabs">
+                <div
+                  className="flex gap-2 mb-6 justify-center"
+                  data-tour="filter-tabs"
+                >
                   <button
                     type="button"
                     onClick={() => setFilterBy("all")}
@@ -468,8 +566,6 @@ const MyDesigns: React.FC = () => {
                                 : ""
                         }`}
                       >
-
-
                         <div className="relative p-6">
                           {/* Delete Button - Only for owners */}
                           {diagram.isOwner && (
@@ -508,12 +604,41 @@ const MyDesigns: React.FC = () => {
                                   </h3>
                                 </div>
 
+                                {diagram.isOwner && (
+                                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                        diagram.isPublic
+                                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                                          : "bg-[var(--theme)]/8 text-muted"
+                                      }`}
+                                    >
+                                      {diagram.isPublic ? (
+                                        <MdPublic aria-hidden />
+                                      ) : (
+                                        <MdLockOutline aria-hidden />
+                                      )}
+                                      {diagram.isPublic ? "Public" : "Private"}
+                                    </span>
+                                    {diagram.isPublic && (
+                                      <span className="text-[11px] tabular-nums text-muted">
+                                        {diagram.viewCount ?? 0}{" "}
+                                        {(diagram.viewCount ?? 0) === 1
+                                          ? "view"
+                                          : "views"}
+                                        {diagram.publishedAt
+                                          ? ` · Published ${new Date(diagram.publishedAt).toLocaleDateString()}`
+                                          : ""}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+
                                 {/* Enhanced Ownership & Permission Section */}
                                 {!diagram.isOwner && (
                                   <div className="mb-2 flex items-center gap-2 flex-wrap">
                                     {/* Owner Info Badge - Inline */}
                                     <div className="group/owner relative rounded-lg bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 transition-all duration-300 inline-flex items-center gap-2">
-
                                       <div className="relative flex items-center gap-1.5">
                                         {/* Avatar */}
                                         <div className="relative flex-shrink-0">
@@ -600,7 +725,9 @@ const MyDesigns: React.FC = () => {
                                   </p>
                                 )}
                               </div>
-                              <div className="text-[var(--brand)]/30"><HiCube className="w-8 h-8" /></div>
+                              <div className="text-[var(--brand)]/30">
+                                <HiCube className="w-8 h-8" />
+                              </div>
                             </div>
 
                             <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
@@ -666,15 +793,50 @@ const MyDesigns: React.FC = () => {
                               </span>
                             </div>
 
+                            {diagram.isOwner && diagram.isPublic && (
+                              <div className="mb-3 grid grid-cols-3 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    void handleCopyPublicLink(diagram, event)
+                                  }
+                                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-[var(--theme)]/5 px-2 py-2 text-[11px] font-semibold text-theme hover:bg-[var(--theme)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                                >
+                                  <MdContentCopy aria-hidden />
+                                  {copiedDiagramId === diagram.id
+                                    ? "Copied"
+                                    : "Copy link"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    handleOpenPublicPage(diagram, event)
+                                  }
+                                  className="inline-flex items-center justify-center gap-1 rounded-lg bg-[var(--theme)]/5 px-2 py-2 text-[11px] font-semibold text-theme hover:bg-[var(--theme)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+                                >
+                                  <MdOpenInNew aria-hidden /> View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    requestUnpublish(diagram, event)
+                                  }
+                                  className="inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-semibold text-muted hover:bg-red-500/10 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:text-red-300"
+                                >
+                                  <MdVisibilityOff aria-hidden /> Unpublish
+                                </button>
+                              </div>
+                            )}
+
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenDiagram(diagram.id);
                               }}
-                              className="w-full px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                              className="w-full rounded-lg bg-[var(--brand)] px-6 py-3 font-semibold text-white transition-[transform,filter] duration-200 hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
                             >
-                              Open Design →
+                              Open design
                             </button>
                           </div>
                         </div>
@@ -754,6 +916,77 @@ const MyDesigns: React.FC = () => {
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer"
               >
                 Delete Design
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {diagramToUnpublish && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unpublish-design-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Cancel unpublishing"
+            onClick={() => !isUnpublishing && setDiagramToUnpublish(null)}
+            disabled={isUnpublishing}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-[var(--surface)] p-6 shadow-[0_24px_72px_rgba(0,0,0,0.34)]">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-300">
+                <MdVisibilityOff size={22} aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <h2
+                  id="unpublish-design-title"
+                  className="text-lg font-bold text-theme"
+                >
+                  Unpublish this design?
+                </h2>
+                <p className="mt-1 break-words text-sm leading-relaxed text-muted">
+                  The public link for “{diagramToUnpublish.title}” will stop
+                  working. Your saved design and collaborators will not be
+                  affected.
+                </p>
+              </div>
+            </div>
+
+            {unpublishError && (
+              <p
+                role="alert"
+                className="mt-4 rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300"
+              >
+                {unpublishError}
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setDiagramToUnpublish(null)}
+                disabled={isUnpublishing}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-theme hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] disabled:opacity-50"
+              >
+                Keep public
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmUnpublish()}
+                disabled={isUnpublishing}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isUnpublishing && (
+                  <span
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    aria-hidden
+                  />
+                )}
+                Unpublish
               </button>
             </div>
           </div>
