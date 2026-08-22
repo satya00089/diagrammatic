@@ -61,12 +61,20 @@ const computeEdgeParams = (
   }
 
   if (pathType === "straight") {
-    const [edgePath, centerX, centerY] = getStraightPath({ sourceX, sourceY, targetX, targetY });
+    const [edgePath, centerX, centerY] = getStraightPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+    });
     return { edgePath, centerX, centerY };
   }
 
   if (pathType === "step") {
-    const [edgePath, centerX, centerY] = getSmoothStepPath({ ...params, borderRadius: 0 });
+    const [edgePath, centerX, centerY] = getSmoothStepPath({
+      ...params,
+      borderRadius: 0,
+    });
     return { edgePath, centerX, centerY };
   }
 
@@ -77,7 +85,12 @@ const computeEdgeParams = (
 
   // Default: bezier
   const [edgePath] = getBezierPath(params);
-  const [centerX, centerY] = getEdgeCenter({ sourceX, sourceY, targetX, targetY });
+  const [centerX, centerY] = getEdgeCenter({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
   return { edgePath, centerX, centerY };
 };
 
@@ -97,20 +110,25 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     markerEnd,
   } = props;
 
-  const edgeData = data as {
-    label?: string;
-    hasLabel?: boolean;
-    description?: string;
-    pathType?: EdgePathType;
-    color?: string;
-    strokeWidth?: number;
-    animated?: boolean;
-    bidirectional?: boolean;
-  } | undefined;
+  const edgeData = data as
+    | {
+        label?: string;
+        hasLabel?: boolean;
+        description?: string;
+        pathType?: EdgePathType;
+        color?: string;
+        strokeWidth?: number;
+        animated?: boolean;
+        bidirectional?: boolean;
+        readOnly?: boolean;
+      }
+    | undefined;
 
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState<string>(edgeData?.label ?? "");
-  const [hasLabel, setHasLabel] = useState<boolean>(edgeData?.hasLabel ?? false);
+  const [hasLabel, setHasLabel] = useState<boolean>(
+    edgeData?.hasLabel ?? false,
+  );
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync label/hasLabel when edge data changes (e.g. after undo/redo or collab)
@@ -131,32 +149,35 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     const update = () =>
       setResolvedColors({
         surface: resolveCssVar("--surface", "#ffffff"),
-        text:    resolveCssVar("--text", "#111827"),
-        border:  resolveCssVar("--border", "#e5e7eb"),
-        brand:   resolveCssVar("--brand", "#6366f1"),
+        text: resolveCssVar("--text", "#111827"),
+        border: resolveCssVar("--border", "#e5e7eb"),
+        brand: resolveCssVar("--brand", "#6366f1"),
         bgHover: resolveCssVar("--bg-hover", "#f3f4f6"),
       });
     update();
     const observer = new MutationObserver(update);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
   // Detect if there's a bi-directional connection
   const isBiDirectionEdge = useStore((s: ReactFlowState) =>
     s.edges.some(
-      (e) =>
-        e.id !== id &&
-        e.source === target &&
-        e.target === source,
+      (e) => e.id !== id && e.source === target && e.target === source,
     ),
   );
 
   // Calculate path and center using extracted helper
-  const pathType: EdgePathType = (edgeData?.pathType) || "smoothstep";
-  const edgeColor = edgeData?.color || (selected ? resolvedColors.brand : resolvedColors.text + "99");
+  const pathType: EdgePathType = edgeData?.pathType || "smoothstep";
+  const edgeColor =
+    edgeData?.color ||
+    (selected ? resolvedColors.brand : resolvedColors.text + "99");
   const strokeW = edgeData?.strokeWidth ?? (selected ? 3 : 2);
   const isBidirectional = edgeData?.bidirectional ?? false;
+  const readOnly = edgeData?.readOnly ?? false;
 
   const edgePathParams = {
     sourceX,
@@ -173,12 +194,14 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   );
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
+    if (readOnly) return;
     e.stopPropagation();
     setEditing(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const onAddLabel = (e: React.MouseEvent) => {
+    if (readOnly) return;
     e.stopPropagation();
     setHasLabel(true);
     setEditing(true);
@@ -186,6 +209,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   };
 
   const onRemoveLabel = (e: React.MouseEvent) => {
+    if (readOnly) return;
     e.stopPropagation();
     setHasLabel(false);
     setValue("");
@@ -241,12 +265,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
       </defs>
 
       {/* Wider transparent hit-area for easier clicking */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={20}
-      />
+      <path d={edgePath} fill="none" stroke="transparent" strokeWidth={20} />
 
       <path
         id={id}
@@ -281,7 +300,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
         >
           {hasLabel ? (
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              {editing ? (
+              {editing && !readOnly ? (
                 <input
                   ref={inputRef}
                   value={value}
@@ -308,6 +327,26 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
                   }}
                   placeholder="Label..."
                 />
+              ) : readOnly ? (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    backgroundColor: resolvedColors.surface,
+                    color: resolvedColors.text,
+                    border: `1px solid ${selected ? resolvedColors.brand : resolvedColors.border}`,
+                    boxShadow: selected
+                      ? `0 0 0 1px ${resolvedColors.brand}`
+                      : "none",
+                    textAlign: "center",
+                    minWidth: "60px",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={edgeData?.description || value}
+                >
+                  {value || "Connection"}
+                </span>
               ) : (
                 <>
                   <button
@@ -320,7 +359,9 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
                       backgroundColor: resolvedColors.surface,
                       color: resolvedColors.text,
                       border: `1px solid ${selected ? resolvedColors.brand : resolvedColors.border}`,
-                      boxShadow: selected ? `0 0 0 1px ${resolvedColors.brand}` : "none",
+                      boxShadow: selected
+                        ? `0 0 0 1px ${resolvedColors.brand}`
+                        : "none",
                       textAlign: "center",
                       minWidth: "60px",
                       whiteSpace: "nowrap",
@@ -330,7 +371,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
                   >
                     {value || "Label"}
                   </button>
-                  {selected && (
+                  {selected && !readOnly && (
                     <button
                       onClick={onRemoveLabel}
                       style={{
@@ -351,7 +392,8 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
               )}
             </div>
           ) : (
-            selected && (
+            selected &&
+            !readOnly && (
               <button
                 onClick={onAddLabel}
                 style={{

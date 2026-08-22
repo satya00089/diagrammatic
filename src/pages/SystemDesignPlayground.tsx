@@ -35,6 +35,7 @@ import {
   MdExpandMore,
   MdSave,
   MdHelpOutline,
+  MdPublic,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 
@@ -287,40 +288,40 @@ const createTableNodeWithCopyHandler = (
 };
 
 // Create a wrapper component for FreeformNode with onCopy prop
-  const FreeformNodeWithCopy = React.memo(
-    (props: {
-      id: string;
-      data: unknown;
-      selected?: boolean;
-      onCopy: (id: string, data: AnyNodeData) => void;
-      isInGroup?: boolean;
-    }) => {
-      const nodeData = props.data as FreeformNodeData;
-      return (
-        <FreeformNode
-          id={props.id}
-          data={nodeData}
-          selected={props.selected}
-          onCopy={(id, data) => props.onCopy(id, data)}
-          isInGroup={props.isInGroup}
-        />
-      );
-    },
-  );
+const FreeformNodeWithCopy = React.memo(
+  (props: {
+    id: string;
+    data: unknown;
+    selected?: boolean;
+    onCopy: (id: string, data: AnyNodeData) => void;
+    isInGroup?: boolean;
+  }) => {
+    const nodeData = props.data as FreeformNodeData;
+    return (
+      <FreeformNode
+        id={props.id}
+        data={nodeData}
+        selected={props.selected}
+        onCopy={(id, data) => props.onCopy(id, data)}
+        isInGroup={props.isInGroup}
+      />
+    );
+  },
+);
 
-  // Factory function to create freeform node component with copy handler and group detection
-  const createFreeformNodeWithCopyHandler = (
-    onCopy: (id: string, data: AnyNodeData) => void,
-    nodesRef: React.RefObject<Node[]>,
-  ) => {
-    return (props: { id: string; data: unknown; selected?: boolean }) => {
-      const isInGroup =
-        nodesRef.current?.find((n) => n.id === props.id)?.parentId !== undefined;
-      return (
-        <FreeformNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />
-      );
-    };
+// Factory function to create freeform node component with copy handler and group detection
+const createFreeformNodeWithCopyHandler = (
+  onCopy: (id: string, data: AnyNodeData) => void,
+  nodesRef: React.RefObject<Node[]>,
+) => {
+  return (props: { id: string; data: unknown; selected?: boolean }) => {
+    const isInGroup =
+      nodesRef.current?.find((n) => n.id === props.id)?.parentId !== undefined;
+    return (
+      <FreeformNodeWithCopy {...props} onCopy={onCopy} isInGroup={isInGroup} />
+    );
   };
+};
 
 const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useTheme();
@@ -409,6 +410,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(globalThis.location.search);
   const diagramIdFromUrl = searchParams.get("diagramId");
+  const remixIdFromUrl = searchParams.get("remix");
 
   // State for problem data
   const [problem, setProblem] = useState<SystemDesignProblem | null>(null);
@@ -442,6 +444,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Share to the World state
   const [showShareToWorldModal, setShowShareToWorldModal] = useState(false);
   const [savedAttemptId, setSavedAttemptId] = useState<string | null>(null);
+  const [isAttemptPublic, setIsAttemptPublic] = useState(false);
   // Read-only shared view CTA
   const [sharedCta, setSharedCta] = useState<{
     to: string;
@@ -686,10 +689,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     userId: user?.id,
     problemId: idFromUrl,
     isEnabled:
-      isAuthenticated &&
-      !isSharedView &&
-      !!idFromUrl &&
-      idFromUrl !== "free",
+      isAuthenticated && !isSharedView && !!idFromUrl && idFromUrl !== "free",
   });
 
   // Wrapped change handlers — intercept add/remove events for training data before
@@ -713,7 +713,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     (changes: Parameters<typeof onEdgesChange>[0]) => {
       for (const change of changes) {
         if (change.type === "add") {
-          logEdgeAdded(nodesRef, edgesRef, change.item.source, change.item.target);
+          logEdgeAdded(
+            nodesRef,
+            edgesRef,
+            change.item.source,
+            change.item.target,
+          );
         }
       }
       onEdgesChange(changes);
@@ -726,7 +731,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     if (idFromUrl === "free" && !loading) {
       // Check if this is a blank canvas (no diagram loaded, no nodes)
       const isBlankCanvas =
-        !currentDiagramId && !diagramIdFromUrl && nodes.length === 0;
+        !currentDiagramId &&
+        !diagramIdFromUrl &&
+        !remixIdFromUrl &&
+        nodes.length === 0;
 
       const alreadyDismissed =
         localStorage.getItem(PROJECT_INTENT_DISMISSED_KEY) === "true";
@@ -755,6 +763,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     loading,
     currentDiagramId,
     diagramIdFromUrl,
+    remixIdFromUrl,
     nodes.length,
     resetChatBot,
   ]);
@@ -772,7 +781,46 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   useEffect(() => {
     lastSavedAttemptContentRef.current = null;
 
-    if (diagramIdFromUrl) {
+    if (idFromUrl === "free" && remixIdFromUrl) {
+      const loadRemix = async () => {
+        try {
+          const publicDiagram =
+            await apiService.getPublicDiagramData(remixIdFromUrl);
+          const restoredNodes = restoreNodeIcons(publicDiagram.nodes as Node[]);
+          const restoredEdges = publicDiagram.edges as Edge[];
+          const baseTitle = publicDiagram.title.trim() || "Shared design";
+
+          setNodes(restoredNodes);
+          setEdges(restoredEdges);
+          setCurrentDiagramId(null);
+          setCurrentDiagram(null);
+          setUserIntent({
+            title: `${baseTitle.slice(0, 188)} — Remix`,
+            description:
+              publicDiagram.description?.slice(0, 1000) ||
+              "Editable remix of a public Diagrammatic design.",
+            timestamp: new Date(),
+          });
+          setCanvasState({ nodes: restoredNodes, edges: restoredEdges });
+          window.setTimeout(
+            () => fitView({ padding: 0.2, duration: 400 }),
+            100,
+          );
+          toast.success(
+            isAuthenticated
+              ? "Remix created. Your copy will save automatically."
+              : "Remix created. Sign in when you are ready to save it.",
+          );
+        } catch (err) {
+          console.error("Failed to load public design for remix:", err);
+          toast.error(
+            "This design could not be remixed. It may no longer be public.",
+          );
+        }
+      };
+
+      void loadRemix();
+    } else if (diagramIdFromUrl) {
       // Load specific diagram from URL (allow for both authenticated and unauthenticated users for shared diagrams)
       const loadDiagramFromUrl = async () => {
         try {
@@ -850,6 +898,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges: Edge[];
             elapsedTime: number;
             lastAssessment?: ValidationResult;
+            isPublic?: boolean;
           } | null;
 
           console.log("Loaded attempt:", attempt);
@@ -890,6 +939,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             if (attempt.id) {
               setSavedAttemptId(attempt.id);
             }
+            setIsAttemptPublic(Boolean(attempt.isPublic));
 
             // Immediately update canvas state
             setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
@@ -904,7 +954,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       loadAttempt();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diagramIdFromUrl, isAuthenticated, idFromUrl, user?.id]);
+  }, [diagramIdFromUrl, isAuthenticated, idFromUrl, remixIdFromUrl, user?.id]);
 
   // Enable auto-save for authenticated users in both free mode and problem-solving mode
   useEffect(() => {
@@ -1076,7 +1126,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       isApplyingUndoRedo.current = false;
     }, 0);
   }, [canvasState, setNodes, setEdges]);
-
 
   // Timer effect - runs continuously every second (only for problems, not free mode)
   useEffect(() => {
@@ -1310,9 +1359,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             elapsedTime,
             lastAssessment: res,
-          })) as { id?: string };
+          })) as { id?: string; isPublic?: boolean };
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
+          }
+          if (typeof savedAttempt?.isPublic === "boolean") {
+            setIsAttemptPublic(savedAttempt.isPublic);
           }
 
           lastSavedAttemptContentRef.current = getAttemptContentSnapshot({
@@ -1426,13 +1478,27 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const defaultW = Number(comp?.width ?? minimalComp?.width ?? 180);
     const defaultH = Number(comp?.height ?? minimalComp?.height ?? 120);
     const propList = comp?.properties ?? fullComp?.properties ?? [];
-    const propDefaults = (propList || []).reduce((acc: Record<string, unknown>, p) => {
-      if (p.default !== undefined) acc[p.key] = p.default;
-      return acc;
-    }, {} as Record<string, unknown>);
-    const shapeTypeFromProps = (propDefaults.shapeType as string | undefined) ?? undefined;
+    const propDefaults = (propList || []).reduce(
+      (acc: Record<string, unknown>, p) => {
+        if (p.default !== undefined) acc[p.key] = p.default;
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+    const shapeTypeFromProps =
+      (propDefaults.shapeType as string | undefined) ?? undefined;
     const freeformDefault = isFreeformNode
-      ? { style: { width: defaultW, height: defaultH }, data: { shape: { type: shapeTypeFromProps ?? "rect", width: defaultW, height: defaultH }, ...propDefaults } }
+      ? {
+          style: { width: defaultW, height: defaultH },
+          data: {
+            shape: {
+              type: shapeTypeFromProps ?? "rect",
+              width: defaultW,
+              height: defaultH,
+            },
+            ...propDefaults,
+          },
+        }
       : {};
 
     const newNode: Node = {
@@ -1446,7 +1512,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             height: 300,
             zIndex: -1, // Groups should be behind regular nodes
           }
-        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
+        : isFreeformNode
+          ? (freeformDefault.style as unknown as Node["style"])
+          : undefined,
       // include icon so the custom node can render it
       data: {
         label: label, // Use label from priority order
@@ -1458,7 +1526,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
-        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
+        ...(isFreeformNode
+          ? (freeformDefault.data as unknown as AnyNodeData)
+          : {}),
         // For table nodes, add default attributes structure and renderConfig
         ...(nodeTypeToUse === "tableNode"
           ? {
@@ -1602,7 +1672,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     );
   }, [setNodes]);
 
-
   // inspector state
   const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
   const [inspectedEdgeId, setInspectedEdgeId] = useState<string | null>(null);
@@ -1679,7 +1748,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             label: comp.label, // Use label from priority order
             componentId: comp.componentType, // Store the original component ID (the type from drag data)
             icon: localCompDef?.icon,
-            iconUrl: localCompDef?.iconUrl ?? libraryComp?.iconUrl ?? fullComp?.data?.iconUrl, // Use iconUrl with priority order
+            iconUrl:
+              localCompDef?.iconUrl ??
+              libraryComp?.iconUrl ??
+              fullComp?.data?.iconUrl, // Use iconUrl with priority order
             subtitle: comp.description ?? comp.highlightReason, // Use description from priority order
             backgroundColor: isGroupComponent
               ? "rgba(100, 100, 255, 0.05)"
@@ -1692,8 +1764,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               ? {
                   componentName: comp?.label || "Entity",
                   attributes:
-                    comp?.data?.attributes ||
-                    ([] as TableAttribute[]),
+                    comp?.data?.attributes || ([] as TableAttribute[]),
                   renderConfig: localCompDef?.renderConfig, // Pass the renderConfig from component
                 }
               : {}),
@@ -1933,7 +2004,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     );
     // Listen for freeform node resize events emitted by NodeResizer onResizeEnd
     const resizeListener = (e: Event) => {
-      const evt = e as CustomEvent<{ id: string; width: number; height: number }>;
+      const evt = e as CustomEvent<{
+        id: string;
+        width: number;
+        height: number;
+      }>;
       const { id: nodeId, width, height } = evt.detail;
       setNodes((nds) =>
         nds.map((n) => {
@@ -1944,7 +2019,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             data: {
               ...(n.data as AnyNodeData),
               shape: {
-                ...(((n.data as AnyNodeData)?.shape as Record<string, unknown>) ?? {}),
+                ...(((n.data as AnyNodeData)?.shape as Record<
+                  string,
+                  unknown
+                >) ?? {}),
                 width,
                 height,
               },
@@ -1954,7 +2032,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         }),
       );
     };
-    globalThis.addEventListener("diagram:node-resize", resizeListener as EventListener);
+    globalThis.addEventListener(
+      "diagram:node-resize",
+      resizeListener as EventListener,
+    );
     const bringToFrontListener = (e: Event) => {
       const evt = e as CustomEvent<{ id: string }>;
       const nodeId = evt.detail.id;
@@ -2008,7 +2089,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         "diagram:node-detach",
         detachListener as EventListener,
       );
-      globalThis.removeEventListener("diagram:node-resize", resizeListener as EventListener);
+      globalThis.removeEventListener(
+        "diagram:node-resize",
+        resizeListener as EventListener,
+      );
       globalThis.removeEventListener(
         "diagram:node-to-front",
         bringToFrontListener as EventListener,
@@ -3354,12 +3438,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const nodeId = `${realId}-${Date.now()}`;
 
     // Check if it's a group/cluster component
-    const isGroupComponent = comp?.group === "Grouping" ||
+    const isGroupComponent =
+      comp?.group === "Grouping" ||
       (minimalComp as MinimalComponent | undefined)?.nodeType === "group";
 
     // Determine node type
     const nodeTypeToUse =
-      comp?.nodeType ?? minimalComp?.nodeType ?? (isGroupComponent ? "group" : "custom");
+      comp?.nodeType ??
+      minimalComp?.nodeType ??
+      (isGroupComponent ? "group" : "custom");
 
     const finalLabel = comp?.label ?? minimalComp?.label ?? id;
     const finalIcon = comp?.icon;
@@ -3374,16 +3461,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const defaultH2 = Number(comp?.height ?? minimalComp?.height ?? 120);
     const fullCompForDefaults = fullComponentsCache[realId];
     const propList2 = comp?.properties ?? fullCompForDefaults?.properties ?? [];
-    const propDefaults2 = (propList2 || []).reduce((acc: Record<string, unknown>, p: ComponentProperty) => {
-      if (p.default !== undefined) acc[p.key] = p.default;
-      return acc;
-    }, {} as Record<string, unknown>);
-    const shapeTypeFromProps2 = (propDefaults2.shapeType as string | undefined) ?? undefined;
+    const propDefaults2 = (propList2 || []).reduce(
+      (acc: Record<string, unknown>, p: ComponentProperty) => {
+        if (p.default !== undefined) acc[p.key] = p.default;
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+    const shapeTypeFromProps2 =
+      (propDefaults2.shapeType as string | undefined) ?? undefined;
     const freeformDefault = isFreeformNode
       ? {
           style: { width: defaultW2, height: defaultH2 },
           data: {
-            shape: { type: shapeTypeFromProps2 ?? "rect", width: defaultW2, height: defaultH2 },
+            shape: {
+              type: shapeTypeFromProps2 ?? "rect",
+              width: defaultW2,
+              height: defaultH2,
+            },
             ...propDefaults2,
           },
         }
@@ -3399,7 +3494,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             height: 300,
             zIndex: -1,
           }
-        : (isFreeformNode ? (freeformDefault.style as unknown as Node["style"]) : undefined),
+        : isFreeformNode
+          ? (freeformDefault.style as unknown as Node["style"])
+          : undefined,
       data: {
         label: finalLabel,
         componentId: realId, // real DB id — used for sprite lookup
@@ -3410,7 +3507,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           ? "rgba(100, 100, 255, 0.05)"
           : undefined,
         borderColor: isGroupComponent ? "rgba(100, 100, 255, 0.3)" : undefined,
-        ...(isFreeformNode ? (freeformDefault.data as unknown as AnyNodeData) : {}),
+        ...(isFreeformNode
+          ? (freeformDefault.data as unknown as AnyNodeData)
+          : {}),
       },
     };
 
@@ -3468,6 +3567,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         if (isAuthenticated) {
           await apiService.deleteAttempt(idFromUrl);
           setSavedAttemptId(null);
+          setIsAttemptPublic(false);
         } else {
           toast.error("Cannot delete attempt while not authenticated");
         }
@@ -3493,9 +3593,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
    */
   const captureCanvasPng = async (): Promise<string> => {
     const nodesBounds = getNodesBounds(getNodes());
-    const padding = 100;
-    const imageWidth = nodesBounds.width + padding * 2;
-    const imageHeight = nodesBounds.height + padding * 2;
+    const padding = 80;
+    const sourceWidth = Math.max(nodesBounds.width + padding * 2, 320);
+    const sourceHeight = Math.max(nodesBounds.height + padding * 2, 200);
+    const maxPreviewWidth = 1280;
+    const maxPreviewHeight = 800;
+    const previewScale = Math.min(
+      1,
+      maxPreviewWidth / sourceWidth,
+      maxPreviewHeight / sourceHeight,
+    );
+    const imageWidth = Math.round(sourceWidth * previewScale);
+    const imageHeight = Math.round(sourceHeight * previewScale);
 
     const viewportElement = document.querySelector(
       ".react-flow__viewport",
@@ -3513,10 +3622,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       backgroundColor: bgColor,
       width: imageWidth,
       height: imageHeight,
+      pixelRatio: 1,
+      skipFonts: true,
       style: {
         width: `${imageWidth}px`,
         height: `${imageHeight}px`,
-        transform: `translate(${-nodesBounds.x + padding}px, ${-nodesBounds.y + padding}px) scale(1)`,
+        transformOrigin: "top left",
+        transform: `translate(${(-nodesBounds.x + padding) * previewScale}px, ${(-nodesBounds.y + padding) * previewScale}px) scale(${previewScale})`,
       },
     });
   };
@@ -4393,13 +4505,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {/* Share button - only show for Design Studio and authenticated users with owned diagrams */}
                 {idFromUrl === "free" &&
                   isAuthenticated &&
-                  currentDiagramId && (
+                  currentDiagramId &&
+                  currentDiagram?.isOwner !== false && (
                     <>
                       <button
                         type="button"
                         onClick={() => setShowShareModal(true)}
                         className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                        data-tooltip="Share Diagram"
+                        data-tooltip="Invite collaborators"
+                        aria-label="Invite collaborators"
                       >
                         <svg
                           className="h-5 w-5"
@@ -4425,6 +4539,56 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                         showCollaborators={true}
                       />
                     </>
+                  )}
+
+                {!isSharedView &&
+                  isAuthenticated &&
+                  ((idFromUrl === "free" &&
+                    currentDiagramId &&
+                    currentDiagram?.isOwner !== false) ||
+                    (idFromUrl !== "free" && savedAttemptId)) && (
+                    <button
+                      type="button"
+                      onClick={() => setShowShareToWorldModal(true)}
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
+                        savedAttemptId
+                          ? isAttemptPublic
+                            ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                            : "bg-white/15 text-white hover:bg-white/25"
+                          : currentDiagram?.isPublic
+                            ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                            : "bg-white/15 text-white hover:bg-white/25"
+                      }`}
+                      aria-label={
+                        (
+                          savedAttemptId
+                            ? isAttemptPublic
+                            : currentDiagram?.isPublic
+                        )
+                          ? "Manage public link"
+                          : "Publish design"
+                      }
+                      data-tooltip={
+                        (
+                          savedAttemptId
+                            ? isAttemptPublic
+                            : currentDiagram?.isPublic
+                        )
+                          ? "Manage public link"
+                          : "Publish design"
+                      }
+                    >
+                      <MdPublic className="h-4 w-4" aria-hidden />
+                      <span className="hidden lg:inline">
+                        {(
+                          savedAttemptId
+                            ? isAttemptPublic
+                            : currentDiagram?.isPublic
+                        )
+                          ? "Public"
+                          : "Publish"}
+                      </span>
+                    </button>
                   )}
 
                 {problem?.id !== "free" && (
@@ -4503,7 +4667,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                             type="button"
                             onClick={() => {
                               // Open preferences editor (Quick Setup modal)
-                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              globalThis.dispatchEvent(
+                                new Event("open-quick-setup"),
+                              );
                               setShowUserMenu(false);
                             }}
                             aria-label="Edit preferences"
@@ -4615,7 +4781,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onShareToWorld={
               !isSharedView &&
               ((idFromUrl && idFromUrl !== "free" && savedAttemptId) ||
-                currentDiagramId)
+                (currentDiagramId && currentDiagram?.isOwner !== false))
                 ? () => setShowShareToWorldModal(true)
                 : undefined
             }
@@ -4717,6 +4883,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           }
           user={user}
           captureCanvasPng={captureCanvasPng}
+          initiallyPublished={
+            savedAttemptId ? isAttemptPublic : Boolean(currentDiagram?.isPublic)
+          }
+          onVisibilityChange={(isPublic) => {
+            if (savedAttemptId) {
+              setIsAttemptPublic(isPublic);
+              return;
+            }
+            setCurrentDiagram((diagram) =>
+              diagram ? { ...diagram, isPublic } : diagram,
+            );
+          }}
         />
 
         {/* Project Intent Dialog - shown when entering Design Studio */}

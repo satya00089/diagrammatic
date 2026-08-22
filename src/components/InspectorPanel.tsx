@@ -20,17 +20,26 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS; // ~163.4
 // Display groups for the Score Breakdown bars.
 // Composite groups (multiple keys) show the average of their member scores.
 const DISPLAY_GROUPS: { label: string; keys: string[] }[] = [
-  { label: "Scalability",     keys: ["scalability"] },
-  { label: "Reliability",     keys: ["reliability"] },
-  { label: "Security",        keys: ["security"] },
+  { label: "Scalability", keys: ["scalability"] },
+  { label: "Reliability", keys: ["reliability"] },
+  { label: "Security", keys: ["security"] },
   { label: "Maintainability", keys: ["maintainability"] },
-  { label: "Performance",     keys: ["performance"] },
+  { label: "Performance", keys: ["performance"] },
   // Composite: avg of cost_efficiency + observability + deliverability
-  { label: "Operations",      keys: ["cost_efficiency", "observability", "deliverability"] },
+  {
+    label: "Operations",
+    keys: ["cost_efficiency", "observability", "deliverability"],
+  },
   // Composite: avg of requirements_alignment + constraint_compliance
-  { label: "Alignment",       keys: ["requirements_alignment", "constraint_compliance"] },
+  {
+    label: "Alignment",
+    keys: ["requirements_alignment", "constraint_compliance"],
+  },
   // Composite: avg of component_justification + connection_clarity
-  { label: "Documentation",   keys: ["component_justification", "connection_clarity"] },
+  {
+    label: "Documentation",
+    keys: ["component_justification", "connection_clarity"],
+  },
 ];
 
 const DIM_LABELS: Record<string, string> = {
@@ -129,7 +138,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const panelRef = React.useRef<HTMLElement | null>(null);
   const [showHints, setShowHints] = React.useState(true);
   const [open, setOpen] = React.useState(true);
-  const [showInterviewQuestions, setShowInterviewQuestions] = React.useState(false);
+  const [showInterviewQuestions, setShowInterviewQuestions] =
+    React.useState(false);
 
   const scoreColor = (v: number) => {
     if (v >= 75) return "#22c55e";
@@ -255,21 +265,18 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
             </button>
 
             {/* ── Share-to-World announcement bar — above the tabs ── */}
-            {onShareToWorld &&
-              assessmentResult &&
-              (assessmentResult.isValid || assessmentResult.score >= 70) && (
-                <button
-                  type="button"
-                  onClick={onShareToWorld}
-                  className="w-[calc(100%+2rem)] flex items-center justify-center gap-2 -mx-4 -mt-4 px-3.5 py-1.5 mb-4
+            {onShareToWorld && assessmentResult && (
+              <button
+                type="button"
+                onClick={onShareToWorld}
+                className="w-[calc(100%+2rem)] flex items-center justify-center gap-2 -mx-4 -mt-4 px-3.5 py-1.5 mb-4
                     bg-[var(--announcement-bg)] text-[var(--announcement-text)] dark:bg-[var(--announcement-bg)] dark:text-[var(--announcement-text)] cursor-pointer text-sm font-medium
                     hover:opacity-90 active:scale-[.98] transition-all"
-                >
-                  <FiShare2 size={12} className="flex-shrink-0" />
-                  <span className="font-semibold">Share your design</span>
-                  {/* <span className="text-white/70 text-xs">— Share publicly: generate a link to showcase your design</span> */}
-                </button>
-              )}
+              >
+                <FiShare2 size={12} className="flex-shrink-0" />
+                <span className="font-semibold">Publish reviewed design</span>
+              </button>
+            )}
 
             <div
               className="flex flex-wrap items-center justify-start gap-2"
@@ -280,7 +287,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "details" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "details" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   data-tour="problem-brief"
                   onClick={() => setActiveTab("details")}
                 >
@@ -293,7 +300,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "assessment" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "assessment" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   onClick={() => setActiveTab("assessment")}
                 >
                   <span className="text-sm">📊</span>
@@ -310,7 +317,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "guide" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "guide" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   data-tour="guide"
                   onClick={() => setActiveTab("guide")}
                 >
@@ -322,7 +329,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <button
                 type="button"
                 role="tab"
-                className={`flex items-center gap-2 px-3 py-2 rounded-t-md border-b-2 transition-colors ${activeTab === "inspector" ? "border-[var(--brand)] bg-[var(--brand)]/5 text-[var(--brand)]" : "border-transparent text-theme hover:bg-[var(--bg-hover)]"}`}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "inspector" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                 onClick={() => setActiveTab("inspector")}
               >
                 <span className="text-sm">⚙️</span>
@@ -340,590 +347,823 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                 <GuidedHelpPanel
                   problemId={problemId ?? null}
-                      onApplyStep={onApplyStep ?? (() => {})}
-                      currentStep={guideCurrentStep}
-                      onStepChange={onGuideStepChange}
+                  onApplyStep={onApplyStep ?? (() => {})}
+                  currentStep={guideCurrentStep}
+                  onStepChange={onGuideStepChange}
                 />
               </div>
             )}
 
             {/* scrollable content area under the tabs */}
             {activeTab !== "guide" && (
-            <div className="overflow-y-auto component-palette flex-1">
-              {activeTab === "details" && (
-                <div>
-                  <h3 className="text-lg font-semibold text-theme mb-3">
-                    {problem.title}
-                  </h3>
-                  <p className="text-muted text-sm leading-relaxed mb-4">
-                    {problem.description}
-                  </p>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-theme mb-2">✅ Requirements</h4>
-                    {problem.requirements.length > 0 ? (
-                      <ul className="space-y-1.5">
-                        {problem.requirements.map((req) => (
-                          <li key={req} className="flex items-start gap-2 text-xs">
-                            <span className="text-green-500 mt-0.5 flex-shrink-0">•</span>
-                            <span className="text-muted leading-relaxed">{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted italic">No requirements listed.</p>
-                    )}
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-theme mb-2">⚠️ Constraints</h4>
-                    {problem.constraints.length > 0 ? (
-                      <ul className="space-y-1.5">
-                        {problem.constraints.map((constraint) => (
-                          <li key={constraint} className="flex items-start gap-2 text-xs">
-                            <span className="text-yellow-500 mt-0.5 flex-shrink-0">•</span>
-                            <span className="text-muted leading-relaxed">{constraint}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-muted italic">No constraints listed.</p>
-                    )}
-                  </div>
-
-                  <div className="mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowHints(!showHints)}
-                      className="w-full flex items-center justify-between mb-2 cursor-pointer hover:bg-[var(--bg-hover)] p-2 rounded-md transition-colors"
-                      aria-controls="hints-content"
-                    >
-                      <h4 className="text-sm font-semibold text-theme">
-                        💡 Hints
-                      </h4>
-                      <PiCaretDownBold
-                        size={14}
-                        className={`text-muted transition-transform duration-150 ${
-                          showHints ? "rotate-0" : "-rotate-90"
-                        }`}
-                      />
-                    </button>
-                    {showHints && (
-                      <div id="hints-content" className="space-y-2">
-                        {problem.hints.length > 0 ? problem.hints.map((hint) => (
-                          <div
-                            key={hint}
-                            className="bg-yellow-50 dark:bg-yellow-900/40 border-l-4 border-yellow-400 dark:border-yellow-600 p-2 rounded-r-lg"
-                          >
-                            <div className="text-xs text-yellow-900 dark:text-yellow-100 leading-relaxed">{hint}</div>
-                          </div>
-                        )) : (
-                          <p className="text-xs text-muted italic px-2">No hints available.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
+              <div className="overflow-y-auto component-palette flex-1">
+                {activeTab === "details" && (
                   <div>
-                    <h4 className="text-sm font-semibold text-theme mb-2">🏷️ Tags</h4>
-                    {problem.tags.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {problem.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs rounded-full font-medium"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted italic">No tags.</p>
-                    )}
-                  </div>
-                </div>
-              )}
+                    <h3 className="text-lg font-semibold text-theme mb-3">
+                      {problem.title}
+                    </h3>
+                    <p className="text-muted text-sm leading-relaxed mb-4">
+                      {problem.description}
+                    </p>
 
-              {activeTab === "inspector" && (
-                <div>
-                  {/* ── EDGE INSPECTOR ── */}
-                  {inspectedEdgeId && (
-                    <div className="flex flex-col gap-0">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-base">🔗</span>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-semibold text-theme leading-tight">Connection</h3>
-                            <p className="text-[10px] text-muted font-mono truncate max-w-[140px]" title={inspectedEdgeId}>{inspectedEdgeId}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setInspectedEdgeId(null); setActiveTab("details"); }}
-                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
-                          title="Close"
-                        >✕</button>
-                      </div>
-
-                      {edgePropertyElements && (
-                        <div>{edgePropertyElements}</div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── NODE INSPECTOR ── */}
-                  {!inspectedEdgeId && inspectedNodeId && (
-                    <div className="flex flex-col gap-4">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-base">⚙️</span>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-semibold text-theme leading-tight">Component Properties</h3>
-                            <p className="text-[10px] text-muted font-mono truncate max-w-[140px]" title={inspectedNodeId}>{inspectedNodeId}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setInspectedNodeId(null); setActiveTab("details"); }}
-                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
-                          title="Close"
-                        >✕</button>
-                      </div>
-
-                      {/* Standard Properties */}
-                      {propertyElements && (
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Properties</span>
-                          <div className="space-y-2">{propertyElements}</div>
-                        </div>
-                      )}
-
-                      {/* Custom Properties Section */}
-                      <div className="flex flex-col gap-2 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">Custom Properties</span>
-                          <button
-                            type="button"
-                            onClick={onAddCustomProperty}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-md transition-colors border border-[var(--brand)]/30 hover:border-[var(--brand)] cursor-pointer"
-                            title="Add custom property"
-                          >
-                            <MdAdd size={14} />
-                            <span>Add</span>
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          {customPropertyElements ?? (
-                            <p className="text-xs text-muted/60 text-center py-2">No custom properties yet</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-col gap-2">
-                        {isNodeInGroup && onDetachFromGroup && (
-                          <button
-                            type="button"
-                            className="w-full px-3 py-2.5 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 transition-all font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
-                            onClick={onDetachFromGroup}
-                            title="Remove this node from its parent group"
-                          >
-                            <span>🔓</span>
-                            <span>Detach from Group</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2.5 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand)]/90 transition-all font-medium text-sm cursor-pointer"
-                          onClick={handleSave}
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* empty state */}
-                  {!inspectedNodeId && !inspectedEdgeId && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-[var(--brand)]/8 flex items-center justify-center">
-                        <span className="text-2xl">✦</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-theme">Nothing selected</p>
-                        <p className="text-xs text-muted mt-1">Click a node ⚙️ or an edge to inspect its properties.</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === "assessment" && (
-                <div>
-                  {assessmentResult ? (
-                    <div className="space-y-4">
-
-                      {/* ── 1. Score Header ── */}
-                      <div className="p-4 border rounded-xl bg-[var(--surface)] flex items-center gap-4">
-                        {/* Score ring */}
-                        <div className="relative w-16 h-16 flex-shrink-0">
-                          <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
-                            <circle cx="32" cy="32" r={RING_RADIUS} fill="none" stroke="var(--border)" strokeWidth="6" />
-                            <circle
-                              cx="32" cy="32" r={RING_RADIUS} fill="none"
-                              stroke={scoreColor(assessmentResult.score)}
-                              strokeWidth="6"
-                              strokeDasharray={`${(assessmentResult.score / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-theme">
-                            {assessmentResult.score}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-theme text-base">Architecture review</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              assessmentResult.isValid
-                                ? "bg-green-500/15 text-green-500"
-                                : "bg-amber-500/15 text-amber-500"
-                            }`}>
-                              {assessmentResult.isValid ? "✅ Pass" : "⚠️ Needs Work"}
-                            </span>
-                            <span className="text-[10px] text-muted">
-                              {assessmentResult.source === "rule_based"
-                                ? "Basic structural check"
-                                : "AI review"}
-                            </span>
-                          </div>
-                          {assessmentResult.summary && (
-                            <p className="text-xs text-theme/80 leading-relaxed mt-2">
-                              {assessmentResult.summary}
-                            </p>
-                          )}
-                          {assessmentResult.processingTimeMs && (
-                            <div className="text-[10px] text-muted mt-1">
-                              Analysed in {(assessmentResult.processingTimeMs / 1000).toFixed(1)}s
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">
-                        <summary className="cursor-pointer font-semibold text-theme">
-                          How this score works
-                        </summary>
-                        <p className="mt-2 leading-relaxed text-muted">
-                          This is a directional learning signal: the API computes a weighted average of the scored architecture dimensions, with scalability, reliability, security, and maintainability weighted more heavily. A score of 50 or higher meets the current baseline; it is not a production-readiness approval.
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold text-theme mb-2">
+                        ✅ Requirements
+                      </h4>
+                      {problem.requirements.length > 0 ? (
+                        <ul className="space-y-1.5">
+                          {problem.requirements.map((req) => (
+                            <li
+                              key={req}
+                              className="flex items-start gap-2 text-xs"
+                            >
+                              <span className="text-green-500 mt-0.5 flex-shrink-0">
+                                •
+                              </span>
+                              <span className="text-muted leading-relaxed">
+                                {req}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted italic">
+                          No requirements listed.
                         </p>
-                      </details>
+                      )}
+                    </div>
 
-                      {/* ── 2. Score Breakdown ── */}
-                      {assessmentResult.scores && (
-                        <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-3">
-                          <div className="font-semibold text-theme text-sm flex items-center gap-2">
-                            <span>📊</span><span>Score Breakdown</span>
-                          </div>
-                          {DISPLAY_GROUPS.map(({ label, keys }) => {
-                            const s = assessmentResult.scores;
-                            if (!s) return null;
-                            const vals = keys
-                              .map(k => (s as unknown as Record<string, number | undefined>)[k])
-                              .filter((v): v is number => v != null);
-                            if (vals.length === 0) return null;
-                            const val = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-                            const color = scoreColor(val);
-                            const subtitle = keys.length > 1
-                              ? keys.map(k => DIM_LABELS[k] ?? k.replaceAll("_", " ")).join(" · ")
-                              : null;
-                            return (
-                              <div key={label}>
-                                <div className="flex justify-between items-center mb-1">
-                                  <div>
-                                    <span className="text-xs text-muted">{label}</span>
-                                    {subtitle && (
-                                      <span className="text-[10px] text-muted/50 ml-1.5">{subtitle}</span>
-                                    )}
-                                  </div>
-                                  <span className="text-xs font-semibold" style={{ color }}>{val}</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{ width: `${val}%`, backgroundColor: color }}
-                                  />
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold text-theme mb-2">
+                        ⚠️ Constraints
+                      </h4>
+                      {problem.constraints.length > 0 ? (
+                        <ul className="space-y-1.5">
+                          {problem.constraints.map((constraint) => (
+                            <li
+                              key={constraint}
+                              className="flex items-start gap-2 text-xs"
+                            >
+                              <span className="text-yellow-500 mt-0.5 flex-shrink-0">
+                                •
+                              </span>
+                              <span className="text-muted leading-relaxed">
+                                {constraint}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted italic">
+                          No constraints listed.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowHints(!showHints)}
+                        className="w-full flex items-center justify-between mb-2 cursor-pointer hover:bg-[var(--bg-hover)] p-2 rounded-md transition-colors"
+                        aria-controls="hints-content"
+                      >
+                        <h4 className="text-sm font-semibold text-theme">
+                          💡 Hints
+                        </h4>
+                        <PiCaretDownBold
+                          size={14}
+                          className={`text-muted transition-transform duration-150 ${
+                            showHints ? "rotate-0" : "-rotate-90"
+                          }`}
+                        />
+                      </button>
+                      {showHints && (
+                        <div id="hints-content" className="space-y-2">
+                          {problem.hints.length > 0 ? (
+                            problem.hints.map((hint) => (
+                              <div
+                                key={hint}
+                                className="rounded-lg bg-yellow-50 p-2 ring-1 ring-inset ring-yellow-400/50 dark:bg-yellow-900/40 dark:ring-yellow-600/60"
+                              >
+                                <div className="text-xs text-yellow-900 dark:text-yellow-100 leading-relaxed">
+                                  {hint}
                                 </div>
                               </div>
-                            );
-                          })}
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted italic px-2">
+                              No hints available.
+                            </p>
+                          )}
                         </div>
                       )}
+                    </div>
 
-                      {/* ── 3. What Went Well ── */}
-                      <div className="p-4 border rounded-xl bg-[var(--surface)]">
-                        <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
-                          <span className="text-green-500">✓</span>
-                          <span>What Went Well</span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-theme mb-2">
+                        🏷️ Tags
+                      </h4>
+                      {problem.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {problem.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 bg-[var(--brand)]/10 text-[var(--brand)] text-xs rounded-full font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
-                        {assessmentResult.architectureStrengths.length > 0 ? (
-                          <ul className="space-y-1.5">
-                            {assessmentResult.architectureStrengths.map((s) => (
-                              <li key={s} className="flex items-start gap-2 text-sm">
-                                <span className="text-green-500 mt-0.5 flex-shrink-0">•</span>
-                                <span className="text-theme">{s}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted">No notable strengths detected.</p>
-                        )}
-                      </div>
+                      ) : (
+                        <p className="text-xs text-muted italic">No tags.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                      <AssessmentFindings findings={assessmentResult.findings ?? []} />
-
-                      {/* ── 4. Where to Improve ── */}
-                      <div className="p-4 border rounded-xl bg-[var(--surface)]">
-                        <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
-                          <span className="text-orange-500">↑</span>
-                          <span>Where to Improve</span>
-                        </div>
-                        {assessmentResult.improvements.length > 0 ? (
-                          <ul className="space-y-1.5 mb-3">
-                            {assessmentResult.improvements.map((imp) => (
-                              <li key={imp} className="flex items-start gap-2 text-sm">
-                                <span className="text-orange-500 mt-0.5 flex-shrink-0">•</span>
-                                <span className="text-theme">{imp}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted mb-3">No specific improvements suggested.</p>
-                        )}
-                        {assessmentResult.suggestions && assessmentResult.suggestions.length > 0 && (
-                          <>
-                            <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Suggestions</div>
-                            <ul className="space-y-1.5">
-                              {assessmentResult.suggestions.map((s) => (
-                                <li key={s} className="flex items-start gap-2 text-sm">
-                                  <span className="text-[var(--brand)] mt-0.5 flex-shrink-0">→</span>
-                                  <span className="text-muted">{s}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        )}
-                      </div>
-
-                      {/* ── 5. Analysis & Feedback ── */}
-                      {((assessmentResult.detailedAnalysis && Object.keys(assessmentResult.detailedAnalysis).length > 0) ||
-                        assessmentResult.feedback.length > 0) && (() => {
-                        // Group feedback items by category for co-location with analysis
-                        const feedbackByCategory: Record<string, typeof assessmentResult.feedback> = {};
-                        const uncategorisedFeedback: typeof assessmentResult.feedback = [];
-                        for (const fb of assessmentResult.feedback) {
-                          if (assessmentResult.detailedAnalysis?.[fb.category]) {
-                            if (!feedbackByCategory[fb.category]) feedbackByCategory[fb.category] = [];
-                            feedbackByCategory[fb.category].push(fb);
-                          } else {
-                            uncategorisedFeedback.push(fb);
-                          }
-                        }
-
-                        return (
-                          <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-4">
-                            <div className="font-semibold text-theme text-sm flex items-center gap-2">
-                              <span>🔍</span><span>Analysis &amp; Feedback</span>
+                {activeTab === "inspector" && (
+                  <div>
+                    {/* ── EDGE INSPECTOR ── */}
+                    {inspectedEdgeId && (
+                      <div className="flex flex-col gap-0">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-base">🔗</span>
                             </div>
+                            <div>
+                              <h3 className="text-sm font-semibold text-theme leading-tight">
+                                Connection
+                              </h3>
+                              <p
+                                className="text-[10px] text-muted font-mono truncate max-w-[140px]"
+                                title={inspectedEdgeId}
+                              >
+                                {inspectedEdgeId}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInspectedEdgeId(null);
+                              setActiveTab("details");
+                            }}
+                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
+                            title="Close"
+                          >
+                            ✕
+                          </button>
+                        </div>
 
-                            {/* Per-dimension: analysis prose + its feedback items */}
-                            {assessmentResult.detailedAnalysis &&
-                              Object.entries(assessmentResult.detailedAnalysis).map(([dim, text]) => {
-                                if (!text) return null;
-                                const dimFeedback = feedbackByCategory[dim] ?? [];
-                                return (
-                                  <div key={dim} className="space-y-1.5">
-                                    {/* Dimension heading */}
-                                    <div className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
-                                      {DIM_LABELS[dim] ?? dim}
-                                    </div>
-                                    {/* Analysis prose */}
-                                    <div className="text-xs text-theme leading-relaxed pl-2 border-l-2 border-[var(--brand)]/30">
-                                      {text}
-                                    </div>
-                                    {/* Feedback items for this dimension */}
-                                    {dimFeedback.map((feedback) => (
-                                      <div
-                                        key={`${dim}:${feedback.type}:${feedback.message}`}
-                                        className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}
-                                      >
-                                        <span className="text-[10px] mt-0.5 flex-shrink-0">{FEEDBACK_TYPE_ICON[feedback.type]}</span>
-                                        <span className="text-xs text-theme leading-relaxed">{feedback.message}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              })}
+                        {edgePropertyElements && (
+                          <div>{edgePropertyElements}</div>
+                        )}
+                      </div>
+                    )}
 
-                            {/* Feedback items whose category has no analysis entry (e.g. component_description) */}
-                            {uncategorisedFeedback.length > 0 && (
-                              <div className="space-y-1.5 pt-1 border-t border-[var(--border)]">
-                                {uncategorisedFeedback.map((f) => (
-                                  <div
-                                  key={`uncategorised-${f.category}-${f.message.slice(0, 24)}`}
-                                    className={`border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"} pl-3 py-0.5`}
-                                  >
-                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                      <span className="text-[10px]">{FEEDBACK_TYPE_ICON[f.type]}</span>
-                                      <span className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
-                                        {f.category.replaceAll("_", " ")}
-                                      </span>
-                                    </div>
-                                    <div className="text-xs text-theme leading-relaxed">{f.message}</div>
-                                  </div>
-                                ))}
+                    {/* ── NODE INSPECTOR ── */}
+                    {!inspectedEdgeId && inspectedNodeId && (
+                      <div className="flex flex-col gap-4">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-base">⚙️</span>
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-semibold text-theme leading-tight">
+                                Component Properties
+                              </h3>
+                              <p
+                                className="text-[10px] text-muted font-mono truncate max-w-[140px]"
+                                title={inspectedNodeId}
+                              >
+                                {inspectedNodeId}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInspectedNodeId(null);
+                              setActiveTab("details");
+                            }}
+                            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
+                            title="Close"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Standard Properties */}
+                        {propertyElements && (
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
+                              Properties
+                            </span>
+                            <div className="space-y-2">{propertyElements}</div>
+                          </div>
+                        )}
+
+                        {/* Custom Properties Section */}
+                        <div className="flex flex-col gap-2 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
+                              Custom Properties
+                            </span>
+                            <button
+                              type="button"
+                              onClick={onAddCustomProperty}
+                              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-md transition-colors border border-[var(--brand)]/30 hover:border-[var(--brand)] cursor-pointer"
+                              title="Add custom property"
+                            >
+                              <MdAdd size={14} />
+                              <span>Add</span>
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {customPropertyElements ?? (
+                              <p className="text-xs text-muted/60 text-center py-2">
+                                No custom properties yet
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2">
+                          {isNodeInGroup && onDetachFromGroup && (
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2.5 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 transition-all font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
+                              onClick={onDetachFromGroup}
+                              title="Remove this node from its parent group"
+                            >
+                              <span>🔓</span>
+                              <span>Detach from Group</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2.5 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand)]/90 transition-all font-medium text-sm cursor-pointer"
+                            onClick={handleSave}
+                          >
+                            Save Changes
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* empty state */}
+                    {!inspectedNodeId && !inspectedEdgeId && (
+                      <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[var(--brand)]/8 flex items-center justify-center">
+                          <span className="text-2xl">✦</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-theme">
+                            Nothing selected
+                          </p>
+                          <p className="text-xs text-muted mt-1">
+                            Click a node ⚙️ or an edge to inspect its
+                            properties.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "assessment" && (
+                  <div>
+                    {assessmentResult ? (
+                      <div className="space-y-4">
+                        {/* ── 1. Score Header ── */}
+                        <div className="p-4 border rounded-xl bg-[var(--surface)] flex items-center gap-4">
+                          {/* Score ring */}
+                          <div className="relative w-16 h-16 flex-shrink-0">
+                            <svg
+                              className="w-16 h-16 -rotate-90"
+                              viewBox="0 0 64 64"
+                            >
+                              <circle
+                                cx="32"
+                                cy="32"
+                                r={RING_RADIUS}
+                                fill="none"
+                                stroke="var(--border)"
+                                strokeWidth="6"
+                              />
+                              <circle
+                                cx="32"
+                                cy="32"
+                                r={RING_RADIUS}
+                                fill="none"
+                                stroke={scoreColor(assessmentResult.score)}
+                                strokeWidth="6"
+                                strokeDasharray={`${(assessmentResult.score / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-theme">
+                              {assessmentResult.score}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-theme text-base">
+                              Architecture review
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span
+                                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                  assessmentResult.isValid
+                                    ? "bg-green-500/15 text-green-500"
+                                    : "bg-amber-500/15 text-amber-500"
+                                }`}
+                              >
+                                {assessmentResult.isValid
+                                  ? "✅ Pass"
+                                  : "⚠️ Needs Work"}
+                              </span>
+                              <span className="text-[10px] text-muted">
+                                {assessmentResult.source === "rule_based"
+                                  ? "Basic structural check"
+                                  : "AI review"}
+                              </span>
+                            </div>
+                            {assessmentResult.summary && (
+                              <p className="text-xs text-theme/80 leading-relaxed mt-2">
+                                {assessmentResult.summary}
+                              </p>
+                            )}
+                            {assessmentResult.processingTimeMs && (
+                              <div className="text-[10px] text-muted mt-1">
+                                Analysed in{" "}
+                                {(
+                                  assessmentResult.processingTimeMs / 1000
+                                ).toFixed(1)}
+                                s
                               </div>
                             )}
                           </div>
-                        );
-                      })()}
+                        </div>
 
-                      {/* ── 7. Missing / Unclear ── */}
-                      {((assessmentResult.missingComponents && assessmentResult.missingComponents.length > 0) ||
-                        (assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0) ||
-                        (assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0)) && (
-                        <div className="p-4 border border-red-500/20 rounded-xl bg-red-500/5">
-                          <div className="font-semibold text-red-400 text-sm mb-1 flex items-center gap-2">
-                            <PiWarningCircle aria-hidden="true" className="text-base" />
-                            <span>Design details to add</span>
-                          </div>
-                          <p className="text-xs text-theme/70 leading-relaxed mb-3">
-                            A little more context will help explain and evaluate your design.
+                        <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">
+                          <summary className="cursor-pointer font-semibold text-theme">
+                            How this score works
+                          </summary>
+                          <p className="mt-2 leading-relaxed text-muted">
+                            This is a directional learning signal: the API
+                            computes a weighted average of the scored
+                            architecture dimensions, with scalability,
+                            reliability, security, and maintainability weighted
+                            more heavily. A score of 50 or higher meets the
+                            current baseline; it is not a production-readiness
+                            approval.
                           </p>
-                          {assessmentResult.missingComponents && assessmentResult.missingComponents.length > 0 && (
-                            <div className="mb-2">
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Components to add</div>
-                              <ul className="space-y-1">
-                                {assessmentResult.missingComponents.map((m) => (
-                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
-                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
-                                  </li>
-                                ))}
-                              </ul>
+                        </details>
+
+                        {/* ── 2. Score Breakdown ── */}
+                        {assessmentResult.scores && (
+                          <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-3">
+                            <div className="font-semibold text-theme text-sm flex items-center gap-2">
+                              <span>📊</span>
+                              <span>Score Breakdown</span>
                             </div>
-                          )}
-                          {assessmentResult.missingDescriptions && assessmentResult.missingDescriptions.length > 0 && (
-                            <div className="mb-2">
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Add component context</div>
-                              <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
-                                Describe each component’s role and why you chose it for this design.
-                              </p>
-                              <ul className="space-y-1">
-                                {assessmentResult.missingDescriptions.map((m) => (
-                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
-                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
+                            {DISPLAY_GROUPS.map(({ label, keys }) => {
+                              const s = assessmentResult.scores;
+                              if (!s) return null;
+                              const vals = keys
+                                .map(
+                                  (k) =>
+                                    (
+                                      s as unknown as Record<
+                                        string,
+                                        number | undefined
+                                      >
+                                    )[k],
+                                )
+                                .filter((v): v is number => v != null);
+                              if (vals.length === 0) return null;
+                              const val = Math.round(
+                                vals.reduce((a, b) => a + b, 0) / vals.length,
+                              );
+                              const color = scoreColor(val);
+                              const subtitle =
+                                keys.length > 1
+                                  ? keys
+                                      .map(
+                                        (k) =>
+                                          DIM_LABELS[k] ??
+                                          k.replaceAll("_", " "),
+                                      )
+                                      .join(" · ")
+                                  : null;
+                              return (
+                                <div key={label}>
+                                  <div className="flex justify-between items-center mb-1">
+                                    <div>
+                                      <span className="text-xs text-muted">
+                                        {label}
+                                      </span>
+                                      {subtitle && (
+                                        <span className="text-[10px] text-muted/50 ml-1.5">
+                                          {subtitle}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span
+                                      className="text-xs font-semibold"
+                                      style={{ color }}
+                                    >
+                                      {val}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all"
+                                      style={{
+                                        width: `${val}%`,
+                                        backgroundColor: color,
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* ── 3. What Went Well ── */}
+                        <div className="p-4 border rounded-xl bg-[var(--surface)]">
+                          <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
+                            <span className="text-green-500">✓</span>
+                            <span>What Went Well</span>
+                          </div>
+                          {assessmentResult.architectureStrengths.length > 0 ? (
+                            <ul className="space-y-1.5">
+                              {assessmentResult.architectureStrengths.map(
+                                (s) => (
+                                  <li
+                                    key={s}
+                                    className="flex items-start gap-2 text-sm"
+                                  >
+                                    <span className="text-green-500 mt-0.5 flex-shrink-0">
+                                      •
+                                    </span>
+                                    <span className="text-theme">{s}</span>
                                   </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {assessmentResult.unclearConnections && assessmentResult.unclearConnections.length > 0 && (
-                            <div>
-                              <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">Clarify component connections</div>
-                              <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
-                                Explain how the components communicate or what data flows between them.
-                              </p>
-                              <ul className="space-y-1">
-                                {assessmentResult.unclearConnections.map((m) => (
-                                  <li key={m} className="text-xs text-theme flex items-start gap-1.5">
-                                    <span className="text-red-400 flex-shrink-0">•</span>{m}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                                ),
+                              )}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted">
+                              No notable strengths detected.
+                            </p>
                           )}
                         </div>
-                      )}
 
-                      {/* ── 8. Interview Follow-up Questions ── */}
-                      {assessmentResult.interviewQuestions && assessmentResult.interviewQuestions.length > 0 && (
-                        <div className="border rounded-xl bg-[var(--surface)] overflow-hidden">
+                        <AssessmentFindings
+                          findings={assessmentResult.findings ?? []}
+                        />
+
+                        {/* ── 4. Where to Improve ── */}
+                        <div className="p-4 border rounded-xl bg-[var(--surface)]">
+                          <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
+                            <span className="text-orange-500">↑</span>
+                            <span>Where to Improve</span>
+                          </div>
+                          {assessmentResult.improvements.length > 0 ? (
+                            <ul className="space-y-1.5 mb-3">
+                              {assessmentResult.improvements.map((imp) => (
+                                <li
+                                  key={imp}
+                                  className="flex items-start gap-2 text-sm"
+                                >
+                                  <span className="text-orange-500 mt-0.5 flex-shrink-0">
+                                    •
+                                  </span>
+                                  <span className="text-theme">{imp}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted mb-3">
+                              No specific improvements suggested.
+                            </p>
+                          )}
+                          {assessmentResult.suggestions &&
+                            assessmentResult.suggestions.length > 0 && (
+                              <>
+                                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">
+                                  Suggestions
+                                </div>
+                                <ul className="space-y-1.5">
+                                  {assessmentResult.suggestions.map((s) => (
+                                    <li
+                                      key={s}
+                                      className="flex items-start gap-2 text-sm"
+                                    >
+                                      <span className="text-[var(--brand)] mt-0.5 flex-shrink-0">
+                                        →
+                                      </span>
+                                      <span className="text-muted">{s}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            )}
+                        </div>
+
+                        {/* ── 5. Analysis & Feedback ── */}
+                        {((assessmentResult.detailedAnalysis &&
+                          Object.keys(assessmentResult.detailedAnalysis)
+                            .length > 0) ||
+                          assessmentResult.feedback.length > 0) &&
+                          (() => {
+                            // Group feedback items by category for co-location with analysis
+                            const feedbackByCategory: Record<
+                              string,
+                              typeof assessmentResult.feedback
+                            > = {};
+                            const uncategorisedFeedback: typeof assessmentResult.feedback =
+                              [];
+                            for (const fb of assessmentResult.feedback) {
+                              if (
+                                assessmentResult.detailedAnalysis?.[fb.category]
+                              ) {
+                                if (!feedbackByCategory[fb.category])
+                                  feedbackByCategory[fb.category] = [];
+                                feedbackByCategory[fb.category].push(fb);
+                              } else {
+                                uncategorisedFeedback.push(fb);
+                              }
+                            }
+
+                            return (
+                              <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-4">
+                                <div className="font-semibold text-theme text-sm flex items-center gap-2">
+                                  <span>🔍</span>
+                                  <span>Analysis &amp; Feedback</span>
+                                </div>
+
+                                {/* Per-dimension: analysis prose + its feedback items */}
+                                {assessmentResult.detailedAnalysis &&
+                                  Object.entries(
+                                    assessmentResult.detailedAnalysis,
+                                  ).map(([dim, text]) => {
+                                    if (!text) return null;
+                                    const dimFeedback =
+                                      feedbackByCategory[dim] ?? [];
+                                    return (
+                                      <div key={dim} className="space-y-1.5">
+                                        {/* Dimension heading */}
+                                        <div className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
+                                          {DIM_LABELS[dim] ?? dim}
+                                        </div>
+                                        {/* Analysis prose */}
+                                        <div className="text-xs text-theme leading-relaxed pl-2 border-l-2 border-[var(--brand)]/30">
+                                          {text}
+                                        </div>
+                                        {/* Feedback items for this dimension */}
+                                        {dimFeedback.map((feedback) => (
+                                          <div
+                                            key={`${dim}:${feedback.type}:${feedback.message}`}
+                                            className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}
+                                          >
+                                            <span className="text-[10px] mt-0.5 flex-shrink-0">
+                                              {
+                                                FEEDBACK_TYPE_ICON[
+                                                  feedback.type
+                                                ]
+                                              }
+                                            </span>
+                                            <span className="text-xs text-theme leading-relaxed">
+                                              {feedback.message}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })}
+
+                                {/* Feedback items whose category has no analysis entry (e.g. component_description) */}
+                                {uncategorisedFeedback.length > 0 && (
+                                  <div className="space-y-1.5 pt-1 border-t border-[var(--border)]">
+                                    {uncategorisedFeedback.map((f) => (
+                                      <div
+                                        key={`uncategorised-${f.category}-${f.message.slice(0, 24)}`}
+                                        className={`border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"} pl-3 py-0.5`}
+                                      >
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                          <span className="text-[10px]">
+                                            {FEEDBACK_TYPE_ICON[f.type]}
+                                          </span>
+                                          <span className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
+                                            {f.category.replaceAll("_", " ")}
+                                          </span>
+                                        </div>
+                                        <div className="text-xs text-theme leading-relaxed">
+                                          {f.message}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                        {/* ── 7. Missing / Unclear ── */}
+                        {((assessmentResult.missingComponents &&
+                          assessmentResult.missingComponents.length > 0) ||
+                          (assessmentResult.missingDescriptions &&
+                            assessmentResult.missingDescriptions.length > 0) ||
+                          (assessmentResult.unclearConnections &&
+                            assessmentResult.unclearConnections.length >
+                              0)) && (
+                          <div className="p-4 border border-red-500/20 rounded-xl bg-red-500/5">
+                            <div className="font-semibold text-red-400 text-sm mb-1 flex items-center gap-2">
+                              <PiWarningCircle
+                                aria-hidden="true"
+                                className="text-base"
+                              />
+                              <span>Design details to add</span>
+                            </div>
+                            <p className="text-xs text-theme/70 leading-relaxed mb-3">
+                              A little more context will help explain and
+                              evaluate your design.
+                            </p>
+                            {assessmentResult.missingComponents &&
+                              assessmentResult.missingComponents.length > 0 && (
+                                <div className="mb-2">
+                                  <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">
+                                    Components to add
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {assessmentResult.missingComponents.map(
+                                      (m) => (
+                                        <li
+                                          key={m}
+                                          className="text-xs text-theme flex items-start gap-1.5"
+                                        >
+                                          <span className="text-red-400 flex-shrink-0">
+                                            •
+                                          </span>
+                                          {m}
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                            {assessmentResult.missingDescriptions &&
+                              assessmentResult.missingDescriptions.length >
+                                0 && (
+                                <div className="mb-2">
+                                  <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">
+                                    Add component context
+                                  </div>
+                                  <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
+                                    Describe each component’s role and why you
+                                    chose it for this design.
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {assessmentResult.missingDescriptions.map(
+                                      (m) => (
+                                        <li
+                                          key={m}
+                                          className="text-xs text-theme flex items-start gap-1.5"
+                                        >
+                                          <span className="text-red-400 flex-shrink-0">
+                                            •
+                                          </span>
+                                          {m}
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                            {assessmentResult.unclearConnections &&
+                              assessmentResult.unclearConnections.length >
+                                0 && (
+                                <div>
+                                  <div className="text-[10px] font-bold text-red-400/80 uppercase tracking-widest mb-1">
+                                    Clarify component connections
+                                  </div>
+                                  <p className="text-[11px] text-theme/70 leading-relaxed mb-1.5">
+                                    Explain how the components communicate or
+                                    what data flows between them.
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {assessmentResult.unclearConnections.map(
+                                      (m) => (
+                                        <li
+                                          key={m}
+                                          className="text-xs text-theme flex items-start gap-1.5"
+                                        >
+                                          <span className="text-red-400 flex-shrink-0">
+                                            •
+                                          </span>
+                                          {m}
+                                        </li>
+                                      ),
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                          </div>
+                        )}
+
+                        {/* ── 8. Interview Follow-up Questions ── */}
+                        {assessmentResult.interviewQuestions &&
+                          assessmentResult.interviewQuestions.length > 0 && (
+                            <div className="border rounded-xl bg-[var(--surface)] overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowInterviewQuestions((v) => !v)
+                                }
+                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base">🎯</span>
+                                  <span className="font-semibold text-theme text-sm">
+                                    Interview Follow-up Questions
+                                  </span>
+                                  <span className="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full">
+                                    {assessmentResult.interviewQuestions.length}
+                                  </span>
+                                </div>
+                                <PiCaretDownBold
+                                  size={14}
+                                  className={`text-muted transition-transform ${showInterviewQuestions ? "rotate-180" : ""}`}
+                                />
+                              </button>
+                              {showInterviewQuestions && (
+                                <div className="px-4 pb-4 space-y-2.5 border-t border-[var(--border)]">
+                                  <p className="text-[10px] text-muted pt-3 pb-1">
+                                    Questions tailored to your specific design —
+                                    think through these before your interview.
+                                  </p>
+                                  <ol className="space-y-2.5 list-none">
+                                    {assessmentResult.interviewQuestions.map(
+                                      (q, i) => (
+                                        <li
+                                          key={`iq-${q.slice(0, 30)}`}
+                                          className="flex items-start gap-2.5"
+                                        >
+                                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
+                                            {i + 1}
+                                          </span>
+                                          <span className="text-xs text-theme leading-relaxed">
+                                            {q}
+                                          </span>
+                                        </li>
+                                      ),
+                                    )}
+                                  </ol>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                        {/* ── Copy / Download ── */}
+                        <div className="flex gap-2">
                           <button
                             type="button"
-                            onClick={() => setShowInterviewQuestions((v) => !v)}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors"
+                            onClick={copyAssessment}
+                            className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">🎯</span>
-                              <span className="font-semibold text-theme text-sm">Interview Follow-up Questions</span>
-                              <span className="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full">
-                                {assessmentResult.interviewQuestions.length}
-                              </span>
-                            </div>
-                            <PiCaretDownBold
-                              size={14}
-                              className={`text-muted transition-transform ${showInterviewQuestions ? "rotate-180" : ""}`}
-                            />
+                            📋 Copy JSON
                           </button>
-                          {showInterviewQuestions && (
-                            <div className="px-4 pb-4 space-y-2.5 border-t border-[var(--border)]">
-                              <p className="text-[10px] text-muted pt-3 pb-1">
-                                Questions tailored to your specific design — think through these before your interview.
-                              </p>
-                              <ol className="space-y-2.5 list-none">
-                                {assessmentResult.interviewQuestions.map((q, i) => (
-                                  <li key={`iq-${q.slice(0, 30)}`} className="flex items-start gap-2.5">
-                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-400 text-[10px] font-bold flex items-center justify-center mt-0.5">
-                                      {i + 1}
-                                    </span>
-                                    <span className="text-xs text-theme leading-relaxed">{q}</span>
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-                          )}
+                          <button
+                            type="button"
+                            onClick={downloadAssessment}
+                            className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
+                          >
+                            💾 Download
+                          </button>
                         </div>
-                      )}
-
-                      {/* ── Copy / Download ── */}
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={copyAssessment}
-                          className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
-                        >
-                          📋 Copy JSON
-                        </button>
-                        <button
-                          type="button"
-                          onClick={downloadAssessment}
-                          className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
-                        >
-                          💾 Download
-                        </button>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-6xl mb-4">📊</div>
-                      <div className="text-lg font-semibold text-theme mb-2">
-                        No Assessment Yet
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-6xl mb-4">📊</div>
+                        <div className="text-lg font-semibold text-theme mb-2">
+                          No Assessment Yet
+                        </div>
+                        <div className="text-sm text-muted">
+                          Run an assessment to see your design evaluation and
+                          feedback.
+                        </div>
                       </div>
-                      <div className="text-sm text-muted">
-                        Run an assessment to see your design evaluation and
-                        feedback.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}

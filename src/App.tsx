@@ -1,10 +1,11 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import CreateProblem from "./pages/CreateProblem";
 import MyDesigns from "./pages/MyDesigns";
 import SystemDesignPlayground from "./pages/SystemDesignPlayground";
+import SharedCanvasPage from "./pages/SharedCanvasPage";
 import LearningPaths from "./pages/LearningPaths";
 import LearningPath from "./pages/LearningPath";
 import { useTheme } from "./hooks/useTheme";
@@ -16,9 +17,24 @@ import FeatureAnnouncement from "./components/FeatureAnnouncement";
 import QuickSetupModal from "./components/QuickSetupModal";
 import VerifyEmail from "./pages/VerifyEmail";
 
+const GlobalProductChrome: React.FC = () => {
+  const { pathname } = useLocation();
+
+  if (pathname.startsWith("/public/")) {
+    return null;
+  }
+
+  return (
+    <>
+      <OnboardingChecklist />
+      <FeatureAnnouncement />
+      <QuickSetupModal />
+    </>
+  );
+};
+
 const App: React.FC = () => {
   useTheme(); // initialize theme globally
-
 
   return (
     <AuthProvider>
@@ -39,13 +55,10 @@ const App: React.FC = () => {
                 path="/playground/:id"
                 element={<SystemDesignPlayground />}
               />
-              <Route path="/public/:publicId" element={<SystemDesignPlayground />} />
+              <Route path="/public/:id" element={<SharedCanvasPage />} />
               <Route path="*" element={<Home />} />
             </Routes>
-            {/* Global onboarding UI — rendered outside page routes so they persist across navigation */}
-            <OnboardingChecklist />
-            <FeatureAnnouncement />
-            <QuickSetupModal />
+            <GlobalProductChrome />
           </BrowserRouter>
         </OnboardingProvider>
       </ChatBotProvider>
