@@ -1,1 +1,0 @@
-import{u as r,j as e}from"./index-B7uJ0QVy.js";import{b as o,c as i}from"./index-BI8JAD_h.js";const m=()=>{const{theme:t,setTheme:s}=r();return e.jsx("button",{onClick:()=>s(t==="light"?"dark":"light"),className:"p-2 rounded-full bg-[var(--bg)] text-[var(--text)] cursor-pointer",children:t==="light"?e.jsx(o,{size:18}):e.jsx(i,{size:18})})};export{m as T};

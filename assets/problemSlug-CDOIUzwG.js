@@ -1,1 +1,0 @@
-import{R as t}from"./index-B7uJ0QVy.js";const l=new Map(t.map(e=>[e.title,e.slug])),g=e=>e.toLowerCase().replace(/&/g," and ").replace(/[’']/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""),r=e=>l.get(e.title)||e.slug||g(e.title),o=e=>t.find(a=>a.slug===e);export{o as a,r as g};
