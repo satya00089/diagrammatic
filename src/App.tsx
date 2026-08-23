@@ -24,17 +24,17 @@ const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const RouteLoading: React.FC = () => (
-  <div
-    className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6"
-    role="status"
-  >
-    <div className="text-center">
-      <div className="mx-auto mb-4 h-9 w-9 rounded-full border-2 border-[var(--brand)] border-t-transparent animate-spin" />
-      <span className="text-sm font-semibold text-muted">
+  <output className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6">
+    <span className="block text-center">
+      <span
+        className="mx-auto mb-4 block h-9 w-9 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent"
+        aria-hidden
+      />
+      <span className="block text-sm font-semibold text-muted">
         Loading Diagrammatic…
       </span>
-    </div>
-  </div>
+    </span>
+  </output>
 );
 
 const GlobalProductChrome: React.FC = () => {
@@ -88,10 +88,16 @@ const App: React.FC = () => {
                 <Route path="/problems/:slug" element={<ProblemLanding />} />
                 <Route path="/system-design-interview" element={<SeoGuide />} />
                 <Route path="/system-design-practice" element={<SeoGuide />} />
-                <Route path="/ai-system-design-interview" element={<SeoGuide />} />
+                <Route
+                  path="/ai-system-design-interview"
+                  element={<SeoGuide />}
+                />
                 <Route path="/create-problem" element={<CreateProblem />} />
                 <Route path="/learning-paths" element={<LearningPaths />} />
-                <Route path="/learning-paths/:slug" element={<LearningPath />} />
+                <Route
+                  path="/learning-paths/:slug"
+                  element={<LearningPath />}
+                />
                 <Route path="/diagrams" element={<MyDesigns />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route

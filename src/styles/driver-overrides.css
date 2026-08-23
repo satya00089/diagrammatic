@@ -10,7 +10,9 @@
   background: var(--surface, #1e1e2e) !important;
   border: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
   border-radius: 12px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04) !important;
   color: var(--text, #f1f5f9) !important;
   padding: 20px !important;
   max-width: 320px !important;

@@ -1500,21 +1500,23 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           },
         }
       : {};
+    let nodeStyle: Node["style"];
+    if (isGroupComponent) {
+      nodeStyle = {
+        width: 400,
+        height: 300,
+        zIndex: -1,
+      };
+    } else if (isFreeformNode) {
+      nodeStyle = freeformDefault.style as Node["style"];
+    }
 
     const newNode: Node = {
       id,
       position,
       type: nodeTypeToUse as unknown as Node["type"],
       // For group nodes, use different styling
-      style: isGroupComponent
-        ? {
-            width: 400,
-            height: 300,
-            zIndex: -1, // Groups should be behind regular nodes
-          }
-        : isFreeformNode
-          ? (freeformDefault.style as unknown as Node["style"])
-          : undefined,
+      style: nodeStyle,
       // include icon so the custom node can render it
       data: {
         label: label, // Use label from priority order
@@ -2019,10 +2021,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             data: {
               ...(n.data as AnyNodeData),
               shape: {
-                ...(((n.data as AnyNodeData)?.shape as Record<
-                  string,
-                  unknown
-                >) ?? {}),
+                ...((n.data as AnyNodeData)?.shape as
+                  | Record<string, unknown>
+                  | undefined),
                 width,
                 height,
               },
@@ -3483,20 +3484,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           },
         }
       : {};
+    let nodeStyle: Node["style"];
+    if (isGroupComponent) {
+      nodeStyle = {
+        width: 400,
+        height: 300,
+        zIndex: -1,
+      };
+    } else if (isFreeformNode) {
+      nodeStyle = freeformDefault.style as Node["style"];
+    }
 
     const newNode: Node = {
       id: nodeId,
       position,
       type: nodeTypeToUse as unknown as Node["type"],
-      style: isGroupComponent
-        ? {
-            width: 400,
-            height: 300,
-            zIndex: -1,
-          }
-        : isFreeformNode
-          ? (freeformDefault.style as unknown as Node["style"])
-          : undefined,
+      style: nodeStyle,
       data: {
         label: finalLabel,
         componentId: realId, // real DB id — used for sprite lookup
@@ -4130,6 +4133,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     idFromUrl === "free"
       ? "Create system architecture diagrams from scratch with our free interactive canvas. Design, prototype, and visualize your ideas with architecture components."
       : `Solve the ${problem?.title || "system design"} challenge. ${problem?.description?.substring(0, 150) || "Practice system design skills"}...`;
+  const publicDesignIsLive = savedAttemptId
+    ? isAttemptPublic
+    : Boolean(currentDiagram?.isPublic);
+  const publicDesignAction = publicDesignIsLive
+    ? "Manage public link"
+    : "Publish design";
+  const publicDesignStatus = publicDesignIsLive ? "Public" : "Publish";
+  const publicDesignButtonClass = publicDesignIsLive
+    ? "bg-emerald-500 text-white hover:bg-emerald-400"
+    : "bg-white/15 text-white hover:bg-white/25";
 
   return (
     <>
@@ -4551,43 +4564,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowShareToWorldModal(true)}
-                      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
-                        savedAttemptId
-                          ? isAttemptPublic
-                            ? "bg-emerald-500 text-white hover:bg-emerald-400"
-                            : "bg-white/15 text-white hover:bg-white/25"
-                          : currentDiagram?.isPublic
-                            ? "bg-emerald-500 text-white hover:bg-emerald-400"
-                            : "bg-white/15 text-white hover:bg-white/25"
-                      }`}
-                      aria-label={
-                        (
-                          savedAttemptId
-                            ? isAttemptPublic
-                            : currentDiagram?.isPublic
-                        )
-                          ? "Manage public link"
-                          : "Publish design"
-                      }
-                      data-tooltip={
-                        (
-                          savedAttemptId
-                            ? isAttemptPublic
-                            : currentDiagram?.isPublic
-                        )
-                          ? "Manage public link"
-                          : "Publish design"
-                      }
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${publicDesignButtonClass}`}
+                      aria-label={publicDesignAction}
+                      data-tooltip={publicDesignAction}
                     >
                       <MdPublic className="h-4 w-4" aria-hidden />
                       <span className="hidden lg:inline">
-                        {(
-                          savedAttemptId
-                            ? isAttemptPublic
-                            : currentDiagram?.isPublic
-                        )
-                          ? "Public"
-                          : "Publish"}
+                        {publicDesignStatus}
                       </span>
                     </button>
                   )}

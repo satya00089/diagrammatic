@@ -15,7 +15,8 @@ export function useLearningProgress(pathId: string) {
     (async () => {
       try {
         const serverProgress = await apiService.getLearningProgress(pathId);
-        if (mounted) setCompleted(Array.isArray(serverProgress) ? serverProgress : []);
+        if (mounted)
+          setCompleted(Array.isArray(serverProgress) ? serverProgress : []);
       } catch {
         // If API fails (unauthenticated/offline), leave progress empty.
         if (mounted) setCompleted([]);
@@ -37,7 +38,9 @@ export function useLearningProgress(pathId: string) {
 
   function toggle(lessonId: string) {
     setCompleted((prev) => {
-      const next = prev.includes(lessonId) ? prev.filter((id) => id !== lessonId) : [...prev, lessonId];
+      const next = prev.includes(lessonId)
+        ? prev.filter((id) => id !== lessonId)
+        : [...prev, lessonId];
       void persist(next);
       return next;
     });

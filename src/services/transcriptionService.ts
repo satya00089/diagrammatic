@@ -1,5 +1,6 @@
 const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:8000";
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  "http://localhost:8000";
 
 export interface TranscriptionJob {
   job_id: string;
@@ -30,12 +31,16 @@ export async function submitTranscription(
   return res.json() as Promise<TranscriptionJob>;
 }
 
-export async function getTranscriptionJob(jobId: string): Promise<TranscriptionJob> {
+export async function getTranscriptionJob(
+  jobId: string,
+): Promise<TranscriptionJob> {
   const res = await fetch(
     `${API_BASE}/api/v1/transcriptions/${encodeURIComponent(jobId)}`,
   );
   if (!res.ok) {
-    throw new Error(await errorDetail(res, "Failed to check transcription status."));
+    throw new Error(
+      await errorDetail(res, "Failed to check transcription status."),
+    );
   }
   return res.json() as Promise<TranscriptionJob>;
 }

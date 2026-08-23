@@ -88,14 +88,20 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      const el = target.closest && (target.closest("[data-analytics]") as HTMLElement | null);
+      const el =
+        target.closest &&
+        (target.closest("[data-analytics]") as HTMLElement | null);
       if (!el) return;
       const attr = el.getAttribute("data-analytics");
       if (!attr) return;
       // Attribute format: "event:cta_signup" or "cta:signup"
       const parts = attr.split(":");
       const name = parts.length > 1 ? parts[1] : parts[0];
-      trackEvent(name || "cta_click", { label: el.innerText?.slice(0, 200) }, true);
+      trackEvent(
+        name || "cta_click",
+        { label: el.innerText?.slice(0, 200) },
+        true,
+      );
     };
 
     document.addEventListener("click", onClick);
@@ -104,7 +110,11 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
   }, [isEnabled]);
 
   const trackEvent = useCallback(
-    (event_name: string, event_props?: Record<string, unknown>, immediate = false) => {
+    (
+      event_name: string,
+      event_props?: Record<string, unknown>,
+      immediate = false,
+    ) => {
       if (!isEnabled) return;
       const evt: AnalyticsEvent = {
         ts: Date.now(),

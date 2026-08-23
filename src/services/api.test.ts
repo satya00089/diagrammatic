@@ -9,8 +9,8 @@ describe("getApiBaseUrl", () => {
   });
 
   it("supports deployments that still use the legacy API URL", () => {
-    expect(
-      getApiBaseUrl(undefined, "https://legacy.example.com"),
-    ).toBe("https://legacy.example.com");
+    expect(getApiBaseUrl(undefined, "https://legacy.example.com")).toBe(
+      "https://legacy.example.com",
+    );
   });
 });

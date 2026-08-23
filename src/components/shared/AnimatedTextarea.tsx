@@ -357,7 +357,11 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
         )}
       </div>
       {isRecording && (
-        <ToolbarButton onClick={stopRecording} active title="Stop and transcribe">
+        <ToolbarButton
+          onClick={stopRecording}
+          active
+          title="Stop and transcribe"
+        >
           <MdStop size={16} />
         </ToolbarButton>
       )}

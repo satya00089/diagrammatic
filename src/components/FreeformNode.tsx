@@ -2,16 +2,30 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position, NodeResizer } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
+import {
+  MdSettings,
+  MdDelete,
+  MdOutlineVerticalAlignTop,
+  MdOutlineVerticalAlignBottom,
+} from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { FaLongArrowAltRight } from "react-icons/fa";
 import DOMPurify from "dompurify";
 
 export type FreeformShape = {
-  type?: "rect" | "square" | "circle" | "ellipse" | "line"
-      | "diamond" | "triangle" | "hexagon" | "parallelogram"
-      | "text" | "textbox";
+  type?:
+    | "rect"
+    | "square"
+    | "circle"
+    | "ellipse"
+    | "line"
+    | "diamond"
+    | "triangle"
+    | "hexagon"
+    | "parallelogram"
+    | "text"
+    | "textbox";
   width?: number;
   height?: number;
   fill?: string;
@@ -28,9 +42,18 @@ export interface FreeformNodeData {
   shape?: FreeformShape;
   backgroundColor?: string;
   borderColor?: string;
-  shapeType?: "rect" | "square" | "circle" | "ellipse" | "line"
-           | "diamond" | "triangle" | "hexagon" | "parallelogram"
-           | "text" | "textbox";
+  shapeType?:
+    | "rect"
+    | "square"
+    | "circle"
+    | "ellipse"
+    | "line"
+    | "diamond"
+    | "triangle"
+    | "hexagon"
+    | "parallelogram"
+    | "text"
+    | "textbox";
   text?: string;
   description?: string;
   fontSize?: number;
@@ -41,7 +64,14 @@ type Pt = { x: number; y: number };
 
 // Build polygon vertices for non-ellipsoid shapes so we can compute exact
 // perimeter intersections for cardinal directions.
-function buildPolygonVertices(shapeType: string, w: number, h: number, pad: number, cx: number, cy: number): Pt[] {
+function buildPolygonVertices(
+  shapeType: string,
+  w: number,
+  h: number,
+  pad: number,
+  cx: number,
+  cy: number,
+): Pt[] {
   if (shapeType === "triangle") {
     return [
       { x: cx, y: pad },
@@ -76,7 +106,12 @@ function buildPolygonVertices(shapeType: string, w: number, h: number, pad: numb
       { x: pad, y: h - pad },
     ];
   }
-  if (shapeType === "textbox" || shapeType === "text" || shapeType === "rect" || shapeType === "square") {
+  if (
+    shapeType === "textbox" ||
+    shapeType === "text" ||
+    shapeType === "rect" ||
+    shapeType === "square"
+  ) {
     return [
       { x: pad, y: pad },
       { x: w - pad, y: pad },
@@ -85,7 +120,10 @@ function buildPolygonVertices(shapeType: string, w: number, h: number, pad: numb
     ];
   }
   if (shapeType === "line") {
-    return [ { x: 8, y: cy }, { x: w - 8, y: cy } ];
+    return [
+      { x: 8, y: cy },
+      { x: w - 8, y: cy },
+    ];
   }
   // Fallback: bbox
   return [
@@ -96,7 +134,12 @@ function buildPolygonVertices(shapeType: string, w: number, h: number, pad: numb
   ];
 }
 
-function intersectVertical(ptsArr: Pt[], cxVal: number, cyVal: number, lookingUp: boolean): number | null {
+function intersectVertical(
+  ptsArr: Pt[],
+  cxVal: number,
+  cyVal: number,
+  lookingUp: boolean,
+): number | null {
   const eps = 1e-6;
   const cmp = (v: number) => (lookingUp ? v <= cyVal + eps : v >= cyVal - eps);
   const ys = ptsArr.flatMap((p1, i) => {
@@ -110,7 +153,7 @@ function intersectVertical(ptsArr: Pt[], cxVal: number, cyVal: number, lookingUp
     const t = (cxVal - p1.x) / (p2.x - p1.x);
     if (t >= -eps && t <= 1 + eps) {
       const y = p1.y + t * (p2.y - p1.y);
-      return cmp(y) ? [y] : [] as number[];
+      return cmp(y) ? [y] : ([] as number[]);
     }
     return [] as number[];
   });
@@ -118,9 +161,15 @@ function intersectVertical(ptsArr: Pt[], cxVal: number, cyVal: number, lookingUp
   return lookingUp ? Math.max(...ys) : Math.min(...ys);
 }
 
-function intersectHorizontal(ptsArr: Pt[], cxVal: number, cyVal: number, lookingLeft: boolean): number | null {
+function intersectHorizontal(
+  ptsArr: Pt[],
+  cxVal: number,
+  cyVal: number,
+  lookingLeft: boolean,
+): number | null {
   const eps = 1e-6;
-  const cmp = (v: number) => (lookingLeft ? v <= cxVal + eps : v >= cxVal - eps);
+  const cmp = (v: number) =>
+    lookingLeft ? v <= cxVal + eps : v >= cxVal - eps;
   const xs = ptsArr.flatMap((p1, i) => {
     const p2 = ptsArr[(i + 1) % ptsArr.length];
     if (Math.abs(p1.y - p2.y) < eps) {
@@ -132,7 +181,7 @@ function intersectHorizontal(ptsArr: Pt[], cxVal: number, cyVal: number, looking
     const t = (cyVal - p1.y) / (p2.y - p1.y);
     if (t >= -eps && t <= 1 + eps) {
       const x = p1.x + t * (p2.x - p1.x);
-      return cmp(x) ? [x] : [] as number[];
+      return cmp(x) ? [x] : ([] as number[]);
     }
     return [] as number[];
   });
@@ -140,7 +189,13 @@ function intersectHorizontal(ptsArr: Pt[], cxVal: number, cyVal: number, looking
   return lookingLeft ? Math.max(...xs) : Math.min(...xs);
 }
 
-function computeCardinalPoints(shapeType: string, w: number, h: number, sw: number, pad: number) {
+function computeCardinalPoints(
+  shapeType: string,
+  w: number,
+  h: number,
+  sw: number,
+  pad: number,
+) {
   const cx = w / 2;
   const cy = h / 2;
   if (shapeType === "ellipse" || shapeType === "circle") {
@@ -177,19 +232,34 @@ type Props = {
 // Default background similar to other node types
 const DEFAULT_BG = "color-mix(in srgb, var(--surface) 92%, #6366f1 8%)";
 
-const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }) => {
+const FreeformNode: React.FC<Props> = ({
+  id,
+  data,
+  selected,
+  onCopy,
+  isInGroup,
+}) => {
   const shape = data?.shape || ({} as FreeformShape);
-  const shapeType = (shape.type as string) || (data?.shapeType as string) || "rect";
+  const shapeType =
+    (shape.type as string) || (data?.shapeType as string) || "rect";
   const initialW = (shape.width as number) || 180;
   const initialH = (shape.height as number) || 120;
-  const stroke = (shape.stroke as string) || (data?.borderColor as string) || "#374151";
+  const stroke =
+    (shape.stroke as string) || (data?.borderColor as string) || "#374151";
   // Default fill: prefer explicit shape.fill, then node backgroundColor, then DEFAULT_BG
   // (applies DEFAULT_BG to all shapes so they get a pleasant default fill).
-  const fill = (shape.fill as string) || (data?.backgroundColor as string) || DEFAULT_BG;
+  const fill =
+    (shape.fill as string) || (data?.backgroundColor as string) || DEFAULT_BG;
   const strokeWidth = (shape.strokeWidth as number) ?? 2;
 
-  const [contextMenu, setContextMenu] = React.useState<{ visible: boolean; x: number; y: number }>({
-    visible: false, x: 0, y: 0,
+  const [contextMenu, setContextMenu] = React.useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
   });
 
   // Live dimensions for SVG shapes — updated via NodeResizer callbacks
@@ -204,8 +274,12 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
   const isSquareLike =
     shapeType === "square" ||
     shapeType === "circle" ||
-    ((shapeType === "rect" || shapeType === "ellipse") && Math.abs(initialW - initialH) <= ASPECT_TOLERANCE);
-  const aspectRatio = (shapeType === "square" || shapeType === "circle") ? 1 : initialW / Math.max(1, initialH);
+    ((shapeType === "rect" || shapeType === "ellipse") &&
+      Math.abs(initialW - initialH) <= ASPECT_TOLERANCE);
+  const aspectRatio =
+    shapeType === "square" || shapeType === "circle"
+      ? 1
+      : initialW / Math.max(1, initialH);
 
   // Called on every resize drag tick — keeps SVG in sync with the live handle position
   const handleResize = React.useCallback(
@@ -315,29 +389,47 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
     };
   }, [contextMenu.visible, closeContextMenu]);
 
-  const onDelete = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    globalThis.dispatchEvent(new CustomEvent("diagram:node-delete", { detail: { id } }));
-    closeContextMenu();
-  }, [id, closeContextMenu]);
+  const onDelete = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-delete", { detail: { id } }),
+      );
+      closeContextMenu();
+    },
+    [id, closeContextMenu],
+  );
 
-  const onToggle = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    globalThis.dispatchEvent(new CustomEvent("diagram:node-toggle", { detail: { id } }));
-    closeContextMenu();
-  }, [id, closeContextMenu]);
+  const onToggle = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-toggle", { detail: { id } }),
+      );
+      closeContextMenu();
+    },
+    [id, closeContextMenu],
+  );
 
-  const handleCopy = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onCopy) onCopy(id, data);
-    closeContextMenu();
-  }, [id, data, onCopy, closeContextMenu]);
+  const handleCopy = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onCopy) onCopy(id, data);
+      closeContextMenu();
+    },
+    [id, data, onCopy, closeContextMenu],
+  );
 
-  const handleDetach = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    globalThis.dispatchEvent(new CustomEvent("diagram:node-detach", { detail: { id } }));
-    closeContextMenu();
-  }, [id, closeContextMenu]);
+  const handleDetach = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      globalThis.dispatchEvent(
+        new CustomEvent("diagram:node-detach", { detail: { id } }),
+      );
+      closeContextMenu();
+    },
+    [id, closeContextMenu],
+  );
 
   // ── draw.io-style handle visibility ─────────────────────────────────────────
   // Handles (resize + connection arrows) appear on hover or when selected.
@@ -345,7 +437,9 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
   // the mouse moves from the node body to a handle positioned outside the node's
   // layout box (CSS :hover on the parent is lost in that case).
   const [isHovered, setIsHovered] = React.useState(false);
-  const leaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const leaveTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const nodePointerEnter = React.useCallback(() => {
     if (leaveTimerRef.current) {
@@ -360,13 +454,26 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
   }, []);
 
   // Clean up timer on unmount
-  React.useEffect(() => () => {
-    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
-  }, []);
+  React.useEffect(
+    () => () => {
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    },
+    [],
+  );
 
   const showHandles = isHovered || !!selected;
 
-  const SVG_SHAPES = ["ellipse","circle","line","diamond","triangle","hexagon","parallelogram","text","textbox"];
+  const SVG_SHAPES = [
+    "ellipse",
+    "circle",
+    "line",
+    "diamond",
+    "triangle",
+    "hexagon",
+    "parallelogram",
+    "text",
+    "textbox",
+  ];
   const isSvgShape = SVG_SHAPES.includes(shapeType);
   // We render shape fills inside SVG for all shapes (rect/square use an SVG rect)
   // so keep the fieldset transparent and draw borders/fills in SVG to avoid
@@ -386,16 +493,16 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
       data-has-copy={onCopy ? "1" : "0"}
       data-is-in-group={isInGroup ? "1" : "0"}
       style={{
-          width: `${measured.w}px`,
-          height: `${measured.h}px`,
-          backgroundColor: bgColor,
-          border: cssBorder,
-          boxSizing: "border-box",
-          overflow: "visible", // allow handles outside node bounds to be visible
-          position: "relative",
-          margin: 0,
-          padding: 0,
-        }}
+        width: `${measured.w}px`,
+        height: `${measured.h}px`,
+        backgroundColor: bgColor,
+        border: cssBorder,
+        boxSizing: "border-box",
+        overflow: "visible", // allow handles outside node bounds to be visible
+        position: "relative",
+        margin: 0,
+        padding: 0,
+      }}
     >
       <legend className="sr-only">{`Freeform ${shapeType}`}</legend>
       {/* NodeResizer — visible on hover or select for ALL shapes; provides the bounding box UI */}
@@ -405,7 +512,11 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
         minHeight={32}
         onResize={handleResize}
         onResizeEnd={handleResizeEnd}
-        lineStyle={{ borderColor: "#6366f1", borderStyle: "dashed", opacity: 0.75 }}
+        lineStyle={{
+          borderColor: "#6366f1",
+          borderStyle: "dashed",
+          opacity: 0.75,
+        }}
         handleStyle={{
           width: 10,
           height: 10,
@@ -416,27 +527,64 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
         }}
       />
 
-        {/* SVG overlay for rect / square so fill is drawn inside the shape (not as fieldset background) */}
-        {(shapeType === "rect" || shapeType === "square") && (() => {
+      {/* SVG overlay for rect / square so fill is drawn inside the shape (not as fieldset background) */}
+      {(shapeType === "rect" || shapeType === "square") &&
+        (() => {
           const w = measured.w;
           const h = measured.h;
           const sw = strokeWidth;
           const pad = sw;
-          const rx = Math.min(8, Math.max(2, Math.round(Math.min(w, h) * 0.04)));
+          const rx = Math.min(
+            8,
+            Math.max(2, Math.round(Math.min(w, h) * 0.04)),
+          );
           // Show dashed selection ring when selected or actively resizing
           const showSel = selected || isResizing;
-          const selStyle: React.CSSProperties = { opacity: showSel ? 0.9 : 0, transition: "opacity 0.1s" };
-          const selProps = { fill: "none", stroke: "#6366f1", strokeWidth: 1.5, strokeDasharray: "6 4" };
+          const selStyle: React.CSSProperties = {
+            opacity: showSel ? 0.9 : 0,
+            transition: "opacity 0.1s",
+          };
+          const selProps = {
+            fill: "none",
+            stroke: "#6366f1",
+            strokeWidth: 1.5,
+            strokeDasharray: "6 4",
+          };
           return (
             <svg
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1, overflow: "visible" }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                zIndex: 1,
+                overflow: "visible",
+              }}
               viewBox={`0 0 ${w} ${h}`}
               preserveAspectRatio="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <rect x={pad} y={pad} width={w - pad * 2} height={h - pad * 2} rx={rx} fill={fill} stroke={stroke} strokeWidth={sw} />
+              <rect
+                x={pad}
+                y={pad}
+                width={w - pad * 2}
+                height={h - pad * 2}
+                rx={rx}
+                fill={fill}
+                stroke={stroke}
+                strokeWidth={sw}
+              />
               {/* selection outline — matches shape exactly */}
-              <rect x={pad - 2} y={pad - 2} width={w - pad * 2 + 4} height={h - pad * 2 + 4} rx={rx + 2} style={selStyle} {...selProps} />
+              <rect
+                x={pad - 2}
+                y={pad - 2}
+                width={w - pad * 2 + 4}
+                height={h - pad * 2 + 4}
+                rx={rx + 2}
+                style={selStyle}
+                {...selProps}
+              />
             </svg>
           );
         })()}
@@ -452,12 +600,18 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
         const h = measured.h;
         const sw = strokeWidth;
         const pad = sw;
-        const HS = 14;  // Handle size — edge anchors at Handle center = perimeter
-        const A  = 22;  // Arrow icon visual size (px)
-        const G  = 10;  // gap: perimeter → arrow icon visual centre
+        const HS = 14; // Handle size — edge anchors at Handle center = perimeter
+        const A = 22; // Arrow icon visual size (px)
+        const G = 10; // gap: perimeter → arrow icon visual centre
 
         // ── Cardinal perimeter points per shape ──────────────────────────────
-        const { tPt, rPt, bPt, lPt } = computeCardinalPoints(shapeType, w, h, sw, pad);
+        const { tPt, rPt, bPt, lPt } = computeCardinalPoints(
+          shapeType,
+          w,
+          h,
+          sw,
+          pad,
+        );
 
         // Handle: invisible, positioned so its centre = perimeter point.
         // overflow:visible lets the icon render outside the Handle's box.
@@ -471,8 +625,8 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
           minWidth: 0,
           minHeight: 0,
           padding: 0,
-          transform: "none",    // cancel React Flow's centering translate
-          overflow: "visible",  // icon extends outside Handle's border box
+          transform: "none", // cancel React Flow's centering translate
+          overflow: "visible", // icon extends outside Handle's border box
           zIndex: 50,
           cursor: "crosshair",
           opacity: showHandles ? 1 : 0,
@@ -484,7 +638,11 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
         // outside the perimeter. Compute offsets along the outward normal from
         // the node center to the perimeter point so icons for slanted shapes
         // (triangle, hexagon, etc.) appear outside the shape's box.
-        const mkIcon = (deg: number, offL: number, offT: number): React.CSSProperties => ({
+        const mkIcon = (
+          deg: number,
+          offL: number,
+          offT: number,
+        ): React.CSSProperties => ({
           position: "absolute",
           left: offL,
           top: offT,
@@ -512,13 +670,13 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
           // Solve for t where pt + t*(fx,fy) crosses one of the box sides (pad..w-pad, pad..h-pad).
           const ts: number[] = [];
           if (Math.abs(fx) > 1e-6) {
-            const tRight = ((w - pad) - pt.x) / fx;
+            const tRight = (w - pad - pt.x) / fx;
             const tLeft = (pad - pt.x) / fx;
             if (tRight > 0) ts.push(tRight);
             if (tLeft > 0) ts.push(tLeft);
           }
           if (Math.abs(fy) > 1e-6) {
-            const tBottom = ((h - pad) - pt.y) / fy;
+            const tBottom = (h - pad - pt.y) / fy;
             const tTop = (pad - pt.y) / fy;
             if (tBottom > 0) ts.push(tBottom);
             if (tTop > 0) ts.push(tTop);
@@ -539,31 +697,103 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
               const leftOff = computeIconOffset(lPt, { x: -1, y: 0 });
               return (
                 <>
-                  <Handle id="top" type="source" position={Position.Top} isConnectable className="freeform-handle"
+                  <Handle
+                    id="top"
+                    type="source"
+                    position={Position.Top}
+                    isConnectable
+                    className="freeform-handle"
                     onPointerEnter={nodePointerEnter}
-                    style={{ ...handleBase, left: tPt.x - HS / 2, top: tPt.y - HS / 2 }}>
-                    <div className="arrow-icon" style={{ ['--arrow-default-color']: fill, ...mkIcon(-90, topOff.l, topOff.t) } as React.CSSProperties}>
+                    style={{
+                      ...handleBase,
+                      left: tPt.x - HS / 2,
+                      top: tPt.y - HS / 2,
+                    }}
+                  >
+                    <div
+                      className="arrow-icon"
+                      style={
+                        {
+                          ["--arrow-default-color"]: fill,
+                          ...mkIcon(-90, topOff.l, topOff.t),
+                        } as React.CSSProperties
+                      }
+                    >
                       <FaLongArrowAltRight />
                     </div>
                   </Handle>
-                  <Handle id="right" type="source" position={Position.Right} isConnectable className="freeform-handle"
+                  <Handle
+                    id="right"
+                    type="source"
+                    position={Position.Right}
+                    isConnectable
+                    className="freeform-handle"
                     onPointerEnter={nodePointerEnter}
-                    style={{ ...handleBase, left: rPt.x - HS / 2, top: rPt.y - HS / 2 }}>
-                    <div className="arrow-icon" style={{ ['--arrow-default-color']: fill, ...mkIcon(0, rightOff.l, rightOff.t) } as React.CSSProperties}>
+                    style={{
+                      ...handleBase,
+                      left: rPt.x - HS / 2,
+                      top: rPt.y - HS / 2,
+                    }}
+                  >
+                    <div
+                      className="arrow-icon"
+                      style={
+                        {
+                          ["--arrow-default-color"]: fill,
+                          ...mkIcon(0, rightOff.l, rightOff.t),
+                        } as React.CSSProperties
+                      }
+                    >
                       <FaLongArrowAltRight />
                     </div>
                   </Handle>
-                  <Handle id="bottom" type="source" position={Position.Bottom} isConnectable className="freeform-handle"
+                  <Handle
+                    id="bottom"
+                    type="source"
+                    position={Position.Bottom}
+                    isConnectable
+                    className="freeform-handle"
                     onPointerEnter={nodePointerEnter}
-                    style={{ ...handleBase, left: bPt.x - HS / 2, top: bPt.y - HS / 2 }}>
-                    <div className="arrow-icon" style={{ ['--arrow-default-color']: fill, ...mkIcon(90, bottomOff.l, bottomOff.t) } as React.CSSProperties}>
+                    style={{
+                      ...handleBase,
+                      left: bPt.x - HS / 2,
+                      top: bPt.y - HS / 2,
+                    }}
+                  >
+                    <div
+                      className="arrow-icon"
+                      style={
+                        {
+                          ["--arrow-default-color"]: fill,
+                          ...mkIcon(90, bottomOff.l, bottomOff.t),
+                        } as React.CSSProperties
+                      }
+                    >
                       <FaLongArrowAltRight />
                     </div>
                   </Handle>
-                  <Handle id="left" type="source" position={Position.Left} isConnectable className="freeform-handle"
+                  <Handle
+                    id="left"
+                    type="source"
+                    position={Position.Left}
+                    isConnectable
+                    className="freeform-handle"
                     onPointerEnter={nodePointerEnter}
-                    style={{ ...handleBase, left: lPt.x - HS / 2, top: lPt.y - HS / 2 }}>
-                    <div className="arrow-icon" style={{ ['--arrow-default-color']: fill, ...mkIcon(180, leftOff.l, leftOff.t) } as React.CSSProperties}>
+                    style={{
+                      ...handleBase,
+                      left: lPt.x - HS / 2,
+                      top: lPt.y - HS / 2,
+                    }}
+                  >
+                    <div
+                      className="arrow-icon"
+                      style={
+                        {
+                          ["--arrow-default-color"]: fill,
+                          ...mkIcon(180, leftOff.l, leftOff.t),
+                        } as React.CSSProperties
+                      }
+                    >
                       <FaLongArrowAltRight />
                     </div>
                   </Handle>
@@ -575,130 +805,242 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
       })()}
 
       {/* SVG rendering for all non-rect shapes */}
-      {isSvgShape && (() => {
-        const w = measured.w;
-        const h = measured.h;
-        const cx = w / 2;
-        const cy = h / 2;
-        const sw = strokeWidth;
-        const pad = sw;
+      {isSvgShape &&
+        (() => {
+          const w = measured.w;
+          const h = measured.h;
+          const cx = w / 2;
+          const cy = h / 2;
+          const sw = strokeWidth;
+          const pad = sw;
 
-        // Helpers
-        const ellipseRx = Math.max(1, (w - sw * 2) / 2);
-        const ellipseRy = Math.max(1, (h - sw * 2) / 2);
+          // Helpers
+          const ellipseRx = Math.max(1, (w - sw * 2) / 2);
+          const ellipseRy = Math.max(1, (h - sw * 2) / 2);
 
-        // Diamond: points at top/right/bottom/left midpoints
-        const diamondPts = `${cx},${pad} ${w - pad},${cy} ${cx},${h - pad} ${pad},${cy}`;
+          // Diamond: points at top/right/bottom/left midpoints
+          const diamondPts = `${cx},${pad} ${w - pad},${cy} ${cx},${h - pad} ${pad},${cy}`;
 
-        // Triangle: equilateral-ish, pointing up
-        const trianglePts = `${cx},${pad} ${w - pad},${h - pad} ${pad},${h - pad}`;
+          // Triangle: equilateral-ish, pointing up
+          const trianglePts = `${cx},${pad} ${w - pad},${h - pad} ${pad},${h - pad}`;
 
-        // Hexagon (flat-top): 6 points
-        const hexPts = (() => {
-          const rx = (w - pad * 2) / 2;
-          const ry = (h - pad * 2) / 2;
-          const pts: string[] = [];
-          for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6;
-            pts.push(`${cx + rx * Math.cos(angle)},${cy + ry * Math.sin(angle)}`);
-          }
-          return pts.join(" ");
-        })();
-
-        // Parallelogram: offset left top/bottom by ~20% of width
-        const skew = w * 0.2;
-        const paraPts = `${pad + skew},${pad} ${w - pad},${pad} ${w - pad - skew},${h - pad} ${pad},${h - pad}`;
-
-        // Selection / resize dashed overlay — shown when selected or actively resizing
-        const showSel = selected || isResizing;
-        const dashStyle: React.CSSProperties = { opacity: showSel ? 0.9 : 0, transition: "opacity 0.1s" };
-        const dashProps = { fill: "none", stroke: "#6366f1", strokeWidth: 1.5, strokeDasharray: "6 4" };
-
-        return (
-          <svg
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1, overflow: "visible" }}
-            viewBox={`0 0 ${w} ${h}`}
-            preserveAspectRatio="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {(shapeType === "ellipse" || shapeType === "circle") && (
-              <>
-                <ellipse cx={cx} cy={cy} rx={ellipseRx} ry={ellipseRy} fill={fill} stroke={stroke} strokeWidth={sw} />
-                <ellipse cx={cx} cy={cy} rx={ellipseRx} ry={ellipseRy} style={dashStyle} {...dashProps} />
-              </>
-            )}
-            {shapeType === "line" && (
-              <>
-                <line x1={8} y1={cy} x2={w - 8} y2={cy} stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-                <line x1={8} y1={cy} x2={w - 8} y2={cy} style={dashStyle} {...dashProps} strokeLinecap="round" />
-              </>
-            )}
-            {shapeType === "diamond" && (
-              <>
-                <polygon points={diamondPts} fill={fill} stroke={stroke} strokeWidth={sw} />
-                <polygon points={diamondPts} style={dashStyle} {...dashProps} />
-              </>
-            )}
-            {shapeType === "triangle" && (
-              <>
-                <polygon points={trianglePts} fill={fill} stroke={stroke} strokeWidth={sw} />
-                <polygon points={trianglePts} style={dashStyle} {...dashProps} />
-              </>
-            )}
-            {shapeType === "hexagon" && (
-              <>
-                <polygon points={hexPts} fill={fill} stroke={stroke} strokeWidth={sw} />
-                <polygon points={hexPts} style={dashStyle} {...dashProps} />
-              </>
-            )}
-            {shapeType === "parallelogram" && (
-              <>
-                <polygon points={paraPts} fill={fill} stroke={stroke} strokeWidth={sw} />
-                <polygon points={paraPts} style={dashStyle} {...dashProps} />
-              </>
-            )}
-            {shapeType === "text" && (() => {
-              const rawHtml = (shape.text as string) ?? (data?.label as string) ?? "Text";
-              const sanitized = DOMPurify.sanitize(rawHtml);
-              const textFontSize = (shape.fontSize as number) ?? (data?.fontSize as number) ?? Math.max(12, Math.round(initialH * 0.35));
-              const align = ((shape.textAlign as unknown) || (data?.textAlign as unknown) || "center") as "left" | "center" | "right";
-              let justify: "flex-start" | "center" | "flex-end" = "center";
-              if (align === "left") justify = "flex-start";
-              else if (align === "right") justify = "flex-end";
-              return (
-                <foreignObject x={pad} y={pad} width={Math.max(0, w - pad * 2)} height={Math.max(0, h - pad * 2)} style={{ overflow: "hidden" }}>
-                  <div
-                  
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: justify,
-                      textAlign: align,
-                      pointerEvents: "none",
-                      userSelect: "none",
-                      color: stroke,
-                      fontFamily: "inherit",
-                      fontSize: `${textFontSize}px`,
-                      overflow: "hidden",
-                    }}
-                    dangerouslySetInnerHTML={{ __html: sanitized }}
-                  />
-                </foreignObject>
+          // Hexagon (flat-top): 6 points
+          const hexPts = (() => {
+            const rx = (w - pad * 2) / 2;
+            const ry = (h - pad * 2) / 2;
+            const pts: string[] = [];
+            for (let i = 0; i < 6; i++) {
+              const angle = (Math.PI / 3) * i - Math.PI / 6;
+              pts.push(
+                `${cx + rx * Math.cos(angle)},${cy + ry * Math.sin(angle)}`,
               );
-            })()}
-            {shapeType === "textbox" && (
-              <>
-                {/* Outer border */}
-                <rect x={pad} y={pad} width={w - pad * 2} height={h - pad * 2} rx={4} fill={fill} stroke={stroke} strokeWidth={sw} />
-                {/* Header divider line ~30% from top */}
-                <line x1={pad} y1={h * 0.32} x2={w - pad} y2={h * 0.32} stroke={stroke} strokeWidth={sw * 0.7} />
-                {/* Header text */}
+            }
+            return pts.join(" ");
+          })();
+
+          // Parallelogram: offset left top/bottom by ~20% of width
+          const skew = w * 0.2;
+          const paraPts = `${pad + skew},${pad} ${w - pad},${pad} ${w - pad - skew},${h - pad} ${pad},${h - pad}`;
+
+          // Selection / resize dashed overlay — shown when selected or actively resizing
+          const showSel = selected || isResizing;
+          const dashStyle: React.CSSProperties = {
+            opacity: showSel ? 0.9 : 0,
+            transition: "opacity 0.1s",
+          };
+          const dashProps = {
+            fill: "none",
+            stroke: "#6366f1",
+            strokeWidth: 1.5,
+            strokeDasharray: "6 4",
+          };
+
+          return (
+            <svg
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                zIndex: 1,
+                overflow: "visible",
+              }}
+              viewBox={`0 0 ${w} ${h}`}
+              preserveAspectRatio="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {(shapeType === "ellipse" || shapeType === "circle") && (
+                <>
+                  <ellipse
+                    cx={cx}
+                    cy={cy}
+                    rx={ellipseRx}
+                    ry={ellipseRy}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  <ellipse
+                    cx={cx}
+                    cy={cy}
+                    rx={ellipseRx}
+                    ry={ellipseRy}
+                    style={dashStyle}
+                    {...dashProps}
+                  />
+                </>
+              )}
+              {shapeType === "line" && (
+                <>
+                  <line
+                    x1={8}
+                    y1={cy}
+                    x2={w - 8}
+                    y2={cy}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1={8}
+                    y1={cy}
+                    x2={w - 8}
+                    y2={cy}
+                    style={dashStyle}
+                    {...dashProps}
+                    strokeLinecap="round"
+                  />
+                </>
+              )}
+              {shapeType === "diamond" && (
+                <>
+                  <polygon
+                    points={diamondPts}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  <polygon
+                    points={diamondPts}
+                    style={dashStyle}
+                    {...dashProps}
+                  />
+                </>
+              )}
+              {shapeType === "triangle" && (
+                <>
+                  <polygon
+                    points={trianglePts}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  <polygon
+                    points={trianglePts}
+                    style={dashStyle}
+                    {...dashProps}
+                  />
+                </>
+              )}
+              {shapeType === "hexagon" && (
+                <>
+                  <polygon
+                    points={hexPts}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  <polygon points={hexPts} style={dashStyle} {...dashProps} />
+                </>
+              )}
+              {shapeType === "parallelogram" && (
+                <>
+                  <polygon
+                    points={paraPts}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  <polygon points={paraPts} style={dashStyle} {...dashProps} />
+                </>
+              )}
+              {shapeType === "text" &&
+                (() => {
+                  const rawHtml =
+                    (shape.text as string) ?? (data?.label as string) ?? "Text";
+                  const sanitized = DOMPurify.sanitize(rawHtml);
+                  const textFontSize =
+                    (shape.fontSize as number) ??
+                    (data?.fontSize as number) ??
+                    Math.max(12, Math.round(initialH * 0.35));
+                  const align = ((shape.textAlign as unknown) ||
+                    (data?.textAlign as unknown) ||
+                    "center") as "left" | "center" | "right";
+                  let justify: "flex-start" | "center" | "flex-end" = "center";
+                  if (align === "left") justify = "flex-start";
+                  else if (align === "right") justify = "flex-end";
+                  return (
+                    <foreignObject
+                      x={pad}
+                      y={pad}
+                      width={Math.max(0, w - pad * 2)}
+                      height={Math.max(0, h - pad * 2)}
+                      style={{ overflow: "hidden" }}
+                    >
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: justify,
+                          textAlign: align,
+                          pointerEvents: "none",
+                          userSelect: "none",
+                          color: stroke,
+                          fontFamily: "inherit",
+                          fontSize: `${textFontSize}px`,
+                          overflow: "hidden",
+                        }}
+                        dangerouslySetInnerHTML={{ __html: sanitized }}
+                      />
+                    </foreignObject>
+                  );
+                })()}
+              {shapeType === "textbox" && (
+                <>
+                  {/* Outer border */}
+                  <rect
+                    x={pad}
+                    y={pad}
+                    width={w - pad * 2}
+                    height={h - pad * 2}
+                    rx={4}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={sw}
+                  />
+                  {/* Header divider line ~30% from top */}
+                  <line
+                    x1={pad}
+                    y1={h * 0.32}
+                    x2={w - pad}
+                    y2={h * 0.32}
+                    stroke={stroke}
+                    strokeWidth={sw * 0.7}
+                  />
+                  {/* Header text */}
                   {/* Header text (font size and alignment controlled by properties) */}
                   {(() => {
-                    const headerFontSize = (shape.fontSize as number) ?? (data?.fontSize as number) ?? Math.max(10, Math.round(initialH * 0.12));
-                    const align = (shape.textAlign as string) ?? (data?.textAlign as string) ?? "center";
+                    const headerFontSize =
+                      (shape.fontSize as number) ??
+                      (data?.fontSize as number) ??
+                      Math.max(10, Math.round(initialH * 0.12));
+                    const align =
+                      (shape.textAlign as string) ??
+                      (data?.textAlign as string) ??
+                      "center";
                     let anchor: "start" | "middle" | "end" = "middle";
                     if (align === "left") anchor = "start";
                     else if (align === "right") anchor = "end";
@@ -707,8 +1049,10 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
                     else if (align === "right") xPos = w - pad - 12;
                     return (
                       <text
-                        x={xPos} y={h * 0.18}
-                        textAnchor={anchor} dominantBaseline="central"
+                        x={xPos}
+                        y={h * 0.18}
+                        textAnchor={anchor}
+                        dominantBaseline="central"
                         fill={stroke}
                         fontSize={headerFontSize}
                         fontWeight="bold"
@@ -719,47 +1063,66 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
                       </text>
                     );
                   })()}
-                {/* Body: render description HTML if provided, otherwise show placeholder lines */}
-                {(() => {
-                  const bodyHtml = (data?.description as string) || "";
-                  if (bodyHtml?.trim()) {
-                    const sanitizedBody = DOMPurify.sanitize(bodyHtml);
-                    const bodyTop = h * 0.36;
-                    const bodyHeight = Math.max(0, h - bodyTop - pad);
-                    return (
-                      <foreignObject x={pad + 8} y={bodyTop} width={Math.max(0, w - pad * 2 - 16)} height={bodyHeight} style={{ overflow: "hidden" }}>
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            pointerEvents: "none",
-                            userSelect: "none",
-                            color: stroke,
-                            fontFamily: "inherit",
-                            fontSize: `${Math.max(10, Math.round(initialH * 0.12))}px`,
-                            overflow: "hidden",
-                          }}
-                          dangerouslySetInnerHTML={{ __html: sanitizedBody }}
+                  {/* Body: render description HTML if provided, otherwise show placeholder lines */}
+                  {(() => {
+                    const bodyHtml = (data?.description as string) || "";
+                    if (bodyHtml?.trim()) {
+                      const sanitizedBody = DOMPurify.sanitize(bodyHtml);
+                      const bodyTop = h * 0.36;
+                      const bodyHeight = Math.max(0, h - bodyTop - pad);
+                      return (
+                        <foreignObject
+                          x={pad + 8}
+                          y={bodyTop}
+                          width={Math.max(0, w - pad * 2 - 16)}
+                          height={bodyHeight}
+                          style={{ overflow: "hidden" }}
+                        >
+                          <div
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              pointerEvents: "none",
+                              userSelect: "none",
+                              color: stroke,
+                              fontFamily: "inherit",
+                              fontSize: `${Math.max(10, Math.round(initialH * 0.12))}px`,
+                              overflow: "hidden",
+                            }}
+                            dangerouslySetInnerHTML={{ __html: sanitizedBody }}
+                          />
+                        </foreignObject>
+                      );
+                    }
+                    return ([0.48, 0.62, 0.76] as const).map(
+                      (yFrac, lineIdx) => (
+                        <line
+                          key={`body-line-${yFrac}`}
+                          x1={pad + 8}
+                          y1={h * yFrac}
+                          x2={w - pad - (lineIdx === 2 ? w * 0.25 : 8)}
+                          y2={h * yFrac}
+                          stroke={stroke}
+                          strokeWidth={1}
+                          strokeOpacity={0.4}
                         />
-                      </foreignObject>
+                      ),
                     );
-                  }
-                  return ([0.48, 0.62, 0.76] as const).map((yFrac, lineIdx) => (
-                    <line
-                      key={`body-line-${yFrac}`}
-                      x1={pad + 8} y1={h * yFrac}
-                      x2={w - pad - (lineIdx === 2 ? w * 0.25 : 8)} y2={h * yFrac}
-                      stroke={stroke} strokeWidth={1} strokeOpacity={0.4}
-                    />
-                  ));
-                })()}
-                <rect x={pad} y={pad} width={w - pad * 2} height={h - pad * 2} rx={4} style={dashStyle} {...dashProps} />
-              </>
-            )}
-          </svg>
-        );
-      })()}
-
+                  })()}
+                  <rect
+                    x={pad}
+                    y={pad}
+                    width={w - pad * 2}
+                    height={h - pad * 2}
+                    rx={4}
+                    style={dashStyle}
+                    {...dashProps}
+                  />
+                </>
+              )}
+            </svg>
+          );
+        })()}
 
       {contextMenu.visible &&
         ReactDOM.createPortal(
@@ -770,43 +1133,81 @@ const FreeformNode: React.FC<Props> = ({ id, data, selected, onCopy, isInGroup }
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="fixed z-[10000] bg-[var(--surface)] border border-theme rounded-lg shadow-lg py-1 min-w-[140px] pointer-events-auto"
-            style={{ left: contextMenu.x, top: contextMenu.y, transform: "translate(-50%, -10px)" }}
+            style={{
+              left: contextMenu.x,
+              top: contextMenu.y,
+              transform: "translate(-50%, -10px)",
+            }}
           >
-            <button type="button"
-              onClick={(e) => { e.stopPropagation(); onToggle(e as unknown as React.MouseEvent); }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle(e as unknown as React.MouseEvent);
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
               <MdSettings className="w-4 h-4" />
               Settings
             </button>
-            <button type="button"
-              onClick={(e) => { e.stopPropagation(); globalThis.dispatchEvent(new CustomEvent("diagram:node-to-front", { detail: { id } })); }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                globalThis.dispatchEvent(
+                  new CustomEvent("diagram:node-to-front", { detail: { id } }),
+                );
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
               <MdOutlineVerticalAlignTop className="w-4 h-4" />
               Bring to Front
             </button>
-            <button type="button"
-              onClick={(e) => { e.stopPropagation(); globalThis.dispatchEvent(new CustomEvent("diagram:node-to-back", { detail: { id } })); }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                globalThis.dispatchEvent(
+                  new CustomEvent("diagram:node-to-back", { detail: { id } }),
+                );
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
               <MdOutlineVerticalAlignBottom className="w-4 h-4" />
               Send to Back
             </button>
             {isInGroup && (
-              <button type="button"
-                onClick={(e) => { e.stopPropagation(); handleDetach(e as unknown as React.MouseEvent); }}
-                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-orange-500">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDetach(e as unknown as React.MouseEvent);
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-orange-500"
+              >
                 <FiUnlock className="w-4 h-4" />
                 Detach from Group
               </button>
             )}
-            <button type="button"
-              onClick={(e) => { e.stopPropagation(); handleCopy(e as unknown as React.MouseEvent); }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopy(e as unknown as React.MouseEvent);
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+            >
               <IoDuplicateOutline className="w-4 h-4" />
               Duplicate
             </button>
-            <button type="button"
-              onClick={(e) => { e.stopPropagation(); onDelete(e as unknown as React.MouseEvent); }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-red-600">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(e as unknown as React.MouseEvent);
+              }}
+              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-red-600"
+            >
               <MdDelete className="w-4 h-4" />
               Delete
             </button>

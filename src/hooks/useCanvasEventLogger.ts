@@ -80,7 +80,11 @@ export function useCanvasEventLogger({
   }, [isEnabled, flush]);
 
   const logNodeAdded = useCallback(
-    (nodesRef: React.RefObject<Node[]>, edgesRef: React.RefObject<Edge[]>, node: Node) => {
+    (
+      nodesRef: React.RefObject<Node[]>,
+      edgesRef: React.RefObject<Edge[]>,
+      node: Node,
+    ) => {
       if (!isEnabled) return;
       bufferRef.current.push({
         ts: Date.now(),
@@ -94,7 +98,11 @@ export function useCanvasEventLogger({
   );
 
   const logNodeDeleted = useCallback(
-    (nodesRef: React.RefObject<Node[]>, edgesRef: React.RefObject<Edge[]>, node: Node) => {
+    (
+      nodesRef: React.RefObject<Node[]>,
+      edgesRef: React.RefObject<Edge[]>,
+      node: Node,
+    ) => {
       if (!isEnabled) return;
       bufferRef.current.push({
         ts: Date.now(),

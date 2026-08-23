@@ -16,7 +16,14 @@ import LearningPathCard from "../components/learning-paths/LearningPathCard";
 const LearningPaths: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
-  const { user, isAuthenticated: isAuth, login, signup, googleLogin, logout } = useAuth();
+  const {
+    user,
+    isAuthenticated: isAuth,
+    login,
+    signup,
+    googleLogin,
+    logout,
+  } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { isNewToPage, markPageVisited } = useOnboarding();
@@ -64,7 +71,10 @@ const LearningPaths: React.FC = () => {
 
       <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300" style={{ top: 'var(--announcement-h, 0px)' }}>
+        <header
+          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
+          style={{ top: "var(--announcement-h, 0px)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -77,7 +87,9 @@ const LearningPaths: React.FC = () => {
                   alt="Logo"
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-lg font-bold text-white tracking-wide leading-none">Diagrammatic</span>
+                <span className="text-lg font-bold text-white tracking-wide leading-none">
+                  Diagrammatic
+                </span>
               </button>
               <div className="flex items-center gap-4">
                 {isAuth && (
@@ -122,10 +134,14 @@ const LearningPaths: React.FC = () => {
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                            {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+                            {user?.name?.[0]?.toUpperCase() ||
+                              user?.email?.[0]?.toUpperCase() ||
+                              "U"}
                           </div>
                         )}
-                        <span className="hidden sm:inline">{user?.name || user?.email}</span>
+                        <span className="hidden sm:inline">
+                          {user?.name || user?.email}
+                        </span>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-4 w-4"
@@ -145,13 +161,19 @@ const LearningPaths: React.FC = () => {
                       {showUserMenu && (
                         <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
                           <div className="px-4 py-2">
-                            <p className="text-sm font-medium text-theme">{user?.name || "User"}</p>
-                            <p className="text-xs text-muted truncate">{user?.email}</p>
+                            <p className="text-sm font-medium text-theme">
+                              {user?.name || "User"}
+                            </p>
+                            <p className="text-xs text-muted truncate">
+                              {user?.email}
+                            </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => {
-                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              globalThis.dispatchEvent(
+                                new Event("open-quick-setup"),
+                              );
                               setShowUserMenu(false);
                             }}
                             aria-label="Edit preferences"
@@ -194,14 +216,21 @@ const LearningPaths: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Page Header */}
             <div className="text-center mb-6">
-              <h1 className="text-4xl md:text-5xl font-bold mb-3">Learning Paths</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-3">
+                Learning Paths
+              </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
-                Follow curated sequences of modules and lessons that teach system design from first principles to advanced patterns.
+                Follow curated sequences of modules and lessons that teach
+                system design from first principles to advanced patterns.
               </p>
             </div>
 
             <div className="mb-4 flex items-center justify-between">
-              <div className="text-sm text-muted">{loading ? "Loading paths..." : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}</div>
+              <div className="text-sm text-muted">
+                {loading
+                  ? "Loading paths..."
+                  : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -210,9 +239,7 @@ const LearningPaths: React.FC = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
                 </div>
               ) : (
-                paths.map((p) => (
-                  <LearningPathCard key={p.id} path={p} />
-                ))
+                paths.map((p) => <LearningPathCard key={p.id} path={p} />)
               )}
             </div>
           </div>

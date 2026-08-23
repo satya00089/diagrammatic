@@ -2,7 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
+import {
+  MdSettings,
+  MdDelete,
+  MdOutlineVerticalAlignTop,
+  MdOutlineVerticalAlignBottom,
+} from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
@@ -56,12 +61,13 @@ type Props = {
 const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   const dispatch = useAppDispatch();
   const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
-  const componentId = typeof data.componentId === "string" ? data.componentId : undefined;
+  const componentId =
+    typeof data.componentId === "string" ? data.componentId : undefined;
   const sprite = componentId ? spriteIcons[componentId] : undefined;
   const provider = componentId ? providerFromId(componentId) : null;
   // Select only this node's provider status to avoid re-renders from other providers loading.
   const spriteStatus = useAppSelector((state) =>
-    provider ? state.sprites.providerStatus[provider] : undefined
+    provider ? state.sprites.providerStatus[provider] : undefined,
   );
   const useDirectIcon = shouldUseDirectIcon(componentId);
   // For known sprite providers (aws/azure/gcp/kubernetes): NEVER fire iconUrl <img>.
@@ -178,6 +184,69 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
     }
   }, [contextMenu.visible, closeContextMenu]);
 
+  let nodeIcon: React.ReactNode;
+  if (showIconUrl) {
+    nodeIcon = (
+      <div className="flex-shrink-0 flex items-center justify-center">
+        <img
+          src={data.iconUrl}
+          alt={displayLabel}
+          className="w-full h-full object-contain"
+          style={{ maxWidth: "10rem", maxHeight: "10rem" }}
+        />
+      </div>
+    );
+  } else if (sprite) {
+    nodeIcon = (
+      <div className="flex-shrink-0 flex items-center justify-center">
+        <SpriteIcon sprite={sprite} displaySize={64} alt={displayLabel} />
+      </div>
+    );
+  } else {
+    nodeIcon = (
+      <div
+        className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl relative overflow-hidden"
+        style={
+          data.borderColor
+            ? {
+                background: `linear-gradient(135deg, ${data.borderColor as string}30, ${data.borderColor as string}10)`,
+              }
+            : {
+                background:
+                  "linear-gradient(135deg, color-mix(in srgb, var(--brand) 20%, transparent), color-mix(in srgb, var(--brand) 5%, transparent))",
+              }
+        }
+      >
+        <div
+          className="absolute inset-0 rounded-full"
+          style={
+            data.borderColor
+              ? {
+                  background: `linear-gradient(135deg, transparent, ${data.borderColor as string}18)`,
+                }
+              : {
+                  background:
+                    "linear-gradient(135deg, transparent, color-mix(in srgb, var(--brand) 10%, transparent))",
+                }
+          }
+        />
+        <div
+          className="relative z-10 opacity-80"
+          style={
+            data.borderColor ? { color: data.borderColor as string } : undefined
+          }
+        >
+          {data.icon
+            ? React.createElement(
+                data.icon as React.ComponentType<{ size?: number }>,
+                { size: 24 },
+              )
+            : "●"}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <motion.fieldset
@@ -187,8 +256,15 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
         className="min-w-[200px] w-full max-w-[15vw] bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
         style={{
-          ...(data.backgroundColor ? { backgroundColor: data.backgroundColor as string } : {}),
-          ...(data.borderColor ? { borderLeftColor: data.borderColor as string, borderLeftWidth: "3px" } : {}),
+          ...(data.backgroundColor
+            ? { backgroundColor: data.backgroundColor as string }
+            : {}),
+          ...(data.borderColor
+            ? {
+                borderLeftColor: data.borderColor as string,
+                borderLeftWidth: "3px",
+              }
+            : {}),
           ...(data.textColor ? { color: data.textColor as string } : {}),
         }}
         onContextMenu={handleContextMenu}
@@ -305,49 +381,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
         {/* Main content */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-0 w-full py-2">
-          {showIconUrl ? (
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <img
-                src={data.iconUrl}
-                alt={displayLabel}
-                className="w-full h-full object-contain"
-                style={{ maxWidth: "10rem", maxHeight: "10rem" }}
-              />
-            </div>
-          ) : sprite ? (
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <SpriteIcon sprite={sprite} displaySize={64} alt={displayLabel} />
-            </div>
-          ) : (
-            <div
-              className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl relative overflow-hidden"
-              style={data.borderColor ? {
-                background: `linear-gradient(135deg, ${data.borderColor as string}30, ${data.borderColor as string}10)`,
-              } : {
-                background: "linear-gradient(135deg, color-mix(in srgb, var(--brand) 20%, transparent), color-mix(in srgb, var(--brand) 5%, transparent))",
-              }}
-            >
-              <div
-                className="absolute inset-0 rounded-full"
-                style={data.borderColor ? {
-                  background: `linear-gradient(135deg, transparent, ${data.borderColor as string}18)`,
-                } : {
-                  background: "linear-gradient(135deg, transparent, color-mix(in srgb, var(--brand) 10%, transparent))",
-                }}
-              />
-              <div
-                className="relative z-10 opacity-80"
-                style={data.borderColor ? { color: data.borderColor as string } : undefined}
-              >
-                {data.icon
-                  ? React.createElement(
-                      data.icon as React.ComponentType<{ size?: number }>,
-                      { size: 24 },
-                    )
-                  : "●"}
-              </div>
-            </div>
-          )}
+          {nodeIcon}
 
           <div className="min-w-0 w-full text-center">
             <div className="truncate font-medium text-sm">{displayLabel}</div>
@@ -382,7 +416,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   "textColor",
                 ]);
                 const isEmptyValue = (val: unknown): boolean => {
-                  if (val === undefined || val === null || val === "") return true;
+                  if (val === undefined || val === null || val === "")
+                    return true;
                   if (typeof val === "string") {
                     const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
                     return stripped === "";

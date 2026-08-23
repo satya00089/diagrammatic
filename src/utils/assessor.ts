@@ -41,25 +41,52 @@ export async function assessSolution(
 
   // Valid component types accepted by the backend
   const VALID_BACKEND_TYPES = new Set([
-    "frontend", "backend", "database", "cache", "load-balancer",
-    "api-gateway", "message-broker", "queue", "cdn", "monitoring",
-    "analytics", "external-api", "storage", "security", "custom",
+    "frontend",
+    "backend",
+    "database",
+    "cache",
+    "load-balancer",
+    "api-gateway",
+    "message-broker",
+    "queue",
+    "cdn",
+    "monitoring",
+    "analytics",
+    "external-api",
+    "storage",
+    "security",
+    "custom",
   ]);
 
   // Map frontend-only / user-entered types to the nearest valid backend type
   const normalizeComponentType = (type: string): string => {
     if (VALID_BACKEND_TYPES.has(type)) return type;
     const t = type.toLowerCase();
-    if (t === "client" || t === "web-server" || t === "web_server") return "frontend";
+    if (t === "client" || t === "web-server" || t === "web_server")
+      return "frontend";
     if (
-      t === "application-server" || t === "application_server" ||
-      t === "microservice" || t === "service" || t === "server" ||
-      t === "notification-service" || t === "search-engine" ||
-      t === "backend-server" || t === "scheduler"
-    ) return "backend";
-    if (t === "nosql" || t === "sql" || t === "rdbms" || t === "db") return "database";
-    if (t === "file-storage" || t === "file_storage" || t === "blob" || t === "s3") return "storage";
-    if (t === "firewall" || t === "waf" || t === "auth" || t === "auth-service") return "security";
+      t === "application-server" ||
+      t === "application_server" ||
+      t === "microservice" ||
+      t === "service" ||
+      t === "server" ||
+      t === "notification-service" ||
+      t === "search-engine" ||
+      t === "backend-server" ||
+      t === "scheduler"
+    )
+      return "backend";
+    if (t === "nosql" || t === "sql" || t === "rdbms" || t === "db")
+      return "database";
+    if (
+      t === "file-storage" ||
+      t === "file_storage" ||
+      t === "blob" ||
+      t === "s3"
+    )
+      return "storage";
+    if (t === "firewall" || t === "waf" || t === "auth" || t === "auth-service")
+      return "security";
     if (t === "loadbalancer" || t === "load_balancer") return "load-balancer";
     if (t === "tracing") return "monitoring";
     // Anything else falls through as custom
@@ -211,27 +238,29 @@ export function transformApiResponse(apiResult: unknown): ValidationResult {
     "improvement",
     "positive",
   ]);
-  const findings: ReviewFinding[] = (result.findings ?? []).flatMap((finding) => {
-    if (
-      typeof finding.title !== "string" ||
-      typeof finding.explanation !== "string" ||
-      typeof finding.severity !== "string" ||
-      !validSeverities.has(finding.severity as ReviewFinding["severity"])
-    ) {
-      return [];
-    }
-    return [
-      {
-        title: finding.title,
-        explanation: finding.explanation,
-        recommendation:
-          typeof finding.recommendation === "string"
-            ? finding.recommendation
-            : undefined,
-        severity: finding.severity as ReviewFinding["severity"],
-      },
-    ];
-  });
+  const findings: ReviewFinding[] = (result.findings ?? []).flatMap(
+    (finding) => {
+      if (
+        typeof finding.title !== "string" ||
+        typeof finding.explanation !== "string" ||
+        typeof finding.severity !== "string" ||
+        !validSeverities.has(finding.severity as ReviewFinding["severity"])
+      ) {
+        return [];
+      }
+      return [
+        {
+          title: finding.title,
+          explanation: finding.explanation,
+          recommendation:
+            typeof finding.recommendation === "string"
+              ? finding.recommendation
+              : undefined,
+          severity: finding.severity as ReviewFinding["severity"],
+        },
+      ];
+    },
+  );
 
   return {
     isValid: result.is_valid || false,

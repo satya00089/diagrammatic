@@ -31,7 +31,7 @@
   --elevated-card-bg: color-mix(in srgb, var(--surface) 95%, white 50%);
 
   /* Share / announcement colors (light mode) */
-  --share-bg: #4B4C5B;
+  --share-bg: #4b4c5b;
   --share-text: #ffffff;
   --announcement-bg: var(--share-bg);
   --announcement-text: var(--share-text);
@@ -64,7 +64,7 @@
   --elevated-card-bg: color-mix(in srgb, var(--surface) 92%, black 28%);
 
   /* Share / announcement colors (dark mode) */
-  --share-bg: #AFAFBA;
+  --share-bg: #afafba;
   --share-text: #000000;
   --announcement-bg: var(--share-bg);
   --announcement-text: var(--share-text);
@@ -90,12 +90,20 @@ body {
 }
 
 html {
-  scrollbar-color: color-mix(in srgb, var(--brand) 55%, var(--muted)) transparent;
+  scrollbar-color: color-mix(in srgb, var(--brand) 55%, var(--muted))
+    transparent;
 }
 
 /* Heading rendering — crisp Inter on high-DPI displays */
-h1, h2, h3, h4, h5, h6 {
-  font-feature-settings: 'kern' 1, 'calt' 1;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-feature-settings:
+    "kern" 1,
+    "calt" 1;
   text-rendering: optimizeLegibility;
 }
 
@@ -141,7 +149,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Scale up + glow when the user hovers the icon directly */
 .freeform-node .freeform-handle:hover svg,
 .freeform-node .freeform-handle:hover > * {
-  filter: drop-shadow(0 0 5px rgba(99,102,241,0.8));
+  filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.8));
   transform-origin: center;
 }
 
@@ -254,7 +262,12 @@ h1, h2, h3, h4, h5, h6 {
 .prose em {
   color: inherit !important;
 }
-.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
   color: var(--text) !important;
 }
 .prose a {
@@ -759,13 +772,16 @@ select::-webkit-scrollbar-thumb {
   height: 22px;
   line-height: 22px;
   text-align: center;
-  transition: color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  transition:
+    color 0.12s ease,
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
   color: var(--arrow-default-color, var(--muted));
 }
 
 .freeform-node .freeform-handle:hover .arrow-icon {
   /* Remove circular background/border — keep a subtle lift only */
-  box-shadow: 0 1px 3px rgba(99,102,241,0.08);
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.08);
   transform: scale(1.02);
 }
 

@@ -9,7 +9,7 @@ import {
   MdSignalCellularAlt,
 } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
@@ -57,7 +57,9 @@ const buildQuestions = (problem: PublicProblem): string[] => {
       "What is cached, how is it invalidated, and how are hot keys handled?",
     );
   }
-  if ([...terms].some((term) => /ai|ml|rag|embedding|recommendation/.test(term))) {
+  if (
+    [...terms].some((term) => /ai|ml|rag|embedding|recommendation/.test(term))
+  ) {
     questions.push(
       "How are offline data preparation, online inference, evaluation, and model rollback separated?",
     );
@@ -101,7 +103,9 @@ const ProblemLanding: React.FC = () => {
         });
         if (!response.ok) throw new Error("Problem catalog unavailable");
         const problems = (await response.json()) as SystemDesignProblem[];
-        const summary = problems.find((entry) => getProblemSlug(entry) === slug);
+        const summary = problems.find(
+          (entry) => getProblemSlug(entry) === slug,
+        );
         if (!summary) {
           if (active && !featured) setMissing(true);
           return;
@@ -154,11 +158,18 @@ const ProblemLanding: React.FC = () => {
   if (!problem || loading) {
     return (
       <main className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6">
-        <div className="max-w-md text-center" role="status">
-          <div className="mx-auto mb-5 h-10 w-10 rounded-full border-2 border-[var(--brand)] border-t-transparent animate-spin" />
-          <h1 className="text-2xl font-bold">Loading the design brief…</h1>
-          <p className="mt-2 text-muted">Preparing requirements and practice guidance.</p>
-        </div>
+        <output className="max-w-md text-center">
+          <span
+            className="mx-auto mb-5 block h-10 w-10 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent"
+            aria-hidden
+          />
+          <span className="block text-2xl font-bold">
+            Loading the design brief…
+          </span>
+          <span className="mt-2 block text-muted">
+            Preparing requirements and practice guidance.
+          </span>
+        </output>
       </main>
     );
   }
@@ -184,7 +195,7 @@ const ProblemLanding: React.FC = () => {
 
   return (
     <>
-      <SEO
+      <Seo
         title={`${problem.title} — System Design Interview Practice | Diagrammatic`}
         description={pageDescription}
         keywords={`${problem.title}, system design interview question, ${problem.tags.join(", ")}`}
@@ -212,15 +223,27 @@ const ProblemLanding: React.FC = () => {
       <div className="min-h-screen bg-[var(--bg)] text-theme">
         <header className="border-b border-theme/10 bg-[var(--surface)]">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link to="/" className="flex items-center gap-3 font-bold tracking-wide">
+            <Link
+              to="/"
+              className="flex items-center gap-3 font-bold tracking-wide"
+            >
               <img src="/logo.png" alt="" className="h-7" />
-              Diagrammatic
+              <span>Diagrammatic</span>
             </Link>
-            <nav className="flex items-center gap-2 sm:gap-4" aria-label="Primary navigation">
-              <Link to="/problems/" className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline">
+            <nav
+              className="flex items-center gap-2 sm:gap-4"
+              aria-label="Primary navigation"
+            >
+              <Link
+                to="/problems/"
+                className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline"
+              >
                 All problems
               </Link>
-              <Link to="/learning-paths/" className="hidden text-sm font-semibold text-muted hover:text-theme md:inline">
+              <Link
+                to="/learning-paths/"
+                className="hidden text-sm font-semibold text-muted hover:text-theme md:inline"
+              >
                 Learning paths
               </Link>
               <ThemeSwitcher />
@@ -240,8 +263,12 @@ const ProblemLanding: React.FC = () => {
               <div className="mt-7 grid gap-10 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
                 <div className="min-w-0">
                   <div className="mb-5 flex flex-wrap gap-2 text-sm font-semibold">
-                    <span className="rounded-full bg-[var(--brand)]/10 px-3 py-1 text-[var(--brand)]">{problem.category}</span>
-                    <span className="rounded-full bg-[var(--bg-hover)] px-3 py-1">{problem.difficulty}</span>
+                    <span className="rounded-full bg-[var(--brand)]/10 px-3 py-1 text-[var(--brand)]">
+                      {problem.category}
+                    </span>
+                    <span className="rounded-full bg-[var(--bg-hover)] px-3 py-1">
+                      {problem.difficulty}
+                    </span>
                   </div>
                   <h1 className="max-w-4xl text-balance text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-5xl">
                     {problem.title}
@@ -254,12 +281,18 @@ const ProblemLanding: React.FC = () => {
                 <aside className="rounded-2xl bg-[var(--bg)] p-6 shadow-[0_12px_32px_rgba(17,24,39,0.10)]">
                   <dl className="space-y-4 text-sm">
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="flex items-center gap-2 text-muted"><MdSignalCellularAlt /> Difficulty</dt>
+                      <dt className="flex items-center gap-2 text-muted">
+                        <MdSignalCellularAlt /> Difficulty
+                      </dt>
                       <dd className="font-semibold">{problem.difficulty}</dd>
                     </div>
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="flex items-center gap-2 text-muted"><MdAccessTime /> Practice time</dt>
-                      <dd className="font-semibold tabular-nums">{problem.estimated_time}</dd>
+                      <dt className="flex items-center gap-2 text-muted">
+                        <MdAccessTime /> Practice time
+                      </dt>
+                      <dd className="font-semibold tabular-nums">
+                        {problem.estimated_time}
+                      </dd>
                     </div>
                   </dl>
                   <button
@@ -267,10 +300,12 @@ const ProblemLanding: React.FC = () => {
                     onClick={startProblem}
                     className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.30)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
                   >
-                    <MdPlayArrow className="text-xl" aria-hidden="true" /> Start designing
+                    <MdPlayArrow className="text-xl" aria-hidden="true" /> Start
+                    designing
                   </button>
                   <p className="mt-3 text-center text-xs leading-5 text-muted">
-                    Read the brief first. Sign in only when you are ready to save and review your design.
+                    Read the brief first. Sign in only when you are ready to
+                    save and review your design.
                   </p>
                 </aside>
               </div>
@@ -281,11 +316,22 @@ const ProblemLanding: React.FC = () => {
             <div className="min-w-0 space-y-14">
               {requirements.length > 0 && (
                 <section aria-labelledby="requirements-heading">
-                  <h2 id="requirements-heading" className="text-2xl font-bold tracking-[-0.02em]">Requirements</h2>
+                  <h2
+                    id="requirements-heading"
+                    className="text-2xl font-bold tracking-[-0.02em]"
+                  >
+                    Requirements
+                  </h2>
                   <ul className="mt-5 space-y-3">
                     {requirements.map((requirement) => (
-                      <li key={requirement} className="flex gap-3 leading-7 text-muted">
-                        <MdCheckCircleOutline className="mt-1 shrink-0 text-xl text-[var(--brand)]" aria-hidden="true" />
+                      <li
+                        key={requirement}
+                        className="flex gap-3 leading-7 text-muted"
+                      >
+                        <MdCheckCircleOutline
+                          className="mt-1 shrink-0 text-xl text-[var(--brand)]"
+                          aria-hidden="true"
+                        />
                         <span>{requirement}</span>
                       </li>
                     ))}
@@ -294,10 +340,18 @@ const ProblemLanding: React.FC = () => {
               )}
 
               <section aria-labelledby="concepts-heading">
-                <h2 id="concepts-heading" className="text-2xl font-bold tracking-[-0.02em]">Concepts this challenge tests</h2>
+                <h2
+                  id="concepts-heading"
+                  className="text-2xl font-bold tracking-[-0.02em]"
+                >
+                  Concepts this challenge tests
+                </h2>
                 <div className="mt-5 flex flex-wrap gap-2">
                   {concepts.map((concept) => (
-                    <span key={concept} className="rounded-lg bg-[var(--surface)] px-3 py-2 text-sm font-semibold">
+                    <span
+                      key={concept}
+                      className="rounded-lg bg-[var(--surface)] px-3 py-2 text-sm font-semibold"
+                    >
                       {concept}
                     </span>
                   ))}
@@ -306,19 +360,36 @@ const ProblemLanding: React.FC = () => {
 
               {constraints.length > 0 && (
                 <section aria-labelledby="constraints-heading">
-                  <h2 id="constraints-heading" className="text-2xl font-bold tracking-[-0.02em]">Constraints</h2>
+                  <h2
+                    id="constraints-heading"
+                    className="text-2xl font-bold tracking-[-0.02em]"
+                  >
+                    Constraints
+                  </h2>
                   <ul className="mt-5 list-disc space-y-3 pl-5 leading-7 text-muted">
-                    {constraints.map((constraint) => <li key={constraint}>{constraint}</li>)}
+                    {constraints.map((constraint) => (
+                      <li key={constraint}>{constraint}</li>
+                    ))}
                   </ul>
                 </section>
               )}
 
               <section aria-labelledby="questions-heading">
-                <h2 id="questions-heading" className="text-2xl font-bold tracking-[-0.02em]">Questions your architecture should answer</h2>
+                <h2
+                  id="questions-heading"
+                  className="text-2xl font-bold tracking-[-0.02em]"
+                >
+                  Questions your architecture should answer
+                </h2>
                 <ol className="mt-5 space-y-4">
                   {questions.map((question, index) => (
-                    <li key={question} className="grid grid-cols-[2rem_1fr] gap-3 leading-7 text-muted">
-                      <span className="font-semibold tabular-nums text-[var(--brand)]">{index + 1}.</span>
+                    <li
+                      key={question}
+                      className="grid grid-cols-[2rem_1fr] gap-3 leading-7 text-muted"
+                    >
+                      <span className="font-semibold tabular-nums text-[var(--brand)]">
+                        {index + 1}.
+                      </span>
                       <span>{question}</span>
                     </li>
                   ))}
@@ -326,23 +397,46 @@ const ProblemLanding: React.FC = () => {
               </section>
 
               <section aria-labelledby="review-heading">
-                <h2 id="review-heading" className="text-2xl font-bold tracking-[-0.02em]">What the review looks for</h2>
+                <h2
+                  id="review-heading"
+                  className="text-2xl font-bold tracking-[-0.02em]"
+                >
+                  What the review looks for
+                </h2>
                 <p className="mt-4 max-w-3xl leading-7 text-muted">
-                  Diagrammatic reviews the reasoning behind your components and connections—not just whether the right boxes appear. Make assumptions explicit and label the important data flows.
+                  Diagrammatic reviews the reasoning behind your components and
+                  connections—not just whether the right boxes appear. Make
+                  assumptions explicit and label the important data flows.
                 </p>
                 <ul className="mt-5 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                  {["Requirements alignment", "Scalability and bottlenecks", "Reliability and failure recovery", "Data design and trade-offs"].map((item) => (
-                    <li key={item} className="flex items-center gap-3 font-semibold">
-                      <MdCheckCircleOutline className="text-xl text-[var(--brand)]" aria-hidden="true" /> {item}
+                  {[
+                    "Requirements alignment",
+                    "Scalability and bottlenecks",
+                    "Reliability and failure recovery",
+                    "Data design and trade-offs",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 font-semibold"
+                    >
+                      <MdCheckCircleOutline
+                        className="text-xl text-[var(--brand)]"
+                        aria-hidden="true"
+                      />{" "}
+                      {item}
                     </li>
                   ))}
                 </ul>
               </section>
 
               <section className="rounded-2xl bg-[var(--brand)] px-6 py-8 text-white sm:px-8">
-                <h2 className="text-2xl font-bold">Turn the brief into an architecture</h2>
+                <h2 className="text-2xl font-bold">
+                  Turn the brief into an architecture
+                </h2>
                 <p className="mt-3 max-w-2xl leading-7 text-white/85">
-                  Place the core components, connect the critical paths, record your assumptions, and request a structured review when the design is ready.
+                  Place the core components, connect the critical paths, record
+                  your assumptions, and request a structured review when the
+                  design is ready.
                 </p>
                 <button
                   type="button"
@@ -354,17 +448,33 @@ const ProblemLanding: React.FC = () => {
               </section>
             </div>
 
-            <aside aria-labelledby="related-heading" className="lg:sticky lg:top-8 lg:self-start">
-              <h2 id="related-heading" className="text-lg font-bold">Related practice</h2>
+            <aside
+              aria-labelledby="related-heading"
+              className="lg:sticky lg:top-8 lg:self-start"
+            >
+              <h2 id="related-heading" className="text-lg font-bold">
+                Related practice
+              </h2>
               <div className="mt-4 divide-y divide-theme/10 border-y border-theme/10">
                 {related.map((entry) => (
-                  <Link key={entry.slug} to={`/problems/${entry.slug}/`} className="group block py-4">
-                    <span className="font-semibold leading-6 group-hover:text-[var(--brand)]">{entry.title}</span>
-                    <span className="mt-1 block text-sm text-muted">{entry.difficulty} · {entry.estimated_time}</span>
+                  <Link
+                    key={entry.slug}
+                    to={`/problems/${entry.slug}/`}
+                    className="group block py-4"
+                  >
+                    <span className="font-semibold leading-6 group-hover:text-[var(--brand)]">
+                      {entry.title}
+                    </span>
+                    <span className="mt-1 block text-sm text-muted">
+                      {entry.difficulty} · {entry.estimated_time}
+                    </span>
                   </Link>
                 ))}
               </div>
-              <Link to="/system-design-interview/" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand)] hover:underline">
+              <Link
+                to="/system-design-interview/"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand)] hover:underline"
+              >
                 Read the interview guide <MdArrowForward aria-hidden="true" />
               </Link>
             </aside>
@@ -381,7 +491,9 @@ const ProblemLanding: React.FC = () => {
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           onLogin={async (email, password) => login({ email, password })}
-          onSignup={async (email, password, name) => signup({ email, password, name })}
+          onSignup={async (email, password, name) =>
+            signup({ email, password, name })
+          }
           onGoogleLogin={googleLogin}
         />
       )}
@@ -390,4 +502,3 @@ const ProblemLanding: React.FC = () => {
 };
 
 export default ProblemLanding;
-

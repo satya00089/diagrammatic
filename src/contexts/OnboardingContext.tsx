@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { APP_VERSION } from "../config/version";
 
 // ---------------------------------------------------------------------------
@@ -67,8 +73,8 @@ const INITIAL_STATE: OnboardingState = {
     home: { ...DEFAULT_PAGE_VISIT },
     dashboard: { ...DEFAULT_PAGE_VISIT },
     design_studio: { ...DEFAULT_PAGE_VISIT },
-      problem_playground: { ...DEFAULT_PAGE_VISIT },
-      learning_paths: { ...DEFAULT_PAGE_VISIT },
+    problem_playground: { ...DEFAULT_PAGE_VISIT },
+    learning_paths: { ...DEFAULT_PAGE_VISIT },
     my_designs: { ...DEFAULT_PAGE_VISIT },
   },
   completedTours: [],

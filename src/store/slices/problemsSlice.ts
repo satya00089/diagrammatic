@@ -66,7 +66,8 @@ export const fetchProblems = createAsyncThunk(
 
     try {
       const response = await fetch(`${apiUrl}/api/v1/all-problems`);
-      if (!response.ok) throw new Error(`Problem catalog returned ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Problem catalog returned ${response.status}`);
       const data: SystemDesignProblem[] = await response.json();
       return { problems: data, fromCache: false };
     } catch {

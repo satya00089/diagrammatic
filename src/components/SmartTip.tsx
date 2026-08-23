@@ -55,10 +55,26 @@ const arrowStyle: Record<string, React.CSSProperties> = {
 };
 
 const popoverMotionVariants = {
-  top: { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 4 } },
-  bottom: { initial: { opacity: 0, y: -6 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -4 } },
-  left: { initial: { opacity: 0, x: 6 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 4 } },
-  right: { initial: { opacity: 0, x: -6 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -4 } },
+  top: {
+    initial: { opacity: 0, y: 6 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 4 },
+  },
+  bottom: {
+    initial: { opacity: 0, y: -6 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -4 },
+  },
+  left: {
+    initial: { opacity: 0, x: 6 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 4 },
+  },
+  right: {
+    initial: { opacity: 0, x: -6 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -4 },
+  },
 };
 
 const SmartTip: React.FC<SmartTipProps> = ({
@@ -126,7 +142,8 @@ const SmartTip: React.FC<SmartTipProps> = ({
             style={{ pointerEvents: "auto" }}
           >
             {/* Popover body */}
-            <div className="relative rounded-xl px-3 py-2.5 shadow-xl"
+            <div
+              className="relative rounded-xl px-3 py-2.5 shadow-xl"
               style={{
                 background: "#1e1e2e",
                 border: "1px solid rgba(255,255,255,0.1)",

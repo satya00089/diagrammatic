@@ -49,7 +49,10 @@ export const useAudioTranscription = ({
       mediaRecorderRef.current?.stop();
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       analyserRef.current?.disconnect();
-      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state !== "closed"
+      ) {
         audioContextRef.current.close().catch(() => undefined);
       }
     };
@@ -73,7 +76,8 @@ export const useAudioTranscription = ({
 
       if (jobStatus.status === "error") {
         throw new TranscriptionJobFailedError(
-          jobStatus.detail || "We couldn't transcribe that recording. Please try again.",
+          jobStatus.detail ||
+            "We couldn't transcribe that recording. Please try again.",
         );
       }
 
@@ -93,7 +97,10 @@ export const useAudioTranscription = ({
   const startRecording = async () => {
     if (isRecording || isTranscribing) return;
 
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      typeof MediaRecorder === "undefined"
+    ) {
       setError("Audio recording is not supported in this browser.");
       return;
     }
@@ -159,7 +166,8 @@ export const useAudioTranscription = ({
 
       recorder.start();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to start recording.";
+      const message =
+        err instanceof Error ? err.message : "Unable to start recording.";
       setError(message);
       clearAudioResources();
       setIsRecording(false);

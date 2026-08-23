@@ -1,10 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
 
 const NotFound: React.FC = () => (
   <>
-    <SEO
+    <Seo
       title="Page Not Found | Diagrammatic"
       description="The Diagrammatic page you requested does not exist or may have moved."
       url="https://diagrammatic.next-zen.dev/404"
@@ -17,7 +17,7 @@ const NotFound: React.FC = () => (
           className="mb-12 inline-flex w-fit items-center gap-3 font-bold text-theme focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand)]"
         >
           <img src="/logo.png" alt="" className="h-8 w-8" />
-          Diagrammatic
+          <span>Diagrammatic</span>
         </Link>
         <h1 className="max-w-2xl text-5xl font-bold leading-[1.02] tracking-[-0.04em] sm:text-7xl">
           This page could not be found

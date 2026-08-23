@@ -148,7 +148,11 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
         {sprite ? (
           <SpriteIcon sprite={sprite} displaySize={16} alt="" />
         ) : data.iconUrl && !data.icon ? (
-          <img src={data.iconUrl} alt="" style={{ width: '16px', height: '16px' }} />
+          <img
+            src={data.iconUrl}
+            alt=""
+            style={{ width: "16px", height: "16px" }}
+          />
         ) : null}
         <span>{data.label}</span>
       </div>

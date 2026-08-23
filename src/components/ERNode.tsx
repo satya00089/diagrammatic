@@ -2,7 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
+import {
+  MdSettings,
+  MdDelete,
+  MdOutlineVerticalAlignTop,
+  MdOutlineVerticalAlignBottom,
+} from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import DOMPurify from "dompurify";
@@ -211,8 +216,12 @@ const ERNode: React.FC<Props> = React.memo(
 
     const nodeStyle = {
       ...getNodeStyle(),
-      ...(data.backgroundColor ? { backgroundColor: data.backgroundColor as string } : {}),
-      ...(data.borderColor ? { borderLeftColor: data.borderColor as string } : {}),
+      ...(data.backgroundColor
+        ? { backgroundColor: data.backgroundColor as string }
+        : {}),
+      ...(data.borderColor
+        ? { borderLeftColor: data.borderColor as string }
+        : {}),
       // Default dark text for light-bg note/trigger nodes; user textColor always wins
       ...((isNote || isTrigger) && !data.textColor ? { color: "#374151" } : {}),
       ...(data.textColor ? { color: data.textColor as string } : {}),
@@ -301,9 +310,7 @@ const ERNode: React.FC<Props> = React.memo(
               {displayLabel && (
                 <div className="flex items-center gap-2">
                   {data.icon && <span className="text-lg">{data.icon}</span>}
-                  <span className="font-bold text-xl">
-                    {displayLabel}
-                  </span>
+                  <span className="font-bold text-xl">{displayLabel}</span>
                 </div>
               )}
               {displayLabel && hasDescription && (
@@ -326,9 +333,7 @@ const ERNode: React.FC<Props> = React.memo(
               {displayLabel && (
                 <div className="flex items-center gap-2">
                   {data.icon && <span className="text-lg">{data.icon}</span>}
-                  <span className="font-bold text-xl">
-                    {displayLabel}
-                  </span>
+                  <span className="font-bold text-xl">{displayLabel}</span>
                 </div>
               )}
               {displayLabel && hasDescription && (
@@ -342,10 +347,7 @@ const ERNode: React.FC<Props> = React.memo(
                 )}
                 {data.targetTable && (
                   <div>
-                    ON{" "}
-                    <span className="font-semibold">
-                      {data.targetTable}
-                    </span>
+                    ON <span className="font-semibold">{data.targetTable}</span>
                   </div>
                 )}
                 {data.level && (
@@ -455,7 +457,11 @@ const ERNode: React.FC<Props> = React.memo(
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-front", { detail: { id } }));
+                  globalThis.dispatchEvent(
+                    new CustomEvent("diagram:node-to-front", {
+                      detail: { id },
+                    }),
+                  );
                   closeContextMenu();
                 }}
                 className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
@@ -467,7 +473,9 @@ const ERNode: React.FC<Props> = React.memo(
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-back", { detail: { id } }));
+                  globalThis.dispatchEvent(
+                    new CustomEvent("diagram:node-to-back", { detail: { id } }),
+                  );
                   closeContextMenu();
                 }}
                 className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"

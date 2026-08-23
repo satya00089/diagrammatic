@@ -9,10 +9,7 @@ import {
   selectWalkthroughLoading,
   selectWalkthroughError,
 } from "../store/slices/walkthroughsSlice";
-import type {
-  GuidedStep,
-  GuidedStepType,
-} from "../types/systemDesign";
+import type { GuidedStep, GuidedStepType } from "../types/systemDesign";
 
 import NodePropertyDisplay from "./NodePropertyDisplay";
 import type { CustomProperty } from "./CustomPropertyInput";
@@ -142,8 +139,6 @@ function StepTypeBadge({ type }: { type: GuidedStepType }) {
   );
 }
 
-
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
@@ -168,9 +163,7 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
       ? "not_found"
       : "error";
 
-  const [currentStep, setCurrentStep] = useState<number>(
-    currentStepProp ?? 0,
-  ); // 0-indexed
+  const [currentStep, setCurrentStep] = useState<number>(currentStepProp ?? 0); // 0-indexed
   const [appliedSteps, setAppliedSteps] = useState<Set<string>>(new Set());
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -433,24 +426,32 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
                   {Object.entries(step.component.properties)
                     .filter(([k]) => k !== "_customProperties")
                     .map(([key, entry]) => (
-                      <NodePropertyDisplay key={key} propertyKey={key} value={entry} />
+                      <NodePropertyDisplay
+                        key={key}
+                        propertyKey={key}
+                        value={entry}
+                      />
                     ))}
 
                   {/* Render each custom property as its own row for clarity */}
                   {step.component.properties._customProperties &&
-                    Array.isArray(step.component.properties._customProperties) &&
+                    Array.isArray(
+                      step.component.properties._customProperties,
+                    ) &&
                     step.component.properties._customProperties.length > 0 && (
                       <>
                         <div className="text-xs font-semibold opacity-60 uppercase tracking-wide">
                           Custom Properties
                         </div>
-                        {step.component.properties._customProperties.map((cp: CustomProperty) => (
-                          <NodePropertyDisplay
-                            key={cp.id}
-                            propertyKey={cp.label || cp.key}
-                            value={cp.value}
-                          />
-                        ))}
+                        {step.component.properties._customProperties.map(
+                          (cp: CustomProperty) => (
+                            <NodePropertyDisplay
+                              key={cp.id}
+                              propertyKey={cp.label || cp.key}
+                              value={cp.value}
+                            />
+                          ),
+                        )}
                       </>
                     )}
                 </div>
@@ -700,9 +701,7 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
           </span>
           <button
             type="button"
-            onClick={() =>
-              setCurrentStep((s) => Math.min(total - 1, s + 1))
-            }
+            onClick={() => setCurrentStep((s) => Math.min(total - 1, s + 1))}
             disabled={currentStep >= total - 1}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted border border-[var(--border)] hover:border-[var(--border-hover)] hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
           >

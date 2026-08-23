@@ -103,7 +103,9 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
         className="opacity-60 font-semibold capitalize tracking-wide"
         style={{ fontSize: "0.65rem" }}
       >
-        {propertyKey.replaceAll(/([a-z])([A-Z])/g, "$1 $2").replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")}
+        {propertyKey
+          .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+          .replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")}
       </div>
       <div className="break-words overflow-wrap-anywhere">
         {renderValue(value)}

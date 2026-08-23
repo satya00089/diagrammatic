@@ -37,7 +37,8 @@ const PAGES = [
   {
     name: "playground",
     title: ["Design in the", "playground."],
-    subtitle: "Compose components, routes, and constraints in a live workspace.",
+    subtitle:
+      "Compose components, routes, and constraints in a live workspace.",
     badges: ["Drag", "Connect", "Export"],
     colorA: "#0ea5a8",
     colorB: "#2563eb",
@@ -114,10 +115,7 @@ const PAGES = [
 ];
 
 function esc(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 async function fitFontSize(measure, text, startSize, minSize, maxWidth) {
@@ -346,9 +344,17 @@ async function main() {
       measure(page.card[0], 14, 700),
       measure(page.card[1], 12, 500),
     ]);
-    const cardWidth = Math.max(170, Math.ceil(Math.max(...cardTextWidths)) + 62);
+    const cardWidth = Math.max(
+      170,
+      Math.ceil(Math.max(...cardTextWidths)) + 62,
+    );
 
-    const svg = buildSvg(page, { titleSize, subtitleSize, badgeWidths, cardWidth });
+    const svg = buildSvg(page, {
+      titleSize,
+      subtitleSize,
+      badgeWidths,
+      cardWidth,
+    });
 
     await renderPage.setContent(
       `<!doctype html><html><head><meta charset="utf-8">

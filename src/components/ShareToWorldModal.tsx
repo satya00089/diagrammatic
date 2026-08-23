@@ -57,19 +57,6 @@ const getPublicUrl = (id: string) => {
   return `${window.location.origin}/public/${encodeURIComponent(id)}`;
 };
 
-const fallbackCopy = (value: string) => {
-  const textArea = document.createElement("textarea");
-  textArea.value = value;
-  textArea.setAttribute("readonly", "");
-  textArea.style.position = "fixed";
-  textArea.style.opacity = "0";
-  document.body.appendChild(textArea);
-  textArea.select();
-  const copied = document.execCommand("copy");
-  document.body.removeChild(textArea);
-  if (!copied) throw new Error("Copy command was rejected");
-};
-
 const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   isOpen,
   onClose,
@@ -127,21 +114,17 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   const defaultPost = useMemo(() => {
     const link = publicUrl ?? "";
     if (mode === "attempt") {
-      return `I just completed “${sharedTitle}” on Diagrammatic${score == null ? "" : ` with a score of ${score}/100`}. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
+      const scoreCopy = score == null ? "" : ` with a score of ${score}/100`;
+      return `I just completed “${sharedTitle}” on Diagrammatic${scoreCopy}. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
     }
     return `I published my system design “${sharedTitle}” on Diagrammatic. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
   }, [mode, publicUrl, score, sharedTitle]);
 
   const copyText = useCallback(async (value: string) => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        fallbackCopy(value);
-      }
-    } catch {
-      fallbackCopy(value);
+    if (!navigator.clipboard?.writeText) {
+      throw new Error("Clipboard access is unavailable");
     }
+    await navigator.clipboard.writeText(value);
   }, []);
 
   const capturePreview = useCallback(async () => {
@@ -211,7 +194,8 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
       );
       if (focusable.length === 0) return;
       const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -297,10 +281,11 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
 
   const handleTwitter = useCallback(() => {
     if (!publicUrl) return;
-    const post =
-      mode === "attempt"
-        ? `I completed “${sharedTitle}” on Diagrammatic${score == null ? "" : ` — ${score}/100`}.`
-        : `Explore my system design “${sharedTitle}” on Diagrammatic.`;
+    let post = `Explore my system design “${sharedTitle}” on Diagrammatic.`;
+    if (mode === "attempt") {
+      const scoreCopy = score == null ? "" : ` — ${score}/100`;
+      post = `I completed “${sharedTitle}” on Diagrammatic${scoreCopy}.`;
+    }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(post)}&url=${encodeURIComponent(publicUrl)}`,
       "_blank",
@@ -323,6 +308,49 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
       "noopener,noreferrer",
     );
   }, [copyText, defaultPost, publicUrl, sharedTitle]);
+
+  let previewContent: React.ReactNode;
+  if (previewUrl) {
+    previewContent = (
+      <img
+        src={previewUrl}
+        alt={`Preview of ${sharedTitle}`}
+        className="h-full w-full object-contain"
+      />
+    );
+  } else if (previewLoading) {
+    previewContent = (
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted"
+        aria-live="polite"
+      >
+        <span className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
+        <span className="text-sm">Building a quick preview…</span>
+      </div>
+    );
+  } else {
+    previewContent = (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted">
+        <MdImage size={30} aria-hidden />
+        <div>
+          <p className="text-sm font-semibold text-theme">Preview skipped</p>
+          <p className="mt-1 text-xs leading-relaxed">
+            Publishing is ready, and the interactive public canvas will still be
+            available.
+          </p>
+        </div>
+        {previewError && (
+          <button
+            type="button"
+            onClick={() => void capturePreview()}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+          >
+            <MdRefresh aria-hidden /> Retry preview
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (!isOpen) return null;
 
@@ -415,43 +443,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
           <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)]">
             <section className="border-b border-[var(--border)] p-5 sm:p-6 lg:border-b-0 lg:border-r">
               <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-[var(--bg)]">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt={`Preview of ${sharedTitle}`}
-                    className="h-full w-full object-contain"
-                  />
-                ) : previewLoading ? (
-                  <div
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted"
-                    aria-live="polite"
-                  >
-                    <span className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
-                    <span className="text-sm">Building a quick preview…</span>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted">
-                    <MdImage size={30} aria-hidden />
-                    <div>
-                      <p className="text-sm font-semibold text-theme">
-                        Preview skipped
-                      </p>
-                      <p className="mt-1 text-xs leading-relaxed">
-                        Publishing is ready, and the interactive public canvas
-                        will still be available.
-                      </p>
-                    </div>
-                    {previewError && (
-                      <button
-                        type="button"
-                        onClick={() => void capturePreview()}
-                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-[var(--brand)] hover:bg-[var(--brand)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
-                      >
-                        <MdRefresh aria-hidden /> Retry preview
-                      </button>
-                    )}
-                  </div>
-                )}
+                {previewContent}
               </div>
 
               <div className="mt-4 min-w-0">
@@ -523,7 +515,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
                             className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
                             aria-hidden
                           />
-                          Publishing…
+                          <span>Publishing…</span>
                         </>
                       ) : (
                         <>
