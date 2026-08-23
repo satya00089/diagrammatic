@@ -78,9 +78,7 @@ const App: React.FC = () => {
     <AuthProvider>
       <ChatBotProvider>
         <OnboardingProvider>
-          <BrowserRouter
-            future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-          >
+          <BrowserRouter>
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Home />} />
