@@ -2,16 +2,21 @@
 <html lang="en">
   <head>
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TYPRCR0RGG"></script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-TYPRCR0RGG"
+    ></script>
     <script>
       globalThis.dataLayer = globalThis.dataLayer || [];
-      function gtag(){globalThis.dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-TYPRCR0RGG');
+      function gtag() {
+        globalThis.dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-TYPRCR0RGG");
     </script>
+
     <!-- Microsoft Clarity -->
-    <script type="text/javascript">
+    <script>
       (function (c, l, a, r, i, t, y) {
         c[a] =
           c[a] ||
@@ -25,56 +30,51 @@
         y.parentNode.insertBefore(t, y);
       })(window, document, "clarity", "script", "xgc3qofl4j");
     </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Typography: Inter — loaded ahead of render to prevent FOUT -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-    <!-- Primary Meta Tags -->
-    <title>Database Replication</title>
-    <meta name="title" content="Database Replication" />
-    <meta name="description" content="Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.">
-    <meta name="keywords" content="database, replication, consistency, availability">
-    <meta name="author" content="Diagrammatic" />
-    <meta
-      name="robots"
-      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
     />
-    <link rel="canonical" href="https://diagrammatic.next-zen.dev/learning-paths/database-replication" />
 
-    <!-- Google Search Console Verification -->
+    <!-- Primary metadata -->
+    <title>Database Replication | Diagrammatic</title>
+    <meta name="title" content="Database Replication | Diagrammatic" />
+    <meta name="description" content="Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale." />
+    <meta name="keywords" content="database, replication, consistency, availability" />
+    <meta name="author" content="Diagrammatic" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://diagrammatic.next-zen.dev/learning-paths/database-replication/" />
+
     <meta
       name="google-site-verification"
       content="hLzGTO7z4lldB2b1_FITsTH7uyfZC3yrI2MEBGJ8Huw"
     />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://diagrammatic.next-zen.dev/learning-paths/database-replication">
-    <meta property="og:title" content="Database Replication">
-    <meta property="og:description" content="Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.">
-    <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/learning-path.png">
-    <meta property="og:image:alt" content="Database Replication">
+    <meta property="og:url" content="https://diagrammatic.next-zen.dev/learning-paths/database-replication/" />
+    <meta property="og:title" content="Database Replication | Diagrammatic" />
+    <meta property="og:description" content="Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale." />
+    <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/learning-path.png" />
+    <meta property="og:image:alt" content="Database Replication learning path preview" />
     <meta property="og:site_name" content="Diagrammatic" />
     <meta property="og:locale" content="en_US" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/learning-paths/database-replication" />
-    <meta name="twitter:title" content="Database Replication" />
+    <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/learning-paths/database-replication/" />
+    <meta name="twitter:title" content="Database Replication | Diagrammatic" />
     <meta name="twitter:description" content="Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/learning-path.png" />
-    <meta name="twitter:image:alt" content="Database Replication" />
-    <meta name="twitter:creator" content="@diagrammatic" />
+    <meta name="twitter:image:alt" content="Database Replication learning path preview" />
 
-    <!-- Favicons -->
-    <link rel="icon" type="image/x-icon" href="./logo.png" />
-    <link rel="apple-touch-icon" href="./logo.png" />
+    <link rel="icon" type="image/x-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="theme-color" content="#6366f1" />
-
-    <!-- Additional SEO -->
     <meta name="application-name" content="Diagrammatic" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -82,7 +82,7 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Structured Data (JSON-LD) - WebApplication -->
+    <!-- Site-wide structured data. Route-specific data is added at build time. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -93,8 +93,7 @@
         "url": "https://diagrammatic.next-zen.dev/",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Any",
-        "browserRequirements": "Requires JavaScript. Requires HTML5.",
-        "softwareVersion": "1.0.0",
+        "browserRequirements": "Requires JavaScript and HTML5.",
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -102,24 +101,12 @@
           "availability": "https://schema.org/InStock"
         },
         "featureList": [
-          "Architecture components for system design practice",
-          "AWS, Azure & GCP Cloud Components",
-          "AI-Powered Assessment & Recommendations",
-          "Interactive Drag & Drop Canvas",
-          "Real-time Collaboration",
           "System design practice problems",
-          "Cloud infrastructure design challenges",
-          "Dark Mode Support",
-          "Export as PNG, JPEG, SVG, JSON, XML",
-          "Entity-Relationship Diagrams",
-          "Database Schema Design",
-          "UML Diagrams",
-          "Smart Component Search",
-          "Custom Properties & Metadata",
-          "Share Designs via URL",
-          "Cloud Storage & Sync",
-          "Undo/Redo Support",
-          "Microservices Architecture"
+          "Structured architecture review",
+          "Interactive architecture canvas",
+          "AWS, Azure, and GCP components",
+          "Real-time collaboration",
+          "UML and entity-relationship diagrams"
         ],
         "screenshot": "https://diagrammatic.next-zen.dev/og/home.png",
         "image": "https://diagrammatic.next-zen.dev/og/home.png",
@@ -130,195 +117,294 @@
         }
       }
     </script>
-
-    <!-- Structured Data (JSON-LD) - Organization -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Diagrammatic",
         "url": "https://diagrammatic.next-zen.dev/",
-        "logo": "https://diagrammatic.next-zen.dev/logo.png",
-        "sameAs": [],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "contactType": "Customer Service",
-          "availableLanguage": "English"
-        }
+        "logo": "https://diagrammatic.next-zen.dev/logo.png"
       }
     </script>
-
-    <!-- Structured Data (JSON-LD) - BreadcrumbList -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://diagrammatic.next-zen.dev/"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Problems",
-            "item": "https://diagrammatic.next-zen.dev/problems"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": "Playground",
-            "item": "https://diagrammatic.next-zen.dev/#/playground/free"
-          }
-        ]
+        "@type": "WebSite",
+        "name": "Diagrammatic",
+        "alternateName": "Diagrammatic System Design Practice",
+        "url": "https://diagrammatic.next-zen.dev/"
       }
     </script>
+
     <script>
-      // Apply theme immediately to prevent flash
+      // Apply theme before paint.
       (function () {
         try {
           const theme = localStorage.getItem("theme") || "light";
           const root = document.documentElement;
+          const systemDark =
+            globalThis.matchMedia &&
+            globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
 
-          if (theme === "dark") {
+          if (theme === "dark" || (theme === "system" && systemDark)) {
             root.classList.add("dark");
-          } else if (theme === "system") {
-            const prefersDark =
-              globalThis.matchMedia &&
-              globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
-            if (prefersDark) {
-              root.classList.add("dark");
-            }
           }
-        } catch (e) {
-          // ignore errors
+        } catch {
+          // The application will apply its default theme.
         }
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-DINWfrEc.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-GIHk3ZrH.css">
+
+    <!-- Visible static route content, replaced by the interactive app after load. -->
+    <style id="static-route-styles">
+      .static-route-shell {
+        min-height: 100vh;
+        background: #f7f7fb;
+        color: #171724;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .static-route-header,
+      .static-route-main,
+      .static-route-footer {
+        width: min(1120px, calc(100% - 2rem));
+        margin-inline: auto;
+      }
+
+      .static-route-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding-block: 1.25rem;
+      }
+
+      .static-route-brand,
+      .static-route-nav a,
+      .static-route-actions a,
+      .static-route-list a {
+        color: inherit;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 0.24em;
+      }
+
+      .static-route-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .static-route-brand img {
+        width: 1.75rem;
+        height: 1.75rem;
+      }
+
+      .static-route-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.925rem;
+        font-weight: 650;
+      }
+
+      .static-route-main {
+        padding-block: clamp(3.5rem, 8vw, 7rem);
+      }
+
+      .static-route-hero {
+        max-width: 800px;
+      }
+
+      .static-route-hero h1 {
+        max-width: 15ch;
+        margin: 0;
+        font-size: clamp(2.6rem, 7vw, 5.8rem);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+      }
+
+      .static-route-hero > p {
+        max-width: 68ch;
+        margin-block: 1.5rem 0;
+        color: #545467;
+        font-size: clamp(1.05rem, 2vw, 1.25rem);
+        line-height: 1.7;
+      }
+
+      .static-route-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+      }
+
+      .static-route-actions a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.9rem;
+        padding-inline: 1.1rem;
+        border: 1px solid #d9d9e6;
+        border-radius: 12px;
+        background: #fff;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .static-route-actions a:first-child {
+        border-color: #5b5bd6;
+        background: #5b5bd6;
+        color: #fff;
+      }
+
+      .static-route-section {
+        margin-top: clamp(4rem, 9vw, 7rem);
+      }
+
+      .static-route-section h2 {
+        max-width: 24ch;
+        margin: 0 0 1.5rem;
+        font-size: clamp(1.8rem, 4vw, 2.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+      }
+
+      .static-route-section > p {
+        max-width: 70ch;
+        color: #5f5f72;
+        line-height: 1.75;
+      }
+
+      .static-route-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+        margin: 2rem 0 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid #d9d9e6;
+      }
+
+      .static-route-list li {
+        min-width: 0;
+        padding: 1.35rem 1.5rem 1.35rem 0;
+        border-bottom: 1px solid #d9d9e6;
+      }
+
+      .static-route-list strong,
+      .static-route-list a {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 1.05rem;
+        font-weight: 750;
+      }
+
+      .static-route-list p,
+      .static-route-list span {
+        display: block;
+        margin: 0;
+        color: #646477;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+
+      .static-route-footer {
+        padding-block: 2rem;
+        border-top: 1px solid #d9d9e6;
+        color: #646477;
+        font-size: 0.9rem;
+      }
+
+      html.dark .static-route-shell {
+        background: #111118;
+        color: #f5f5fb;
+      }
+
+      html.dark .static-route-hero > p,
+      html.dark .static-route-section > p,
+      html.dark .static-route-list p,
+      html.dark .static-route-list span,
+      html.dark .static-route-footer {
+        color: #b7b7c8;
+      }
+
+      html.dark .static-route-actions a {
+        border-color: #3a3a4b;
+        background: #1a1a24;
+      }
+
+      html.dark .static-route-actions a:first-child {
+        border-color: #7373f1;
+        background: #7373f1;
+      }
+
+      html.dark .static-route-list,
+      html.dark .static-route-list li,
+      html.dark .static-route-footer {
+        border-color: #333342;
+      }
+
+      .static-route-brand:focus-visible,
+      .static-route-nav a:focus-visible,
+      .static-route-actions a:focus-visible,
+      .static-route-list a:focus-visible {
+        outline: 3px solid #8b8bf8;
+        outline-offset: 4px;
+      }
+
+      @media (max-width: 640px) {
+        .static-route-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .static-route-main {
+          padding-top: 2.75rem;
+        }
+
+        .static-route-list {
+          grid-template-columns: 1fr;
+        }
+
+        .static-route-list li {
+          padding-right: 0;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-B7uJ0QVy.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BWr_D9mB.css">
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/learning-paths/database-replication/","url":"https://diagrammatic.next-zen.dev/learning-paths/database-replication/","name":"Database Replication | Diagrammatic","description":"Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Learning Paths","item":"https://diagrammatic.next-zen.dev/learning-paths/"},{"@type":"ListItem","position":3,"name":"Database Replication","item":"https://diagrammatic.next-zen.dev/learning-paths/database-replication/"}]}]}</script>
   </head>
   <body>
-    <!-- Semantic HTML content for crawlers (hidden from users, visible to search engines) -->
-    <noscript>
-      <div
-        style="
-          padding: 20px;
-          font-family:
-            system-ui,
-            -apple-system,
-            sans-serif;
-        "
-      >
-        <h1>Diagrammatic - Design architectures. Get them reviewed.</h1>
-        <p>
-          Build a system design, explain the decisions behind it, and get
-          structured feedback on scalability, reliability, data design, and
-          trade-offs.
-        </p>
-
-        <h2>Key Features</h2>
-        <ul>
-          <li>
-            <strong>Architecture components</strong> - Load balancers,
-            databases, caches, queues, and more
-          </li>
-          <li>
-            <strong>Cloud Provider Support</strong> - AWS, Azure & GCP components
-            for cloud infrastructure design
-          </li>
-          <li>
-            <strong>Structured architecture review</strong> - See strengths,
-            risks, and practical next steps for your design
-          </li>
-          <li>
-            <strong>Practice problems</strong> - Real-world system design
-            challenges with review feedback
-          </li>
-          <li>
-            <strong>Free Design Studio</strong> - Create unlimited architecture
-            diagrams with drag & drop
-          </li>
-          <li>
-            <strong>Entity-Relationship & UML Diagrams</strong> - Design database
-            schemas and UML diagrams visually
-          </li>
-          <li>
-            <strong>Real-time Collaboration</strong> - Work together on designs
-            with your team
-          </li>
-          <li>
-            <strong>Multiple Export Formats</strong> - Download as PNG, JPEG, SVG,
-            JSON, or XML
-          </li>
-          <li>
-            <strong>Smart Component Search</strong> - Fuzzy search to quickly find
-            components
-          </li>
-          <li>
-            <strong>Cloud Storage & Sync</strong> - Save and load diagrams from
-            the cloud
-          </li>
-        </ul>
-
-        <h2>Perfect For</h2>
-        <ul>
-          <li>
-            <strong>Software Engineers</strong> - Prepare for system design
-            interviews
-          </li>
-          <li>
-            <strong>Students</strong> - Learn distributed systems and scalable
-            architecture
-          </li>
-          <li>
-            <strong>Architects</strong> - Prototype and visualize system designs
-          </li>
-          <li>
-            <strong>Educators</strong> - Teach system design concepts
-            interactively
-          </li>
-        </ul>
-
-        <h2>Popular System Design Patterns</h2>
-        <p>Learn and practice designing:</p>
-        <ul>
-          <li>Microservices Architecture</li>
-          <li>Event-Driven Systems</li>
-          <li>Distributed Caching</li>
-          <li>Load Balancing Strategies</li>
-          <li>Database Sharding & Replication</li>
-          <li>Message Queues & Pub/Sub</li>
-          <li>API Gateways & Service Mesh</li>
-          <li>CDN & Edge Computing</li>
-        </ul>
-
-        <p>
-          <strong>Start designing now:</strong>
-          <a href="https://diagrammatic.next-zen.dev/#/playground/free"
-            >Free Playground</a
-          >
-          |
-          <a href="https://diagrammatic.next-zen.dev/problems"
-            >Practice Problems</a
-          >
-        </p>
-
-        <p>
-          <em
-            >This tool requires JavaScript to run. Please enable JavaScript in
-            your browser.</em
-          >
-        </p>
-      </div>
-    </noscript>
-
-    <!-- Hidden semantic content for SEO (visible to search engines, hidden from users) -->
-    <div id="seo-content" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"><article><h1>Database Replication</h1><p>Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.</p></article>
+    <div id="root">
+      <!-- static-route:start -->
+    <div class="static-route-shell">
+      <header class="static-route-header">
+        <a class="static-route-brand" href="/">
+          <img src="/logo.png" alt="">
+          <span>Diagrammatic</span>
+        </a>
+        <nav class="static-route-nav" aria-label="Main navigation">
+          <a href="/problems/">Practice problems</a>
+          <a href="/learning-paths/">Learning paths</a>
+        </nav>
+      </header>
+      <main class="static-route-main">
+        <section class="static-route-hero">
+          <h1>Database Replication</h1>
+          <p>Patterns, trade-offs, and operational practices for replicating databases to improve availability and read scale.</p>
+          <div class="static-route-actions"><a href="/learning-paths/">Browse all learning paths</a><a href="/problems/">Practice a challenge</a></div>
+        </section>
+        <section class="static-route-section" id="route-content">
+          <h2>Modules in this learning path</h2>
+          <ul class="static-route-list"><li><strong>Introduction &amp; Why Replicate</strong><span>1 lessons</span></li><li><strong>Replication Modes</strong><span>1 lessons</span></li><li><strong>Consistency, Lag &amp; Conflict Resolution</strong><span>1 lessons</span></li><li><strong>Topologies &amp; Patterns</strong><span>1 lessons</span></li><li><strong>Monitoring, Failover &amp; Operations</strong><span>1 lessons</span></li><li><strong>Exercises</strong><span>1 lessons</span></li></ul>
+        </section>
+      </main>
+      <footer class="static-route-footer">
+        Diagrammatic — system design practice and architecture review.
+      </footer>
+    </div><!-- static-route:end -->
     </div>
-
-    <div id="root"></div>
   </body>
 </html>

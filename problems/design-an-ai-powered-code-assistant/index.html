@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-TYPRCR0RGG"
+    ></script>
+    <script>
+      globalThis.dataLayer = globalThis.dataLayer || [];
+      function gtag() {
+        globalThis.dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-TYPRCR0RGG");
+    </script>
+
+    <!-- Microsoft Clarity -->
+    <script>
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "xgc3qofl4j");
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Primary metadata -->
+    <title>Design an AI-Powered Code Assistant — System Design Interview Practice | Diagrammatic</title>
+    <meta name="title" content="Design an AI-Powered Code Assistant — System Design Interview Practice | Diagrammatic" />
+    <meta name="description" content="Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta name="keywords" content="Design an AI-Powered Code Assistant, system design interview question, ai, code-generation, llm, developer-tools, ide, code-review" />
+    <meta name="author" content="Diagrammatic" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/" />
+
+    <meta
+      name="google-site-verification"
+      content="hLzGTO7z4lldB2b1_FITsTH7uyfZC3yrI2MEBGJ8Huw"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/" />
+    <meta property="og:title" content="Design an AI-Powered Code Assistant — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:description" content="Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
+    <meta property="og:image:alt" content="Design an AI-Powered Code Assistant practice challenge" />
+    <meta property="og:site_name" content="Diagrammatic" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/" />
+    <meta name="twitter:title" content="Design an AI-Powered Code Assistant — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:description" content="Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
+    <meta name="twitter:image:alt" content="Design an AI-Powered Code Assistant practice challenge" />
+
+    <link rel="icon" type="image/x-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="application-name" content="Diagrammatic" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Diagrammatic" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Site-wide structured data. Route-specific data is added at build time. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Diagrammatic",
+        "alternateName": "Diagrammatic System Design Tool",
+        "description": "Interactive system design practice environment for building architectures, explaining decisions, and receiving structured feedback on scalability, reliability, data design, and trade-offs.",
+        "url": "https://diagrammatic.next-zen.dev/",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript and HTML5.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": [
+          "System design practice problems",
+          "Structured architecture review",
+          "Interactive architecture canvas",
+          "AWS, Azure, and GCP components",
+          "Real-time collaboration",
+          "UML and entity-relationship diagrams"
+        ],
+        "screenshot": "https://diagrammatic.next-zen.dev/og/home.png",
+        "image": "https://diagrammatic.next-zen.dev/og/home.png",
+        "author": {
+          "@type": "Organization",
+          "name": "Diagrammatic",
+          "url": "https://diagrammatic.next-zen.dev/"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Diagrammatic",
+        "url": "https://diagrammatic.next-zen.dev/",
+        "logo": "https://diagrammatic.next-zen.dev/logo.png"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Diagrammatic",
+        "alternateName": "Diagrammatic System Design Practice",
+        "url": "https://diagrammatic.next-zen.dev/"
+      }
+    </script>
+
+    <script>
+      // Apply theme before paint.
+      (function () {
+        try {
+          const theme = localStorage.getItem("theme") || "light";
+          const root = document.documentElement;
+          const systemDark =
+            globalThis.matchMedia &&
+            globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
+
+          if (theme === "dark" || (theme === "system" && systemDark)) {
+            root.classList.add("dark");
+          }
+        } catch {
+          // The application will apply its default theme.
+        }
+      })();
+    </script>
+
+    <!-- Visible static route content, replaced by the interactive app after load. -->
+    <style id="static-route-styles">
+      .static-route-shell {
+        min-height: 100vh;
+        background: #f7f7fb;
+        color: #171724;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .static-route-header,
+      .static-route-main,
+      .static-route-footer {
+        width: min(1120px, calc(100% - 2rem));
+        margin-inline: auto;
+      }
+
+      .static-route-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding-block: 1.25rem;
+      }
+
+      .static-route-brand,
+      .static-route-nav a,
+      .static-route-actions a,
+      .static-route-list a {
+        color: inherit;
+        text-decoration-thickness: 1.5px;
+        text-underline-offset: 0.24em;
+      }
+
+      .static-route-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .static-route-brand img {
+        width: 1.75rem;
+        height: 1.75rem;
+      }
+
+      .static-route-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.925rem;
+        font-weight: 650;
+      }
+
+      .static-route-main {
+        padding-block: clamp(3.5rem, 8vw, 7rem);
+      }
+
+      .static-route-hero {
+        max-width: 800px;
+      }
+
+      .static-route-hero h1 {
+        max-width: 15ch;
+        margin: 0;
+        font-size: clamp(2.6rem, 7vw, 5.8rem);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+      }
+
+      .static-route-hero > p {
+        max-width: 68ch;
+        margin-block: 1.5rem 0;
+        color: #545467;
+        font-size: clamp(1.05rem, 2vw, 1.25rem);
+        line-height: 1.7;
+      }
+
+      .static-route-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+      }
+
+      .static-route-actions a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.9rem;
+        padding-inline: 1.1rem;
+        border: 1px solid #d9d9e6;
+        border-radius: 12px;
+        background: #fff;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .static-route-actions a:first-child {
+        border-color: #5b5bd6;
+        background: #5b5bd6;
+        color: #fff;
+      }
+
+      .static-route-section {
+        margin-top: clamp(4rem, 9vw, 7rem);
+      }
+
+      .static-route-section h2 {
+        max-width: 24ch;
+        margin: 0 0 1.5rem;
+        font-size: clamp(1.8rem, 4vw, 2.75rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+      }
+
+      .static-route-section > p {
+        max-width: 70ch;
+        color: #5f5f72;
+        line-height: 1.75;
+      }
+
+      .static-route-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+        margin: 2rem 0 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid #d9d9e6;
+      }
+
+      .static-route-list li {
+        min-width: 0;
+        padding: 1.35rem 1.5rem 1.35rem 0;
+        border-bottom: 1px solid #d9d9e6;
+      }
+
+      .static-route-list strong,
+      .static-route-list a {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 1.05rem;
+        font-weight: 750;
+      }
+
+      .static-route-list p,
+      .static-route-list span {
+        display: block;
+        margin: 0;
+        color: #646477;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+
+      .static-route-footer {
+        padding-block: 2rem;
+        border-top: 1px solid #d9d9e6;
+        color: #646477;
+        font-size: 0.9rem;
+      }
+
+      html.dark .static-route-shell {
+        background: #111118;
+        color: #f5f5fb;
+      }
+
+      html.dark .static-route-hero > p,
+      html.dark .static-route-section > p,
+      html.dark .static-route-list p,
+      html.dark .static-route-list span,
+      html.dark .static-route-footer {
+        color: #b7b7c8;
+      }
+
+      html.dark .static-route-actions a {
+        border-color: #3a3a4b;
+        background: #1a1a24;
+      }
+
+      html.dark .static-route-actions a:first-child {
+        border-color: #7373f1;
+        background: #7373f1;
+      }
+
+      html.dark .static-route-list,
+      html.dark .static-route-list li,
+      html.dark .static-route-footer {
+        border-color: #333342;
+      }
+
+      .static-route-brand:focus-visible,
+      .static-route-nav a:focus-visible,
+      .static-route-actions a:focus-visible,
+      .static-route-list a:focus-visible {
+        outline: 3px solid #8b8bf8;
+        outline-offset: 4px;
+      }
+
+      @media (max-width: 640px) {
+        .static-route-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .static-route-main {
+          padding-top: 2.75rem;
+        }
+
+        .static-route-list {
+          grid-template-columns: 1fr;
+        }
+
+        .static-route-list li {
+          padding-right: 0;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-B7uJ0QVy.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BWr_D9mB.css">
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/","url":"https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/","name":"Design an AI-Powered Code Assistant — System Design Interview Practice | Diagrammatic","description":"Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design an AI-Powered Code Assistant — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/"}]},{"@type":"LearningResource","name":"Design an AI-Powered Code Assistant — System Design Interview Practice","description":"Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-code-assistant/","educationalLevel":"Very Hard","teaches":["ai","code-generation","llm","developer-tools","ide","code-review"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- static-route:start -->
+    <div class="static-route-shell">
+      <header class="static-route-header">
+        <a class="static-route-brand" href="/">
+          <img src="/logo.png" alt="">
+          <span>Diagrammatic</span>
+        </a>
+        <nav class="static-route-nav" aria-label="Main navigation">
+          <a href="/problems/">Practice problems</a>
+          <a href="/learning-paths/">Learning paths</a>
+        </nav>
+      </header>
+      <main class="static-route-main">
+        <section class="static-route-hero">
+          <h1>Design an AI-Powered Code Assistant — System Design Interview Practice</h1>
+          <p>Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines. Work through the requirements, architecture trade-offs, and an interactive design review.</p>
+          <div class="static-route-actions"><a href="/problems/?q=Design%20an%20AI-Powered%20Code%20Assistant">Open this challenge</a><a href="/system-design-interview/">Read the interview guide</a></div>
+        </section>
+        <section class="static-route-section" id="route-content">
+          <h2>Concepts and architecture decisions to consider</h2>
+          <ul class="static-route-list"><li><strong>ai</strong><span>Concept to explore</span></li><li><strong>code generation</strong><span>Concept to explore</span></li><li><strong>llm</strong><span>Concept to explore</span></li><li><strong>developer tools</strong><span>Concept to explore</span></li><li><strong>ide</strong><span>Concept to explore</span></li><li><strong>code review</strong><span>Concept to explore</span></li></ul>
+        </section>
+      </main>
+      <footer class="static-route-footer">
+        Diagrammatic — system design practice and architecture review.
+      </footer>
+    </div><!-- static-route:end -->
+    </div>
+  </body>
+</html>
