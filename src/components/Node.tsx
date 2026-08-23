@@ -2,7 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
+import {
+  MdSettings,
+  MdDelete,
+  MdOutlineVerticalAlignTop,
+  MdOutlineVerticalAlignBottom,
+} from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
@@ -56,12 +61,13 @@ type Props = {
 const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   const dispatch = useAppDispatch();
   const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
-  const componentId = typeof data.componentId === "string" ? data.componentId : undefined;
+  const componentId =
+    typeof data.componentId === "string" ? data.componentId : undefined;
   const sprite = componentId ? spriteIcons[componentId] : undefined;
   const provider = componentId ? providerFromId(componentId) : null;
   // Select only this node's provider status to avoid re-renders from other providers loading.
   const spriteStatus = useAppSelector((state) =>
-    provider ? state.sprites.providerStatus[provider] : undefined
+    provider ? state.sprites.providerStatus[provider] : undefined,
   );
   const useDirectIcon = shouldUseDirectIcon(componentId);
   // For known sprite providers (aws/azure/gcp/kubernetes): NEVER fire iconUrl <img>.
@@ -250,8 +256,15 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
         className="min-w-[200px] w-full max-w-[15vw] bg-surface border border-theme rounded-lg text-theme text-sm shadow-sm cursor-grab relative p-3"
         style={{
-          ...(data.backgroundColor ? { backgroundColor: data.backgroundColor as string } : {}),
-          ...(data.borderColor ? { borderLeftColor: data.borderColor as string, borderLeftWidth: "3px" } : {}),
+          ...(data.backgroundColor
+            ? { backgroundColor: data.backgroundColor as string }
+            : {}),
+          ...(data.borderColor
+            ? {
+                borderLeftColor: data.borderColor as string,
+                borderLeftWidth: "3px",
+              }
+            : {}),
           ...(data.textColor ? { color: data.textColor as string } : {}),
         }}
         onContextMenu={handleContextMenu}
@@ -403,7 +416,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   "textColor",
                 ]);
                 const isEmptyValue = (val: unknown): boolean => {
-                  if (val === undefined || val === null || val === "") return true;
+                  if (val === undefined || val === null || val === "")
+                    return true;
                   if (typeof val === "string") {
                     const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
                     return stripped === "";

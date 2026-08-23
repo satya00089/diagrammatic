@@ -234,9 +234,15 @@ const Home: React.FC = () => {
       setIsDeletingHeroMessage(false);
       setHeroMessageIndex((index) => (index + 1) % HERO_MESSAGES.length);
     } else if (isDeletingHeroMessage) {
-      timeoutId = setTimeout(() => setHeroMessage((value) => value.slice(0, -1)), 32);
+      timeoutId = setTimeout(
+        () => setHeroMessage((value) => value.slice(0, -1)),
+        32,
+      );
     } else {
-      timeoutId = setTimeout(() => setHeroMessage(message.slice(0, heroMessage.length + 1)), 58);
+      timeoutId = setTimeout(
+        () => setHeroMessage(message.slice(0, heroMessage.length + 1)),
+        58,
+      );
     }
 
     return () => clearTimeout(timeoutId);
@@ -733,9 +739,14 @@ const Home: React.FC = () => {
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
                   Design architectures.
                   <br />
-                  <span className="text-white/80 inline-block min-h-[1.05em]" aria-live="polite">
+                  <span
+                    className="text-white/80 inline-block min-h-[1.05em]"
+                    aria-live="polite"
+                  >
                     {heroMessage}
-                    <span className="cursor-blink" aria-hidden="true">|</span>
+                    <span className="cursor-blink" aria-hidden="true">
+                      |
+                    </span>
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base lg:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -768,8 +779,8 @@ const Home: React.FC = () => {
                 </div>
 
                 <p className="mt-5 text-xs text-white/65 max-w-xl mx-auto">
-                  Try the workflow before signing in. Create an account when
-                  you want to save, sync, or share your work.
+                  Try the workflow before signing in. Create an account when you
+                  want to save, sync, or share your work.
                 </p>
                 <button
                   type="button"
@@ -817,23 +828,50 @@ const Home: React.FC = () => {
             <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
               <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Problem</span>
-                  <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-1 text-xs font-medium text-[var(--brand)]">Medium</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                    Problem
+                  </span>
+                  <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-1 text-xs font-medium text-[var(--brand)]">
+                    Medium
+                  </span>
                 </div>
-                <h3 className="text-lg font-semibold text-theme">Design a video-sharing platform</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">Support millions of uploads and global playback while keeping video processing asynchronous.</p>
+                <h3 className="text-lg font-semibold text-theme">
+                  Design a video-sharing platform
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Support millions of uploads and global playback while keeping
+                  video processing asynchronous.
+                </p>
                 <div className="mt-6 space-y-2 text-xs text-muted">
-                  <div className="flex justify-between border-b border-theme/10 pb-2"><span>Scale</span><span className="font-medium text-theme">10M DAU</span></div>
-                  <div className="flex justify-between border-b border-theme/10 pb-2"><span>Latency</span><span className="font-medium text-theme">p95 &lt; 200ms</span></div>
-                  <div className="flex justify-between"><span>Availability</span><span className="font-medium text-theme">99.99%</span></div>
+                  <div className="flex justify-between border-b border-theme/10 pb-2">
+                    <span>Scale</span>
+                    <span className="font-medium text-theme">10M DAU</span>
+                  </div>
+                  <div className="flex justify-between border-b border-theme/10 pb-2">
+                    <span>Latency</span>
+                    <span className="font-medium text-theme">
+                      p95 &lt; 200ms
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Availability</span>
+                    <span className="font-medium text-theme">99.99%</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex" aria-hidden="true">→</div>
+              <div
+                className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex"
+                aria-hidden="true"
+              >
+                →
+              </div>
 
               <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Your architecture</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                    Your architecture
+                  </span>
                   <span className="text-xs text-muted">5 components</span>
                 </div>
                 <div className="h-40 overflow-hidden rounded-xl bg-[var(--bg)] p-2">
@@ -844,64 +882,227 @@ const Home: React.FC = () => {
                     role="img"
                     aria-labelledby="architecture-preview-title architecture-preview-description"
                   >
-                    <title id="architecture-preview-title">Video upload architecture</title>
-                    <desc id="architecture-preview-description">API Gateway routes uploads to an Upload Service, which stores video objects and sends processing work through a queue to a metadata database.</desc>
+                    <title id="architecture-preview-title">
+                      Video upload architecture
+                    </title>
+                    <desc id="architecture-preview-description">
+                      API Gateway routes uploads to an Upload Service, which
+                      stores video objects and sends processing work through a
+                      queue to a metadata database.
+                    </desc>
                     <defs>
-                      <marker id="architecture-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                        <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--brand)" opacity="0.72" />
+                      <marker
+                        id="architecture-arrow"
+                        viewBox="0 0 8 8"
+                        refX="7"
+                        refY="4"
+                        markerWidth="5"
+                        markerHeight="5"
+                        orient="auto-start-reverse"
+                      >
+                        <path
+                          d="M 0 0 L 8 4 L 0 8 Z"
+                          fill="var(--brand)"
+                          opacity="0.72"
+                        />
                       </marker>
                     </defs>
 
-                    <g fill="none" stroke="var(--brand)" strokeOpacity="0.52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" markerEnd="url(#architecture-arrow)">
+                    <g
+                      fill="none"
+                      stroke="var(--brand)"
+                      strokeOpacity="0.52"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      markerEnd="url(#architecture-arrow)"
+                    >
                       <path d="M 140 136 H 175 Q 190 136 190 121 V 82 Q 190 66 206 66 H 220" />
                       <path d="M 370 66 H 440" />
                       <path d="M 295 92 V 190" />
                       <path d="M 355 216 H 430" />
                     </g>
-                    <circle cx="295" cy="122" r="4" fill="var(--brand)" opacity="0.72" />
+                    <circle
+                      cx="295"
+                      cy="122"
+                      r="4"
+                      fill="var(--brand)"
+                      opacity="0.72"
+                    />
 
                     <g>
-                      <rect x="20" y="110" width="120" height="52" rx="12" fill="rgba(14,165,233,0.12)" stroke="rgba(14,165,233,0.72)" strokeWidth="1.5" />
-                      <text x="80" y="141" textAnchor="middle" fill="#38bdf8" fontSize="15" fontWeight="600">API Gateway</text>
+                      <rect
+                        x="20"
+                        y="110"
+                        width="120"
+                        height="52"
+                        rx="12"
+                        fill="rgba(14,165,233,0.12)"
+                        stroke="rgba(14,165,233,0.72)"
+                        strokeWidth="1.5"
+                      />
+                      <text
+                        x="80"
+                        y="141"
+                        textAnchor="middle"
+                        fill="#38bdf8"
+                        fontSize="15"
+                        fontWeight="600"
+                      >
+                        API Gateway
+                      </text>
                     </g>
                     <g>
-                      <rect x="220" y="40" width="150" height="52" rx="12" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.72)" strokeWidth="1.5" />
-                      <text x="295" y="71" textAnchor="middle" fill="#a78bfa" fontSize="15" fontWeight="600">Upload Service</text>
+                      <rect
+                        x="220"
+                        y="40"
+                        width="150"
+                        height="52"
+                        rx="12"
+                        fill="rgba(139,92,246,0.12)"
+                        stroke="rgba(139,92,246,0.72)"
+                        strokeWidth="1.5"
+                      />
+                      <text
+                        x="295"
+                        y="71"
+                        textAnchor="middle"
+                        fill="#a78bfa"
+                        fontSize="15"
+                        fontWeight="600"
+                      >
+                        Upload Service
+                      </text>
                     </g>
                     <g>
-                      <rect x="235" y="190" width="120" height="52" rx="12" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.72)" strokeWidth="1.5" />
-                      <text x="295" y="221" textAnchor="middle" fill="#fbbf24" fontSize="15" fontWeight="600">Queue</text>
+                      <rect
+                        x="235"
+                        y="190"
+                        width="120"
+                        height="52"
+                        rx="12"
+                        fill="rgba(245,158,11,0.12)"
+                        stroke="rgba(245,158,11,0.72)"
+                        strokeWidth="1.5"
+                      />
+                      <text
+                        x="295"
+                        y="221"
+                        textAnchor="middle"
+                        fill="#fbbf24"
+                        fontSize="15"
+                        fontWeight="600"
+                      >
+                        Queue
+                      </text>
                     </g>
                     <g>
-                      <rect x="440" y="40" width="140" height="52" rx="12" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.72)" strokeWidth="1.5" />
-                      <text x="510" y="71" textAnchor="middle" fill="#34d399" fontSize="15" fontWeight="600">Object Storage</text>
+                      <rect
+                        x="440"
+                        y="40"
+                        width="140"
+                        height="52"
+                        rx="12"
+                        fill="rgba(16,185,129,0.12)"
+                        stroke="rgba(16,185,129,0.72)"
+                        strokeWidth="1.5"
+                      />
+                      <text
+                        x="510"
+                        y="71"
+                        textAnchor="middle"
+                        fill="#34d399"
+                        fontSize="15"
+                        fontWeight="600"
+                      >
+                        Object Storage
+                      </text>
                     </g>
                     <g>
-                      <rect x="430" y="190" width="150" height="52" rx="12" fill="rgba(244,63,94,0.12)" stroke="rgba(244,63,94,0.72)" strokeWidth="1.5" />
-                      <text x="505" y="221" textAnchor="middle" fill="#fb7185" fontSize="15" fontWeight="600">Metadata DB</text>
+                      <rect
+                        x="430"
+                        y="190"
+                        width="150"
+                        height="52"
+                        rx="12"
+                        fill="rgba(244,63,94,0.12)"
+                        stroke="rgba(244,63,94,0.72)"
+                        strokeWidth="1.5"
+                      />
+                      <text
+                        x="505"
+                        y="221"
+                        textAnchor="middle"
+                        fill="#fb7185"
+                        fontSize="15"
+                        fontWeight="600"
+                      >
+                        Metadata DB
+                      </text>
                     </g>
                   </svg>
                 </div>
-                <p className="mt-4 text-xs leading-relaxed text-muted">Add components, label data flow, and write down the assumptions behind each choice.</p>
+                <p className="mt-4 text-xs leading-relaxed text-muted">
+                  Add components, label data flow, and write down the
+                  assumptions behind each choice.
+                </p>
               </div>
 
-              <div className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex" aria-hidden="true">→</div>
+              <div
+                className="hidden items-center justify-center text-2xl text-[var(--brand)] lg:flex"
+                aria-hidden="true"
+              >
+                →
+              </div>
 
               <div
                 className="rounded-2xl border border-[var(--brand)]/20 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]"
-                style={{ background: "color-mix(in srgb, var(--brand) 8%, var(--surface))" }}
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--brand) 8%, var(--surface))",
+                }}
               >
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Architecture review</span>
-                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600">Needs work</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                    Architecture review
+                  </span>
+                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600">
+                    Needs work
+                  </span>
                 </div>
-                <p className="text-sm font-semibold text-theme">Strong asynchronous boundary. Reliability needs attention.</p>
+                <p className="text-sm font-semibold text-theme">
+                  Strong asynchronous boundary. Reliability needs attention.
+                </p>
                 <div className="mt-4 space-y-3 text-xs">
-                  <div className="flex gap-2"><span className="text-emerald-500">✓</span><span className="text-muted"><strong className="text-theme">Good:</strong> object storage and a queue keep uploads off the request path.</span></div>
-                  <div className="flex gap-2"><span className="text-amber-500">!</span><span className="text-muted"><strong className="text-theme">Important:</strong> the queue is a single point of failure.</span></div>
-                  <div className="flex gap-2"><span className="text-rose-500">!</span><span className="text-muted"><strong className="text-theme">Missing:</strong> rate limiting and cache-failure behavior.</span></div>
+                  <div className="flex gap-2">
+                    <span className="text-emerald-500">✓</span>
+                    <span className="text-muted">
+                      <strong className="text-theme">Good:</strong> object
+                      storage and a queue keep uploads off the request path.
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-amber-500">!</span>
+                    <span className="text-muted">
+                      <strong className="text-theme">Important:</strong> the
+                      queue is a single point of failure.
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-rose-500">!</span>
+                    <span className="text-muted">
+                      <strong className="text-theme">Missing:</strong> rate
+                      limiting and cache-failure behavior.
+                    </span>
+                  </div>
                 </div>
-                <button type="button" onClick={() => handleNavigate("/problems", false)} className="mt-6 text-sm font-semibold text-[var(--brand)] hover:underline">Try a challenge →</button>
+                <button
+                  type="button"
+                  onClick={() => handleNavigate("/problems", false)}
+                  className="mt-6 text-sm font-semibold text-[var(--brand)] hover:underline"
+                >
+                  Try a challenge →
+                </button>
               </div>
             </div>
           </div>
@@ -1263,10 +1464,10 @@ const Home: React.FC = () => {
         {/* Use Cases */}
         <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
-              <h2
-                className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
-                data-reveal
-              >
+            <h2
+              className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
+              data-reveal
+            >
               Built for learners and builders
             </h2>
             <div

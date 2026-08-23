@@ -151,9 +151,10 @@ export const SEO: React.FC<SEOProps> = ({
       return;
     }
 
-    const script = existing instanceof HTMLScriptElement
-      ? existing
-      : document.createElement("script");
+    const script =
+      existing instanceof HTMLScriptElement
+        ? existing
+        : document.createElement("script");
     script.id = id;
     script.type = "application/ld+json";
     script.textContent = structuredDataJson;

@@ -1,7 +1,8 @@
 import type { SpriteManifest } from "../types/sprites";
 
 const API_BASE =
-  (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:8000";
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  "http://localhost:8000";
 
 /**
  * Sheet PNGs are private on S3 (BlockPublicAcls).
@@ -17,7 +18,9 @@ export async function fetchSpriteManifest(
   const url = `${API_BASE}/api/sprites/${encodeURIComponent(provider)}/manifest`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Sprite manifest not available for "${provider}" (${res.status})`);
+    throw new Error(
+      `Sprite manifest not available for "${provider}" (${res.status})`,
+    );
   }
   return res.json() as Promise<SpriteManifest>;
 }

@@ -2,7 +2,13 @@ import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { MdSettings, MdDelete, MdAdd, MdOutlineVerticalAlignTop, MdOutlineVerticalAlignBottom } from "react-icons/md";
+import {
+  MdSettings,
+  MdDelete,
+  MdAdd,
+  MdOutlineVerticalAlignTop,
+  MdOutlineVerticalAlignBottom,
+} from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import type { NodeRenderConfig } from "../types/canvas";
@@ -478,20 +484,35 @@ const TableNode: React.FC<Props> = React.memo(
                   key={attr.id}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-hover)] group"
                   role="group"
-                  aria-label={attr.name ? `Attribute ${attr.name}` : "Attribute row"}
+                  aria-label={
+                    attr.name ? `Attribute ${attr.name}` : "Attribute row"
+                  }
                   tabIndex={0}
                   onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                     // Only trigger when the div itself is the event target (not when typing in inputs)
-                    if (e.target === e.currentTarget && !isEditing && (e.key === "Enter" || e.key === " ")) {
+                    if (
+                      e.target === e.currentTarget &&
+                      !isEditing &&
+                      (e.key === "Enter" || e.key === " ")
+                    ) {
                       e.preventDefault();
-                      handleStartEdit(attr, e as unknown as React.SyntheticEvent);
+                      handleStartEdit(
+                        attr,
+                        e as unknown as React.SyntheticEvent,
+                      );
                     }
                   }}
-                  onBlur={isEditing ? (e: React.FocusEvent<HTMLDivElement>) => {
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                      handleSaveEdit();
-                    }
-                  } : undefined}
+                  onBlur={
+                    isEditing
+                      ? (e: React.FocusEvent<HTMLDivElement>) => {
+                          if (
+                            !e.currentTarget.contains(e.relatedTarget as Node)
+                          ) {
+                            handleSaveEdit();
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   {columns.map((col) => renderColumnCell(col, attr, isEditing))}
                 </div>
@@ -539,7 +560,11 @@ const TableNode: React.FC<Props> = React.memo(
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-front", { detail: { id } }));
+                  globalThis.dispatchEvent(
+                    new CustomEvent("diagram:node-to-front", {
+                      detail: { id },
+                    }),
+                  );
                   closeContextMenu();
                 }}
                 className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
@@ -551,7 +576,9 @@ const TableNode: React.FC<Props> = React.memo(
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  globalThis.dispatchEvent(new CustomEvent("diagram:node-to-back", { detail: { id } }));
+                  globalThis.dispatchEvent(
+                    new CustomEvent("diagram:node-to-back", { detail: { id } }),
+                  );
                   closeContextMenu();
                 }}
                 className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"

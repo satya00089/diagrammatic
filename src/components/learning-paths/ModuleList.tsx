@@ -1,5 +1,8 @@
 import React from "react";
-import type { Module as ModuleType, Lesson } from "../../services/contentLoader";
+import type {
+  Module as ModuleType,
+  Lesson,
+} from "../../services/contentLoader";
 
 type Props = {
   modules: ModuleType[];
@@ -41,7 +44,9 @@ const ModuleList: React.FC<Props> = ({
               {m.lessons.map((lesson) => {
                 const isActive = activeLessonId === lesson.id;
                 const isDone = completedLessons.includes(lesson.id);
-                const excerpt = (lesson.content || "").split("\n")[0]?.slice(0, 120);
+                const excerpt = (lesson.content || "")
+                  .split("\n")[0]
+                  ?.slice(0, 120);
 
                 return (
                   <li key={lesson.id}>
@@ -76,9 +81,7 @@ const ModuleList: React.FC<Props> = ({
                         <button
                           type="button"
                           aria-label={
-                            isDone
-                              ? "Mark as incomplete"
-                              : "Mark as complete"
+                            isDone ? "Mark as incomplete" : "Mark as complete"
                           }
                           onClick={() =>
                             onToggleCompleted && onToggleCompleted(lesson.id)

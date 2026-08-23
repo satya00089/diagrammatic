@@ -48,7 +48,9 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
     <div className="group relative min-w-0 rounded-xl border border-theme/10 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
       <div className="flex justify-end">
         <div className="flex items-center gap-2">
-          <div className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border border-transparent ${getDifficultyColor(path.difficulty ?? "Beginner")}`}>
+          <div
+            className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border border-transparent ${getDifficultyColor(path.difficulty ?? "Beginner")}`}
+          >
             {path.difficulty || "Beginner"}
           </div>
           <div className="text-xs px-2 py-1 rounded border border-theme/10 bg-[var(--bg)] text-theme/90 font-medium transition-colors">
@@ -92,8 +94,10 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
                 key={pl.lessonId}
                 to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
                 className="flex-1 min-w-0 p-3 rounded-md border border-theme/10 bg-[var(--bg)] hover:bg-[var(--bg-hover)] hover:shadow-sm transition-colors flex items-center justify-between"
-                >
-                <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">{pl.title}</div>
+              >
+                <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">
+                  {pl.title}
+                </div>
                 <div className="ml-3">
                   {isCompleted(pl.lessonId) ? (
                     <MdCheckCircle className="text-emerald-500 h-5 w-5" />

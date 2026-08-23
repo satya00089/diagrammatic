@@ -5,7 +5,13 @@ import { useTheme } from "../hooks/useTheme";
 import AnimatedTextarea from "../components/shared/AnimatedTextarea";
 import SEO from "../components/SEO";
 import { HiDocumentText, HiLightBulb, HiArrowRight } from "react-icons/hi2";
-import { MdTune, MdLabel, MdAccessTime, MdCheckCircle, MdWarning } from "react-icons/md";
+import {
+  MdTune,
+  MdLabel,
+  MdAccessTime,
+  MdCheckCircle,
+  MdWarning,
+} from "react-icons/md";
 
 type ArrayField = "requirements" | "constraints" | "hints" | "tags";
 
@@ -117,7 +123,10 @@ const CreateProblem: React.FC = () => {
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300 shadow-lg" style={{ top: 'var(--announcement-h, 0px)' }}>
+        <header
+          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300 shadow-lg"
+          style={{ top: "var(--announcement-h, 0px)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -261,7 +270,8 @@ const CreateProblem: React.FC = () => {
                 <div className="rounded-2xl bg-[var(--surface)]/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="text-sm font-bold text-theme flex items-center gap-2">
-                      <MdCheckCircle className="w-5 h-5 text-[var(--brand)]" /> Requirements
+                      <MdCheckCircle className="w-5 h-5 text-[var(--brand)]" />{" "}
+                      Requirements
                     </div>
                     <button
                       type="button"
@@ -485,7 +495,10 @@ const CreateProblem: React.FC = () => {
                         Creating...
                       </>
                     ) : (
-                      <><HiArrowRight className="w-4 h-4" /> Create & Start Designing</>
+                      <>
+                        <HiArrowRight className="w-4 h-4" /> Create & Start
+                        Designing
+                      </>
                     )}
                   </button>
                   <button

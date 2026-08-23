@@ -4,7 +4,17 @@ import { useOnboarding } from "../hooks/useOnboarding";
 import { apiService } from "../services/api";
 import { MdClose } from "react-icons/md";
 
-const roles = ["Student", "Engineer", "Senior Engineer", "Tech Lead", "Architect", "Manager", "Teacher", "Professor", "Other"];
+const roles = [
+  "Student",
+  "Engineer",
+  "Senior Engineer",
+  "Tech Lead",
+  "Architect",
+  "Manager",
+  "Teacher",
+  "Professor",
+  "Other",
+];
 const experienceLevels = ["Beginner", "Intermediate", "Advanced"];
 const clouds = ["AWS", "GCP", "Azure", "Other"];
 const contentTypes = ["Articles", "Videos", "Interactive", "Projects"];
@@ -27,7 +37,8 @@ export const QuickSetupModal: React.FC = () => {
     const toStringSafe = (val: unknown): string | undefined => {
       if (val == null) return undefined;
       if (typeof val === "string") return val;
-      if (typeof val === "number" || typeof val === "boolean") return String(val);
+      if (typeof val === "number" || typeof val === "boolean")
+        return String(val);
       if (Array.isArray(val)) return val.map((v) => String(v)).join(", ");
       if (typeof val === "object") {
         const anyVal = val as Record<string, unknown>;
@@ -85,7 +96,11 @@ export const QuickSetupModal: React.FC = () => {
     };
 
     globalThis.addEventListener("open-quick-setup", handler as EventListener);
-    return () => globalThis.removeEventListener("open-quick-setup", handler as EventListener);
+    return () =>
+      globalThis.removeEventListener(
+        "open-quick-setup",
+        handler as EventListener,
+      );
   }, [isAuthenticated, user]);
 
   // Close modal on Escape for keyboard users
@@ -166,10 +181,14 @@ export const QuickSetupModal: React.FC = () => {
               {isEditing ? "Edit your preferences" : "Quick setup"}
             </h3>
             <p className="text-sm text-muted mt-2 max-w-xs">
-              Tell us a bit about you so we can surface the most relevant content and problems.
+              Tell us a bit about you so we can surface the most relevant
+              content and problems.
             </p>
             {isEditing && (
-              <p className="text-xs text-muted mt-3">Your choices are private and used to personalize recommendations.</p>
+              <p className="text-xs text-muted mt-3">
+                Your choices are private and used to personalize
+                recommendations.
+              </p>
             )}
           </div>
 
@@ -183,7 +202,9 @@ export const QuickSetupModal: React.FC = () => {
                   className="mt-1 block w-full border border-theme/40 rounded p-2 bg-[transparent]"
                 >
                   {roles.map((r) => (
-                    <option key={r} value={r}>{r}</option>
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -196,44 +217,59 @@ export const QuickSetupModal: React.FC = () => {
                   className="mt-1 block w-full border border-theme/40 rounded p-2 bg-[transparent]"
                 >
                   {experienceLevels.map((lev) => (
-                    <option key={lev} value={lev}>{lev}</option>
+                    <option key={lev} value={lev}>
+                      {lev}
+                    </option>
                   ))}
                 </select>
               </label>
 
               <label className="block md:col-span-2">
-                <div className="text-sm font-medium text-theme">Primary interest</div>
+                <div className="text-sm font-medium text-theme">
+                  Primary interest
+                </div>
                 <input
                   value={primaryInterest}
                   onChange={(e) => setPrimaryInterest(e.target.value)}
                   placeholder="e.g., distributed systems, ML"
                   className="mt-1 block w-full border border-theme/40 rounded p-2 bg-[transparent]"
                 />
-                <div className="text-xs text-muted mt-1">This helps prioritize problem recommendations and learning materials.</div>
+                <div className="text-xs text-muted mt-1">
+                  This helps prioritize problem recommendations and learning
+                  materials.
+                </div>
               </label>
 
               <label className="block">
-                <div className="text-sm font-medium text-theme">Preferred cloud</div>
+                <div className="text-sm font-medium text-theme">
+                  Preferred cloud
+                </div>
                 <select
                   value={preferredCloud}
                   onChange={(e) => setPreferredCloud(e.target.value)}
                   className="mt-1 block w-full border border-theme/40 rounded p-2 bg-[transparent]"
                 >
                   {clouds.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </label>
 
               <label className="block">
-                <div className="text-sm font-medium text-theme">Preferred content</div>
+                <div className="text-sm font-medium text-theme">
+                  Preferred content
+                </div>
                 <select
                   value={preferredContent}
                   onChange={(e) => setPreferredContent(e.target.value)}
                   className="mt-1 block w-full border border-theme/40 rounded p-2 bg-[transparent]"
                 >
                   {contentTypes.map((ct) => (
-                    <option key={ct} value={ct}>{ct}</option>
+                    <option key={ct} value={ct}>
+                      {ct}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -253,7 +289,11 @@ export const QuickSetupModal: React.FC = () => {
                 disabled={submitting}
                 className="px-4 py-2 rounded bg-[var(--brand)] text-white text-sm shadow-sm cursor-pointer"
               >
-                {submitting ? "Saving..." : isEditing ? "Save changes" : "Get started"}
+                {submitting
+                  ? "Saving..."
+                  : isEditing
+                    ? "Save changes"
+                    : "Get started"}
               </button>
             </div>
           </form>

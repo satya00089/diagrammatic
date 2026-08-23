@@ -39,7 +39,9 @@ export default function ComponentPalette({
   const { minimalComponents, selectedProviders, loading, error } =
     useAppSelector((state) => state.components);
   const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
-  const spriteProviderStatus = useAppSelector((state) => state.sprites.providerStatus);
+  const spriteProviderStatus = useAppSelector(
+    (state) => state.sprites.providerStatus,
+  );
 
   const [open, setOpen] = React.useState(true);
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
@@ -616,7 +618,11 @@ export default function ComponentPalette({
                                                 {"iconUrl" in c && c.iconUrl ? (
                                                   <div className="w-10 h-10 mb-1 relative flex items-center justify-center">
                                                     {(() => {
-                                                      if (shouldUseDirectIcon(c.id)) {
+                                                      if (
+                                                        shouldUseDirectIcon(
+                                                          c.id,
+                                                        )
+                                                      ) {
                                                         return (
                                                           <img
                                                             src={c.iconUrl}
@@ -628,19 +634,36 @@ export default function ComponentPalette({
                                                       if (spriteIcons[c.id]) {
                                                         return (
                                                           <SpriteIcon
-                                                            sprite={spriteIcons[c.id]}
+                                                            sprite={
+                                                              spriteIcons[c.id]
+                                                            }
                                                             displaySize={40}
                                                             alt={c.label}
-                                                            style={{ opacity: 0.9 }}
+                                                            style={{
+                                                              opacity: 0.9,
+                                                            }}
                                                           />
                                                         );
                                                       }
-                                                      const pfx = c.id.split("-")[0];
-                                                      const isKnownProvider = ["aws","azure","gcp","kubernetes"].includes(pfx);
-                                                      const st = spriteProviderStatus[pfx];
+                                                      const pfx =
+                                                        c.id.split("-")[0];
+                                                      const isKnownProvider = [
+                                                        "aws",
+                                                        "azure",
+                                                        "gcp",
+                                                        "kubernetes",
+                                                      ].includes(pfx);
+                                                      const st =
+                                                        spriteProviderStatus[
+                                                          pfx
+                                                        ];
                                                       // For known providers: never fire individual iconUrl requests.
                                                       // Only fall back on error, or if not a sprite provider.
-                                                      if (isKnownProvider && st !== "error") return null;
+                                                      if (
+                                                        isKnownProvider &&
+                                                        st !== "error"
+                                                      )
+                                                        return null;
                                                       return (
                                                         <img
                                                           src={c.iconUrl}

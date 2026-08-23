@@ -978,7 +978,13 @@
     "title": "Millions of Users and Beyond",
     "summary": "An advanced capstone for evolving a measured workload into a resilient, globally distributed, and operable system.",
     "difficulty": "Advanced",
-    "tags": ["scalability", "capacity-planning", "resilience", "cdn", "multi-region"],
+    "tags": [
+      "scalability",
+      "capacity-planning",
+      "resilience",
+      "cdn",
+      "multi-region"
+    ],
     "modules": [
       {
         "id": "core-concepts",

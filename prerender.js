@@ -115,18 +115,38 @@ const routes = {
     sectionTitle: "A repeatable interview method",
     actions: [{ label: "Choose a practice problem", href: "/problems/" }],
     items: [
-      { title: "Clarify the problem", description: "Identify users, core use cases, non-goals, and quality attributes." },
-      { title: "Estimate the system", description: "Use rough traffic, storage, throughput, and latency estimates." },
-      { title: "Draw the critical path", description: "Start with the simplest end-to-end flow." },
-      { title: "Defend the trade-offs", description: "Explain why each major component exists and what it costs." },
-      { title: "Test failure and scale", description: "Walk through overload, partial failure, recovery, and consistency." },
+      {
+        title: "Clarify the problem",
+        description:
+          "Identify users, core use cases, non-goals, and quality attributes.",
+      },
+      {
+        title: "Estimate the system",
+        description:
+          "Use rough traffic, storage, throughput, and latency estimates.",
+      },
+      {
+        title: "Draw the critical path",
+        description: "Start with the simplest end-to-end flow.",
+      },
+      {
+        title: "Defend the trade-offs",
+        description:
+          "Explain why each major component exists and what it costs.",
+      },
+      {
+        title: "Test failure and scale",
+        description:
+          "Walk through overload, partial failure, recovery, and consistency.",
+      },
     ],
     lastmod: "2026-08-23",
     indexable: true,
     kind: "article",
   },
   "/system-design-practice": {
-    title: "System Design Practice Online with Architecture Feedback | Diagrammatic",
+    title:
+      "System Design Practice Online with Architecture Feedback | Diagrammatic",
     heading: "System Design Practice",
     description:
       "Practice system design online with realistic prompts, an interactive architecture canvas, explicit trade-offs, and structured review.",
@@ -137,11 +157,28 @@ const routes = {
     sectionTitle: "A deliberate practice loop",
     actions: [{ label: "Browse practice problems", href: "/problems/" }],
     items: [
-      { title: "Choose one narrow prompt", description: "Match the challenge to the skill you want to isolate." },
-      { title: "Time-box clarification", description: "Write requirements, assumptions, and success criteria first." },
-      { title: "Build and annotate", description: "Label flows and record why every major component exists." },
-      { title: "Review the architecture", description: "Capture weaknesses before changing the diagram." },
-      { title: "Repeat the weak dimension", description: "Choose the next problem around the bottleneck you missed." },
+      {
+        title: "Choose one narrow prompt",
+        description: "Match the challenge to the skill you want to isolate.",
+      },
+      {
+        title: "Time-box clarification",
+        description:
+          "Write requirements, assumptions, and success criteria first.",
+      },
+      {
+        title: "Build and annotate",
+        description: "Label flows and record why every major component exists.",
+      },
+      {
+        title: "Review the architecture",
+        description: "Capture weaknesses before changing the diagram.",
+      },
+      {
+        title: "Repeat the weak dimension",
+        description:
+          "Choose the next problem around the bottleneck you missed.",
+      },
     ],
     lastmod: "2026-08-23",
     indexable: true,
@@ -162,11 +199,29 @@ const routes = {
       { label: "Study the foundations", href: "/learning-paths/" },
     ],
     items: [
-      { title: "Define product behavior", description: "State what the model produces and how quality is measured." },
-      { title: "Separate offline and online", description: "Show ingestion, preparation, deployment, inference, and feedback." },
-      { title: "Budget latency, quality, and cost", description: "Make the serving trade-offs explicit." },
-      { title: "Design evaluation and observability", description: "Track data quality, drift, failures, and user impact." },
-      { title: "Plan degradation and rollback", description: "Explain how the product behaves when an AI dependency fails." },
+      {
+        title: "Define product behavior",
+        description:
+          "State what the model produces and how quality is measured.",
+      },
+      {
+        title: "Separate offline and online",
+        description:
+          "Show ingestion, preparation, deployment, inference, and feedback.",
+      },
+      {
+        title: "Budget latency, quality, and cost",
+        description: "Make the serving trade-offs explicit.",
+      },
+      {
+        title: "Design evaluation and observability",
+        description: "Track data quality, drift, failures, and user impact.",
+      },
+      {
+        title: "Plan degradation and rollback",
+        description:
+          "Explain how the product behaves when an AI dependency fails.",
+      },
     ],
     lastmod: "2026-08-23",
     indexable: true,
@@ -457,7 +512,12 @@ function loadLearningPaths() {
 }
 
 function loadFeaturedProblems() {
-  const featuredPath = path.join(__dirname, "src", "data", "featuredProblems.json");
+  const featuredPath = path.join(
+    __dirname,
+    "src",
+    "data",
+    "featuredProblems.json",
+  );
   if (!fs.existsSync(featuredPath)) return [];
   const parsed = JSON.parse(fs.readFileSync(featuredPath, "utf-8"));
   return Array.isArray(parsed) ? parsed : [];
@@ -475,15 +535,19 @@ function fallbackProblemSlug(title = "") {
 }
 
 async function loadLiveProblems() {
-  const apiUrl = process.env.VITE_API_URL || process.env.VITE_ASSESSMENT_API_URL;
+  const apiUrl =
+    process.env.VITE_API_URL || process.env.VITE_ASSESSMENT_API_URL;
   if (!apiUrl || /localhost|127\.0\.0\.1/.test(apiUrl)) return [];
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(`${apiUrl.replace(/\/$/, "")}/api/v1/all-problems`, {
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `${apiUrl.replace(/\/$/, "")}/api/v1/all-problems`,
+      {
+        signal: controller.signal,
+      },
+    );
     if (!response.ok) throw new Error(`catalog returned ${response.status}`);
     const data = await response.json();
     return Array.isArray(data) ? data : [];
@@ -496,9 +560,14 @@ async function loadLiveProblems() {
 }
 
 function mergeProblemCatalogs(featured, live) {
-  const featuredByTitle = new Map(featured.map((problem) => [problem.title, problem]));
+  const featuredByTitle = new Map(
+    featured.map((problem) => [problem.title, problem]),
+  );
   const merged = live.length
-    ? live.map((problem) => ({ ...featuredByTitle.get(problem.title), ...problem }))
+    ? live.map((problem) => ({
+        ...featuredByTitle.get(problem.title),
+        ...problem,
+      }))
     : [...featured];
 
   return merged
@@ -510,8 +579,12 @@ function mergeProblemCatalogs(featured, live) {
         problem.slug ||
         fallbackProblemSlug(problem.title),
       tags: Array.isArray(problem.tags) ? problem.tags : [],
-      requirements: Array.isArray(problem.requirements) ? problem.requirements : [],
-      constraints: Array.isArray(problem.constraints) ? problem.constraints : [],
+      requirements: Array.isArray(problem.requirements)
+        ? problem.requirements
+        : [],
+      constraints: Array.isArray(problem.constraints)
+        ? problem.constraints
+        : [],
     }));
 }
 
@@ -523,10 +596,12 @@ function addProblemRoutes(problems) {
   }));
 
   for (const problem of problems) {
-    const requirements = problem.requirements.slice(0, 8).map((requirement) => ({
-      title: requirement,
-      description: "Requirement",
-    }));
+    const requirements = problem.requirements
+      .slice(0, 8)
+      .map((requirement) => ({
+        title: requirement,
+        description: "Requirement",
+      }));
     const concepts = problem.tags.slice(0, 8).map((tag) => ({
       title: tag.replaceAll("-", " "),
       description: "Concept to explore",
@@ -544,8 +619,14 @@ function addProblemRoutes(problems) {
         ? "Requirements and concepts to consider"
         : "Concepts and architecture decisions to consider",
       actions: [
-        { label: "Open this challenge", href: `/problems/?q=${encodeURIComponent(problem.title)}` },
-        { label: "Read the interview guide", href: "/system-design-interview/" },
+        {
+          label: "Open this challenge",
+          href: `/problems/?q=${encodeURIComponent(problem.title)}`,
+        },
+        {
+          label: "Read the interview guide",
+          href: "/system-design-interview/",
+        },
       ],
       items: [...requirements, ...concepts],
       lastmod: "2026-08-23",

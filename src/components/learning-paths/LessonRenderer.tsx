@@ -3,10 +3,14 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import type { Lesson, Exercise } from "../../services/contentLoader";
 
-function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) {
+function ExerciseRunner({
+  exercise,
+}: Readonly<{ exercise?: Exercise | null }>) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showHints, setShowHints] = useState<Record<string, boolean>>({});
-  const [results, setResults] = useState<Record<string, { ok: boolean; message?: string }>>({});
+  const [results, setResults] = useState<
+    Record<string, { ok: boolean; message?: string }>
+  >({});
 
   const parseNumber = (s?: string) => {
     if (!s) return NaN;
@@ -14,10 +18,13 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
     return cleaned ? parseFloat(cleaned[0]) : NaN;
   };
 
-  const validate = (q: Exercise['questions'][number]) => {
+  const validate = (q: Exercise["questions"][number]) => {
     const user = (answers[q.id] || "").trim();
     if (!q.answer) {
-      setResults((r) => ({ ...r, [q.id]: { ok: false, message: "No expected answer available." } }));
+      setResults((r) => ({
+        ...r,
+        [q.id]: { ok: false, message: "No expected answer available." },
+      }));
       return;
     }
 
@@ -26,7 +33,13 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
     if (ans.type === "numeric" || ans.type === "integer") {
       const userNum = parseNumber(user);
       if (Number.isNaN(userNum)) {
-        setResults((r) => ({ ...r, [q.id]: { ok: false, message: "Please enter a numeric value (e.g. 13.5)." } }));
+        setResults((r) => ({
+          ...r,
+          [q.id]: {
+            ok: false,
+            message: "Please enter a numeric value (e.g. 13.5).",
+          },
+        }));
         return;
       }
       const expected = Number(ans.value);
@@ -48,14 +61,31 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
         try {
           const re = new RegExp(ans.regex, "i");
           const ok = re.test(user);
-          setResults((r) => ({ ...r, [q.id]: { ok, message: ok ? "Correct" : `Incorrect — expected pattern ${ans.regex}` } }));
+          setResults((r) => ({
+            ...r,
+            [q.id]: {
+              ok,
+              message: ok
+                ? "Correct"
+                : `Incorrect — expected pattern ${ans.regex}`,
+            },
+          }));
         } catch {
-          setResults((r) => ({ ...r, [q.id]: { ok: false, message: "Invalid validation regex." } }));
+          setResults((r) => ({
+            ...r,
+            [q.id]: { ok: false, message: "Invalid validation regex." },
+          }));
         }
         return;
       }
       const ok = user.toLowerCase() === val.toLowerCase();
-      setResults((r) => ({ ...r, [q.id]: { ok, message: ok ? "Correct" : `Incorrect — expected "${val}"` } }));
+      setResults((r) => ({
+        ...r,
+        [q.id]: {
+          ok,
+          message: ok ? "Correct" : `Incorrect — expected "${val}"`,
+        },
+      }));
       return;
     }
   };
@@ -80,7 +110,10 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
       )}
 
       {ex.questions.map((q, idx) => (
-        <div key={q.id} className="rounded-xl border border-theme/10 bg-[var(--bg)] p-4 shadow-sm">
+        <div
+          key={q.id}
+          className="rounded-xl border border-theme/10 bg-[var(--bg)] p-4 shadow-sm"
+        >
           <div className="flex items-start justify-between">
             <div>
               <div className="font-medium">Question {idx + 1}</div>
@@ -89,7 +122,9 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
             <div>
               {q.hint && (
                 <button
-                  onClick={() => setShowHints((s) => ({ ...s, [q.id]: !s[q.id] }))}
+                  onClick={() =>
+                    setShowHints((s) => ({ ...s, [q.id]: !s[q.id] }))
+                  }
                   className="rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/8 px-2 py-1 text-xs font-medium text-[var(--brand)]"
                 >
                   {showHints[q.id] ? "Hide hint" : "Show hint"}
@@ -98,13 +133,17 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
             </div>
           </div>
 
-          {showHints[q.id] && q.hint && <div className="mt-3 text-sm text-muted">{q.hint}</div>}
+          {showHints[q.id] && q.hint && (
+            <div className="mt-3 text-sm text-muted">{q.hint}</div>
+          )}
 
           <div className="mt-3 flex gap-3 items-center">
             <input
               aria-label={`answer-${q.id}`}
               value={answers[q.id] || ""}
-              onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+              onChange={(e) =>
+                setAnswers((a) => ({ ...a, [q.id]: e.target.value }))
+              }
               className="flex-1 rounded-lg border border-theme/15 bg-[var(--surface)] px-3 py-2 text-theme"
               placeholder="Type your answer (numbers accepted)"
             />
@@ -117,7 +156,11 @@ function ExerciseRunner({ exercise }: Readonly<{ exercise?: Exercise | null }>) 
           </div>
 
           {results[q.id] && (
-            <div className={`mt-2 text-sm ${results[q.id].ok ? "text-emerald-600" : "text-rose-600"}`}>{results[q.id].message}</div>
+            <div
+              className={`mt-2 text-sm ${results[q.id].ok ? "text-emerald-600" : "text-rose-600"}`}
+            >
+              {results[q.id].message}
+            </div>
           )}
         </div>
       ))}
@@ -133,7 +176,15 @@ const LessonRenderer: React.FC<{
   onNext?: () => void;
   hasFinishModule?: boolean;
   onFinish?: () => void;
-}> = ({ lesson, completed = false, onToggleCompleted, hasNextLesson = false, onNext, hasFinishModule = false, onFinish }) => {
+}> = ({
+  lesson,
+  completed = false,
+  onToggleCompleted,
+  hasNextLesson = false,
+  onNext,
+  hasFinishModule = false,
+  onFinish,
+}) => {
   // Ref for scroll-to-top on lesson change
   const contentRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -174,7 +225,9 @@ const LessonRenderer: React.FC<{
             <div className="prose max-w-none prose-headings:text-theme prose-p:text-theme prose-strong:text-theme prose-li:text-theme prose-code:text-theme dark:prose-invert mb-6">
               <div
                 dangerouslySetInnerHTML={{
-                  __html: DOMPurify.sanitize(marked.parse(lesson.content || "")),
+                  __html: DOMPurify.sanitize(
+                    marked.parse(lesson.content || ""),
+                  ),
                 }}
               />
             </div>

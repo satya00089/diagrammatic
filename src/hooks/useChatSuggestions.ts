@@ -63,7 +63,16 @@ export const useChatSuggestions = (
         // (guided steps may place properties at top-level on node.data)
         for (const [k, v] of Object.entries(nodeData)) {
           if (
-            !["description", "subtitle", "componentId", "icon", "iconUrl", "label", "_customProperties", "properties"].includes(k)
+            ![
+              "description",
+              "subtitle",
+              "componentId",
+              "icon",
+              "iconUrl",
+              "label",
+              "_customProperties",
+              "properties",
+            ].includes(k)
           ) {
             properties[k] = v;
           }

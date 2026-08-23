@@ -58,21 +58,29 @@ const ANNOUNCEMENTS: Announcement[] = [
 ];
 
 const FeatureAnnouncement: React.FC = () => {
-  const { isAnnouncementSeen, dismissAnnouncement, isNewToPage, isTourCompleted } = useOnboarding();
+  const {
+    isAnnouncementSeen,
+    dismissAnnouncement,
+    isNewToPage,
+    isTourCompleted,
+  } = useOnboarding();
   const navigate = useNavigate();
   const location = useLocation();
 
   const mapPathToPageId = (path: string): PageId | undefined => {
     if (path === "/") return "home";
     if (path.startsWith("/problems")) return "dashboard";
-    if (path.startsWith("/playground") || path.startsWith("/public")) return "design_studio";
+    if (path.startsWith("/playground") || path.startsWith("/public"))
+      return "design_studio";
     if (path.startsWith("/diagrams")) return "my_designs";
     if (path.startsWith("/problems/play")) return "problem_playground";
     return undefined;
   };
 
   const currentPage = mapPathToPageId(location.pathname);
-  const deferForTour = Boolean(currentPage && isNewToPage(currentPage) && !isTourCompleted(currentPage));
+  const deferForTour = Boolean(
+    currentPage && isNewToPage(currentPage) && !isTourCompleted(currentPage),
+  );
   const announcement = deferForTour
     ? undefined
     : ANNOUNCEMENTS.find((a) => {
@@ -89,7 +97,10 @@ const FeatureAnnouncement: React.FC = () => {
     }
     const mq = window.matchMedia("(min-width: 768px)");
     const apply = () => {
-      document.documentElement.style.setProperty("--announcement-h", mq.matches ? "40px" : "0px");
+      document.documentElement.style.setProperty(
+        "--announcement-h",
+        mq.matches ? "40px" : "0px",
+      );
     };
     apply();
     mq.addEventListener("change", apply);
@@ -137,8 +148,12 @@ const FeatureAnnouncement: React.FC = () => {
           <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-[var(--brand,#6366f1)]/10 text-[var(--brand,#6366f1)]">
             {announcement.badge}
           </span>
-          <span className="font-semibold text-theme text-sm shrink-0">{announcement.title}</span>
-          <span className="text-muted text-sm hidden lg:block truncate">— {announcement.description}</span>
+          <span className="font-semibold text-theme text-sm shrink-0">
+            {announcement.title}
+          </span>
+          <span className="text-muted text-sm hidden lg:block truncate">
+            — {announcement.description}
+          </span>
         </div>
 
         {/* CTA */}
@@ -162,7 +177,10 @@ const FeatureAnnouncement: React.FC = () => {
       </motion.div>
 
       {/* ── Mobile: modal overlay (unchanged) ── */}
-      <div key="modal" className="md:hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        key="modal"
+        className="md:hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
         {/* Backdrop */}
         <motion.div
           className="absolute inset-0 bg-black/60"
@@ -198,10 +216,14 @@ const FeatureAnnouncement: React.FC = () => {
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-[var(--brand,#6366f1)]/15 text-[var(--brand,#6366f1)] mb-1">
                   {announcement.badge}
                 </span>
-                <h2 className="text-base font-bold text-theme leading-snug">{announcement.title}</h2>
+                <h2 className="text-base font-bold text-theme leading-snug">
+                  {announcement.title}
+                </h2>
               </div>
             </div>
-            <p className="text-sm text-muted leading-relaxed mb-5">{announcement.description}</p>
+            <p className="text-sm text-muted leading-relaxed mb-5">
+              {announcement.description}
+            </p>
             <div className="flex items-center gap-3">
               <button
                 type="button"

@@ -57,7 +57,9 @@ export async function fetchLearningPaths(): Promise<LearningPath[]> {
   return Array.isArray(data) ? data : [data];
 }
 
-export async function fetchLearningPathBySlug(slug: string): Promise<LearningPath | null> {
+export async function fetchLearningPathBySlug(
+  slug: string,
+): Promise<LearningPath | null> {
   const paths = await fetchLearningPaths();
   return paths.find((p) => p.slug === slug) ?? null;
 }

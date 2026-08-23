@@ -335,8 +335,8 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
         <div>
           <p className="text-sm font-semibold text-theme">Preview skipped</p>
           <p className="mt-1 text-xs leading-relaxed">
-            Publishing is ready, and the interactive public canvas will still
-            be available.
+            Publishing is ready, and the interactive public canvas will still be
+            available.
           </p>
         </div>
         {previewError && (

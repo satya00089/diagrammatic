@@ -15,7 +15,9 @@ export const WelcomeDialog: React.FC = () => {
     >
       <div className="text-center">
         <HiSparkles className="w-7 h-7 mx-auto mb-3 text-[var(--brand)]" />
-        <h3 className="text-sm font-semibold text-theme mb-1">Design Assistant</h3>
+        <h3 className="text-sm font-semibold text-theme mb-1">
+          Design Assistant
+        </h3>
         <p className="text-xs text-muted mb-4">
           Add components to your canvas and I'll suggest what to build next.
         </p>

@@ -115,14 +115,18 @@ const Dashboard: React.FC = () => {
         const s = v.trim();
         if (!s) return [];
         return s.includes(",")
-          ? s.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean)
+          ? s
+              .split(",")
+              .map((x) => x.trim().toLowerCase())
+              .filter(Boolean)
           : [s.toLowerCase()];
       }
       if (typeof v === "object") {
         const obj = v as Record<string, unknown>;
         for (const key of ["value", "label", "id", "name"]) {
           const val = obj[key];
-          if (typeof val === "string" && val.trim()) return [val.trim().toLowerCase()];
+          if (typeof val === "string" && val.trim())
+            return [val.trim().toLowerCase()];
         }
         try {
           return [JSON.stringify(obj).toLowerCase()];
@@ -133,13 +137,25 @@ const Dashboard: React.FC = () => {
       return [String(v).toLowerCase()];
     };
 
-    const primaryInterests = normalize(prefs.primary_interest ?? prefs["primaryInterest"] ?? prefs["primary_interest"]);
-    const preferredClouds = normalize(prefs.preferred_cloud ?? prefs["preferredCloud"]);
-    const experience = normalize(prefs.experience_level ?? prefs["experienceLevel"] ?? "").join(",").toLowerCase();
+    const primaryInterests = normalize(
+      prefs.primary_interest ??
+        prefs["primaryInterest"] ??
+        prefs["primary_interest"],
+    );
+    const preferredClouds = normalize(
+      prefs.preferred_cloud ?? prefs["preferredCloud"],
+    );
+    const experience = normalize(
+      prefs.experience_level ?? prefs["experienceLevel"] ?? "",
+    )
+      .join(",")
+      .toLowerCase();
 
     const scored = filteredProblems.map((problem, idx) => {
       let score = 0;
-      const tags = (problem.tags || []).map((t: string) => String(t).toLowerCase());
+      const tags = (problem.tags || []).map((t: string) =>
+        String(t).toLowerCase(),
+      );
       const category = String(problem.category || "").toLowerCase();
       const domain = String(problem.domain || "").toLowerCase();
 
@@ -158,8 +174,16 @@ const Dashboard: React.FC = () => {
       if (experience) {
         const diff = String(problem.difficulty || "").toLowerCase();
         if (experience === "beginner" && diff === "easy") score += 1;
-        if (experience === "intermediate" && (diff === "medium" || diff === "easy")) score += 1;
-        if (experience === "advanced" && (diff === "hard" || diff === "very hard")) score += 1;
+        if (
+          experience === "intermediate" &&
+          (diff === "medium" || diff === "easy")
+        )
+          score += 1;
+        if (
+          experience === "advanced" &&
+          (diff === "hard" || diff === "very hard")
+        )
+          score += 1;
       }
 
       return {
@@ -255,7 +279,10 @@ const Dashboard: React.FC = () => {
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}
-        <header className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300" style={{ top: 'var(--announcement-h, 0px)' }}>
+        <header
+          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
+          style={{ top: "var(--announcement-h, 0px)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <button
@@ -356,7 +383,9 @@ const Dashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              globalThis.dispatchEvent(new Event("open-quick-setup"));
+                              globalThis.dispatchEvent(
+                                new Event("open-quick-setup"),
+                              );
                               setShowUserMenu(false);
                             }}
                             aria-label="Edit preferences"
@@ -406,19 +435,29 @@ const Dashboard: React.FC = () => {
               </h1>
               <p className="text-muted text-lg max-w-2xl mx-auto">
                 Master Infrastructure, Application, AI & ML architectures.
-                Practice with realistic architecture problems in an interactive canvas.
+                Practice with realistic architecture problems in an interactive
+                canvas.
               </p>
               <nav
                 className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-semibold"
                 aria-label="System design guides"
               >
-                <Link to="/system-design-interview/" className="text-[var(--brand)] hover:underline">
+                <Link
+                  to="/system-design-interview/"
+                  className="text-[var(--brand)] hover:underline"
+                >
                   Interview guide
                 </Link>
-                <Link to="/system-design-practice/" className="text-[var(--brand)] hover:underline">
+                <Link
+                  to="/system-design-practice/"
+                  className="text-[var(--brand)] hover:underline"
+                >
                   Practice method
                 </Link>
-                <Link to="/ai-system-design-interview/" className="text-[var(--brand)] hover:underline">
+                <Link
+                  to="/ai-system-design-interview/"
+                  className="text-[var(--brand)] hover:underline"
+                >
                   AI system design
                 </Link>
               </nav>
@@ -565,7 +604,14 @@ const Dashboard: React.FC = () => {
                   {prioritizedProblems.map((entry, index) => {
                     const problem = entry.problem;
                     const score = entry.score;
-                    const delayClass = index === 0 ? "delay-0" : index === 1 ? "delay-100" : index === 2 ? "delay-200" : "";
+                    const delayClass =
+                      index === 0
+                        ? "delay-0"
+                        : index === 1
+                          ? "delay-100"
+                          : index === 2
+                            ? "delay-200"
+                            : "";
                     return (
                       <div
                         key={problem.id}
@@ -583,7 +629,9 @@ const Dashboard: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                            <span
+                              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                            >
                               {problem.difficulty}
                             </span>
                           </div>
@@ -594,7 +642,9 @@ const Dashboard: React.FC = () => {
                               <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">
                                 Recommended
                               </span>
-                              <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                              <span
+                                className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                              >
                                 {problem.difficulty}
                               </span>
                             </div>
@@ -610,7 +660,9 @@ const Dashboard: React.FC = () => {
                             </h3>
                             {!problem.has_guided_walkthrough && score === 0 && (
                               <div className="flex-shrink-0 ml-2">
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}>
+                                <span
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                                >
                                   {problem.difficulty}
                                 </span>
                               </div>
@@ -623,10 +675,12 @@ const Dashboard: React.FC = () => {
 
                           <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
                             <span className="flex items-center gap-1">
-                              <MdLabel className="w-4 h-4 text-muted/60" /> {problem.category}
+                              <MdLabel className="w-4 h-4 text-muted/60" />{" "}
+                              {problem.category}
                             </span>
                             <span className="flex items-center gap-1">
-                              <MdAccessTime className="w-4 h-4 text-muted/60" /> {problem.estimated_time}
+                              <MdAccessTime className="w-4 h-4 text-muted/60" />{" "}
+                              {problem.estimated_time}
                             </span>
                           </div>
 
@@ -651,7 +705,9 @@ const Dashboard: React.FC = () => {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (!problem.id) {
-                                navigate(`/problems/${getProblemSlug(problem)}/`);
+                                navigate(
+                                  `/problems/${getProblemSlug(problem)}/`,
+                                );
                                 return;
                               }
                               if (!isAuth) {

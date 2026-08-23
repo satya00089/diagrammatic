@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdClose, MdCheckCircle, MdRadioButtonUnchecked, MdChevronRight } from "react-icons/md";
+import {
+  MdClose,
+  MdCheckCircle,
+  MdRadioButtonUnchecked,
+  MdChevronRight,
+} from "react-icons/md";
 import { HiSparkles } from "react-icons/hi2";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useAuth } from "../hooks/useAuth";
@@ -83,7 +88,9 @@ const OnboardingChecklist: React.FC = () => {
             <div className="flex items-center justify-between px-4 py-3 border-b border-theme">
               <div className="flex items-center gap-2">
                 <HiSparkles className="text-[var(--brand)] h-4 w-4" />
-                <span className="text-sm font-bold text-theme">Getting Started</span>
+                <span className="text-sm font-bold text-theme">
+                  Getting Started
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">
@@ -92,7 +99,9 @@ const OnboardingChecklist: React.FC = () => {
                 {isAuthenticated && (
                   <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new Event("open-quick-setup"))}
+                    onClick={() =>
+                      window.dispatchEvent(new Event("open-quick-setup"))
+                    }
                     className="text-xs text-theme hover:underline mr-2"
                   >
                     Edit preferences
@@ -141,7 +150,9 @@ const OnboardingChecklist: React.FC = () => {
                         )}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className={`block text-sm font-medium ${done ? "line-through text-muted" : "text-theme"}`}>
+                        <span
+                          className={`block text-sm font-medium ${done ? "line-through text-muted" : "text-theme"}`}
+                        >
                           {task.label}
                         </span>
                         <span className="block text-xs text-muted mt-0.5 leading-relaxed">
@@ -177,7 +188,14 @@ const OnboardingChecklist: React.FC = () => {
         {/* Circular progress indicator */}
         <div className="relative h-7 w-7 shrink-0">
           <svg className="h-7 w-7 -rotate-90" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="11" fill="none" stroke="var(--border, rgba(255,255,255,0.1))" strokeWidth="2.5" />
+            <circle
+              cx="14"
+              cy="14"
+              r="11"
+              fill="none"
+              stroke="var(--border, rgba(255,255,255,0.1))"
+              strokeWidth="2.5"
+            />
             <circle
               cx="14"
               cy="14"

@@ -28,9 +28,13 @@ const loadGoogleIdentityScript = (): Promise<void> => {
 
     if (existingScript) {
       existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener("error", () => {
-        reject(new Error("Failed to load Google Identity Services"));
-      }, { once: true });
+      existingScript.addEventListener(
+        "error",
+        () => {
+          reject(new Error("Failed to load Google Identity Services"));
+        },
+        { once: true },
+      );
       return;
     }
 
@@ -196,10 +200,7 @@ const CredentialsForm: React.FC<{
     <>
       {googleLoginAvailable && (
         <>
-          <div
-            id="google-signin-button"
-            className="flex justify-center mb-4"
-          />
+          <div id="google-signin-button" className="flex justify-center mb-4" />
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-theme/20" />
@@ -328,9 +329,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendMessage, setResendMessage] = useState("");
   const { theme } = useTheme();
-  const googleResponseRef = useRef<(response: GoogleCredentialResponse) => void>(
-    () => {},
-  );
+  const googleResponseRef = useRef<
+    (response: GoogleCredentialResponse) => void
+  >(() => {});
 
   const resolvedDarkMode =
     theme === "dark" ||
@@ -439,13 +440,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPassword("");
       setConfirmPassword("");
       setName("");
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Authentication failed";
-        if (mode === "login" && message.toLowerCase().includes("activate your account")) {
-          setVerificationEmail(email);
-        } else {
-          setError(message);
-        }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Authentication failed";
+      if (
+        mode === "login" &&
+        message.toLowerCase().includes("activate your account")
+      ) {
+        setVerificationEmail(email);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -493,12 +498,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
             </div>
 
-            <p className="text-muted mb-6">
-              {modeCopy.description}
-            </p>
+            <p className="text-muted mb-6">{modeCopy.description}</p>
 
             <div className="mb-6 rounded-xl border border-theme/10 bg-[var(--bg-hover)]/60 px-4 py-3 text-sm text-muted">
-              Signing in enables cloud saves, shared diagrams, and collaboration-ready workflows.
+              Signing in enables cloud saves, shared diagrams, and
+              collaboration-ready workflows.
             </div>
 
             {/* Error message */}
@@ -518,9 +522,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             {verificationEmail ? (
               <div className="space-y-4 rounded-xl border border-[var(--brand)]/30 bg-[var(--brand)]/10 p-5 text-center">
-                <h3 className="text-lg font-bold text-theme">Check your inbox</h3>
+                <h3 className="text-lg font-bold text-theme">
+                  Check your inbox
+                </h3>
                 <p className="text-sm text-muted">
-                  We sent an activation link to <strong className="text-theme">{verificationEmail}</strong>.
+                  We sent an activation link to{" "}
+                  <strong className="text-theme">{verificationEmail}</strong>.
                   Open it within 20 minutes, then sign in.
                 </p>
                 <button
@@ -530,10 +537,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setIsLoading(true);
                     setError("");
                     try {
-                      const response = await apiService.resendVerification(verificationEmail);
+                      const response =
+                        await apiService.resendVerification(verificationEmail);
                       setResendMessage(response.message);
                     } catch (err) {
-                      setError(err instanceof Error ? err.message : "Unable to resend activation email");
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "Unable to resend activation email",
+                      );
                     } finally {
                       setIsLoading(false);
                     }
@@ -542,7 +554,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 >
                   Resend activation email
                 </button>
-                {resendMessage && <p className="text-xs text-muted">{resendMessage}</p>}
+                {resendMessage && (
+                  <p className="text-xs text-muted">{resendMessage}</p>
+                )}
               </div>
             ) : (
               <CredentialsForm

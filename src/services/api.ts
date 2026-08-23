@@ -12,10 +12,8 @@ import type { CanvasContext, UserIntent } from "../types/chatBot";
 
 // VITE_API_URL is the application's documented API endpoint. Keep the older
 // assessment-specific name as a fallback for existing deployments.
-export const getApiBaseUrl = (
-  apiUrl?: string,
-  legacyApiUrl?: string,
-): string => apiUrl || legacyApiUrl || "";
+export const getApiBaseUrl = (apiUrl?: string, legacyApiUrl?: string): string =>
+  apiUrl || legacyApiUrl || "";
 
 const API_BASE_URL = getApiBaseUrl(
   import.meta.env.VITE_API_URL,
@@ -101,26 +99,39 @@ class ApiService {
     return response.json();
   }
 
-  async verifyEmail(userId: string, token: string): Promise<SignupPendingResponse> {
+  async verifyEmail(
+    userId: string,
+    token: string,
+  ): Promise<SignupPendingResponse> {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, token }),
     });
     if (!response.ok) {
-      throw new Error(await this.getErrorMessage(response, "Unable to activate your account"));
+      throw new Error(
+        await this.getErrorMessage(response, "Unable to activate your account"),
+      );
     }
     return response.json();
   }
 
   async resendVerification(email: string): Promise<SignupPendingResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/resend-verification`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/auth/resend-verification`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      },
+    );
     if (!response.ok) {
-      throw new Error(await this.getErrorMessage(response, "Unable to resend activation email"));
+      throw new Error(
+        await this.getErrorMessage(
+          response,
+          "Unable to resend activation email",
+        ),
+      );
     }
     return response.json();
   }
@@ -165,7 +176,9 @@ class ApiService {
     return response.json();
   }
 
-  async updatePreferences(preferences: Record<string, unknown>): Promise<Record<string, unknown>> {
+  async updatePreferences(
+    preferences: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/me/preferences`, {
       method: "PATCH",
       headers: this.getAuthHeaders(),
@@ -559,11 +572,16 @@ class ApiService {
   // Share to the World
   // ---------------------------------------------------------------------------
 
-  async publishAttempt(attemptId: string): Promise<{ publicUrl: string; publishedAt: string; attemptId: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/publish`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-    });
+  async publishAttempt(
+    attemptId: string,
+  ): Promise<{ publicUrl: string; publishedAt: string; attemptId: string }> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/publish`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      },
+    );
     if (!response.ok) {
       throw new Error(await this.getErrorMessage(response, "Publish failed"));
     }
@@ -571,10 +589,13 @@ class ApiService {
   }
 
   async unpublishAttempt(attemptId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/unpublish`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/attempts/${encodeURIComponent(attemptId)}/unpublish`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      },
+    );
     if (!response.ok) throw new Error("Failed to unpublish solution");
   }
 
@@ -593,20 +614,27 @@ class ApiService {
     viewCount: number;
     elapsedTime: number;
   }> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/solutions/${encodeURIComponent(attemptId)}`);
-    if (!response.ok) throw new Error("Solution not found or not publicly available");
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/solutions/${encodeURIComponent(attemptId)}`,
+    );
+    if (!response.ok)
+      throw new Error("Solution not found or not publicly available");
     return response.json();
   }
 
-  async getProblemLeaderboard(problemId: string): Promise<Array<{
-    attemptId: string;
-    authorName?: string;
-    authorPicture?: string;
-    score: number;
-    publishedAt?: string;
-    elapsedTime: number;
-  }>> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/problems/${encodeURIComponent(problemId)}/leaderboard`);
+  async getProblemLeaderboard(problemId: string): Promise<
+    Array<{
+      attemptId: string;
+      authorName?: string;
+      authorPicture?: string;
+      score: number;
+      publishedAt?: string;
+      elapsedTime: number;
+    }>
+  > {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/problems/${encodeURIComponent(problemId)}/leaderboard`,
+    );
     if (!response.ok) return [];
     return response.json();
   }
@@ -620,12 +648,19 @@ class ApiService {
     nodeCount?: number;
     edgeCount?: number;
     scores?: Record<string, unknown>;
-  }): Promise<{ linkedinPost: string; twitterPost: string; mediumArticle: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/share/generate-article`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
+  }): Promise<{
+    linkedinPost: string;
+    twitterPost: string;
+    mediumArticle: string;
+  }> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/share/generate-article`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(payload),
+      },
+    );
     if (!response.ok) throw new Error("Failed to generate article");
     return response.json();
   }
@@ -634,11 +669,16 @@ class ApiService {
   // Free-design diagram public sharing
   // ---------------------------------------------------------------------------
 
-  async publishDiagram(diagramId: string): Promise<{ diagramId: string; publicUrl: string; publishedAt: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/publish`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-    });
+  async publishDiagram(
+    diagramId: string,
+  ): Promise<{ diagramId: string; publicUrl: string; publishedAt: string }> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/publish`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      },
+    );
     if (!response.ok) {
       throw new Error(await this.getErrorMessage(response, "Publish failed"));
     }
@@ -646,10 +686,13 @@ class ApiService {
   }
 
   async unpublishDiagram(diagramId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/unpublish`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/unpublish`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+      },
+    );
     if (!response.ok) throw new Error("Failed to unpublish diagram");
   }
 
@@ -664,12 +707,17 @@ class ApiService {
     publishedAt?: string;
     viewCount: number;
   }> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/public/diagrams/${encodeURIComponent(diagramId)}`);
-    if (!response.ok) throw new Error("Diagram not found or not publicly available");
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/public/diagrams/${encodeURIComponent(diagramId)}`,
+    );
+    if (!response.ok)
+      throw new Error("Diagram not found or not publicly available");
     return response.json();
   }
 
-  async getWalkthrough(problemId: string): Promise<import("../types/systemDesign").GuidedWalkthrough> {
+  async getWalkthrough(
+    problemId: string,
+  ): Promise<import("../types/systemDesign").GuidedWalkthrough> {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/problem/${encodeURIComponent(problemId)}/walkthrough`,
     );
@@ -759,9 +807,12 @@ class ApiService {
 
   // Retrieve learning progress for a path
   async getLearningProgress(pathId: string): Promise<string[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`, {
-      headers: this.getAuthHeaders(),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`,
+      {
+        headers: this.getAuthHeaders(),
+      },
+    );
 
     if (response.status === 404) return [];
     if (!response.ok) {
@@ -778,16 +829,25 @@ class ApiService {
   }
 
   // Save learning progress for a path (frontend should call this when progress changes)
-  async saveLearningProgress(pathId: string, completed: string[]): Promise<Record<string, unknown>> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`, {
-      method: "POST",
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ completed }),
-    });
+  async saveLearningProgress(
+    pathId: string,
+    completed: string[],
+  ): Promise<Record<string, unknown>> {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/learning-paths/${pathId}/progress`,
+      {
+        method: "POST",
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ completed }),
+      },
+    );
 
     if (!response.ok) {
       throw new Error(
-        await this.getErrorMessage(response, "Failed to save learning progress"),
+        await this.getErrorMessage(
+          response,
+          "Failed to save learning progress",
+        ),
       );
     }
 

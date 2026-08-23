@@ -29,7 +29,9 @@ type AssessmentFindingsProps = {
   findings: ReviewFinding[];
 };
 
-const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({ findings }) => {
+const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({
+  findings,
+}) => {
   if (findings.length === 0) return null;
 
   return (
@@ -75,7 +77,9 @@ const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({ findings }) => 
                 </p>
                 {finding.recommendation && (
                   <p className="text-theme">
-                    <span className="font-semibold">Suggested improvement: </span>
+                    <span className="font-semibold">
+                      Suggested improvement:{" "}
+                    </span>
                     {finding.recommendation}
                   </p>
                 )}

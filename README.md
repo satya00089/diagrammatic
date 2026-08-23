@@ -6,7 +6,7 @@ Diagrammatic is an **interactive System Design Playground** built with **React F
 Practice system design interviews, learn distributed systems architecture, and create beautiful diagrams with a comprehensive library of 55 production-grade components — ideal for **interview preparation, learning, and technical documentation**.
 
 ---
- 
+
 ## Table of Contents
 
 - Overview

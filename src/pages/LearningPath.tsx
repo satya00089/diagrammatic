@@ -83,7 +83,11 @@ const LearningPath: React.FC = () => {
         }
         keywords="system design learning path, system design module, system architecture lessons"
         image="https://diagrammatic.next-zen.dev/og/learning-path.png"
-        imageAlt={path?.title ? `${path.title} learning path preview` : "Diagrammatic learning path preview"}
+        imageAlt={
+          path?.title
+            ? `${path.title} learning path preview`
+            : "Diagrammatic learning path preview"
+        }
         url={
           slug
             ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}`
@@ -265,26 +269,26 @@ const LearningPath: React.FC = () => {
                 <div className="md:flex gap-6 flex-1 min-h-0">
                   <div className="md:w-1/3 h-full overflow-auto pr-1 component-palette">
                     <div className="rounded border border-theme/10 elevated-card-bg p-5 shadow-sm">
-                    <p className="text-muted mb-6">{path.summary}</p>
-                    <ModuleList
-                      modules={path.modules}
-                      onSelectLesson={(l) => {
-                        setSelectedLesson(l);
-                        setActiveLessonId(l.id);
-                      }}
-                      activeLessonId={activeLessonId}
-                      completedLessons={completed}
-                      onToggleCompleted={(id) => toggle(id)}
-                    />
-                    <div className="mt-4">
-                      <ProgressTracker
-                        pathId={path.id}
-                        totalLessons={path.modules.reduce(
-                          (acc, m) => acc + (m.lessons?.length || 0),
-                          0,
-                        )}
+                      <p className="text-muted mb-6">{path.summary}</p>
+                      <ModuleList
+                        modules={path.modules}
+                        onSelectLesson={(l) => {
+                          setSelectedLesson(l);
+                          setActiveLessonId(l.id);
+                        }}
+                        activeLessonId={activeLessonId}
+                        completedLessons={completed}
+                        onToggleCompleted={(id) => toggle(id)}
                       />
-                    </div>
+                      <div className="mt-4">
+                        <ProgressTracker
+                          pathId={path.id}
+                          totalLessons={path.modules.reduce(
+                            (acc, m) => acc + (m.lessons?.length || 0),
+                            0,
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
 

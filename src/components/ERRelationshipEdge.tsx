@@ -4,7 +4,9 @@ import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
 
 /** Resolve a CSS custom property to its actual computed color for html-to-image compatibility. */
 function resolveCssVar(varName: string, fallback: string): string {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(varName)
+    .trim();
   return raw || fallback;
 }
 
@@ -206,19 +208,27 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
 
   // Resolve CSS variables to real colors so html-to-image captures them correctly.
   const [rc, setRc] = useState({
-    surface: "#ffffff", text: "#111827", border: "#e5e7eb", brand: "#6366f1", bgHover: "#f3f4f6",
+    surface: "#ffffff",
+    text: "#111827",
+    border: "#e5e7eb",
+    brand: "#6366f1",
+    bgHover: "#f3f4f6",
   });
   useEffect(() => {
-    const update = () => setRc({
-      surface: resolveCssVar("--surface", "#ffffff"),
-      text:    resolveCssVar("--text", "#111827"),
-      border:  resolveCssVar("--border", "#e5e7eb"),
-      brand:   resolveCssVar("--brand", "#6366f1"),
-      bgHover: resolveCssVar("--bg-hover", "#f3f4f6"),
-    });
+    const update = () =>
+      setRc({
+        surface: resolveCssVar("--surface", "#ffffff"),
+        text: resolveCssVar("--text", "#111827"),
+        border: resolveCssVar("--border", "#e5e7eb"),
+        brand: resolveCssVar("--brand", "#6366f1"),
+        bgHover: resolveCssVar("--bg-hover", "#f3f4f6"),
+      });
     update();
     const observer = new MutationObserver(update);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -641,7 +651,19 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         height={80}
         style={{ overflow: "visible" }}
       >
-        <div style={{ width: "200px", height: "80px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "auto", gap: "6px", overflow: "visible" }}>
+        <div
+          style={{
+            width: "200px",
+            height: "80px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "auto",
+            gap: "6px",
+            overflow: "visible",
+          }}
+        >
           {/* Label area */}
           {hasLabel ? (
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
@@ -658,14 +680,37 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                       setValue(edgeData.label ?? "");
                     }
                   }}
-                  style={{ fontSize: "11px", border: `1px solid ${rc.border}`, borderRadius: "4px", padding: "2px 8px", backgroundColor: rc.surface, color: rc.text, width: "96px", textAlign: "center", outline: "none", boxShadow: `0 0 0 2px ${rc.brand}55` }}
+                  style={{
+                    fontSize: "11px",
+                    border: `1px solid ${rc.border}`,
+                    borderRadius: "4px",
+                    padding: "2px 8px",
+                    backgroundColor: rc.surface,
+                    color: rc.text,
+                    width: "96px",
+                    textAlign: "center",
+                    outline: "none",
+                    boxShadow: `0 0 0 2px ${rc.brand}55`,
+                  }}
                   placeholder="Label..."
                 />
               ) : (
                 <>
                   <button
                     onDoubleClick={onLabelDoubleClick}
-                    style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", cursor: "text", backgroundColor: rc.surface, color: rc.text, border: `1px solid ${selected ? rc.brand : rc.border}`, boxShadow: selected ? `0 0 0 1px ${rc.brand}` : "none", textAlign: "center", minWidth: "60px", whiteSpace: "nowrap" }}
+                    style={{
+                      fontSize: "11px",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      cursor: "text",
+                      backgroundColor: rc.surface,
+                      color: rc.text,
+                      border: `1px solid ${selected ? rc.brand : rc.border}`,
+                      boxShadow: selected ? `0 0 0 1px ${rc.brand}` : "none",
+                      textAlign: "center",
+                      minWidth: "60px",
+                      whiteSpace: "nowrap",
+                    }}
                     title="Double-click to edit"
                     type="button"
                   >
@@ -674,7 +719,15 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                   {selected && (
                     <button
                       onClick={onRemoveLabel}
-                      style={{ fontSize: "11px", padding: "2px 4px", borderRadius: "4px", backgroundColor: "#fee2e2", color: "#b91c1c", border: "none", cursor: "pointer" }}
+                      style={{
+                        fontSize: "11px",
+                        padding: "2px 4px",
+                        borderRadius: "4px",
+                        backgroundColor: "#fee2e2",
+                        color: "#b91c1c",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
                       title="Remove label"
                       type="button"
                     >
@@ -688,7 +741,16 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
             selected && (
               <button
                 onClick={onAddLabel}
-                style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "4px", backgroundColor: rc.surface, color: rc.brand, border: `1px dashed ${rc.brand}`, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{
+                  fontSize: "11px",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  backgroundColor: rc.surface,
+                  color: rc.brand,
+                  border: `1px dashed ${rc.brand}`,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
                 title="Add label"
                 type="button"
               >
@@ -699,13 +761,29 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
 
           {/* Cardinality selector - only show when edge is selected */}
           {selected && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", backgroundColor: rc.surface, border: `1px solid ${rc.brand}`, borderRadius: "4px", padding: "2px 8px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                backgroundColor: rc.surface,
+                border: `1px solid ${rc.brand}`,
+                borderRadius: "4px",
+                padding: "2px 8px",
+              }}
+            >
               <select
                 value={cardinality}
                 onChange={(e) =>
                   handleCardinalityChange(e.target.value as ERCardinality)
                 }
-                style={{ fontSize: "11px", background: "transparent", color: rc.text, outline: "none", cursor: "pointer" }}
+                style={{
+                  fontSize: "11px",
+                  background: "transparent",
+                  color: rc.text,
+                  outline: "none",
+                  cursor: "pointer",
+                }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <optgroup label="─── Basic Cardinality ───">

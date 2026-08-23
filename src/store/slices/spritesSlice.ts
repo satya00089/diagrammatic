@@ -53,7 +53,8 @@ export const loadSpriteManifest = createAsyncThunk(
     // Also normalise here so the cache key is always lowercase.
     condition: (rawProvider, { getState }) => {
       const provider = rawProvider.toLowerCase();
-      const status = (getState() as { sprites: SpritesState }).sprites.providerStatus[provider];
+      const status = (getState() as { sprites: SpritesState }).sprites
+        .providerStatus[provider];
       return status !== "loading" && status !== "ready";
     },
   },

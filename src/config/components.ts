@@ -43,7 +43,7 @@ import {
   FaDatabase,
   FaRobot,
   FaBrain,
-  FaRegCircle ,
+  FaRegCircle,
 } from "react-icons/fa";
 
 // Simple Icons for brand-specific technology logos
@@ -86,7 +86,16 @@ import {
   MdAccountTree,
 } from "react-icons/md";
 
-import { LuRectangleHorizontal, LuSquare, LuDiamond, LuHexagon, LuTriangle, LuText, LuTextCursorInput, LuShapes } from "react-icons/lu";
+import {
+  LuRectangleHorizontal,
+  LuSquare,
+  LuDiamond,
+  LuHexagon,
+  LuTriangle,
+  LuText,
+  LuTextCursorInput,
+  LuShapes,
+} from "react-icons/lu";
 import { TbOvalVertical } from "react-icons/tb";
 
 import { VscMcp } from "react-icons/vsc";
@@ -294,7 +303,13 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 140,
     height: 120,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "diamond" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "diamond",
+      },
       { key: "label", label: "Label", type: "text", default: "" },
     ],
   },
@@ -309,7 +324,13 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 140,
     height: 120,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "triangle" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "triangle",
+      },
       { key: "label", label: "Label", type: "text", default: "" },
     ],
   },
@@ -324,7 +345,13 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 140,
     height: 120,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "hexagon" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "hexagon",
+      },
       { key: "label", label: "Label", type: "text", default: "" },
     ],
   },
@@ -339,7 +366,13 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 160,
     height: 100,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "parallelogram" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "parallelogram",
+      },
       { key: "label", label: "Label", type: "text", default: "" },
     ],
   },
@@ -354,10 +387,22 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 160,
     height: 60,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "text" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "text",
+      },
       { key: "label", label: "Text", type: "textarea", default: "Text" },
       { key: "fontSize", label: "Font Size", type: "number", default: 16 },
-      { key: "textAlign", label: "Alignment", type: "select", options: ["left", "center", "right"], default: "center" },
+      {
+        key: "textAlign",
+        label: "Alignment",
+        type: "select",
+        options: ["left", "center", "right"],
+        default: "center",
+      },
     ],
   },
   {
@@ -371,11 +416,23 @@ export const COMPONENTS: CanvasComponent[] = [
     width: 200,
     height: 140,
     properties: [
-      { key: "shapeType", label: "Shape Type", type: "text", hidden: true, default: "textbox" },
+      {
+        key: "shapeType",
+        label: "Shape Type",
+        type: "text",
+        hidden: true,
+        default: "textbox",
+      },
       { key: "label", label: "Header", type: "text", default: "Header" },
       { key: "description", label: "Body", type: "textarea", default: "" },
       { key: "fontSize", label: "Font Size", type: "number", default: 14 },
-      { key: "textAlign", label: "Alignment", type: "select", options: ["left", "center", "right"], default: "center" },
+      {
+        key: "textAlign",
+        label: "Alignment",
+        type: "select",
+        options: ["left", "center", "right"],
+        default: "center",
+      },
     ],
   },
   {
