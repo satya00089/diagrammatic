@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { MdArrowForward, MdCheckCircleOutline } from "react-icons/md";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { featuredProblems } from "../utils/problemSlug";
 import NotFound from "./NotFound";
@@ -66,7 +66,7 @@ const faq = [
 
 const SeoGuide: React.FC = () => {
   const { pathname } = useLocation();
-  const guide = pathname.split("/").filter(Boolean)[0] || "";
+  const guide = pathname.split("/").find(Boolean) || "";
   const data = guides[guide as keyof typeof guides];
   if (!data) return <NotFound />;
 
@@ -77,7 +77,7 @@ const SeoGuide: React.FC = () => {
 
   return (
     <>
-      <SEO
+      <Seo
         title={data.seoTitle}
         description={data.description}
         keywords={`${data.title}, system design questions, architecture interview practice, distributed systems`}
@@ -96,7 +96,7 @@ const SeoGuide: React.FC = () => {
       <div className="min-h-screen bg-[var(--bg)] text-theme">
         <header className="border-b border-theme/10 bg-[var(--surface)]">
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link to="/" className="flex items-center gap-3 font-bold tracking-wide"><img src="/logo.png" alt="" className="h-7" />Diagrammatic</Link>
+            <Link to="/" className="flex items-center gap-3 font-bold tracking-wide"><img src="/logo.png" alt="" className="h-7" /><span>Diagrammatic</span></Link>
             <nav className="flex items-center gap-3 sm:gap-5" aria-label="Primary navigation">
               <Link to="/problems/" className="text-sm font-semibold text-muted hover:text-theme">Problems</Link>
               <Link to="/learning-paths/" className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline">Learning paths</Link>

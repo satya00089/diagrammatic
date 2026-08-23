@@ -27,7 +27,8 @@ const DEFAULT_SEO = {
 const normalizeCanonicalUrl = (value: string): string => {
   try {
     const canonical = new URL(value);
-    const lastSegment = canonical.pathname.split("/").filter(Boolean).at(-1);
+    const pathSegments = canonical.pathname.split("/");
+    const lastSegment = pathSegments.findLast(Boolean);
     const isFile = lastSegment?.includes(".") ?? false;
 
     if (
@@ -57,7 +58,7 @@ export const SEO: React.FC<SEOProps> = ({
 }) => {
   const canonicalUrl = normalizeCanonicalUrl(url || DEFAULT_SEO.url);
   const structuredDataJson = structuredData
-    ? JSON.stringify(structuredData).replaceAll("<", "\\u003c")
+    ? JSON.stringify(structuredData).replaceAll("<", String.raw`\u003c`)
     : "";
 
   useEffect(() => {

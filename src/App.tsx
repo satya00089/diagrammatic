@@ -24,17 +24,19 @@ const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const RouteLoading: React.FC = () => (
-  <div
+  <output
     className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6"
-    role="status"
   >
-    <div className="text-center">
-      <div className="mx-auto mb-4 h-9 w-9 rounded-full border-2 border-[var(--brand)] border-t-transparent animate-spin" />
-      <span className="text-sm font-semibold text-muted">
+    <span className="block text-center">
+      <span
+        className="mx-auto mb-4 block h-9 w-9 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent"
+        aria-hidden
+      />
+      <span className="block text-sm font-semibold text-muted">
         Loading Diagrammatic…
       </span>
-    </div>
-  </div>
+    </span>
+  </output>
 );
 
 const GlobalProductChrome: React.FC = () => {

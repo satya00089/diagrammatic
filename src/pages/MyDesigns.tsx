@@ -23,21 +23,13 @@ import {
 import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
 
 const copyValue = async (value: string) => {
-  try {
-    await navigator.clipboard.writeText(value);
-  } catch {
-    const textArea = document.createElement("textarea");
-    textArea.value = value;
-    textArea.setAttribute("readonly", "");
-    textArea.style.position = "fixed";
-    textArea.style.opacity = "0";
-    document.body.appendChild(textArea);
-    textArea.select();
-    const copied = document.execCommand("copy");
-    document.body.removeChild(textArea);
-    if (!copied) throw new Error("Copy was blocked");
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard access is unavailable");
   }
+  await navigator.clipboard.writeText(value);
 };
+
+const CARD_DELAY_CLASSES = ["delay-0", "delay-100", "delay-200"] as const;
 
 const MyDesigns: React.FC = () => {
   useTheme();
@@ -556,16 +548,8 @@ const MyDesigns: React.FC = () => {
                     {filteredDiagrams.map((diagram, index) => (
                       <div
                         key={diagram.id}
-                        {...(index === 0 ? { "data-tour": "design-card" } : {})}
-                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
-                          index === 0
-                            ? "delay-0"
-                            : index === 1
-                              ? "delay-100"
-                              : index === 2
-                                ? "delay-200"
-                                : ""
-                        }`}
+                        data-tour={index === 0 ? "design-card" : undefined}
+                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${CARD_DELAY_CLASSES[index] ?? ""}`}
                       >
                         <div className="relative p-6">
                           {/* Delete Button - Only for owners */}
@@ -924,9 +908,9 @@ const MyDesigns: React.FC = () => {
       )}
 
       {diagramToUnpublish && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-4"
-          role="dialog"
+        <dialog
+          open
+          className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-slate-950/65 p-4"
           aria-modal="true"
           aria-labelledby="unpublish-design-title"
         >
@@ -991,7 +975,7 @@ const MyDesigns: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

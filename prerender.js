@@ -389,12 +389,12 @@ function routeStructuredData(route, data) {
   return JSON.stringify({
     "@context": "https://schema.org",
     "@graph": graph,
-  }).replaceAll("<", "\\u003c");
+  }).replaceAll("<", String.raw`\u003c`);
 }
 
 function replaceMeta(html, attribute, name, content) {
   const pattern = new RegExp(
-    `<meta\\s+${attribute}="${name}"[\\s\\S]*?\\/?>`,
+    String.raw`<meta\s+${attribute}="${name}"[\s\S]*?\/?>`,
     "i",
   );
   return html.replace(
@@ -433,7 +433,7 @@ function renderHtml(baseHtml, route, data) {
     `<link rel="canonical" href="${canonical}" />`,
   );
   html = html.replace(
-    new RegExp(`${staticStart}[\\s\\S]*?${staticEnd}`),
+    new RegExp(String.raw`${staticStart}[\s\S]*?${staticEnd}`),
     `${staticStart}${renderStaticRoute(data)}${staticEnd}`,
   );
   html = html.replace(
@@ -470,7 +470,8 @@ function fallbackProblemSlug(title = "") {
     .replaceAll("’", "")
     .replaceAll("'", "")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-/, "")
+    .replace(/-$/, "");
 }
 
 async function loadLiveProblems() {

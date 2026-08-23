@@ -10,6 +10,26 @@ import {
 
 export type EdgePathType = "bezier" | "straight" | "step" | "smoothstep";
 
+type CustomEdgeData = {
+  label?: string;
+  hasLabel?: boolean;
+  description?: string;
+  pathType?: EdgePathType;
+  color?: string;
+  strokeWidth?: number;
+  animated?: boolean;
+  bidirectional?: boolean;
+  readOnly?: boolean;
+};
+
+type ResolvedColors = {
+  surface: string;
+  text: string;
+  border: string;
+  brand: string;
+  bgHover: string;
+};
+
 /** Resolve a CSS custom property to its actual computed value so html-to-image can capture it. */
 function resolveCssVar(varName: string, fallback: string): string {
   const raw = getComputedStyle(document.documentElement)
@@ -94,6 +114,143 @@ const computeEdgeParams = (
   return { edgePath, centerX, centerY };
 };
 
+const EdgeLabelContent: React.FC<{
+  hasLabel: boolean;
+  editing: boolean;
+  readOnly: boolean;
+  selected: boolean;
+  value: string;
+  description?: string;
+  colors: ResolvedColors;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (value: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+  onEdit: (event: React.MouseEvent) => void;
+  onAdd: (event: React.MouseEvent) => void;
+  onRemove: (event: React.MouseEvent) => void;
+}> = ({
+  hasLabel,
+  editing,
+  readOnly,
+  selected,
+  value,
+  description,
+  colors,
+  inputRef,
+  onChange,
+  onCommit,
+  onCancel,
+  onEdit,
+  onAdd,
+  onRemove,
+}) => {
+  if (!hasLabel) {
+    if (!selected || readOnly) return null;
+    return (
+      <button
+        onClick={onAdd}
+        style={{
+          fontSize: "11px",
+          padding: "2px 8px",
+          borderRadius: "4px",
+          backgroundColor: colors.surface,
+          color: colors.brand,
+          border: `1px dashed ${colors.brand}`,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+        }}
+        title="Add label"
+        type="button"
+      >
+        + Label
+      </button>
+    );
+  }
+
+  if (editing && !readOnly) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onBlur={onCommit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") onCommit();
+          if (event.key === "Escape") onCancel();
+        }}
+        style={{
+          fontSize: "11px",
+          border: `1px solid ${colors.border}`,
+          borderRadius: "4px",
+          padding: "2px 8px",
+          backgroundColor: colors.surface,
+          color: colors.text,
+          width: "96px",
+          textAlign: "center",
+          outline: "none",
+          boxShadow: `0 0 0 2px ${colors.brand}55`,
+        }}
+        placeholder="Label..."
+      />
+    );
+  }
+
+  const borderColor = selected ? colors.brand : colors.border;
+  const boxShadow = selected ? `0 0 0 1px ${colors.brand}` : "none";
+  const labelStyle: React.CSSProperties = {
+    fontSize: "11px",
+    padding: "2px 8px",
+    borderRadius: "4px",
+    backgroundColor: colors.surface,
+    color: colors.text,
+    border: `1px solid ${borderColor}`,
+    boxShadow,
+    textAlign: "center",
+    minWidth: "60px",
+    whiteSpace: "nowrap",
+  };
+
+  if (readOnly) {
+    return (
+      <span style={labelStyle} title={description || value}>
+        {value || "Connection"}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <button
+        onDoubleClick={onEdit}
+        style={{ ...labelStyle, cursor: "text" }}
+        title="Double-click to edit"
+        type="button"
+      >
+        {value || "Label"}
+      </button>
+      {selected && (
+        <button
+          onClick={onRemove}
+          style={{
+            fontSize: "11px",
+            padding: "2px 4px",
+            borderRadius: "4px",
+            backgroundColor: "#fee2e2",
+            color: "#b91c1c",
+            border: "none",
+            cursor: "pointer",
+          }}
+          title="Remove label"
+          type="button"
+        >
+          ✕
+        </button>
+      )}
+    </>
+  );
+};
+
 const CustomEdge: React.FC<EdgeProps> = (props) => {
   const {
     id,
@@ -110,19 +267,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     markerEnd,
   } = props;
 
-  const edgeData = data as
-    | {
-        label?: string;
-        hasLabel?: boolean;
-        description?: string;
-        pathType?: EdgePathType;
-        color?: string;
-        strokeWidth?: number;
-        animated?: boolean;
-        bidirectional?: boolean;
-        readOnly?: boolean;
-      }
-    | undefined;
+  const edgeData = data as CustomEdgeData | undefined;
 
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState<string>(edgeData?.label ?? "");
@@ -298,120 +443,27 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
             overflow: "visible",
           }}
         >
-          {hasLabel ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              {editing && !readOnly ? (
-                <input
-                  ref={inputRef}
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  onBlur={commit}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") {
-                      setEditing(false);
-                      setValue(edgeData?.label ?? "");
-                    }
-                  }}
-                  style={{
-                    fontSize: "11px",
-                    border: `1px solid ${resolvedColors.border}`,
-                    borderRadius: "4px",
-                    padding: "2px 8px",
-                    backgroundColor: resolvedColors.surface,
-                    color: resolvedColors.text,
-                    width: "96px",
-                    textAlign: "center",
-                    outline: "none",
-                    boxShadow: `0 0 0 2px ${resolvedColors.brand}55`,
-                  }}
-                  placeholder="Label..."
-                />
-              ) : readOnly ? (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    backgroundColor: resolvedColors.surface,
-                    color: resolvedColors.text,
-                    border: `1px solid ${selected ? resolvedColors.brand : resolvedColors.border}`,
-                    boxShadow: selected
-                      ? `0 0 0 1px ${resolvedColors.brand}`
-                      : "none",
-                    textAlign: "center",
-                    minWidth: "60px",
-                    whiteSpace: "nowrap",
-                  }}
-                  title={edgeData?.description || value}
-                >
-                  {value || "Connection"}
-                </span>
-              ) : (
-                <>
-                  <button
-                    onDoubleClick={onLabelDoubleClick}
-                    style={{
-                      fontSize: "11px",
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      cursor: "text",
-                      backgroundColor: resolvedColors.surface,
-                      color: resolvedColors.text,
-                      border: `1px solid ${selected ? resolvedColors.brand : resolvedColors.border}`,
-                      boxShadow: selected
-                        ? `0 0 0 1px ${resolvedColors.brand}`
-                        : "none",
-                      textAlign: "center",
-                      minWidth: "60px",
-                      whiteSpace: "nowrap",
-                    }}
-                    title="Double-click to edit"
-                    type="button"
-                  >
-                    {value || "Label"}
-                  </button>
-                  {selected && !readOnly && (
-                    <button
-                      onClick={onRemoveLabel}
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 4px",
-                        borderRadius: "4px",
-                        backgroundColor: "#fee2e2",
-                        color: "#b91c1c",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                      title="Remove label"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          ) : (
-            selected &&
-            !readOnly && (
-              <button
-                onClick={onAddLabel}
-                style={{
-                  fontSize: "11px",
-                  padding: "2px 8px",
-                  borderRadius: "4px",
-                  backgroundColor: resolvedColors.surface,
-                  color: resolvedColors.brand,
-                  border: `1px dashed ${resolvedColors.brand}`,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-                title="Add label"
-              >
-                + Label
-              </button>
-            )
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <EdgeLabelContent
+              hasLabel={hasLabel}
+              editing={editing}
+              readOnly={readOnly}
+              selected={Boolean(selected)}
+              value={value}
+              description={edgeData?.description}
+              colors={resolvedColors}
+              inputRef={inputRef}
+              onChange={setValue}
+              onCommit={commit}
+              onCancel={() => {
+                setEditing(false);
+                setValue(edgeData?.label ?? "");
+              }}
+              onEdit={onLabelDoubleClick}
+              onAdd={onAddLabel}
+              onRemove={onRemoveLabel}
+            />
+          </div>
         </div>
       </foreignObject>
     </g>

@@ -12,10 +12,11 @@ const curatedSlugs = new Map(
 export const slugifyProblemTitle = (title: string): string =>
   title
     .toLowerCase()
-    .replace(/&/g, " and ")
+    .replaceAll("&", " and ")
     .replace(/[’']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-/, "")
+    .replace(/-$/, "");
 
 export const getProblemSlug = (problem: ProblemSlugSource): string =>
   curatedSlugs.get(problem.title) ||
@@ -26,4 +27,3 @@ export const getFeaturedProblem = (slug: string) =>
   featuredProblems.find((problem) => problem.slug === slug);
 
 export { featuredProblems };
-

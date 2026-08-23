@@ -140,7 +140,7 @@ const ReadOnlyGroupNode = (props: any) => (
   </ReadOnlyNodeShell>
 );
 const ReadOnlyCustomEdge = (props: any) => (
-  <CustomEdge {...props} data={{ ...(props.data ?? {}), readOnly: true }} />
+  <CustomEdge {...props} data={{ ...props.data, readOnly: true }} />
 );
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -236,17 +236,11 @@ const humanizeKey = (key: string): string =>
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const plainText = (value: unknown): string =>
-  typeof value === "string"
-    ? value
-        .replace(/<[^>]*>/g, " ")
-        .replace(/&nbsp;/g, " ")
-        .replace(/&amp;/g, "&")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/\s+/g, " ")
-        .trim()
-    : "";
+const plainText = (value: unknown): string => {
+  if (typeof value !== "string") return "";
+  const parsed = new DOMParser().parseFromString(value, "text/html");
+  return (parsed.body.textContent ?? "").replace(/\s+/g, " ").trim();
+};
 
 const formatInspectorValue = (value: unknown): string | null => {
   if (value == null || typeof value === "function") return null;
@@ -266,7 +260,10 @@ const formatInspectorValue = (value: unknown): string | null => {
       return null;
     }
   }
-  return String(value);
+  if (typeof value === "bigint" || typeof value === "symbol") {
+    return value.toString();
+  }
+  return null;
 };
 
 const getNodeName = (node: Node | undefined): string => {
@@ -318,7 +315,7 @@ const getNodeProperties = (node: Node): InspectorEntry[] => {
           const key =
             typeof item.key === "string"
               ? item.key
-              : String(item.id ?? "custom");
+              : (formatInspectorValue(item.id) ?? "custom");
           const value = formatInspectorValue(item.value);
           if (!value) return null;
           return {
@@ -937,6 +934,41 @@ const RightPanel: React.FC<{
       : `/playground/free?remix=${encodeURIComponent(data.id)}`;
   const ctaText =
     data.kind === "attempt" ? "Try this problem" : "Remix this design";
+  let panelContent: React.ReactNode = (
+    <div className="flex h-full flex-col items-center justify-center py-12 text-center">
+      <MdAccountTree
+        className="mb-3 text-[var(--brand)]"
+        size={34}
+        aria-hidden
+      />
+      <p className="mb-1 text-sm font-semibold text-theme">Free-form design</p>
+      <p className="max-w-[200px] text-xs leading-relaxed text-muted">
+        Explore the architecture, then create an editable copy of your own.
+      </p>
+      <div className="mt-5 flex items-center gap-4 text-xs text-muted">
+        <span>
+          <strong className="tabular-nums text-theme">{nodes.length}</strong>{" "}
+          components
+        </span>
+        <span>
+          <strong className="tabular-nums text-theme">{edges.length}</strong>{" "}
+          connections
+        </span>
+      </div>
+    </div>
+  );
+  if (activeTab === "properties") {
+    panelContent = (
+      <SelectionInspector
+        selection={selection}
+        nodes={nodes}
+        edges={edges}
+        onInspectEdge={onInspectEdge}
+      />
+    );
+  } else if (assessment) {
+    panelContent = <AssessmentPanel assessment={assessment} />;
+  }
 
   return (
     <aside
@@ -1058,45 +1090,7 @@ const RightPanel: React.FC<{
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
-        {activeTab === "properties" ? (
-          <SelectionInspector
-            selection={selection}
-            nodes={nodes}
-            edges={edges}
-            onInspectEdge={onInspectEdge}
-          />
-        ) : assessment ? (
-          <AssessmentPanel assessment={assessment} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-            <MdAccountTree
-              className="mb-3 text-[var(--brand)]"
-              size={34}
-              aria-hidden
-            />
-            <p className="text-theme font-semibold text-sm mb-1">
-              Free-form design
-            </p>
-            <p className="text-muted text-xs leading-relaxed max-w-[200px]">
-              Explore the architecture, then create an editable copy of your
-              own.
-            </p>
-            <div className="mt-5 flex items-center gap-4 text-xs text-muted">
-              <span>
-                <strong className="tabular-nums text-theme">
-                  {nodes.length}
-                </strong>{" "}
-                components
-              </span>
-              <span>
-                <strong className="tabular-nums text-theme">
-                  {edges.length}
-                </strong>{" "}
-                connections
-              </span>
-            </div>
-          </div>
-        )}
+        {panelContent}
       </div>
 
       {/* CTA footer */}
@@ -1387,9 +1381,9 @@ const SharedCanvasPage: React.FC = () => {
         </div>
 
         {showDetails && (
-          <div
-            className="fixed inset-0 z-50 flex items-end lg:hidden"
-            role="dialog"
+          <dialog
+            open
+            className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-end border-0 bg-transparent p-0 lg:hidden"
             aria-modal="true"
             aria-label="Design details"
           >
@@ -1412,7 +1406,7 @@ const SharedCanvasPage: React.FC = () => {
                 onClose={() => setShowDetails(false)}
               />
             </div>
-          </div>
+          </dialog>
         )}
       </div>
     </>

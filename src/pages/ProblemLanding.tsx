@@ -9,7 +9,7 @@ import {
   MdSignalCellularAlt,
 } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
@@ -154,11 +154,18 @@ const ProblemLanding: React.FC = () => {
   if (!problem || loading) {
     return (
       <main className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6">
-        <div className="max-w-md text-center" role="status">
-          <div className="mx-auto mb-5 h-10 w-10 rounded-full border-2 border-[var(--brand)] border-t-transparent animate-spin" />
-          <h1 className="text-2xl font-bold">Loading the design brief…</h1>
-          <p className="mt-2 text-muted">Preparing requirements and practice guidance.</p>
-        </div>
+        <output className="max-w-md text-center">
+          <span
+            className="mx-auto mb-5 block h-10 w-10 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent"
+            aria-hidden
+          />
+          <span className="block text-2xl font-bold">
+            Loading the design brief…
+          </span>
+          <span className="mt-2 block text-muted">
+            Preparing requirements and practice guidance.
+          </span>
+        </output>
       </main>
     );
   }
@@ -184,7 +191,7 @@ const ProblemLanding: React.FC = () => {
 
   return (
     <>
-      <SEO
+      <Seo
         title={`${problem.title} — System Design Interview Practice | Diagrammatic`}
         description={pageDescription}
         keywords={`${problem.title}, system design interview question, ${problem.tags.join(", ")}`}
@@ -214,7 +221,7 @@ const ProblemLanding: React.FC = () => {
           <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
             <Link to="/" className="flex items-center gap-3 font-bold tracking-wide">
               <img src="/logo.png" alt="" className="h-7" />
-              Diagrammatic
+              <span>Diagrammatic</span>
             </Link>
             <nav className="flex items-center gap-2 sm:gap-4" aria-label="Primary navigation">
               <Link to="/problems/" className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline">
@@ -390,4 +397,3 @@ const ProblemLanding: React.FC = () => {
 };
 
 export default ProblemLanding;
-

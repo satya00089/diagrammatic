@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiService } from "../services/api";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
+
+const STATUS_HEADING = {
+  loading: "Activating account",
+  success: "Account activated",
+  error: "Activation link unavailable",
+} as const;
 
 const VerifyEmail: React.FC = () => {
   const [params] = useSearchParams();
@@ -38,7 +44,7 @@ const VerifyEmail: React.FC = () => {
 
   return (
     <>
-      <SEO
+      <Seo
         title="Verify Email | Diagrammatic"
         description="Activate your Diagrammatic account."
         url="https://diagrammatic.next-zen.dev/verify-email"
@@ -47,11 +53,7 @@ const VerifyEmail: React.FC = () => {
       <main className="min-h-screen bg-theme flex items-center justify-center p-6">
         <section className="w-full max-w-md rounded-2xl border border-theme/10 bg-surface p-8 text-center shadow-xl">
           <h1 className="text-2xl font-bold text-theme">
-            {status === "loading"
-              ? "Activating account"
-              : status === "success"
-                ? "Account activated"
-                : "Activation link unavailable"}
+            {STATUS_HEADING[status]}
           </h1>
           <p className="mt-4 text-muted">{message}</p>
           {status !== "loading" && (
