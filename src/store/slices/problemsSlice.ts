@@ -9,7 +9,8 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import type { SystemDesignProblem } from "../../types/systemDesign";
-import { apiService } from "../../services/api";
+import { apiService, getApiBaseUrl } from "../../services/api";
+import featuredProblems from "../../data/featuredProblems.json";
 
 interface ProblemsState {
   // All problems cache
@@ -58,18 +59,27 @@ export const fetchProblems = createAsyncThunk(
       return { problems: state.problems.problems, fromCache: true };
     }
 
-    const apiUrl =
-      import.meta.env.VITE_ASSESSMENT_API_URL || "http://localhost:8000";
-    const response = await fetch(`${apiUrl}/api/v1/all-problems`);
+    const apiUrl = getApiBaseUrl(
+      import.meta.env.VITE_API_URL,
+      import.meta.env.VITE_ASSESSMENT_API_URL,
+    );
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch problems: ${response.status} ${response.statusText}`,
-      );
+    try {
+      const response = await fetch(`${apiUrl}/api/v1/all-problems`);
+      if (!response.ok) throw new Error(`Problem catalog returned ${response.status}`);
+      const data: SystemDesignProblem[] = await response.json();
+      return { problems: data, fromCache: false };
+    } catch {
+      const fallback = featuredProblems.map((problem) => ({
+        ...problem,
+        id: "",
+        domain: "",
+        requirements: [],
+        constraints: [],
+        hints: [],
+      })) as SystemDesignProblem[];
+      return { problems: fallback, fromCache: false };
     }
-
-    const data: SystemDesignProblem[] = await response.json();
-    return { problems: data, fromCache: false };
   },
 );
 

@@ -113,6 +113,7 @@ const CreateProblem: React.FC = () => {
         image="https://diagrammatic.next-zen.dev/og/create-problem.png"
         imageAlt="Diagrammatic custom problem creation preview"
         url="https://diagrammatic.next-zen.dev/create-problem"
+        noIndex
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}

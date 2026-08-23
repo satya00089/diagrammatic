@@ -45,7 +45,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
   };
 
   return (
-    <div className="group relative rounded-xl border border-theme/10 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
+    <div className="group relative min-w-0 rounded-xl border border-theme/10 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
       <div className="flex justify-end">
         <div className="flex items-center gap-2">
           <div className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border border-transparent ${getDifficultyColor(path.difficulty ?? "Beginner")}`}>
@@ -58,7 +58,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
       </div>
 
       <div className="flex items-start justify-between gap-3 mt-2">
-        <div>
+        <div className="min-w-0">
           <h3 className="text-xl font-semibold">
             <Link
               to={`/learning-paths/${path.slug}`}
@@ -71,11 +71,11 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
         </div>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 flex flex-wrap gap-2">
           {path.tags?.slice(0, 4).map((t) => (
             <div
               key={t}
-              className="text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold capitalize shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
+              className="break-words text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold capitalize shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
             >
               {t}
             </div>
@@ -89,8 +89,8 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
           <div className="flex gap-2">
             {previewLessons.map((pl) => (
               <Link
-                  key={pl.lessonId}
-                  to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
+                key={pl.lessonId}
+                to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
                 className="flex-1 min-w-0 p-3 rounded-md border border-theme/10 bg-[var(--bg)] hover:bg-[var(--bg-hover)] hover:shadow-sm transition-colors flex items-center justify-between"
                 >
                 <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">{pl.title}</div>
@@ -114,7 +114,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
               <Link
                 key={m.id}
                 to={`/learning-paths/${path.slug}?module=${encodeURIComponent(m.id)}`}
-                className="text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
+                className="break-words text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
               >
                 {m.title}
               </Link>

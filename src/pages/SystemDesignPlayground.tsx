@@ -4144,6 +4144,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             : "Diagrammatic design playground preview"
         }
         url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
+        noIndex
       />
       <div className="h-screen flex flex-col bg-theme">
         {/* Header */}

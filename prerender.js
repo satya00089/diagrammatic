@@ -1,7 +1,6 @@
 /**
- * Prerender Script for SEO
- * Generates static HTML files for key routes to improve SEO
- * Run after build: node prerender.js
+ * Builds visible, route-specific HTML for public acquisition pages.
+ * The React application replaces this static snapshot after it loads.
  */
 
 import fs from "node:fs";
@@ -10,261 +9,654 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const distDir = path.join(__dirname, "dist");
 const indexPath = path.join(distDir, "index.html");
+const siteUrl = "https://diagrammatic.next-zen.dev";
+const staticStart = "<!-- static-route:start -->";
+const staticEnd = "<!-- static-route:end -->";
 
-// Routes to prerender with their content
 const routes = {
   "/": {
     title: "Diagrammatic — Design architectures. Get them reviewed.",
+    heading: "Design architectures. Get them reviewed.",
     description:
       "Practice system design by building architectures visually, explaining assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
     keywords:
-      "system design, architecture diagram, system design interview, software architecture, distributed systems, AWS architecture, Azure architecture, GCP architecture, cloud design, ER diagram, UML diagram",
-    image: "https://diagrammatic.next-zen.dev/og/home.png",
+      "system design, architecture diagram, system design interview, distributed systems, system design practice",
+    image: `${siteUrl}/og/home.png`,
     imageAlt: "Diagrammatic homepage preview",
-    content: `
-      <h1>Diagrammatic - Design architectures. Get them reviewed.</h1>
-      <p>Build a system design, explain the decisions behind it, and get structured feedback on scalability, reliability, data design, and trade-offs.</p>
-      <h2>Key Features</h2>
-      <ul>
-        <li>Architecture components for system design practice</li>
-        <li>AWS, Azure & GCP Cloud Components</li>
-        <li>Structured architecture review and practical next steps</li>
-        <li>Real-world system design practice problems</li>
-        <li>Cloud infrastructure design challenges</li>
-        <li>Real-time Collaboration</li>
-        <li>UML & ER Diagrams</li>
-        <li>Export as PNG, JPEG, SVG, JSON, XML</li>
-        <li>Smart Component Search</li>
-      </ul>
-    `,
-  },
-  "/#/playground/free": {
-    title: "Free Design Studio | Diagrammatic",
-    description:
-      "Create system architecture diagrams for free with generic and cloud components, then export your work as PNG, JPEG, SVG, JSON, or XML. No signup required.",
-    keywords:
-      "free system design tool, architecture diagram maker, cloud architecture, microservices design, AWS diagram, Azure diagram, GCP diagram, ER diagram, UML diagram",
-    image: "https://diagrammatic.next-zen.dev/og/playground.png",
-    imageAlt: "Diagrammatic design playground preview",
-    content: `
-      <h1>Free Design Studio</h1>
-      <p>Create architecture diagrams with generic building blocks and AWS, Azure, or GCP cloud services. Export in multiple formats. No signup required.</p>
-    `,
+    sectionTitle: "Build the reasoning behind the diagram",
+    actions: [
+      { label: "Choose a challenge", href: "/problems/" },
+      { label: "Follow a learning path", href: "/learning-paths/" },
+    ],
+    items: [
+      {
+        title: "Practice realistic systems",
+        description: "Work from requirements, constraints, and scale targets.",
+      },
+      {
+        title: "Explain your decisions",
+        description:
+          "Capture assumptions, connections, and architectural trade-offs.",
+      },
+      {
+        title: "Review the architecture",
+        description: "See strengths, risks, and practical improvements.",
+      },
+      {
+        title: "Learn step by step",
+        description:
+          "Study system design foundations through structured paths.",
+      },
+    ],
+    lastmod: "2026-08-23",
+    indexable: true,
   },
   "/problems": {
-    title: "Practice Problems | Diagrammatic",
+    title: "System Design & AI/ML Practice Problems | Diagrammatic",
+    heading: "System Design & AI/ML Problems",
     description:
-      "Practice system design with real-world challenges. Get structured feedback and practical next steps on the architecture decisions behind your design.",
+      "Practice infrastructure, application, AI/ML, and MLOps architecture problems with clear requirements, interactive diagrams, and feedback on the decisions behind your design.",
     keywords:
-      "system design interview, system design practice, distributed systems problems, scalable architecture, FAANG interview, tech interview prep",
-    image: "https://diagrammatic.next-zen.dev/og/problems.png",
+      "system design problems, AI ML architecture, MLOps, distributed systems, system design interview practice",
+    image: `${siteUrl}/og/problems.png`,
     imageAlt: "Diagrammatic practice problems preview",
-    content: `
-      <h1>System Design Practice Problems</h1>
-      <p>Practice with real-world system design challenges. Get structured assessment and practical recommendations on your solutions.</p>
-      <section>
-        <h2>Problem categories</h2>
-        <ul>
-          <li>Distributed systems, scaling, and reliability</li>
-          <li>AI / ML and MLOps architecture problems</li>
-          <li>Application and product design scenarios</li>
-          <li>Infrastructure, caching, queues, and search</li>
-        </ul>
-      </section>
-    `,
+    sectionTitle: "Choose the architecture skills you want to test",
+    actions: [
+      { label: "Open the design studio", href: "/playground/free/" },
+      { label: "Build fundamentals first", href: "/learning-paths/" },
+    ],
+    items: [
+      {
+        title: "Distributed systems",
+        description: "Scaling, reliability, consistency, and failure handling.",
+      },
+      {
+        title: "Infrastructure",
+        description: "Caching, queues, search, storage, and observability.",
+      },
+      {
+        title: "Applications",
+        description: "Real product scenarios with concrete requirements.",
+      },
+      {
+        title: "AI & ML systems",
+        description: "Inference, retrieval, MLOps, and model operations.",
+      },
+    ],
+    lastmod: "2026-08-23",
+    indexable: true,
   },
   "/learning-paths": {
     title: "Learning Paths | Diagrammatic",
+    heading: "Learning Paths",
     description:
-      "Structured learning paths that guide you through system design concepts, examples, and exercises.",
-    keywords: "system design learning path, system design tutorial, system architecture learning",
-    image: "https://diagrammatic.next-zen.dev/og/learning-paths.png",
-    imageAlt: "Diagrammatic learning paths preview",
-    content: `
-      <h1>Learning Paths</h1>
-      <p>Follow curated learning paths that teach system design from first principles through practical examples.</p>
-    `,
-  },
-  "/learning-paths/system-design-foundations": {
-    title: "System Design Foundations | Diagrammatic",
-    description: "Introductory path: What is System Design and key trade-offs to consider.",
-    keywords: "what is system design, system design foundations, scalability, reliability",
-    image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
-    imageAlt: "System Design Foundations learning path preview",
-    content: `
-      <h1>System Design Foundations</h1>
-      <p>Start with the basics: goals of system design, core concepts, and common trade-offs.</p>
-    `,
-  },
-  "/learning-paths/cache-fundamentals": {
-    title: "Cache Fundamentals | Diagrammatic",
-    description:
-      "Learn cache tiers, cache-aside, read-through, write-through, TTLs, eviction, invalidation, cache stampede handling, and CDN boundaries.",
+      "Follow curated sequences of modules and lessons that teach system design from first principles to advanced patterns.",
     keywords:
-      "cache fundamentals, cache aside, read through, write through, write back, cache stampede, cache invalidation, ttl, eviction policy, cdn cache",
-    image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
-    imageAlt: "Cache Fundamentals learning path preview",
-    content: `
-      <h1>Cache Fundamentals</h1>
-      <p>Learn how cache tiers, cache-aside, freshness rules, stampede protection, and CDN boundaries improve performance while keeping systems predictable.</p>
-    `,
+      "system design learning path, system design tutorial, system architecture learning",
+    image: `${siteUrl}/og/learning-paths.png`,
+    imageAlt: "Diagrammatic learning paths preview",
+    sectionTitle: "Browse system design paths",
+    actions: [{ label: "Practice a challenge", href: "/problems/" }],
+    items: [],
+    lastmod: "2026-08-23",
+    indexable: true,
+  },
+  "/system-design-interview": {
+    title: "System Design Interview Guide & Practice Questions | Diagrammatic",
+    heading: "System Design Interview Guide",
+    description:
+      "Prepare for system design interviews by turning ambiguous prompts into requirements, estimates, architecture decisions, and defensible trade-offs.",
+    keywords:
+      "system design interview, system design interview questions, architecture interview practice",
+    image: `${siteUrl}/og/problems.png`,
+    imageAlt: "System design interview practice on Diagrammatic",
+    sectionTitle: "A repeatable interview method",
+    actions: [{ label: "Choose a practice problem", href: "/problems/" }],
+    items: [
+      { title: "Clarify the problem", description: "Identify users, core use cases, non-goals, and quality attributes." },
+      { title: "Estimate the system", description: "Use rough traffic, storage, throughput, and latency estimates." },
+      { title: "Draw the critical path", description: "Start with the simplest end-to-end flow." },
+      { title: "Defend the trade-offs", description: "Explain why each major component exists and what it costs." },
+      { title: "Test failure and scale", description: "Walk through overload, partial failure, recovery, and consistency." },
+    ],
+    lastmod: "2026-08-23",
+    indexable: true,
+    kind: "article",
+  },
+  "/system-design-practice": {
+    title: "System Design Practice Online with Architecture Feedback | Diagrammatic",
+    heading: "System Design Practice",
+    description:
+      "Practice system design online with realistic prompts, an interactive architecture canvas, explicit trade-offs, and structured review.",
+    keywords:
+      "system design practice, system design practice online, architecture practice",
+    image: `${siteUrl}/og/problems.png`,
+    imageAlt: "Online system design practice on Diagrammatic",
+    sectionTitle: "A deliberate practice loop",
+    actions: [{ label: "Browse practice problems", href: "/problems/" }],
+    items: [
+      { title: "Choose one narrow prompt", description: "Match the challenge to the skill you want to isolate." },
+      { title: "Time-box clarification", description: "Write requirements, assumptions, and success criteria first." },
+      { title: "Build and annotate", description: "Label flows and record why every major component exists." },
+      { title: "Review the architecture", description: "Capture weaknesses before changing the diagram." },
+      { title: "Repeat the weak dimension", description: "Choose the next problem around the bottleneck you missed." },
+    ],
+    lastmod: "2026-08-23",
+    indexable: true,
+    kind: "article",
+  },
+  "/ai-system-design-interview": {
+    title: "AI System Design Interview Questions & Practice | Diagrammatic",
+    heading: "AI System Design Interview",
+    description:
+      "Practice AI and ML system design across data pipelines, retrieval, inference, evaluation, monitoring, latency, reliability, and cost trade-offs.",
+    keywords:
+      "AI system design interview, ML system design, RAG system design, LLM interview questions",
+    image: `${siteUrl}/og/problems.png`,
+    imageAlt: "AI system design interview practice on Diagrammatic",
+    sectionTitle: "Connect the offline and online paths",
+    actions: [
+      { label: "Browse AI and ML problems", href: "/problems/" },
+      { label: "Study the foundations", href: "/learning-paths/" },
+    ],
+    items: [
+      { title: "Define product behavior", description: "State what the model produces and how quality is measured." },
+      { title: "Separate offline and online", description: "Show ingestion, preparation, deployment, inference, and feedback." },
+      { title: "Budget latency, quality, and cost", description: "Make the serving trade-offs explicit." },
+      { title: "Design evaluation and observability", description: "Track data quality, drift, failures, and user impact." },
+      { title: "Plan degradation and rollback", description: "Explain how the product behaves when an AI dependency fails." },
+    ],
+    lastmod: "2026-08-23",
+    indexable: true,
+    kind: "article",
+  },
+  "/playground/free": {
+    title: "Design Studio | Diagrammatic",
+    heading: "Design Studio",
+    description:
+      "Create an architecture diagram from scratch with generic, cloud, UML, and entity-relationship components.",
+    keywords: "architecture diagram tool, system design canvas, cloud diagram",
+    image: `${siteUrl}/og/playground.png`,
+    imageAlt: "Diagrammatic design studio preview",
+    sectionTitle: "Start with the building blocks you need",
+    actions: [
+      { label: "Choose a guided challenge", href: "/problems/" },
+      { label: "Learn system design", href: "/learning-paths/" },
+    ],
+    items: [
+      {
+        title: "Architecture components",
+        description: "Services, data stores, queues, caches, and networks.",
+      },
+      {
+        title: "Cloud providers",
+        description: "AWS, Azure, and GCP components in one canvas.",
+      },
+      {
+        title: "Document decisions",
+        description: "Add labels, descriptions, properties, and data flows.",
+      },
+      {
+        title: "Export and share",
+        description: "Save a design or export it in common formats.",
+      },
+    ],
+    lastmod: "2026-08-23",
+    indexable: false,
   },
 };
 
-// Try to discover learning-paths from the built dist JSON and add them to routes
-try {
-  const lpPath = path.join(distDir, "learning-paths", "learning-paths.json");
-  if (fs.existsSync(lpPath)) {
-    const lpRaw = fs.readFileSync(lpPath, "utf-8");
-    const lpList = JSON.parse(lpRaw);
-    if (Array.isArray(lpList)) {
-        lpList.forEach((item) => {
-          const slug = item?.slug;
-          if (slug) {
-            const routeKey = `/learning-paths/${slug}`;
-            if (!routes[routeKey]) {
-              const title = item?.title ?? slug;
-              const summary = item?.summary ?? "";
-              const keywords = item?.tags?.join(", ") ?? "system design, learning path";
-              routes[routeKey] = {
-                title,
-                description: item?.summary ?? item?.title ?? "",
-                keywords,
-                image: "https://diagrammatic.next-zen.dev/og/learning-path.png",
-                imageAlt: title,
-                content: `<h1>${title}</h1><p>${summary.replace(/\n/g, " ")}</p>`,
-              };
-            }
-          }
-        });
-      console.log(`ℹ️ Added ${lpList.length} learning-path routes from ${lpPath}`);
-    }
-  }
-} catch (err) {
-  console.warn("⚠️ Could not load learning-paths JSON:", err.message);
+const notFoundRoute = {
+  title: "Page Not Found | Diagrammatic",
+  heading: "This page could not be found",
+  description:
+    "The Diagrammatic page you requested does not exist or may have moved.",
+  keywords: "",
+  image: `${siteUrl}/og/home.png`,
+  imageAlt: "Diagrammatic",
+  sectionTitle: "Continue exploring Diagrammatic",
+  actions: [
+    { label: "Browse practice problems", href: "/problems/" },
+    { label: "Go to the homepage", href: "/" },
+  ],
+  items: [
+    {
+      title: "Learning paths",
+      description: "Build system design knowledge from first principles.",
+      href: "/learning-paths/",
+    },
+    {
+      title: "Design studio",
+      description: "Open a blank architecture canvas.",
+      href: "/playground/free/",
+    },
+  ],
+  indexable: false,
+};
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-// Check if dist exists
-if (!fs.existsSync(distDir)) {
-  console.error('❌ Dist directory not found. Run "npm run build" first.');
+function canonicalUrl(route) {
+  return route === "/" ? `${siteUrl}/` : `${siteUrl}${route}/`;
+}
+
+function itemMarkup(item) {
+  const title = item.href
+    ? `<a href="${escapeHtml(item.href)}">${escapeHtml(item.title)}</a>`
+    : `<strong>${escapeHtml(item.title)}</strong>`;
+
+  return `<li>${title}<span>${escapeHtml(item.description)}</span></li>`;
+}
+
+function renderStaticRoute(data) {
+  const actions = data.actions
+    .map(
+      (action) =>
+        `<a href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>`,
+    )
+    .join("");
+  const items = data.items.map(itemMarkup).join("");
+
+  return `
+    <div class="static-route-shell">
+      <header class="static-route-header">
+        <a class="static-route-brand" href="/">
+          <img src="/logo.png" alt="">
+          <span>Diagrammatic</span>
+        </a>
+        <nav class="static-route-nav" aria-label="Main navigation">
+          <a href="/problems/">Practice problems</a>
+          <a href="/learning-paths/">Learning paths</a>
+        </nav>
+      </header>
+      <main class="static-route-main">
+        <section class="static-route-hero">
+          <h1>${escapeHtml(data.heading)}</h1>
+          <p>${escapeHtml(data.description)}</p>
+          <div class="static-route-actions">${actions}</div>
+        </section>
+        <section class="static-route-section" id="route-content">
+          <h2>${escapeHtml(data.sectionTitle)}</h2>
+          <ul class="static-route-list">${items}</ul>
+        </section>
+      </main>
+      <footer class="static-route-footer">
+        Diagrammatic — system design practice and architecture review.
+      </footer>
+    </div>`;
+}
+
+function breadcrumbsFor(route, title) {
+  if (route === "/") return [];
+
+  const crumbs = [{ name: "Home", item: `${siteUrl}/` }];
+  if (route.startsWith("/learning-paths")) {
+    crumbs.push({ name: "Learning Paths", item: `${siteUrl}/learning-paths/` });
+  } else if (route === "/problems") {
+    crumbs.push({ name: "Practice Problems", item: canonicalUrl(route) });
+  } else if (route.startsWith("/problems/")) {
+    crumbs.push({ name: "Practice Problems", item: `${siteUrl}/problems/` });
+  } else {
+    crumbs.push({
+      name: title.replace(" | Diagrammatic", ""),
+      item: canonicalUrl(route),
+    });
+  }
+
+  if (route.startsWith("/learning-paths/") && route !== "/learning-paths") {
+    crumbs.push({
+      name: title.replace(" | Diagrammatic", ""),
+      item: canonicalUrl(route),
+    });
+  }
+
+  if (route.startsWith("/problems/") && route !== "/problems") {
+    crumbs.push({
+      name: title.replace(" | Diagrammatic", ""),
+      item: canonicalUrl(route),
+    });
+  }
+
+  return crumbs;
+}
+
+function routeStructuredData(route, data) {
+  const graph = [
+    {
+      "@type": "WebPage",
+      "@id": canonicalUrl(route),
+      url: canonicalUrl(route),
+      name: data.title,
+      description: data.description,
+      isPartOf: {
+        "@type": "WebSite",
+        url: `${siteUrl}/`,
+        name: "Diagrammatic",
+      },
+    },
+  ];
+  const crumbs = breadcrumbsFor(route, data.title);
+
+  if (crumbs.length) {
+    graph.push({
+      "@type": "BreadcrumbList",
+      itemListElement: crumbs.map((crumb, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: crumb.name,
+        item: crumb.item,
+      })),
+    });
+  }
+
+  if (data.kind === "learning-resource") {
+    graph.push({
+      "@type": "LearningResource",
+      name: data.heading,
+      description: data.description,
+      url: canonicalUrl(route),
+      educationalLevel: data.problem?.difficulty,
+      teaches: Array.isArray(data.problem?.tags) ? data.problem.tags : [],
+      provider: {
+        "@type": "Organization",
+        name: "Diagrammatic",
+        url: `${siteUrl}/`,
+      },
+    });
+  } else if (data.kind === "article") {
+    graph.push({
+      "@type": "Article",
+      headline: data.heading,
+      description: data.description,
+      url: canonicalUrl(route),
+      publisher: {
+        "@type": "Organization",
+        name: "Diagrammatic",
+        url: `${siteUrl}/`,
+      },
+    });
+  }
+
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": graph,
+  }).replaceAll("<", "\\u003c");
+}
+
+function replaceMeta(html, attribute, name, content) {
+  const pattern = new RegExp(
+    `<meta\\s+${attribute}="${name}"[\\s\\S]*?\\/?>`,
+    "i",
+  );
+  return html.replace(
+    pattern,
+    `<meta ${attribute}="${name}" content="${escapeHtml(content)}" />`,
+  );
+}
+
+function renderHtml(baseHtml, route, data) {
+  const canonical = canonicalUrl(route);
+  const robots = data.indexable
+    ? "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    : "noindex, follow";
+  let html = baseHtml;
+
+  html = html.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(data.title)}</title>`,
+  );
+  html = replaceMeta(html, "name", "title", data.title);
+  html = replaceMeta(html, "name", "description", data.description);
+  html = replaceMeta(html, "name", "keywords", data.keywords);
+  html = replaceMeta(html, "name", "robots", robots);
+  html = replaceMeta(html, "property", "og:title", data.title);
+  html = replaceMeta(html, "property", "og:description", data.description);
+  html = replaceMeta(html, "property", "og:image", data.image);
+  html = replaceMeta(html, "property", "og:image:alt", data.imageAlt);
+  html = replaceMeta(html, "property", "og:url", canonical);
+  html = replaceMeta(html, "name", "twitter:title", data.title);
+  html = replaceMeta(html, "name", "twitter:description", data.description);
+  html = replaceMeta(html, "name", "twitter:image", data.image);
+  html = replaceMeta(html, "name", "twitter:image:alt", data.imageAlt);
+  html = replaceMeta(html, "name", "twitter:url", canonical);
+  html = html.replace(
+    /<link\s+rel="canonical"[\s\S]*?\/>/i,
+    `<link rel="canonical" href="${canonical}" />`,
+  );
+  html = html.replace(
+    new RegExp(`${staticStart}[\\s\\S]*?${staticEnd}`),
+    `${staticStart}${renderStaticRoute(data)}${staticEnd}`,
+  );
+  html = html.replace(
+    "</head>",
+    `    <script id="route-structured-data" type="application/ld+json">${routeStructuredData(route, data)}</script>\n  </head>`,
+  );
+
+  return html;
+}
+
+function loadLearningPaths() {
+  const learningPathFile = path.join(
+    distDir,
+    "learning-paths",
+    "learning-paths.json",
+  );
+  if (!fs.existsSync(learningPathFile)) return [];
+
+  const parsed = JSON.parse(fs.readFileSync(learningPathFile, "utf-8"));
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function loadFeaturedProblems() {
+  const featuredPath = path.join(__dirname, "src", "data", "featuredProblems.json");
+  if (!fs.existsSync(featuredPath)) return [];
+  const parsed = JSON.parse(fs.readFileSync(featuredPath, "utf-8"));
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function fallbackProblemSlug(title = "") {
+  return title
+    .toLowerCase()
+    .replaceAll("&", " and ")
+    .replaceAll("’", "")
+    .replaceAll("'", "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function loadLiveProblems() {
+  const apiUrl = process.env.VITE_API_URL || process.env.VITE_ASSESSMENT_API_URL;
+  if (!apiUrl || /localhost|127\.0\.0\.1/.test(apiUrl)) return [];
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(`${apiUrl.replace(/\/$/, "")}/api/v1/all-problems`, {
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`catalog returned ${response.status}`);
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn(`Using the versioned problem catalog: ${error.message}`);
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function mergeProblemCatalogs(featured, live) {
+  const featuredByTitle = new Map(featured.map((problem) => [problem.title, problem]));
+  const merged = live.length
+    ? live.map((problem) => ({ ...featuredByTitle.get(problem.title), ...problem }))
+    : [...featured];
+
+  return merged
+    .filter((problem) => problem?.title && problem?.description)
+    .map((problem) => ({
+      ...problem,
+      slug:
+        featuredByTitle.get(problem.title)?.slug ||
+        problem.slug ||
+        fallbackProblemSlug(problem.title),
+      tags: Array.isArray(problem.tags) ? problem.tags : [],
+      requirements: Array.isArray(problem.requirements) ? problem.requirements : [],
+      constraints: Array.isArray(problem.constraints) ? problem.constraints : [],
+    }));
+}
+
+function addProblemRoutes(problems) {
+  routes["/problems"].items = problems.map((problem) => ({
+    title: problem.title,
+    description: `${problem.difficulty || "All levels"} · ${problem.estimated_time || "Self-paced"}`,
+    href: `/problems/${problem.slug}/`,
+  }));
+
+  for (const problem of problems) {
+    const requirements = problem.requirements.slice(0, 8).map((requirement) => ({
+      title: requirement,
+      description: "Requirement",
+    }));
+    const concepts = problem.tags.slice(0, 8).map((tag) => ({
+      title: tag.replaceAll("-", " "),
+      description: "Concept to explore",
+    }));
+    const route = `/problems/${problem.slug}`;
+
+    routes[route] = {
+      title: `${problem.title} — System Design Interview Practice | Diagrammatic`,
+      heading: `${problem.title} — System Design Interview Practice`,
+      description: `${problem.description} Work through the requirements, architecture trade-offs, and an interactive design review.`,
+      keywords: `${problem.title}, system design interview question, ${problem.tags.join(", ")}`,
+      image: `${siteUrl}/og/problems.png`,
+      imageAlt: `${problem.title} practice challenge`,
+      sectionTitle: requirements.length
+        ? "Requirements and concepts to consider"
+        : "Concepts and architecture decisions to consider",
+      actions: [
+        { label: "Open this challenge", href: `/problems/?q=${encodeURIComponent(problem.title)}` },
+        { label: "Read the interview guide", href: "/system-design-interview/" },
+      ],
+      items: [...requirements, ...concepts],
+      lastmod: "2026-08-23",
+      indexable: true,
+      kind: "learning-resource",
+      problem,
+    };
+  }
+}
+
+function addLearningPathRoutes(learningPaths) {
+  routes["/learning-paths"].items = learningPaths.map((learningPath) => {
+    const modules = Array.isArray(learningPath.modules)
+      ? learningPath.modules
+      : [];
+    const lessonCount = modules.reduce(
+      (total, module) =>
+        total + (Array.isArray(module.lessons) ? module.lessons.length : 0),
+      0,
+    );
+
+    return {
+      title: learningPath.title || learningPath.slug,
+      description: `${learningPath.difficulty || "All levels"} · ${modules.length} modules · ${lessonCount} lessons`,
+      href: `/learning-paths/${learningPath.slug}/`,
+    };
+  });
+
+  for (const learningPath of learningPaths) {
+    if (!learningPath?.slug) continue;
+
+    const modules = Array.isArray(learningPath.modules)
+      ? learningPath.modules
+      : [];
+    const route = `/learning-paths/${learningPath.slug}`;
+    routes[route] = {
+      title: `${learningPath.title || learningPath.slug} | Diagrammatic`,
+      heading: learningPath.title || learningPath.slug,
+      description:
+        learningPath.summary ||
+        `Learn ${learningPath.title || learningPath.slug} through structured modules and exercises.`,
+      keywords: Array.isArray(learningPath.tags)
+        ? learningPath.tags.join(", ")
+        : "system design learning path",
+      image: `${siteUrl}/og/learning-path.png`,
+      imageAlt: `${learningPath.title || learningPath.slug} learning path preview`,
+      sectionTitle: "Modules in this learning path",
+      actions: [
+        { label: "Browse all learning paths", href: "/learning-paths/" },
+        { label: "Practice a challenge", href: "/problems/" },
+      ],
+      items: modules.map((module) => ({
+        title: module.title || "Untitled module",
+        description: `${Array.isArray(module.lessons) ? module.lessons.length : 0} lessons`,
+      })),
+      lastmod: "2026-08-23",
+      indexable: true,
+    };
+  }
+}
+
+function outputPathFor(route) {
+  if (route === "/") return indexPath;
+  const routeDir = path.join(distDir, ...route.split("/").filter(Boolean));
+  fs.mkdirSync(routeDir, { recursive: true });
+  return path.join(routeDir, "index.html");
+}
+
+function writeSitemap() {
+  const urls = Object.entries(routes)
+    .filter(([, data]) => data.indexable)
+    .map(
+      ([route, data]) => `  <url>
+    <loc>${canonicalUrl(route)}</loc>
+    <lastmod>${data.lastmod}</lastmod>
+  </url>`,
+    )
+    .join("\n");
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`;
+
+  fs.writeFileSync(path.join(distDir, "sitemap.xml"), sitemap, "utf-8");
+}
+
+if (!fs.existsSync(indexPath)) {
+  console.error('Dist directory not found. Run "npm run build" first.');
   process.exit(1);
 }
 
-// Read the base index.html
+const learningPaths = loadLearningPaths();
+addLearningPathRoutes(learningPaths);
+const featuredProblems = loadFeaturedProblems();
+const liveProblems = await loadLiveProblems();
+const publicProblems = mergeProblemCatalogs(featuredProblems, liveProblems);
+addProblemRoutes(publicProblems);
 const baseHtml = fs.readFileSync(indexPath, "utf-8");
 
-console.log("🚀 Starting prerendering...\n");
+for (const [route, data] of Object.entries(routes)) {
+  const outputPath = outputPathFor(route);
+  fs.writeFileSync(outputPath, renderHtml(baseHtml, route, data), "utf-8");
+  console.log(`Generated ${canonicalUrl(route)}`);
+}
 
-// Generate HTML for each route
-Object.entries(routes).forEach(([route, data]) => {
-  let html = baseHtml;
-  const canonicalUrl =
-    route === "/"
-      ? "https://diagrammatic.next-zen.dev/"
-      : `https://diagrammatic.next-zen.dev${route}`;
-
-  // Update title
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${data.title}</title>`);
-
-  // Update meta title
-  html = html.replace(
-    /<meta\s+name="title"[\s\S]*?\/>/,
-    `<meta name="title" content="${data.title}" />`,
-  );
-
-  // Update meta description
-  html = html.replace(
-    /<meta\s+name="description"[\s\S]*?\/>/,
-    `<meta name="description" content="${data.description}">`,
-  );
-
-  // Update meta keywords
-  html = html.replace(
-    /<meta\s+name="keywords"[\s\S]*?\/>/,
-    `<meta name="keywords" content="${data.keywords}">`,
-  );
-
-  // Update OG title
-  html = html.replace(
-    /<meta\s+property="og:title"[\s\S]*?\/>/,
-    `<meta property="og:title" content="${data.title}">`,
-  );
-
-  // Update OG description
-  html = html.replace(
-    /<meta\s+property="og:description"[\s\S]*?\/>/,
-    `<meta property="og:description" content="${data.description}">`,
-  );
-
-  // Update OG image metadata
-  html = html.replace(
-    /<meta\s+property="og:image"[\s\S]*?\/>/,
-    `<meta property="og:image" content="${data.image}">`,
-  );
-  html = html.replace(
-    /<meta\s+property="og:image:alt"[\s\S]*?\/>/,
-    `<meta property="og:image:alt" content="${data.imageAlt || data.title}">`,
-  );
-
-  // Update OG URL and canonical URL
-  html = html.replace(
-    /<meta\s+property="og:url"[\s\S]*?\/>/,
-    `<meta property="og:url" content="${canonicalUrl}">`,
-  );
-  html = html.replace(
-    /<link\s+rel="canonical"[\s\S]*?\/>/,
-    `<link rel="canonical" href="${canonicalUrl}" />`,
-  );
-
-  // Update Twitter metadata
-  html = html.replace(
-    /<meta\s+name="twitter:url"[\s\S]*?\/>/,
-    `<meta name="twitter:url" content="${canonicalUrl}" />`,
-  );
-  html = html.replace(
-    /<meta\s+name="twitter:title"[\s\S]*?\/>/,
-    `<meta name="twitter:title" content="${data.title}" />`,
-  );
-  html = html.replace(
-    /<meta\s+name="twitter:description"[\s\S]*?\/>/,
-    `<meta name="twitter:description" content="${data.description}" />`,
-  );
-  html = html.replace(
-    /<meta\s+name="twitter:image"[\s\S]*?\/>/,
-    `<meta name="twitter:image" content="${data.image}" />`,
-  );
-  html = html.replace(
-    /<meta\s+name="twitter:image:alt"[\s\S]*?\/>/,
-    `<meta name="twitter:image:alt" content="${data.imageAlt || data.title}" />`,
-  );
-
-  // Inject prerendered content into the SEO content div
-  html = html.replace(
-    /<div\s+id="seo-content"[\s\S]*?<article>[\s\S]*?<\/article>/,
-    `<div id="seo-content" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;"><article>${data.content}</article>`,
-  );
-
-  // Determine output path
-  let outputPath;
-  if (route === "/") {
-    outputPath = indexPath;
-  } else if (route.startsWith("/#/")) {
-    // For hash routes, create a flat file using hyphenated name (can't map to nested path)
-    const routeName = (route.replace("/#/", "").replace(/\//g, "-") || "index").replace(/^-+/, "");
-    outputPath = path.join(distDir, `${routeName}.html`);
-  } else {
-    // Create nested folders so URLs like /learning-paths/slug/ map to
-    // dist/learning-paths/slug/index.html which most static hosts serve
-    const parts = route.split("/").filter(Boolean); // ['learning-paths','system-design-foundations']
-    const outDir = path.join(distDir, ...parts);
-    fs.mkdirSync(outDir, { recursive: true });
-    outputPath = path.join(outDir, "index.html");
-  }
-
-  // Write the file
-  fs.writeFileSync(outputPath, html, "utf-8");
-  console.log(`✅ Generated: ${route} -> ${path.basename(outputPath)}`);
-});
+fs.writeFileSync(
+  path.join(distDir, "404.html"),
+  renderHtml(baseHtml, "/404", notFoundRoute),
+  "utf-8",
+);
+writeSitemap();
+console.log(
+  `Generated ${Object.keys(routes).length} routes, ${learningPaths.length} learning paths, and ${publicProblems.length} problem pages.`,
+);

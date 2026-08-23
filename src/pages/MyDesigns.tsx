@@ -254,6 +254,7 @@ const MyDesigns: React.FC = () => {
         image="https://diagrammatic.next-zen.dev/og/diagrams.png"
         imageAlt="Diagrammatic saved designs preview"
         url="https://diagrammatic.next-zen.dev/diagrams"
+        noIndex
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}

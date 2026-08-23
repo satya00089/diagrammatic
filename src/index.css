@@ -80,6 +80,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline-color: var(--brand);
+}
+
+html {
+  scrollbar-color: color-mix(in srgb, var(--brand) 55%, var(--muted)) transparent;
+}
+
 /* Heading rendering — crisp Inter on high-DPI displays */
 h1, h2, h3, h4, h5, h6 {
   font-feature-settings: 'kern' 1, 'calt' 1;

@@ -187,7 +187,10 @@ const LearningPaths: React.FC = () => {
             </div>
           </div>
         </header>
-        <div className="pt-12 relative z-10">
+        <div
+          className="relative z-10"
+          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Page Header */}
             <div className="text-center mb-6">

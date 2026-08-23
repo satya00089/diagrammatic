@@ -234,7 +234,10 @@ const LearningPath: React.FC = () => {
           </div>
         </header>
 
-        <div className="pt-16 relative z-10 h-screen overflow-hidden">
+        <div
+          className="relative z-10 h-screen overflow-hidden"
+          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full pt-6 pb-2">
             {!path ? (
               <div className="text-center py-20">
