@@ -25,7 +25,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -96,8 +96,10 @@ jobs:
         run: |
           # Create CNAME for custom domain
           echo "diagrammatic.next-zen.dev" > dist/CNAME
-          # Create 404.html for client-side routing fallback
-          cp dist/index.html dist/404.html
+          # prerender.js creates a noindex client-routing fallback. Do not
+          # replace it with the homepage or unknown URLs become soft 404s.
+          test -f dist/404.html
+          test -f dist/sitemap.xml
           # (Optional) show structure for debugging in logs
           echo "=== dist structure ==="
           find dist -maxdepth 2 -type f -print || true

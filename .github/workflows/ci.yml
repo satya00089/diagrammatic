@@ -13,10 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js 18
-        uses: actions/setup-node@v3
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           cache: "npm"
 
       - name: Install dependencies
@@ -24,3 +24,6 @@ jobs:
 
       - name: Run linter
         run: npm run lint --if-present
+
+      - name: Build public routes and run SEO checks
+        run: npm run build

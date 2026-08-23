@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   MdPublic,
   MdBusiness,
@@ -44,6 +44,7 @@ import {
   selectSearchQuery,
   selectAttemptedProblems,
 } from "../store/slices/problemsSelectors";
+import { getProblemSlug } from "../utils/problemSlug";
 
 const Dashboard: React.FC = () => {
   useTheme();
@@ -184,6 +185,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     dispatch(fetchProblems());
   }, [dispatch]);
+
+  useEffect(() => {
+    const query = searchParams.get("q")?.trim();
+    if (query) dispatch(setSearchQuery(query));
+  }, [dispatch, searchParams]);
 
   // Fetch attempted problems when user is authenticated
   useEffect(() => {
@@ -388,7 +394,10 @@ const Dashboard: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <div className="pt-16 relative z-10">
+        <div
+          className="relative z-10"
+          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Page Header */}
             <div className="text-center mb-12">
@@ -399,6 +408,20 @@ const Dashboard: React.FC = () => {
                 Master Infrastructure, Application, AI & ML architectures.
                 Practice with realistic architecture problems in an interactive canvas.
               </p>
+              <nav
+                className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-semibold"
+                aria-label="System design guides"
+              >
+                <Link to="/system-design-interview/" className="text-[var(--brand)] hover:underline">
+                  Interview guide
+                </Link>
+                <Link to="/system-design-practice/" className="text-[var(--brand)] hover:underline">
+                  Practice method
+                </Link>
+                <Link to="/ai-system-design-interview/" className="text-[var(--brand)] hover:underline">
+                  AI system design
+                </Link>
+              </nav>
             </div>
 
             {/* Loading State */}
@@ -578,7 +601,12 @@ const Dashboard: React.FC = () => {
                           )}
                           <div className="flex items-start justify-between mb-4">
                             <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
-                              {problem.title}
+                              <Link
+                                to={`/problems/${getProblemSlug(problem)}/`}
+                                className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand)]"
+                              >
+                                {problem.title}
+                              </Link>
                             </h3>
                             {!problem.has_guided_walkthrough && score === 0 && (
                               <div className="flex-shrink-0 ml-2">
@@ -622,6 +650,10 @@ const Dashboard: React.FC = () => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (!problem.id) {
+                                navigate(`/problems/${getProblemSlug(problem)}/`);
+                                return;
+                              }
                               if (!isAuth) {
                                 setShowAuthModal(true);
                                 return;

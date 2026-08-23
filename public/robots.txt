@@ -1,17 +1,12 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
-Allow: /#/
 
-# Disallow private or dynamic content
+# Public JSON files contain the learning-path content needed for rendering.
+# Keep private and server-only routes out of the crawl queue.
 Disallow: /api/
 Disallow: /__blobstorage__/
 Disallow: /admin/
-Disallow: /*.json$
-
-# Crawl delay for respectful crawling
-Crawl-delay: 1
 
 # Sitemap
-Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml
 Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml

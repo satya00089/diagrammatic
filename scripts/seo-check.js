@@ -1,165 +1,279 @@
 #!/usr/bin/env node
-/**
- * SEO Health Check Script
- * Validates SEO best practices for the application
- * Run: npm run seo:check
- */
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const projectDir = path.resolve(__dirname, "..");
+const siteUrl = "https://diagrammatic.next-zen.dev";
+const passed = [];
+const failed = [];
 
-const checks = {
-  passed: [],
-  warnings: [],
-  failed: [],
-};
+function read(relativePath) {
+  return fs.readFileSync(path.join(projectDir, relativePath), "utf-8");
+}
 
-function checkFile(filePath, description) {
-  if (fs.existsSync(filePath)) {
-    checks.passed.push(`✅ ${description}`);
-    return true;
+function check(description, condition, detail = "") {
+  if (condition) {
+    passed.push(description);
   } else {
-    checks.failed.push(`❌ ${description} - File not found: ${filePath}`);
-    return false;
+    failed.push(detail ? `${description}: ${detail}` : description);
   }
 }
 
-function checkContent(filePath, pattern, description) {
-  try {
-    const content = fs.readFileSync(filePath, "utf-8");
-    if (pattern.test(content)) {
-      checks.passed.push(`✅ ${description}`);
-      return true;
-    } else {
-      checks.warnings.push(
-        `⚠️  ${description} - Pattern not found in ${filePath}`,
-      );
-      return false;
-    }
-  } catch (error) {
-    checks.failed.push(`❌ ${description} - Error reading ${filePath}`);
-    return false;
-  }
+function sitemapLocations(xml) {
+  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
 }
 
-console.log("\n🔍 Running SEO Health Check...\n");
+function canonicalFor(route) {
+  return route === "/" ? `${siteUrl}/` : `${siteUrl}${route}`;
+}
 
-// Check essential files
-checkFile(path.join(__dirname, "../public/robots.txt"), "robots.txt exists");
-
-checkFile(path.join(__dirname, "../public/sitemap.xml"), "sitemap.xml exists");
-
-checkFile(path.join(__dirname, "../index.html"), "index.html exists");
-
-// Check meta tags in index.html
-const indexPath = path.join(__dirname, "../index.html");
-checkContent(indexPath, /<title>.*?<\/title>/, "Title tag present");
-checkContent(indexPath, /<meta name="description"/, "Meta description present");
-checkContent(indexPath, /<meta name="keywords"/, "Meta keywords present");
-checkContent(
-  indexPath,
-  /<meta property="og:title"/,
-  "Open Graph title present",
+const indexHtml = read("index.html");
+const robots = read(path.join("public", "robots.txt"));
+const sitemap = read(path.join("public", "sitemap.xml"));
+const prerender = read("prerender.js");
+const learningPaths = JSON.parse(
+  read(path.join("public", "learning-paths", "learning-paths.json")),
 );
-checkContent(
-  indexPath,
-  /<meta property="og:description"/,
-  "Open Graph description present",
+const featuredProblems = JSON.parse(
+  read(path.join("src", "data", "featuredProblems.json")),
 );
-checkContent(
-  indexPath,
-  /<meta property="og:image"/,
-  "Open Graph image present",
-);
-checkContent(indexPath, /<meta name="twitter:card"/, "Twitter card present");
-checkContent(indexPath, /<link rel="canonical"/, "Canonical URL present");
-
-// Check structured data
-checkContent(
-  indexPath,
-  /"@type":\s*"WebApplication"/,
-  "Schema.org WebApplication structured data",
-);
-checkContent(
-  indexPath,
-  /"@type":\s*"Organization"/,
-  "Schema.org Organization structured data",
-);
-checkContent(
-  indexPath,
-  /"@type":\s*"BreadcrumbList"/,
-  "Schema.org BreadcrumbList structured data",
-);
-
-// Check for noscript content
-checkContent(indexPath, /<noscript>/, "Noscript fallback content");
-
-// Check for semantic HTML
-checkContent(indexPath, /<h1>/, "H1 heading present in SEO content");
-checkContent(indexPath, /<article>/, "Article semantic tag present");
-
-// Check sitemap
-const sitemapPath = path.join(__dirname, "../public/sitemap.xml");
-checkContent(
-  sitemapPath,
-  /https:\/\/diagrammatic\.next-zen\.dev/,
-  "Sitemap uses correct domain",
-);
-checkContent(sitemapPath, /<lastmod>2025/, "Sitemap has recent lastmod dates");
-checkContent(sitemapPath, /<priority>/, "Sitemap includes priorities");
-
-// Check robots.txt
-const robotsPath = path.join(__dirname, "../public/robots.txt");
-checkContent(robotsPath, /Sitemap:/, "robots.txt includes sitemap reference");
-checkContent(robotsPath, /User-agent: \*/, "robots.txt allows all user agents");
-
-// SEO Recommendations
-const recommendations = [
-  "📝 Submit sitemap to Google Search Console (https://search.google.com/search-console)",
-  "📝 Submit sitemap to Bing Webmaster Tools (https://www.bing.com/webmasters)",
-  "🔗 Add backlinks from: Reddit r/systemdesign, Hacker News, Product Hunt, Dev.to",
-  "📱 Test mobile-friendliness: https://search.google.com/test/mobile-friendly",
-  "⚡ Test page speed: https://pagespeed.web.dev/",
-  "🔍 Check indexing status: site:diagrammatic.next-zen.dev in Google",
-  "📊 Set up Google Analytics for tracking",
-  "🎯 Consider adding a blog for fresh content",
-  "🚀 Consider migrating to Next.js for better SSR/SSG support",
-  "📄 Add more static pages: /features, /about, /pricing, /use-cases",
+const guideRoutes = [
+  "/system-design-interview/",
+  "/system-design-practice/",
+  "/ai-system-design-interview/",
 ];
+const expectedRoutes = [
+  "/",
+  "/problems/",
+  "/learning-paths/",
+  ...guideRoutes,
+  ...featuredProblems.map((problem) => `/problems/${problem.slug}/`),
+  ...learningPaths.map(
+    (learningPath) => `/learning-paths/${learningPath.slug}/`,
+  ),
+];
+const expectedCanonicals = expectedRoutes.map(canonicalFor);
+const sourceSitemapLocations = sitemapLocations(sitemap);
 
-// Print results
-console.log("═══════════════════════════════════════════════════════\n");
-console.log(`✅ Passed: ${checks.passed.length}`);
-checks.passed.forEach((check) => console.log(check));
+check(
+  "Homepage has a descriptive title",
+  /<title>[^<]{20,}<\/title>/i.test(indexHtml),
+);
+check(
+  "Homepage has a meta description",
+  /<meta\s+name="description"[\s\S]*?content="[^"]{70,}"[\s\S]*?\/>/i.test(
+    indexHtml,
+  ),
+);
+check(
+  "Homepage has a self-referencing canonical",
+  indexHtml.includes(`<link rel="canonical" href="${siteUrl}/" />`),
+);
+check(
+  "Homepage exposes WebSite structured data",
+  /"@type":\s*"WebSite"/.test(indexHtml),
+);
+check(
+  "Homepage exposes WebApplication structured data",
+  /"@type":\s*"WebApplication"/.test(indexHtml),
+);
+check(
+  "Static route markers exist",
+  indexHtml.includes("<!-- static-route:start -->") &&
+    indexHtml.includes("<!-- static-route:end -->"),
+);
+check(
+  "Static route fallback has a visible H1",
+  /<div id="root">[\s\S]*?<h1>[^<]+<\/h1>/i.test(indexHtml),
+);
+check(
+  "Static navigation uses crawlable links",
+  indexHtml.includes('href="/problems/"') &&
+    indexHtml.includes('href="/learning-paths/"'),
+);
+check(
+  "Search-only hidden content was removed",
+  !indexHtml.includes('id="seo-content"'),
+);
+check(
+  "Off-screen SEO positioning was removed",
+  !/left:\s*-9999/i.test(indexHtml),
+);
+check(
+  "Global inaccurate breadcrumb data was removed",
+  !indexHtml.includes("BreadcrumbList"),
+);
 
-console.log(`\n⚠️  Warnings: ${checks.warnings.length}`);
-checks.warnings.forEach((check) => console.log(check));
+const sitemapLines = robots.match(/^Sitemap:/gm) || [];
+check(
+  "robots.txt declares one sitemap",
+  sitemapLines.length === 1,
+  `found ${sitemapLines.length}`,
+);
+check(
+  "robots.txt allows public JSON rendering data",
+  !/Disallow:\s*\/\*\.json\$/i.test(robots),
+);
+check("robots.txt does not advertise fragment routes", !robots.includes("/#/"));
+check(
+  "robots.txt avoids unsupported crawl-delay directives",
+  !/^Crawl-delay:/im.test(robots),
+);
 
-console.log(`\n❌ Failed: ${checks.failed.length}`);
-checks.failed.forEach((check) => console.log(check));
+check(
+  "Sitemap contains no fragment URLs",
+  sourceSitemapLocations.every((url) => !url.includes("#")),
+);
+check(
+  "Sitemap contains no private utility routes",
+  sourceSitemapLocations.every(
+    (url) => !/\/(diagrams|create-problem|verify-email|playground)\//.test(url),
+  ),
+);
+check(
+  "Sitemap uses trailing-slash canonicals",
+  sourceSitemapLocations.every((url) => url.endsWith("/")),
+);
+check(
+  "Source sitemap contains the core discovery routes",
+  ["/", "/problems/", "/learning-paths/"].every((route) =>
+    sourceSitemapLocations.includes(canonicalFor(route)),
+  ),
+);
 
-console.log("\n═══════════════════════════════════════════════════════");
-console.log("\n📋 SEO Recommendations:\n");
-recommendations.forEach((rec) => console.log(rec));
+check(
+  "Prerender escapes content from data files",
+  prerender.includes("function escapeHtml"),
+);
+check(
+  "Prerender replaces visible static markers",
+  prerender.includes("static-route:start") &&
+    prerender.includes("renderStaticRoute"),
+);
+check(
+  "Prerender writes route-level structured data",
+  prerender.includes('id="route-structured-data"'),
+);
+check(
+  "Prerender creates a static 404 response document",
+  prerender.includes('path.join(distDir, "404.html")'),
+);
+check(
+  "Prerender generates the deployment sitemap",
+  prerender.includes("function writeSitemap"),
+);
 
-console.log("\n═══════════════════════════════════════════════════════\n");
+const distDir = path.join(projectDir, "dist");
+if (fs.existsSync(distDir)) {
+  for (const route of expectedRoutes) {
+    const relativePath =
+      route === "/"
+        ? "index.html"
+        : path.join(...route.split("/").filter(Boolean), "index.html");
+    const builtPath = path.join(distDir, relativePath);
+    const label = route === "/" ? "homepage" : route;
 
-const totalChecks =
-  checks.passed.length + checks.warnings.length + checks.failed.length;
-const score = Math.round((checks.passed.length / totalChecks) * 100);
+    check(`Built ${label} exists`, fs.existsSync(builtPath), builtPath);
+    if (!fs.existsSync(builtPath)) continue;
 
-console.log(`🎯 SEO Score: ${score}%\n`);
+    const builtHtml = fs.readFileSync(builtPath, "utf-8");
+    check(
+      `Built ${label} has visible route content`,
+      /<div id="root">[\s\S]*?class="static-route-shell"[\s\S]*?<h1>[^<]+<\/h1>/i.test(
+        builtHtml,
+      ),
+    );
+    check(
+      `Built ${label} has a self canonical`,
+      builtHtml.includes(
+        `<link rel="canonical" href="${canonicalFor(route)}" />`,
+      ),
+    );
+    check(
+      `Built ${label} has route structured data`,
+      builtHtml.includes('id="route-structured-data"'),
+    );
+    check(
+      `Built ${label} has no hidden SEO block`,
+      !builtHtml.includes('id="seo-content"') &&
+        !/left:\s*-9999/i.test(builtHtml),
+    );
+  }
 
-if (score >= 90) {
-  console.log("🎉 Excellent! Your SEO setup is great!\n");
-} else if (score >= 70) {
-  console.log("👍 Good! Address warnings for better SEO.\n");
-} else {
-  console.log("⚠️  Needs improvement. Address failed checks urgently.\n");
+  const learningIndex = fs.readFileSync(
+    path.join(distDir, "learning-paths", "index.html"),
+    "utf-8",
+  );
+
+  const problemIndex = fs.readFileSync(
+    path.join(distDir, "problems", "index.html"),
+    "utf-8",
+  );
+  check(
+    "Built problem index links every featured challenge",
+    featuredProblems.every((problem) =>
+      problemIndex.includes(`href="/problems/${problem.slug}/"`),
+    ),
+  );
+
+  for (const problem of featuredProblems) {
+    const problemHtml = fs.readFileSync(
+      path.join(distDir, "problems", problem.slug, "index.html"),
+      "utf-8",
+    );
+    check(
+      `Built ${problem.slug} exposes learning-resource data`,
+      problemHtml.includes('"@type":"LearningResource"'),
+    );
+  }
+
+  for (const route of guideRoutes) {
+    const guideHtml = fs.readFileSync(
+      path.join(distDir, ...route.split("/").filter(Boolean), "index.html"),
+      "utf-8",
+    );
+    check(
+      `Built ${route} exposes article data`,
+      guideHtml.includes('"@type":"Article"'),
+    );
+  }
+  check(
+    "Built learning-path index links every path",
+    learningPaths.every((learningPath) =>
+      learningIndex.includes(`href="/learning-paths/${learningPath.slug}/"`),
+    ),
+  );
+
+  const notFoundPath = path.join(distDir, "404.html");
+  check("Built 404.html exists", fs.existsSync(notFoundPath));
+  if (fs.existsSync(notFoundPath)) {
+    const notFoundHtml = fs.readFileSync(notFoundPath, "utf-8");
+    check(
+      "Built 404 is noindex",
+      /<meta name="robots" content="noindex, follow"\s*\/>/.test(notFoundHtml),
+    );
+  }
+
+  const builtSitemapPath = path.join(distDir, "sitemap.xml");
+  check("Built sitemap exists", fs.existsSync(builtSitemapPath));
+  if (fs.existsSync(builtSitemapPath)) {
+    const builtLocations = sitemapLocations(
+      fs.readFileSync(builtSitemapPath, "utf-8"),
+    );
+    check(
+      "Built sitemap contains every versioned public route",
+      expectedCanonicals.every((url) => builtLocations.includes(url)) &&
+        builtLocations.every((url) => !url.includes("#")),
+    );
+  }
 }
 
-process.exit(checks.failed.length > 0 ? 1 : 0);
+console.log(`\nSEO checks: ${passed.length} passed, ${failed.length} failed\n`);
+for (const description of passed) console.log(`PASS  ${description}`);
+for (const description of failed) console.error(`FAIL  ${description}`);
+
+process.exit(failed.length ? 1 : 0);

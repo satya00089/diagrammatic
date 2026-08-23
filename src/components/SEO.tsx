@@ -8,11 +8,12 @@ interface SEOProps {
   imageAlt?: string;
   url?: string;
   type?: string;
+  noIndex?: boolean;
+  structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 const DEFAULT_SEO = {
-  title:
-    "Diagrammatic — Design architectures. Get them reviewed.",
+  title: "Diagrammatic — Design architectures. Get them reviewed.",
   description:
     "Practice system design by building architectures visually, explaining your assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
   keywords:
@@ -23,6 +24,26 @@ const DEFAULT_SEO = {
   type: "website",
 };
 
+const normalizeCanonicalUrl = (value: string): string => {
+  try {
+    const canonical = new URL(value);
+    const lastSegment = canonical.pathname.split("/").filter(Boolean).at(-1);
+    const isFile = lastSegment?.includes(".") ?? false;
+
+    if (
+      canonical.pathname !== "/" &&
+      !canonical.pathname.endsWith("/") &&
+      !isFile
+    ) {
+      canonical.pathname = `${canonical.pathname}/`;
+    }
+
+    return canonical.toString();
+  } catch {
+    return value;
+  }
+};
+
 export const SEO: React.FC<SEOProps> = ({
   title,
   description,
@@ -31,7 +52,14 @@ export const SEO: React.FC<SEOProps> = ({
   imageAlt,
   url,
   type = "website",
+  noIndex = false,
+  structuredData,
 }) => {
+  const canonicalUrl = normalizeCanonicalUrl(url || DEFAULT_SEO.url);
+  const structuredDataJson = structuredData
+    ? JSON.stringify(structuredData).replaceAll("<", "\\u003c")
+    : "";
+
   useEffect(() => {
     // Update document title
     document.title = title || DEFAULT_SEO.title;
@@ -58,8 +86,15 @@ export const SEO: React.FC<SEOProps> = ({
     };
 
     // Standard meta tags
+    updateMetaTag("title", title || DEFAULT_SEO.title);
     updateMetaTag("description", description || DEFAULT_SEO.description);
     updateMetaTag("keywords", keywords || DEFAULT_SEO.keywords);
+    updateMetaTag(
+      "robots",
+      noIndex
+        ? "noindex, follow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+    );
 
     // Open Graph tags
     updateMetaTag("og:title", title || DEFAULT_SEO.title, true);
@@ -69,12 +104,8 @@ export const SEO: React.FC<SEOProps> = ({
       true,
     );
     updateMetaTag("og:image", image || DEFAULT_SEO.image, true);
-    updateMetaTag(
-      "og:image:alt",
-      imageAlt || title || DEFAULT_SEO.title,
-      true,
-    );
-    updateMetaTag("og:url", url || DEFAULT_SEO.url, true);
+    updateMetaTag("og:image:alt", imageAlt || title || DEFAULT_SEO.title, true);
+    updateMetaTag("og:url", canonicalUrl, true);
     updateMetaTag("og:type", type, true);
 
     // Twitter tags
@@ -84,25 +115,51 @@ export const SEO: React.FC<SEOProps> = ({
       description || DEFAULT_SEO.description,
     );
     updateMetaTag("twitter:image", image || DEFAULT_SEO.image);
-    updateMetaTag(
-      "twitter:image:alt",
-      imageAlt || title || DEFAULT_SEO.title,
-    );
-    updateMetaTag("twitter:url", url || DEFAULT_SEO.url);
+    updateMetaTag("twitter:image:alt", imageAlt || title || DEFAULT_SEO.title);
+    updateMetaTag("twitter:url", canonicalUrl);
 
     // Update canonical link
     let canonical = document.querySelector(
       'link[rel="canonical"]',
     ) as HTMLLinkElement;
     if (canonical) {
-      canonical.href = url || DEFAULT_SEO.url;
+      canonical.href = canonicalUrl;
     } else {
       canonical = document.createElement("link");
       canonical.rel = "canonical";
-      canonical.href = url || DEFAULT_SEO.url;
+      canonical.href = canonicalUrl;
       document.head.appendChild(canonical);
     }
-  }, [title, description, keywords, image, imageAlt, url, type]);
+  }, [
+    title,
+    description,
+    keywords,
+    image,
+    imageAlt,
+    canonicalUrl,
+    type,
+    noIndex,
+  ]);
+
+  useEffect(() => {
+    const id = "page-structured-data";
+    const existing = document.getElementById(id);
+
+    if (!structuredDataJson) {
+      existing?.remove();
+      return;
+    }
+
+    const script = existing instanceof HTMLScriptElement
+      ? existing
+      : document.createElement("script");
+    script.id = id;
+    script.type = "application/ld+json";
+    script.textContent = structuredDataJson;
+    if (!script.isConnected) document.head.appendChild(script);
+
+    return () => script.remove();
+  }, [structuredDataJson]);
 
   return null;
 };
