@@ -96,6 +96,12 @@ check(
     indexHtml.includes('href="/learning-paths/"'),
 );
 check(
+  "Learning paths have a build-time data marker",
+  indexHtml.includes(
+    '<script id="learning-paths-data" type="application/json">',
+  ),
+);
+check(
   "Search-only hidden content was removed",
   !indexHtml.includes('id="seo-content"'),
 );
@@ -207,6 +213,28 @@ if (fs.existsSync(distDir)) {
   const learningIndex = fs.readFileSync(
     path.join(distDir, "learning-paths", "index.html"),
     "utf-8",
+  );
+
+  const embeddedLearningPaths = learningIndex.match(
+    /<script\s+id="learning-paths-data"\s+type="application\/json">([\s\S]*?)<\/script>/i,
+  );
+  let embeddedPathCatalog = [];
+  if (embeddedLearningPaths) {
+    try {
+      embeddedPathCatalog = JSON.parse(embeddedLearningPaths[1]);
+    } catch {
+      embeddedPathCatalog = [];
+    }
+  }
+  check(
+    "Built learning-path index embeds the path catalog",
+    Array.isArray(embeddedPathCatalog) &&
+      embeddedPathCatalog.length === learningPaths.length &&
+      learningPaths.every((learningPath) =>
+        embeddedPathCatalog.some((embeddedPath) =>
+          embeddedPath?.slug === learningPath.slug,
+        ),
+      ),
   );
 
   const problemIndex = fs.readFileSync(

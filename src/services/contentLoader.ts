@@ -49,6 +49,26 @@ export interface LearningPath {
 }
 
 const SAMPLE_URL = "/learning-paths/learning-paths.json";
+const EMBEDDED_DATA_ID = "learning-paths-data";
+
+/**
+ * Read the build-time catalog embedded in the route HTML. The prerendered
+ * learning-path index uses this to render real content before the JSON refresh
+ * completes, so the app never replaces useful HTML with an empty state.
+ */
+export function getEmbeddedLearningPaths(): LearningPath[] {
+  if (typeof document === "undefined") return [];
+
+  const element = document.getElementById(EMBEDDED_DATA_ID);
+  if (!element?.textContent?.trim()) return [];
+
+  try {
+    const data: unknown = JSON.parse(element.textContent);
+    return Array.isArray(data) ? (data as LearningPath[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function fetchLearningPaths(): Promise<LearningPath[]> {
   const res = await fetch(SAMPLE_URL);

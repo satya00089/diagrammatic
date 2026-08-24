@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
@@ -9,7 +9,10 @@ import { useTheme } from "../hooks/useTheme";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
-import { fetchLearningPaths } from "../services/contentLoader";
+import {
+  fetchLearningPaths,
+  getEmbeddedLearningPaths,
+} from "../services/contentLoader";
 import type { LearningPath } from "../services/contentLoader";
 import LearningPathCard from "../components/learning-paths/LearningPathCard";
 
@@ -30,8 +33,14 @@ const LearningPaths: React.FC = () => {
   const { startTour } = useTour("learning_paths");
   const { trackPageView } = useAnalytics({ isEnabled: true });
 
-  const [paths, setPaths] = useState<LearningPath[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialPathsRef = useRef<LearningPath[] | null>(null);
+  if (initialPathsRef.current === null) {
+    initialPathsRef.current = getEmbeddedLearningPaths();
+  }
+  const initialPaths = initialPathsRef.current ?? [];
+  const [paths, setPaths] = useState<LearningPath[]>(initialPaths);
+  const [loading, setLoading] = useState(initialPaths.length === 0);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     // mark visited + optional tour
@@ -51,11 +60,32 @@ const LearningPaths: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
+    let mounted = true;
+
     fetchLearningPaths()
-      .then((data) => setPaths(data))
-      .catch((err) => console.error("Failed to load learning paths", err))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!mounted) return;
+        // Do not let an empty refresh erase a valid build-time catalog.
+        if (data.length > 0 || initialPathsRef.current?.length === 0) {
+          setPaths(data);
+          setLoadError(false);
+        } else {
+          setLoadError(true);
+        }
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        // Keep the embedded catalog visible when the refresh is unavailable.
+        console.error("Failed to refresh learning paths", err);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -103,7 +133,13 @@ const LearningPaths: React.FC = () => {
                 )}
 
                 <div className="hidden md:block text-sm text-white/90">
-                  {loading ? "Loading..." : `${paths.length} paths available`}
+                  {loading
+                    ? "Loading..."
+                    : paths.length > 0
+                      ? `${paths.length} paths available`
+                      : loadError
+                        ? "Learning paths unavailable"
+                        : "No paths available"}
                 </div>
 
                 <button
@@ -229,7 +265,11 @@ const LearningPaths: React.FC = () => {
               <div className="text-sm text-muted">
                 {loading
                   ? "Loading paths..."
-                  : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}
+                  : paths.length > 0
+                    ? `${paths.length} path${paths.length !== 1 ? "s" : ""}`
+                    : loadError
+                      ? "Learning paths are temporarily unavailable"
+                      : "No learning paths are available yet"}
               </div>
             </div>
 
@@ -238,6 +278,11 @@ const LearningPaths: React.FC = () => {
                 <div className="col-span-3 flex items-center justify-center py-16">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
                 </div>
+              ) : paths.length === 0 && loadError ? (
+                <p className="col-span-3 py-12 text-center text-muted">
+                  Learning paths are temporarily unavailable. Please try again
+                  shortly.
+                </p>
               ) : (
                 paths.map((p) => <LearningPathCard key={p.id} path={p} />)
               )}
