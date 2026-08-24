@@ -376,9 +376,6 @@ async function main() {
       path: pngPath,
       clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
     });
-    console.log(
-      `Generated ${page.name}.png (title ${titleSize}px, subtitle ${subtitleSize}px)`,
-    );
   }
 
   await browser.close();

@@ -730,7 +730,6 @@ const baseHtml = fs.readFileSync(indexPath, "utf-8");
 for (const [route, data] of Object.entries(routes)) {
   const outputPath = outputPathFor(route);
   fs.writeFileSync(outputPath, renderHtml(baseHtml, route, data), "utf-8");
-  console.log(`Generated ${canonicalUrl(route)}`);
 }
 
 fs.writeFileSync(
@@ -739,6 +738,3 @@ fs.writeFileSync(
   "utf-8",
 );
 writeSitemap();
-console.log(
-  `Generated ${Object.keys(routes).length} routes, ${learningPaths.length} learning paths, and ${publicProblems.length} problem pages.`,
-);

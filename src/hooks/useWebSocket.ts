@@ -82,7 +82,6 @@ export const useWebSocket = ({
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
-        console.log("WebSocket connected");
         setIsConnected(true);
         setIsConnecting(false);
         reconnectAttemptsRef.current = 0;
@@ -99,8 +98,7 @@ export const useWebSocket = ({
         }
       };
 
-      wsRef.current.onclose = (event) => {
-        console.log("WebSocket disconnected", event.code, event.reason);
+      wsRef.current.onclose = () => {
         setIsConnected(false);
         setIsConnecting(false);
         wsRef.current = null;
@@ -148,10 +146,6 @@ export const useWebSocket = ({
       reconnectInterval * Math.pow(2, reconnectAttemptsRef.current);
     const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
     const delay = Math.min(backoffDelay + jitter, 30000); // Cap at 30 seconds
-
-    console.log(
-      `Reconnecting in ${Math.round(delay / 1000)}s... (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`,
-    );
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptsRef.current++;

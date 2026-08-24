@@ -31,7 +31,6 @@ export const useChatSuggestions = (
   // Manual refresh function for AI suggestions
   const refreshAISuggestions = useCallback(async () => {
     if (!canvasContext || canvasContext.nodeCount < 5) {
-      console.log("❌ AI suggestions require at least 5 nodes on the canvas");
       return;
     }
 
@@ -136,22 +135,7 @@ export const useChatSuggestions = (
 
       setAiSuggestions(aiRecs);
       setLastAIRefresh(new Date());
-
-      // Log success for debugging
-      if (aiRecs.length > 0) {
-        console.log(
-          `✅ AI Recommendations: ${aiRecs.length} suggestions (confidence >= ${response.minConfidenceThreshold})`,
-        );
-      } else {
-        console.log(
-          "ℹ️ No AI recommendations available for current canvas state",
-        );
-      }
-    } catch (error) {
-      console.log(
-        "ℹ️ AI suggestions failed, falling back to rule-based:",
-        error instanceof Error ? error.message : "Unknown error",
-      );
+    } catch {
       setAiSuggestions(null);
     } finally {
       setIsLoadingAI(false);

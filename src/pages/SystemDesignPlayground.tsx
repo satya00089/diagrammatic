@@ -1094,8 +1094,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             isPublic?: boolean;
           } | null;
 
-          console.log("Loaded attempt:", attempt);
-
           if (attempt) {
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
@@ -1127,7 +1125,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
             // Restore last assessment if available
             if (attempt.lastAssessment) {
-              console.log("Restoring assessment:", attempt.lastAssessment);
               setAssessment(attempt.lastAssessment);
               // Automatically open Assessment tab to show the assessment
               setActiveRightTab("assessment");
@@ -4327,7 +4324,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  // persist nodeProps back into node data (manual save - now mainly for debugging)
+  // Persist nodeProps back into node data.
   const handleSave = () => {
     // Filter out numeric keys and _customProperties since they're managed separately
     const filteredNodeProps = Object.fromEntries(
@@ -4345,15 +4342,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       ),
     );
 
-    // Log current node data for debugging
-    if (inspectedNodeId) {
-      const node = nodes.find((n) => n.id === inspectedNodeId);
-      console.log("Node properties saved:", {
-        id: inspectedNodeId,
-        data: node?.data,
-        filteredNodeProps,
-      });
-    }
   };
 
   const pageTitle =

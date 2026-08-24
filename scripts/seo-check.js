@@ -272,8 +272,6 @@ if (fs.existsSync(distDir)) {
   }
 }
 
-console.log(`\nSEO checks: ${passed.length} passed, ${failed.length} failed\n`);
-for (const description of passed) console.log(`PASS  ${description}`);
 for (const description of failed) console.error(`FAIL  ${description}`);
 
 process.exit(failed.length ? 1 : 0);
