@@ -50,6 +50,9 @@ import type {
   ComponentType,
   ConnectionType,
   GuidedStep,
+  DesignReasoningContext,
+  InterviewExchange,
+  InterviewSession,
 } from "../types/systemDesign";
 import type { SavedDiagram, Collaborator } from "../types/auth";
 import type { ComponentProperty, CanvasComponent } from "../types/canvas";
@@ -75,7 +78,7 @@ import {
 
 // Services and utilities
 import { apiService } from "../services/api";
-import assessSolution from "../utils/assessor";
+import assessSolution, { generateInterviewQuestions } from "../utils/assessor";
 import { getCollaboratorColor } from "../utils/collaborationUtils";
 import {
   exportAsJSON,
@@ -104,6 +107,7 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import { ToastContainer } from "../components/Toast";
 import { AuthModal } from "../components/AuthModal";
 import ShareToWorldModal from "../components/ShareToWorldModal";
+import AssessmentInterviewDialog from "../components/AssessmentInterviewDialog";
 
 // UI Components - Diagram
 import DiagramCanvas from "../components/DiagramCanvas";
@@ -168,6 +172,8 @@ type AttemptContentSnapshotInput = {
   category?: string;
   nodes: Node[];
   edges: Edge[];
+  reasoningContext: DesignReasoningContext;
+  interviewSession: InterviewSession;
 };
 
 // elapsedTime is intentionally excluded so timer ticks can trigger the
@@ -179,6 +185,8 @@ const getAttemptContentSnapshot = ({
   category,
   nodes,
   edges,
+  reasoningContext,
+  interviewSession,
 }: AttemptContentSnapshotInput): string =>
   JSON.stringify({
     problemId,
@@ -187,7 +195,173 @@ const getAttemptContentSnapshot = ({
     category,
     nodes,
     edges,
+    reasoningContext,
+    interviewSession,
   });
+
+const getCanvasNodeType = (node: Node): string => {
+  const data = (node.data ?? {}) as { type?: unknown };
+  return typeof data.type === "string" && data.type.trim()
+    ? data.type
+    : node.type || "component";
+};
+
+const buildProvidedReasoningContext = (
+  problem: SystemDesignProblem | null,
+  nodes: Node[],
+  edges: Edge[],
+): DesignReasoningContext => {
+  const problemRequirements = problem
+    ? [
+        problem.description,
+        ...problem.requirements.map((requirement) => `- ${requirement}`),
+        ...problem.constraints.map((constraint) => `Constraint: ${constraint}`),
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : "No problem brief is attached. Use the design title and canvas as the starting context.";
+
+  const typeCounts = new Map<string, number>();
+  nodes.forEach((node) => {
+    const type = getCanvasNodeType(node);
+    typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1);
+  });
+  const componentSummary = Array.from(typeCounts.entries())
+    .map(([type, count]) => `${count} ${type}${count === 1 ? "" : "s"}`)
+    .join(", ");
+
+  const connectedNodeIds = new Set(
+    edges.flatMap((edge) => [edge.source, edge.target]),
+  );
+  const disconnectedCount = nodes.filter(
+    (node) => !connectedNodeIds.has(node.id),
+  ).length;
+
+  const unstatedTarget = (target: string) =>
+    `No explicit ${target} target is specified in the brief. State an assumption when asked during the interview.`;
+
+  return {
+    requirements: problemRequirements,
+    scaleAssumptions: unstatedTarget("scale"),
+    expectedTraffic: unstatedTarget("traffic profile"),
+    readWriteRatio: unstatedTarget("read/write ratio"),
+    latencyGoals: unstatedTarget("latency"),
+    availabilityTarget: unstatedTarget("availability"),
+    consistencyRequirements: unstatedTarget("consistency"),
+    technologyChoices: nodes.length
+      ? `The current canvas contains ${componentSummary || `${nodes.length} components`}. Explain why these choices fit the problem.`
+      : "No components are on the canvas yet.",
+    tradeoffs:
+      "Trade-offs are not pre-filled. Explain them during the interview.",
+    unresolvedRisks:
+      disconnectedCount > 0
+        ? `${disconnectedCount} component${disconnectedCount === 1 ? " is" : "s are"} currently disconnected. Review its role and failure paths.`
+        : "Review failure paths, security, and operational risks during the interview.",
+  };
+};
+
+type ProvidedCanvasStats = {
+  componentCount: number;
+  connectionCount: number;
+  componentTypes: string[];
+  disconnectedCount: number;
+};
+
+const DEFAULT_PRE_ASSESSMENT_QUESTIONS = [
+  "What scale and traffic pattern are you designing for, and which part of the architecture becomes the bottleneck first?",
+  "What happens when one critical dependency fails, and how does the system recover without losing important data?",
+  "Which consistency and storage trade-off did you make, and why is it appropriate for this problem?",
+];
+
+const getProvidedCanvasStats = (
+  nodes: Node[],
+  edges: Edge[],
+): ProvidedCanvasStats => {
+  const connectedNodeIds = new Set(
+    edges.flatMap((edge) => [edge.source, edge.target]),
+  );
+
+  return {
+    componentCount: nodes.length,
+    connectionCount: edges.length,
+    componentTypes: Array.from(
+      new Set(nodes.map((node) => getCanvasNodeType(node))),
+    ),
+    disconnectedCount: nodes.filter((node) => !connectedNodeIds.has(node.id))
+      .length,
+  };
+};
+
+const buildSystemDesignSolution = (
+  nodes: Node[],
+  edges: Edge[],
+  reasoningContext: DesignReasoningContext,
+): SystemDesignSolution => ({
+  components: nodes.map((n) => {
+    const dataObj = (n.data ?? {}) as unknown;
+    const maybeType = (dataObj as { type?: unknown }).type;
+    let inferredType: ComponentType;
+    if (typeof maybeType === "string")
+      inferredType = maybeType as ComponentType;
+    else if (typeof n.type === "string") inferredType = n.type as ComponentType;
+    else inferredType = "microservice";
+
+    const maybeLabel = (dataObj as { label?: unknown }).label;
+    const label = typeof maybeLabel === "string" ? maybeLabel : String(n.id);
+    const allProperties =
+      dataObj && typeof dataObj === "object"
+        ? ({ ...dataObj } as Record<string, unknown>)
+        : {};
+    // Icons and subtitles are presentation details; the remaining node data
+    // is useful architectural context for the reviewer.
+    const customProperties = { ...allProperties };
+    delete customProperties.icon;
+    delete customProperties.subtitle;
+
+    return {
+      id: n.id,
+      type: inferredType,
+      label,
+      position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
+      properties: {
+        ...customProperties,
+        nodeData: {
+          label,
+          icon: (dataObj as { icon?: unknown }).icon,
+          subtitle: (dataObj as { subtitle?: unknown }).subtitle,
+        },
+      },
+    };
+  }),
+  connections: edges.map((e) => {
+    const dataObj = (e.data ?? {}) as unknown;
+    const maybeType = (dataObj as { type?: unknown }).type;
+    const inferredType: ConnectionType =
+      typeof maybeType === "string"
+        ? (maybeType as ConnectionType)
+        : "api-call";
+    const maybeLabel = (dataObj as { label?: unknown }).label;
+    const maybeDescription = (dataObj as { description?: unknown }).description;
+
+    return {
+      id: e.id ?? `${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      type: inferredType,
+      label: typeof maybeLabel === "string" ? maybeLabel : undefined,
+      description:
+        typeof maybeDescription === "string" && maybeDescription.trim()
+          ? maybeDescription
+          : undefined,
+      properties: dataObj as Record<string, unknown>,
+    };
+  }),
+  // Generated context is sent separately so the assessor can distinguish
+  // product facts from a candidate's explanation.
+  explanation: "",
+  keyPoints: [],
+  reasoningContext,
+});
 
 // Create a wrapper component for CustomNode with onCopy prop
 const NodeWithCopy = React.memo(
@@ -424,6 +598,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     null,
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Persist the pre-assessment interview transcript with the current attempt.
+  const [interviewSession, setInterviewSession] = useState<InterviewSession>({
+    exchanges: [],
+    currentQuestionIndex: 0,
+  });
 
   // Project Intent dialog state (shown when entering Design Studio)
   const [showProjectIntentDialog, setShowProjectIntentDialog] = useState(false);
@@ -671,6 +851,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState(canvasState.edges);
   const { getNodes, fitView } = useReactFlow();
 
+  // Review context is supplied by the problem brief and the current canvas.
+  // There is deliberately no editable form for these values.
+  const reasoningContext = useMemo(
+    () => buildProvidedReasoningContext(problem, nodes, edges),
+    [problem, nodes, edges],
+  );
+  const providedCanvasStats = useMemo(
+    () => getProvidedCanvasStats(nodes, edges),
+    [nodes, edges],
+  );
+
   // Track if we're currently applying undo/redo to prevent circular updates
   const isApplyingUndoRedo = useRef(false);
 
@@ -898,6 +1089,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges: Edge[];
             elapsedTime: number;
             lastAssessment?: ValidationResult;
+            reasoningContext?: DesignReasoningContext;
+            interviewSession?: InterviewSession;
             isPublic?: boolean;
           } | null;
 
@@ -920,6 +1113,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               category: attempt.category ?? problem?.category,
               nodes: restoredNodes,
               edges: loadedEdges,
+              reasoningContext,
+              interviewSession: attempt.interviewSession ?? {
+                exchanges: [],
+                currentQuestionIndex: 0,
+              },
             });
 
             // Restore timer progress if available
@@ -933,6 +1131,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               setAssessment(attempt.lastAssessment);
               // Automatically open Assessment tab to show the assessment
               setActiveRightTab("assessment");
+            }
+
+            if (attempt.interviewSession) {
+              setInterviewSession(attempt.interviewSession);
             }
 
             // Restore attempt ID so Share to the World can reference it
@@ -975,6 +1177,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             category: problem?.category,
             nodes,
             edges,
+            reasoningContext,
+            interviewSession,
           })
         : null;
 
@@ -1019,6 +1223,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               description: currentDiagram?.description || "Auto-saved design",
               nodes,
               edges,
+              reasoningContext,
             });
 
             // Ensure the diagram ID is stored for restoration on refresh
@@ -1034,6 +1239,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               description: userIntent.description || "",
               nodes,
               edges,
+              reasoningContext,
             });
             setCurrentDiagramId(newDiagram.id);
             setCurrentDiagram(newDiagram);
@@ -1062,6 +1268,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               nodes,
               edges,
               elapsedTime,
+              reasoningContext,
+              interviewSession,
               // Don't save assessment in auto-save, only when assessment is explicitly run
             });
             lastSavedAttemptContentRef.current = attemptContentSnapshot;
@@ -1114,6 +1322,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     elapsedTime,
     problem,
     userIntent,
+    reasoningContext,
+    interviewSession,
   ]);
 
   // Apply undo/redo state to React Flow
@@ -1261,90 +1471,38 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   );
 
   const [isAssessing, setIsAssessing] = useState(false);
+  const [isPreparingInterview, setIsPreparingInterview] = useState(false);
+  const [showAssessmentInterview, setShowAssessmentInterview] = useState(false);
+  const [assessmentInterviewQuestions, setAssessmentInterviewQuestions] =
+    useState<string[]>([]);
+  const [assessmentInterviewIndex, setAssessmentInterviewIndex] = useState(0);
+  const [assessmentInterviewAnswer, setAssessmentInterviewAnswer] =
+    useState("");
+  const [assessmentInterviewSession, setAssessmentInterviewSession] =
+    useState<InterviewSession>({
+      exchanges: [],
+      currentQuestionIndex: 0,
+    });
+  const [assessmentInterviewError, setAssessmentInterviewError] = useState<
+    string | null
+  >(null);
 
-  const runAssessment = async () => {
+  const executeAssessment = async (preAssessmentSession: InterviewSession) => {
     if (isAssessing) return;
 
     setIsAssessing(true);
     setAssessment(null);
-    const solution: SystemDesignSolution = {
-      components: nodes.map((n) => {
-        const dataObj = (n.data ?? {}) as unknown;
-        const maybeType = (dataObj as { type?: unknown }).type;
-        let inferredType: ComponentType;
-        if (typeof maybeType === "string")
-          inferredType = maybeType as ComponentType;
-        else if (typeof n.type === "string")
-          inferredType = n.type as ComponentType;
-        else inferredType = "microservice";
-
-        const maybeLabel = (dataObj as { label?: unknown }).label;
-        const label =
-          typeof maybeLabel === "string" ? maybeLabel : String(n.id);
-
-        // Capture all node properties including custom ones
-        const allProperties =
-          dataObj && typeof dataObj === "object"
-            ? ({ ...dataObj } as Record<string, unknown>)
-            : ({} as Record<string, unknown>);
-
-        // Remove system properties from the properties object
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { icon, subtitle, ...customProperties } = allProperties;
-
-        return {
-          id: n.id,
-          type: inferredType,
-          label,
-          position: { x: n.position?.x ?? 0, y: n.position?.y ?? 0 },
-          properties: {
-            ...customProperties,
-            // Include standard node data for reference
-            nodeData: {
-              label,
-              icon: (dataObj as { icon?: unknown }).icon,
-              subtitle: (dataObj as { subtitle?: unknown }).subtitle,
-            },
-          },
-        };
-      }),
-      connections: edges.map((e) => {
-        const dataObj = (e.data ?? {}) as unknown;
-        const maybeType = (dataObj as { type?: unknown }).type;
-        const inferredType: ConnectionType =
-          typeof maybeType === "string"
-            ? (maybeType as ConnectionType)
-            : "api-call";
-
-        const maybeLabel = (dataObj as { label?: unknown }).label;
-        const edgeLabel =
-          typeof maybeLabel === "string" ? maybeLabel : undefined;
-
-        const maybeDescription = (dataObj as { description?: unknown })
-          .description;
-        const edgeDescription =
-          typeof maybeDescription === "string" && maybeDescription.trim()
-            ? maybeDescription
-            : undefined;
-
-        return {
-          id: e.id ?? `${e.source}-${e.target}`,
-          source: e.source,
-          target: e.target,
-          type: inferredType,
-          label: edgeLabel,
-          description: edgeDescription,
-          properties: dataObj as Record<string, unknown>,
-        };
-      }),
-      explanation: "",
-      keyPoints: [],
-    };
+    const solution = buildSystemDesignSolution(nodes, edges, reasoningContext);
 
     try {
       // Call AI assessor (now returns Promise) with problem context
-      const res = await assessSolution(solution, problem);
+      const res = await assessSolution(solution, problem, preAssessmentSession);
+      const followUpSession: InterviewSession = {
+        exchanges: preAssessmentSession.exchanges,
+        currentQuestionIndex: 0,
+      };
       setAssessment(res);
+      setInterviewSession(followUpSession);
       setActiveRightTab("assessment");
 
       // Save assessment to database for problem-solving mode
@@ -1359,6 +1517,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             elapsedTime,
             lastAssessment: res,
+            reasoningContext,
+            interviewSession: followUpSession,
           })) as { id?: string; isPublic?: boolean };
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
@@ -1374,6 +1534,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             category: problem?.category,
             nodes,
             edges,
+            reasoningContext,
+            interviewSession: followUpSession,
           });
         } catch (error) {
           console.error("Failed to save assessment:", error);
@@ -1400,6 +1562,75 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     } finally {
       setIsAssessing(false);
     }
+  };
+
+  const runAssessment = async () => {
+    if (isAssessing || isPreparingInterview) return;
+
+    setIsPreparingInterview(true);
+    setAssessmentInterviewError(null);
+
+    try {
+      const questions = await generateInterviewQuestions(
+        buildSystemDesignSolution(nodes, edges, reasoningContext),
+        problem,
+      );
+      setAssessmentInterviewQuestions(questions);
+    } catch (error) {
+      console.error("Failed to prepare interview questions:", error);
+      setAssessmentInterviewQuestions(DEFAULT_PRE_ASSESSMENT_QUESTIONS);
+      setAssessmentInterviewError(
+        "We could not tailor the questions to this diagram, so we loaded a general system-design set instead.",
+      );
+    } finally {
+      setAssessmentInterviewIndex(0);
+      setAssessmentInterviewAnswer("");
+      setAssessmentInterviewSession({
+        exchanges: [],
+        currentQuestionIndex: 0,
+      });
+      setShowAssessmentInterview(true);
+      setIsPreparingInterview(false);
+    }
+  };
+
+  const advanceAssessmentInterview = (skipped: boolean) => {
+    const question = assessmentInterviewQuestions[assessmentInterviewIndex];
+    if (!question) return;
+
+    const answer = skipped ? "" : assessmentInterviewAnswer.trim();
+    if (!skipped && !answer) return;
+
+    const exchange: InterviewExchange = {
+      id: `pre-assessment-interview-${Date.now()}`,
+      question,
+      answer,
+      critique: "",
+      strengths: [],
+      gaps: [],
+      createdAt: new Date().toISOString(),
+      skipped,
+    };
+    const nextIndex = assessmentInterviewIndex + 1;
+    const nextSession: InterviewSession = {
+      exchanges: [...assessmentInterviewSession.exchanges, exchange],
+      currentQuestionIndex: nextIndex,
+    };
+
+    setAssessmentInterviewSession(nextSession);
+    setAssessmentInterviewIndex(nextIndex);
+    setAssessmentInterviewAnswer("");
+
+    if (nextIndex >= assessmentInterviewQuestions.length) {
+      setShowAssessmentInterview(false);
+      void executeAssessment(nextSession);
+    }
+  };
+
+  const cancelAssessmentInterview = () => {
+    setShowAssessmentInterview(false);
+    setAssessmentInterviewAnswer("");
+    setAssessmentInterviewError(null);
   };
 
   // ref to the reactflow wrapper to compute drop position
@@ -3891,6 +4122,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         description: intent.description.trim() || undefined,
         nodes,
         edges,
+        reasoningContext,
       };
 
       const savedDiagram = await apiService.saveDiagram(diagramData);
@@ -4582,17 +4814,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       isAuthenticated
                         ? isAssessing
                           ? "Assessment in progress..."
-                          : "Run assessment on current design"
+                          : isPreparingInterview
+                            ? "Preparing interview questions..."
+                            : "Run assessment on current design"
                         : "Please sign in to run assessment"
                     }
                   >
                     <button
                       type="button"
                       onClick={runAssessment}
-                      disabled={isAssessing || !isAuthenticated}
+                      disabled={
+                        isAssessing || isPreparingInterview || !isAuthenticated
+                      }
                       className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                     >
-                      {isAssessing ? "Assessing..." : "Run Assessment"}
+                      {isAssessing
+                        ? "Assessing..."
+                        : isPreparingInterview
+                          ? "Preparing..."
+                          : "Run Assessment"}
                     </button>
                   </div>
                 )}
@@ -4769,6 +5009,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 ? () => setShowShareToWorldModal(true)
                 : undefined
             }
+            reasoningContext={reasoningContext}
+            canvasStats={providedCanvasStats}
           />
         </div>
 
@@ -4839,6 +5081,19 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showAssessmentInterview && (
+          <AssessmentInterviewDialog
+            questions={assessmentInterviewQuestions}
+            currentIndex={assessmentInterviewIndex}
+            answer={assessmentInterviewAnswer}
+            error={assessmentInterviewError}
+            onAnswerChange={setAssessmentInterviewAnswer}
+            onSubmit={() => advanceAssessmentInterview(false)}
+            onSkip={() => advanceAssessmentInterview(true)}
+            onCancel={cancelAssessmentInterview}
+          />
         )}
 
         {/* Auth Modal */}

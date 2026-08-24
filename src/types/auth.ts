@@ -60,6 +60,7 @@ export interface SavedDiagram {
   isOwner: boolean;
   permission: "owner" | "edit" | "read";
   owner: DiagramOwner;
+  reasoningContext?: import("./systemDesign").DesignReasoningContext;
 }
 
 export interface Collaborator {
@@ -74,4 +75,5 @@ export interface SaveDiagramPayload {
   description?: string;
   nodes: unknown[];
   edges: unknown[];
+  reasoningContext?: import("./systemDesign").DesignReasoningContext;
 }

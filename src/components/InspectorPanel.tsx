@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import GuidedHelpPanel from "./GuidedHelpPanel";
 import type { ApplyStepPayload } from "./GuidedHelpPanel";
 import AssessmentFindings from "./AssessmentFindings";
+import ReasoningPanel from "./ReasoningPanel";
+import type { DesignReasoningContext } from "../types/systemDesign";
 import {
   PiDotsSixVerticalBold,
   PiCaretDownBold,
@@ -106,6 +108,13 @@ type InspectorPanelProps = {
   isNodeInGroup?: boolean;
   onShareToWorld?: () => void;
   sharedCta?: { to: string; label: string };
+  reasoningContext: DesignReasoningContext;
+  canvasStats: {
+    componentCount: number;
+    connectionCount: number;
+    componentTypes: string[];
+    disconnectedCount: number;
+  };
 };
 
 const InspectorPanel: React.FC<InspectorPanelProps> = ({
@@ -130,6 +139,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   isNodeInGroup,
   onShareToWorld,
   sharedCta,
+  reasoningContext,
+  canvasStats,
 }) => {
   const [width, setWidth] = React.useState(320); // px
   const minWidth = 260;
@@ -365,6 +376,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     <p className="text-muted text-sm leading-relaxed mb-4">
                       {problem.description}
                     </p>
+
+                    <ReasoningPanel
+                      context={reasoningContext}
+                      canvasStats={canvasStats}
+                    />
 
                     <div className="mb-4">
                       <h4 className="text-sm font-semibold text-theme mb-2">
@@ -1078,7 +1094,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           </div>
                         )}
 
-                        {/* ── 8. Interview Follow-up Questions ── */}
+                        {/* ── 8. Follow-up Questions ── */}
                         {assessmentResult.interviewQuestions &&
                           assessmentResult.interviewQuestions.length > 0 && (
                             <div className="border rounded-xl bg-[var(--surface)] overflow-hidden">
@@ -1092,7 +1108,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                 <div className="flex items-center gap-2">
                                   <span className="text-base">🎯</span>
                                   <span className="font-semibold text-theme text-sm">
-                                    Interview Follow-up Questions
+                                    Follow-up Questions
                                   </span>
                                   <span className="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full">
                                     {assessmentResult.interviewQuestions.length}
@@ -1107,7 +1123,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                 <div className="px-4 pb-4 space-y-2.5 border-t border-[var(--border)]">
                                   <p className="text-[10px] text-muted pt-3 pb-1">
                                     Questions tailored to your specific design —
-                                    think through these before your interview.
+                                    use them to guide your next iteration.
                                   </p>
                                   <ol className="space-y-2.5 list-none">
                                     {assessmentResult.interviewQuestions.map(
