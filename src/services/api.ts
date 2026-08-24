@@ -9,6 +9,10 @@ import type {
   Collaborator,
 } from "../types/auth";
 import type { CanvasContext, UserIntent } from "../types/chatBot";
+import type {
+  DesignReasoningContext,
+  InterviewSession,
+} from "../types/systemDesign";
 
 // VITE_API_URL is the application's documented API endpoint. Keep the older
 // assessment-specific name as a fallback for existing deployments.
@@ -379,6 +383,8 @@ class ApiService {
     edges: unknown[];
     elapsedTime: number;
     lastAssessment?: unknown;
+    reasoningContext?: DesignReasoningContext;
+    interviewSession?: InterviewSession;
   }): Promise<unknown> {
     const response = await fetch(`${API_BASE_URL}/api/v1/attempts`, {
       method: "POST",

@@ -20,6 +20,62 @@ export interface SystemDesignSolution {
   connections: SystemConnection[];
   explanation: string;
   keyPoints: string[];
+  reasoningContext?: DesignReasoningContext;
+}
+
+/**
+ * System-generated context for the design as a whole. This is intentionally
+ * separate from node properties so the reviewer can distinguish problem and
+ * canvas facts from implementation details.
+ */
+export interface DesignReasoningContext {
+  requirements?: string;
+  scaleAssumptions?: string;
+  expectedTraffic?: string;
+  readWriteRatio?: string;
+  latencyGoals?: string;
+  availabilityTarget?: string;
+  consistencyRequirements?: string;
+  technologyChoices?: string;
+  tradeoffs?: string;
+  unresolvedRisks?: string;
+}
+
+export const EMPTY_REASONING_CONTEXT: DesignReasoningContext = {
+  requirements: "",
+  scaleAssumptions: "",
+  expectedTraffic: "",
+  readWriteRatio: "",
+  latencyGoals: "",
+  availabilityTarget: "",
+  consistencyRequirements: "",
+  technologyChoices: "",
+  tradeoffs: "",
+  unresolvedRisks: "",
+};
+
+export interface InterviewExchange {
+  id: string;
+  question: string;
+  answer: string;
+  critique: string;
+  strengths: string[];
+  gaps: string[];
+  nextQuestion?: string;
+  createdAt: string;
+  skipped?: boolean;
+}
+
+export interface InterviewSession {
+  exchanges: InterviewExchange[];
+  currentQuestionIndex: number;
+}
+
+export interface InterviewResponse {
+  critique: string;
+  strengths: string[];
+  gaps: string[];
+  nextQuestion?: string;
 }
 
 export interface SystemComponent {
