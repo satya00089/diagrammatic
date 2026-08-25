@@ -231,8 +231,8 @@ if (fs.existsSync(distDir)) {
     Array.isArray(embeddedPathCatalog) &&
       embeddedPathCatalog.length === learningPaths.length &&
       learningPaths.every((learningPath) =>
-        embeddedPathCatalog.some((embeddedPath) =>
-          embeddedPath?.slug === learningPath.slug,
+        embeddedPathCatalog.some(
+          (embeddedPath) => embeddedPath?.slug === learningPath.slug,
         ),
       ),
   );

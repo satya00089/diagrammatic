@@ -4341,7 +4341,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           : n,
       ),
     );
-
   };
 
   const pageTitle =
