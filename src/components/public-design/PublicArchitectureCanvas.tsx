@@ -36,12 +36,25 @@ type Selection =
 
 const noop = () => {};
 
-const ReadOnlyNodeShell: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <div className="cursor-pointer [&_*]:pointer-events-none">{children}</div>
+const ReadOnlyNodeShell: React.FC<
+  React.PropsWithChildren<{ highlighted?: boolean }>
+> = ({ children, highlighted = false }) => (
+  <div
+    className="cursor-pointer [&_*]:pointer-events-none"
+    style={{
+      borderRadius: "0.75rem",
+      boxShadow: highlighted
+        ? "0 0 0 2px var(--brand), 0 0 22px color-mix(in srgb, var(--brand) 42%, transparent)"
+        : "none",
+      transition: "box-shadow 150ms ease",
+    }}
+  >
+    {children}
+  </div>
 );
 
 const ReadOnlyCustomNode = (props: NodeProps) => (
-  <ReadOnlyNodeShell>
+  <ReadOnlyNodeShell highlighted={props.data?.highlighted === true}>
     <CustomNode
       id={props.id}
       data={props.data as NodeData}
@@ -116,43 +129,87 @@ const ArchitectureFlow: React.FC<{
   nodes: Node[];
   edges: Edge[];
   onSelect: (selection: Selection) => void;
-}> = ({ nodes, edges, onSelect }) => (
-  <div className="relative h-[28rem] min-h-[28rem] w-full overflow-hidden rounded-xl border border-theme/10 bg-[var(--bg)] sm:h-[34rem] sm:min-h-[34rem] lg:h-[38rem] lg:min-h-[38rem] xl:h-[42rem] xl:min-h-[42rem] 2xl:h-[46rem] 2xl:min-h-[46rem]">
-    <ReactFlow
-      className="public-architecture-canvas"
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={NODE_TYPES}
-      edgeTypes={EDGE_TYPES}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      elementsSelectable
-      nodesFocusable
-      edgesFocusable
-      connectionMode={ConnectionMode.Loose}
-      onNodeClick={(_, node) => onSelect({ kind: "node", id: node.id })}
-      onEdgeClick={(_, edge) => onSelect({ kind: "edge", id: edge.id })}
-      onPaneClick={() => onSelect(null)}
-      panOnDrag
-      zoomOnScroll
-      zoomOnPinch
-      minZoom={0.08}
-      maxZoom={2}
-      fitView
-      fitViewOptions={{ padding: 0.14 }}
-      proOptions={{ hideAttribution: true }}
-    >
-      <Background gap={20} size={1} color="var(--border)" />
-      <Controls showInteractive={false} />
-      <MiniMap
-        nodeStrokeWidth={3}
-        zoomable
-        pannable
-        className="!bottom-3 !right-3"
-      />
-    </ReactFlow>
-  </div>
-);
+}> = ({ nodes, edges, onSelect }) => {
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
+
+  const hoveredEdge = useMemo(
+    () => edges.find((edge) => edge.id === hoveredEdgeId),
+    [edges, hoveredEdgeId],
+  );
+  const highlightedNodeIds = useMemo(
+    () =>
+      new Set(
+        hoveredEdge ? [hoveredEdge.source, hoveredEdge.target] : [],
+      ),
+    [hoveredEdge],
+  );
+  const displayNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          highlighted: highlightedNodeIds.has(node.id),
+        },
+      })),
+    [highlightedNodeIds, nodes],
+  );
+  const displayEdges = useMemo(
+    () =>
+      edges.map((edge) => ({
+        ...edge,
+        data: {
+          ...edge.data,
+          highlighted: edge.id === hoveredEdgeId,
+          dimmed: hoveredEdgeId !== null && edge.id !== hoveredEdgeId,
+        },
+      })),
+    [edges, hoveredEdgeId],
+  );
+
+  return (
+    <div className="relative h-[28rem] min-h-[28rem] w-full overflow-hidden rounded-xl border border-theme/10 bg-[var(--bg)] sm:h-[34rem] sm:min-h-[34rem] lg:h-[38rem] lg:min-h-[38rem] xl:h-[42rem] xl:min-h-[42rem] 2xl:h-[46rem] 2xl:min-h-[46rem]">
+      <ReactFlow
+        className="public-architecture-canvas"
+        nodes={displayNodes}
+        edges={displayEdges}
+        nodeTypes={NODE_TYPES}
+        edgeTypes={EDGE_TYPES}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable
+        nodesFocusable
+        edgesFocusable
+        connectionMode={ConnectionMode.Loose}
+        onNodeClick={(_, node) => onSelect({ kind: "node", id: node.id })}
+        onEdgeClick={(_, edge) => onSelect({ kind: "edge", id: edge.id })}
+        onEdgeMouseEnter={(_, edge) => setHoveredEdgeId(edge.id)}
+        onEdgeMouseLeave={() => setHoveredEdgeId(null)}
+        onPaneClick={() => {
+          setHoveredEdgeId(null);
+          onSelect(null);
+        }}
+        panOnDrag
+        zoomOnScroll
+        zoomOnPinch
+        minZoom={0.08}
+        maxZoom={2}
+        fitView
+        fitViewOptions={{ padding: 0.14 }}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background gap={20} size={1} color="var(--border)" />
+        <Controls showInteractive={false} />
+        <MiniMap
+          nodeStrokeWidth={3}
+          zoomable
+          pannable
+          className="!bottom-3 !right-3"
+        />
+      </ReactFlow>
+    </div>
+  );
+};
 
 const getComponent = (architecture: GuideArchitecture, id: string) =>
   architecture.components.find((component) => component.id === id);

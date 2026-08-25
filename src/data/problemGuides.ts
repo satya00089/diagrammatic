@@ -111,7 +111,7 @@ const urlShortenerArchitecture: GuideArchitecture = {
       componentId: "id-generator",
       label: "ID Generator",
       description: "Reserves unique short codes for new links.",
-      position: { x: 1920, y: 0 },
+      position: { x: 1920, y: -60 },
       properties: { strategy: "Base62 over unique IDs" },
     },
     {

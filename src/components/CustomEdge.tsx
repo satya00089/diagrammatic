@@ -20,6 +20,8 @@ type CustomEdgeData = {
   animated?: boolean;
   bidirectional?: boolean;
   readOnly?: boolean;
+  highlighted?: boolean;
+  dimmed?: boolean;
 };
 
 type ResolvedColors = {
@@ -268,6 +270,8 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   } = props;
 
   const edgeData = data as CustomEdgeData | undefined;
+  const isHighlighted = edgeData?.highlighted ?? false;
+  const isDimmed = edgeData?.dimmed ?? false;
 
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState<string>(edgeData?.label ?? "");
@@ -319,8 +323,10 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   const pathType: EdgePathType = edgeData?.pathType || "smoothstep";
   const edgeColor =
     edgeData?.color ||
-    (selected ? resolvedColors.brand : resolvedColors.text + "99");
-  const strokeW = edgeData?.strokeWidth ?? (selected ? 3 : 2);
+    (selected || isHighlighted
+      ? resolvedColors.brand
+      : resolvedColors.text + "99");
+  const strokeW = edgeData?.strokeWidth ?? (selected || isHighlighted ? 3 : 2);
   const isBidirectional = edgeData?.bidirectional ?? false;
   const readOnly = edgeData?.readOnly ?? false;
 
@@ -381,7 +387,13 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
   };
 
   return (
-    <g className="react-flow__edge">
+    <g
+      className="react-flow__edge"
+      style={{
+        opacity: isDimmed ? 0.22 : 1,
+        transition: "opacity 150ms ease",
+      }}
+    >
       <defs>
         <marker
           id={`arrow-${id}`}
@@ -448,7 +460,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
               hasLabel={hasLabel}
               editing={editing}
               readOnly={readOnly}
-              selected={Boolean(selected)}
+              selected={Boolean(selected || isHighlighted)}
               value={value}
               description={edgeData?.description}
               colors={resolvedColors}
