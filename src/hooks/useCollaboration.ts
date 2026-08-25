@@ -89,7 +89,6 @@ export const useCollaboration = ({
         case "welcome": {
           const user = message.user as CollaboratorUser;
           currentUserIdRef.current = user.id;
-          console.log("Welcome message received:", user.name);
           break;
         }
 
@@ -187,12 +186,7 @@ export const useCollaboration = ({
     [onDiagramUpdate, onUserJoined, onUserLeft, onError],
   );
 
-  const handleOpen = useCallback(() => {
-    console.log("Collaboration WebSocket connected");
-  }, []);
-
   const handleClose = useCallback(() => {
-    console.log("Collaboration WebSocket disconnected");
     setCollaborators([]);
     setCursors([]);
   }, []);
@@ -215,7 +209,6 @@ export const useCollaboration = ({
     url: wsUrl,
     enabled, // Pass the enabled flag to prevent connection when not authenticated
     onMessage: handleMessage,
-    onOpen: handleOpen,
     onClose: handleClose,
     onError: handleError,
     reconnect: true,

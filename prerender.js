@@ -491,6 +491,16 @@ function renderHtml(baseHtml, route, data) {
     new RegExp(String.raw`${staticStart}[\s\S]*?${staticEnd}`),
     `${staticStart}${renderStaticRoute(data)}${staticEnd}`,
   );
+  if (route === "/learning-paths" && Array.isArray(data.initialData)) {
+    const embeddedData = JSON.stringify(data.initialData).replaceAll(
+      "<",
+      String.raw`\u003c`,
+    );
+    html = html.replace(
+      /(<script\s+id="learning-paths-data"\s+type="application\/json">)[\s\S]*?(<\/script>)/i,
+      `$1${embeddedData}$2`,
+    );
+  }
   html = html.replace(
     "</head>",
     `    <script id="route-structured-data" type="application/ld+json">${routeStructuredData(route, data)}</script>\n  </head>`,
@@ -638,6 +648,29 @@ function addProblemRoutes(problems) {
 }
 
 function addLearningPathRoutes(learningPaths) {
+  routes["/learning-paths"].initialData = learningPaths.map((learningPath) => ({
+    id: learningPath.id,
+    slug: learningPath.slug,
+    title: learningPath.title,
+    summary: learningPath.summary,
+    difficulty: learningPath.difficulty,
+    tags: Array.isArray(learningPath.tags) ? learningPath.tags : [],
+    modules: Array.isArray(learningPath.modules)
+      ? learningPath.modules.map((module) => ({
+          id: module.id,
+          title: module.title,
+          order: module.order,
+          lessons: Array.isArray(module.lessons)
+            ? module.lessons.map((lesson) => ({
+                id: lesson.id,
+                title: lesson.title,
+                type: lesson.type,
+              }))
+            : [],
+        }))
+      : [],
+  }));
+
   routes["/learning-paths"].items = learningPaths.map((learningPath) => {
     const modules = Array.isArray(learningPath.modules)
       ? learningPath.modules
@@ -730,7 +763,6 @@ const baseHtml = fs.readFileSync(indexPath, "utf-8");
 for (const [route, data] of Object.entries(routes)) {
   const outputPath = outputPathFor(route);
   fs.writeFileSync(outputPath, renderHtml(baseHtml, route, data), "utf-8");
-  console.log(`Generated ${canonicalUrl(route)}`);
 }
 
 fs.writeFileSync(
@@ -739,6 +771,3 @@ fs.writeFileSync(
   "utf-8",
 );
 writeSitemap();
-console.log(
-  `Generated ${Object.keys(routes).length} routes, ${learningPaths.length} learning paths, and ${publicProblems.length} problem pages.`,
-);

@@ -131,7 +131,6 @@ export class AutoSaveManager {
     this.timeout = setTimeout(async () => {
       try {
         await this.persistence.save(params);
-        console.log("Auto-save successful");
       } catch (error) {
         console.error("Auto-save failed:", error);
       }

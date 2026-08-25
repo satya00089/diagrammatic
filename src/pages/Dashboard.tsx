@@ -700,52 +700,62 @@ const Dashboard: React.FC = () => {
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!problem.id) {
-                                navigate(
-                                  `/problems/${getProblemSlug(problem)}/`,
-                                );
-                                return;
-                              }
-                              if (!isAuth) {
-                                setShowAuthModal(true);
-                                return;
-                              }
-                              navigate(`/playground/${problem.id}`);
-                            }}
-                            aria-label={`Start ${problem.title}`}
-                            className={`w-full px-6 py-3 mt-auto font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
-                              isAuth && attemptedProblems.has(problem.id)
-                                ? "bg-blue-600 text-white hover:shadow-md"
-                                : "bg-[var(--brand)] text-white hover:shadow-md"
-                            }`}
-                          >
-                            <span className="flex items-center justify-center gap-2">
-                              {isAuth && attemptedProblems.has(problem.id) && (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2.5}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                              )}
-                              {isAuth && attemptedProblems.has(problem.id)
-                                ? "Continue Problem"
-                                : "Start Problem"}{" "}
-                              →
-                            </span>
-                          </button>
+                          <div className="mt-auto grid grid-cols-2 gap-2">
+                            <Link
+                              to={`/problems/${getProblemSlug(problem)}/`}
+                              aria-label={`View guide for ${problem.title}`}
+                              className="inline-flex w-full items-center justify-center rounded-xl border border-[var(--brand)]/35 px-3 py-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+                            >
+                              View guide
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!problem.id) {
+                                  navigate(
+                                    `/problems/${getProblemSlug(problem)}/`,
+                                  );
+                                  return;
+                                }
+                                if (!isAuth) {
+                                  setShowAuthModal(true);
+                                  return;
+                                }
+                                navigate(`/playground/${problem.id}`);
+                              }}
+                              aria-label={`Start ${problem.title}`}
+                              className={`w-full px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
+                                isAuth && attemptedProblems.has(problem.id)
+                                  ? "bg-blue-600 text-white hover:shadow-md"
+                                  : "bg-[var(--brand)] text-white hover:shadow-md"
+                              }`}
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                {isAuth &&
+                                  attemptedProblems.has(problem.id) && (
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                      strokeWidth={2.5}
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                  )}
+                                {isAuth && attemptedProblems.has(problem.id)
+                                  ? "Continue Problem"
+                                  : "Start Problem"}{" "}
+                                →
+                              </span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );

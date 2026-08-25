@@ -178,7 +178,6 @@ export const useYjsCollaboration = ({
 
       // Connection status handlers
       provider.on("status", ({ status }: { status: string }) => {
-        console.log("🔌 Yjs Connection Status:", status);
         setState((prev) => ({
           ...prev,
           isConnected: status === "connected",
@@ -187,7 +186,6 @@ export const useYjsCollaboration = ({
       });
 
       provider.on("sync", (isSynced: boolean) => {
-        console.log("🔄 Yjs Sync Status:", isSynced);
         setState((prev) => ({
           ...prev,
           isSynced,
@@ -195,7 +193,6 @@ export const useYjsCollaboration = ({
 
         // Initial sync: push local state to Yjs (only for first client or empty state)
         if (isSynced && yNodes.length === 0 && yEdges.length === 0) {
-          console.log("🔄 Initial Yjs sync - pushing local state");
           isLocalChangeRef.current = true;
           ydoc.transact(() => {
             // Only push if we have local data
@@ -224,12 +221,8 @@ export const useYjsCollaboration = ({
           );
 
           isLocalChangeRef.current = false;
-          console.log(
-            `✅ Initial sync complete - ${nodesRef.current.length} nodes, ${edgesRef.current.length} edges`,
-          );
         } else if (isSynced && (yNodes.length > 0 || yEdges.length > 0)) {
           // If Yjs already has data, pull it (another user already has state)
-          console.log("📥 Yjs already has data - pulling remote state");
           isLocalChangeRef.current = true;
 
           const remoteNodes = yNodes.toArray();
@@ -249,10 +242,6 @@ export const useYjsCollaboration = ({
             }
             return acc;
           }, []);
-
-          console.log(
-            `📥 Pulled ${uniqueNodes.length} nodes, ${uniqueEdges.length} edges from remote`,
-          );
 
           // Update local state with remote data
           onNodesChangeRef.current(uniqueNodes);
@@ -385,9 +374,6 @@ export const useYjsCollaboration = ({
 
           // Only update if different from last synced state
           if (updatedNodesHash !== lastSyncedNodesRef.current) {
-            console.log(
-              `📥 Yjs received ${uniqueNodes.length} unique nodes (deduplicated from ${updatedNodes.length})`,
-            );
             lastSyncedNodesRef.current = updatedNodesHash;
             onNodesChangeRef.current(uniqueNodes);
           }
@@ -420,9 +406,6 @@ export const useYjsCollaboration = ({
 
           // Only update if different from last synced state
           if (updatedEdgesHash !== lastSyncedEdgesRef.current) {
-            console.log(
-              `📥 Yjs received ${uniqueEdges.length} unique edges (deduplicated from ${updatedEdges.length})`,
-            );
             lastSyncedEdgesRef.current = updatedEdgesHash;
             onEdgesChangeRef.current(uniqueEdges);
           }

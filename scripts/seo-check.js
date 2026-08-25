@@ -8,7 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectDir = path.resolve(__dirname, "..");
 const siteUrl = "https://diagrammatic.next-zen.dev";
-const passed = [];
 const failed = [];
 
 function read(relativePath) {
@@ -16,9 +15,7 @@ function read(relativePath) {
 }
 
 function check(description, condition, detail = "") {
-  if (condition) {
-    passed.push(description);
-  } else {
+  if (!condition) {
     failed.push(detail ? `${description}: ${detail}` : description);
   }
 }
@@ -94,6 +91,12 @@ check(
   "Static navigation uses crawlable links",
   indexHtml.includes('href="/problems/"') &&
     indexHtml.includes('href="/learning-paths/"'),
+);
+check(
+  "Learning paths have a build-time data marker",
+  indexHtml.includes(
+    '<script id="learning-paths-data" type="application/json">',
+  ),
 );
 check(
   "Search-only hidden content was removed",
@@ -209,6 +212,28 @@ if (fs.existsSync(distDir)) {
     "utf-8",
   );
 
+  const embeddedLearningPaths = learningIndex.match(
+    /<script\s+id="learning-paths-data"\s+type="application\/json">([\s\S]*?)<\/script>/i,
+  );
+  let embeddedPathCatalog = [];
+  if (embeddedLearningPaths) {
+    try {
+      embeddedPathCatalog = JSON.parse(embeddedLearningPaths[1]);
+    } catch {
+      embeddedPathCatalog = [];
+    }
+  }
+  check(
+    "Built learning-path index embeds the path catalog",
+    Array.isArray(embeddedPathCatalog) &&
+      embeddedPathCatalog.length === learningPaths.length &&
+      learningPaths.every((learningPath) =>
+        embeddedPathCatalog.some(
+          (embeddedPath) => embeddedPath?.slug === learningPath.slug,
+        ),
+      ),
+  );
+
   const problemIndex = fs.readFileSync(
     path.join(distDir, "problems", "index.html"),
     "utf-8",
@@ -272,8 +297,6 @@ if (fs.existsSync(distDir)) {
   }
 }
 
-console.log(`\nSEO checks: ${passed.length} passed, ${failed.length} failed\n`);
-for (const description of passed) console.log(`PASS  ${description}`);
 for (const description of failed) console.error(`FAIL  ${description}`);
 
 process.exit(failed.length ? 1 : 0);

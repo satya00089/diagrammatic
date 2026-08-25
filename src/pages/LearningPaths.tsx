@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
@@ -9,9 +9,244 @@ import { useTheme } from "../hooks/useTheme";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
-import { fetchLearningPaths } from "../services/contentLoader";
+import {
+  fetchLearningPaths,
+  getEmbeddedLearningPaths,
+} from "../services/contentLoader";
 import type { LearningPath } from "../services/contentLoader";
 import LearningPathCard from "../components/learning-paths/LearningPathCard";
+import type { User } from "../types/auth";
+
+const getHeaderPathStatus = (
+  loading: boolean,
+  pathCount: number,
+  loadError: boolean,
+) => {
+  if (loading) return "Loading...";
+  if (pathCount > 0) return `${pathCount} paths available`;
+  if (loadError) return "Learning paths unavailable";
+  return "No paths available";
+};
+
+const getPathCountLabel = (pathCount: number) => {
+  if (pathCount === 1) return "1 path";
+  return `${pathCount} paths`;
+};
+
+const getPathAvailabilityMessage = (
+  loading: boolean,
+  pathCount: number,
+  loadError: boolean,
+) => {
+  if (loading) return "Loading paths...";
+  if (pathCount > 0) return getPathCountLabel(pathCount);
+  if (loadError) return "Learning paths are temporarily unavailable";
+  return "No learning paths are available yet";
+};
+
+type LearningPathsHeaderActionsProps = {
+  isAuth: boolean;
+  user: User | null;
+  loading: boolean;
+  pathCount: number;
+  loadError: boolean;
+  showUserMenu: boolean;
+  onNavigate: (path: string) => void;
+  onStartTour: () => void;
+  onToggleUserMenu: () => void;
+  onEditPreferences: () => void;
+  onLogout: () => void;
+  onSignIn: () => void;
+};
+
+const LearningPathUserAvatar: React.FC<{ user: User | null }> = ({ user }) => {
+  if (user?.picture) {
+    return (
+      <img
+        src={user.picture}
+        alt={user.name || "User"}
+        className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+      />
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
+      {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
+    </div>
+  );
+};
+
+type LearningPathAccountControlProps = {
+  isAuth: boolean;
+  user: User | null;
+  showUserMenu: boolean;
+  onToggleUserMenu: () => void;
+  onEditPreferences: () => void;
+  onLogout: () => void;
+  onSignIn: () => void;
+};
+
+const LearningPathAccountControl: React.FC<LearningPathAccountControlProps> = ({
+  isAuth,
+  user,
+  showUserMenu,
+  onToggleUserMenu,
+  onEditPreferences,
+  onLogout,
+  onSignIn,
+}) => {
+  if (!isAuth) {
+    return (
+      <button
+        type="button"
+        onClick={onSignIn}
+        className="px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-md hover:bg-white/30 transition-colors"
+      >
+        Sign In
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onToggleUserMenu}
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
+      >
+        <LearningPathUserAvatar user={user} />
+        <span className="hidden sm:inline">{user?.name || user?.email}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      {showUserMenu && (
+        <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
+          <div className="px-4 py-2">
+            <p className="text-sm font-medium text-theme">
+              {user?.name || "User"}
+            </p>
+            <p className="text-xs text-muted truncate">{user?.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onEditPreferences}
+            aria-label="Edit preferences"
+            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
+          >
+            Edit preferences
+          </button>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
+    </>
+  );
+};
+
+const LearningPathsHeaderActions: React.FC<LearningPathsHeaderActionsProps> = ({
+  isAuth,
+  user,
+  loading,
+  pathCount,
+  loadError,
+  showUserMenu,
+  onNavigate,
+  onStartTour,
+  onToggleUserMenu,
+  onEditPreferences,
+  onLogout,
+  onSignIn,
+}) => (
+  <div className="flex items-center gap-4">
+    {isAuth && (
+      <button
+        type="button"
+        onClick={() => onNavigate("/diagrams")}
+        className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
+      >
+        My Designs
+      </button>
+    )}
+
+    <div className="hidden md:block text-sm text-white/90">
+      {getHeaderPathStatus(loading, pathCount, loadError)}
+    </div>
+
+    <button
+      type="button"
+      onClick={onStartTour}
+      data-tooltip="Take a tour"
+      className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+    >
+      <MdHelpOutline className="h-4 w-4" />
+      <span className="hidden sm:inline">Tour</span>
+    </button>
+
+    <ThemeSwitcher />
+
+    <div className="relative">
+      <LearningPathAccountControl
+        isAuth={isAuth}
+        user={user}
+        showUserMenu={showUserMenu}
+        onToggleUserMenu={onToggleUserMenu}
+        onEditPreferences={onEditPreferences}
+        onLogout={onLogout}
+        onSignIn={onSignIn}
+      />
+    </div>
+  </div>
+);
+
+const LearningPathGridContent: React.FC<{
+  loading: boolean;
+  paths: LearningPath[];
+  loadError: boolean;
+}> = ({ loading, paths, loadError }) => {
+  if (loading) {
+    return (
+      <div className="col-span-3 flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
+      </div>
+    );
+  }
+
+  if (paths.length === 0 && loadError) {
+    return (
+      <p className="col-span-3 py-12 text-center text-muted">
+        Learning paths are temporarily unavailable. Please try again shortly.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      {paths.map((path) => (
+        <LearningPathCard key={path.id} path={path} />
+      ))}
+    </>
+  );
+};
 
 const LearningPaths: React.FC = () => {
   useTheme();
@@ -30,8 +265,14 @@ const LearningPaths: React.FC = () => {
   const { startTour } = useTour("learning_paths");
   const { trackPageView } = useAnalytics({ isEnabled: true });
 
-  const [paths, setPaths] = useState<LearningPath[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialPathsRef = useRef<LearningPath[] | null>(null);
+  if (initialPathsRef.current === null) {
+    initialPathsRef.current = getEmbeddedLearningPaths();
+  }
+  const initialPaths = initialPathsRef.current ?? [];
+  const [paths, setPaths] = useState<LearningPath[]>(initialPaths);
+  const [loading, setLoading] = useState(initialPaths.length === 0);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     // mark visited + optional tour
@@ -51,11 +292,32 @@ const LearningPaths: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
+    let mounted = true;
+
     fetchLearningPaths()
-      .then((data) => setPaths(data))
-      .catch((err) => console.error("Failed to load learning paths", err))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!mounted) return;
+        // Do not let an empty refresh erase a valid build-time catalog.
+        if (data.length > 0 || initialPathsRef.current?.length === 0) {
+          setPaths(data);
+          setLoadError(false);
+        } else {
+          setLoadError(true);
+        }
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        // Keep the embedded catalog visible when the refresh is unavailable.
+        console.error("Failed to refresh learning paths", err);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -91,121 +353,26 @@ const LearningPaths: React.FC = () => {
                   Diagrammatic
                 </span>
               </button>
-              <div className="flex items-center gap-4">
-                {isAuth && (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/diagrams")}
-                    className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
-                  >
-                    My Designs
-                  </button>
-                )}
-
-                <div className="hidden md:block text-sm text-white/90">
-                  {loading ? "Loading..." : `${paths.length} paths available`}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={startTour}
-                  data-tooltip="Take a tour"
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                >
-                  <MdHelpOutline className="h-4 w-4" />
-                  <span className="hidden sm:inline">Tour</span>
-                </button>
-
-                <ThemeSwitcher />
-
-                <div className="relative">
-                  {isAuth ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
-                      >
-                        {user?.picture ? (
-                          <img
-                            src={user.picture}
-                            alt={user.name || "User"}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                            {user?.name?.[0]?.toUpperCase() ||
-                              user?.email?.[0]?.toUpperCase() ||
-                              "U"}
-                          </div>
-                        )}
-                        <span className="hidden sm:inline">
-                          {user?.name || user?.email}
-                        </span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-
-                      {showUserMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                          <div className="px-4 py-2">
-                            <p className="text-sm font-medium text-theme">
-                              {user?.name || "User"}
-                            </p>
-                            <p className="text-xs text-muted truncate">
-                              {user?.email}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              globalThis.dispatchEvent(
-                                new Event("open-quick-setup"),
-                              );
-                              setShowUserMenu(false);
-                            }}
-                            aria-label="Edit preferences"
-                            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
-                          >
-                            Edit preferences
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              logout();
-                              setShowUserMenu(false);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            Sign Out
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-md hover:bg-white/30 transition-colors"
-                    >
-                      Sign In
-                    </button>
-                  )}
-                </div>
-              </div>
+              <LearningPathsHeaderActions
+                isAuth={isAuth}
+                user={user}
+                loading={loading}
+                pathCount={paths.length}
+                loadError={loadError}
+                showUserMenu={showUserMenu}
+                onNavigate={navigate}
+                onStartTour={startTour}
+                onToggleUserMenu={() => setShowUserMenu(!showUserMenu)}
+                onEditPreferences={() => {
+                  globalThis.dispatchEvent(new Event("open-quick-setup"));
+                  setShowUserMenu(false);
+                }}
+                onLogout={() => {
+                  logout();
+                  setShowUserMenu(false);
+                }}
+                onSignIn={() => setShowAuthModal(true)}
+              />
             </div>
           </div>
         </header>
@@ -227,20 +394,16 @@ const LearningPaths: React.FC = () => {
 
             <div className="mb-4 flex items-center justify-between">
               <div className="text-sm text-muted">
-                {loading
-                  ? "Loading paths..."
-                  : `${paths.length} path${paths.length !== 1 ? "s" : ""}`}
+                {getPathAvailabilityMessage(loading, paths.length, loadError)}
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {loading ? (
-                <div className="col-span-3 flex items-center justify-center py-16">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--brand)]" />
-                </div>
-              ) : (
-                paths.map((p) => <LearningPathCard key={p.id} path={p} />)
-              )}
+              <LearningPathGridContent
+                loading={loading}
+                paths={paths}
+                loadError={loadError}
+              />
             </div>
           </div>
         </div>
