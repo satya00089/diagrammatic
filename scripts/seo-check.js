@@ -8,7 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectDir = path.resolve(__dirname, "..");
 const siteUrl = "https://diagrammatic.next-zen.dev";
-const passed = [];
 const failed = [];
 
 function read(relativePath) {
@@ -16,9 +15,7 @@ function read(relativePath) {
 }
 
 function check(description, condition, detail = "") {
-  if (condition) {
-    passed.push(description);
-  } else {
+  if (!condition) {
     failed.push(detail ? `${description}: ${detail}` : description);
   }
 }
