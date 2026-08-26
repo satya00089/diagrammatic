@@ -884,7 +884,7 @@ const documentManagementArchitecture: GuideArchitecture = {
       source: "change-events",
       target: "search-worker",
       type: "event-stream",
-      label: "Index work",
+      label: "Index work", 
       description: "Extract searchable text from the newest document state.",
       properties: {
         sourceHandle: "bottom",
