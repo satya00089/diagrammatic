@@ -4,7 +4,12 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import AnimatedTextarea from "../components/shared/AnimatedTextarea";
 import SEO from "../components/SEO";
-import { HiDocumentText, HiLightBulb, HiArrowRight } from "react-icons/hi2";
+import {
+  HiDocumentText,
+  HiLightBulb,
+  HiArrowRight,
+  HiChevronDown,
+} from "react-icons/hi2";
 import {
   MdTune,
   MdLabel,
@@ -210,21 +215,27 @@ const CreateProblem: React.FC = () => {
                     >
                       <MdTune className="w-5 h-5" /> Difficulty
                     </label>
-                    <select
-                      id="difficulty"
-                      value={formData.difficulty}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "difficulty",
-                          e.target.value as "Easy" | "Medium" | "Hard",
-                        )
-                      }
-                      className="w-full px-5 py-4 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--bg)] text-theme cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
-                    >
-                      <option value="Easy">Easy</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Hard">Hard</option>
-                    </select>
+                    <div className="select-field-wrapper">
+                      <select
+                        id="difficulty"
+                        value={formData.difficulty}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "difficulty",
+                            e.target.value as "Easy" | "Medium" | "Hard",
+                          )
+                        }
+                        className="select-field"
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                      <HiChevronDown
+                        aria-hidden="true"
+                        className="select-field-icon"
+                      />
+                    </div>
                   </div>
 
                   <div>

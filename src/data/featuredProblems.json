@@ -295,5 +295,20 @@
     "category": "E-commerce",
     "estimated_time": "60-90 minutes",
     "tags": ["e-commerce", "catalog", "search", "data-modeling", "consistency"]
+  },
+  {
+    "slug": "design-facebook-likes-feature-with-live-updates",
+    "title": "Design Facebook Likes with Live Updates",
+    "description": "Design a like and unlike feature with reliable per-user state, scalable counts, and live updates for viewers of the same post.",
+    "difficulty": "Hard",
+    "category": "Social Media",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "social-media",
+      "real-time",
+      "event-driven",
+      "scalability",
+      "consistency"
+    ]
   }
 ]

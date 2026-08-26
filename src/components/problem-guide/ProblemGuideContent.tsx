@@ -158,13 +158,16 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   const isPagePresence =
     problemSlug ===
     "design-a-feature-to-show-the-number-of-users-viewing-a-page";
+  const isFacebookLikesLiveUpdates =
+    problemSlug === "design-facebook-likes-feature-with-live-updates";
   const isAnnotatedProblem =
     isDocumentManagement ||
     isUrlShortener ||
     isJobScheduler ||
     isPartsCompatibility ||
     isPriceAlert ||
-    isPagePresence;
+    isPagePresence ||
+    isFacebookLikesLiveUpdates;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
@@ -175,7 +178,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           ? "Observation rate"
           : isPagePresence
             ? "Heartbeat rate"
-            : "Peak dispatch rate";
+            : isFacebookLikesLiveUpdates
+              ? "Peak write rate"
+              : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
@@ -186,7 +191,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           ? "Accept a price observation"
           : isPagePresence
             ? "Join the page"
-            : "Claim due work";
+            : isFacebookLikesLiveUpdates
+              ? "Commit the user's like state"
+              : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
@@ -197,7 +204,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           ? "Deliver asynchronously"
           : isPagePresence
             ? "Expire inactive presence"
-            : "Enqueue an execution";
+            : isFacebookLikesLiveUpdates
+              ? "Broadcast asynchronously"
+              : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
@@ -224,6 +233,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           type: "highlight" as const,
           color: isDarkTheme ? "#3730a3" : "#c7d2fe",
           padding: [7, 10] as [number, number],
+          multiline: true,
           iterations: 1,
           animationDuration: 800,
         },
@@ -296,7 +306,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         <p className="mt-4 text-lg leading-8 text-theme">
           <span
             ref={isAnnotatedProblem ? promptRef : undefined}
-            className="inline-block max-w-full px-2 py-1"
+            className="relative inline-block max-w-full px-2 py-1"
           >
             {guide.prompt.brief}
           </span>
@@ -326,6 +336,11 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ref={
                     isAnnotatedProblem && index === 0
                       ? successSignalRef
+                      : undefined
+                  }
+                  className={
+                    isAnnotatedProblem && index === 0
+                      ? "relative inline-block"
                       : undefined
                   }
                 >
@@ -377,7 +392,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                 {metric.label === highlightedMetricLabel ? (
                   <span
                     ref={isAnnotatedProblem ? peakEditRateRef : undefined}
-                    className="inline-block px-1 py-0.5"
+                    className="relative inline-block px-1 py-0.5"
                   >
                     {metric.value}
                   </span>
@@ -521,12 +536,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   {step.title === durableStepTitle ? (
                     <span
                       ref={isAnnotatedProblem ? durableBoundaryRef : undefined}
-                      className="inline-block px-2 py-1"
+                      className="relative inline-block px-2 py-1"
                     >
                       {step.title}
                     </span>
                   ) : step.title === asyncStepTitle ? (
-                    <span ref={isAnnotatedProblem ? asyncWorkRef : undefined}>
+                    <span
+                      ref={isAnnotatedProblem ? asyncWorkRef : undefined}
+                      className="relative inline-block"
+                    >
                       {step.title}
                     </span>
                   ) : (
