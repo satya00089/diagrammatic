@@ -1,4 +1,3 @@
-import { sortComponentsByUsage } from "../config/components";
 import type { GuideArchitecture, ProblemGuide } from "../types/problemGuide";
 
 const urlShortenerArchitecture: GuideArchitecture = {
