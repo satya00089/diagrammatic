@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
@@ -11,8 +11,8 @@ import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
-import { VscAzureDevops } from "react-icons/vsc";
-import { VscAzure } from "react-icons/vsc";
+import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
+import { VscAzureDevops, VscAzure } from "react-icons/vsc";
 import { SiGooglecloud } from "react-icons/si";
 import { FaAws } from "react-icons/fa6";
 import { FaServer, FaBolt, FaNetworkWired, FaCloud } from "react-icons/fa";
@@ -148,8 +148,52 @@ const Home: React.FC = () => {
   const [isDeletingHeroMessage, setIsDeletingHeroMessage] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
+  const heroTitleRef = useRef<HTMLSpanElement>(null);
+  const learningLoopTitleRef = useRef<HTMLHeadingElement>(null);
+  const architectureLabelRef = useRef<HTMLSpanElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mousePxRef = useRef({ x: -9999, y: -9999 });
+
+  const roughAnnotationTargets = useMemo(
+    () => [
+      {
+        ref: heroTitleRef,
+        config: {
+          type: "underline" as const,
+          color: "#67e8f9",
+          strokeWidth: 3,
+          padding: 3,
+          iterations: 2,
+          animationDuration: 700,
+        },
+      },
+      {
+        ref: learningLoopTitleRef,
+        config: {
+          type: "highlight" as const,
+          color: "#fde68a",
+          padding: 2,
+          iterations: 1,
+          animationDuration: 850,
+        },
+      },
+      {
+        ref: architectureLabelRef,
+        config: {
+          type: "bracket" as const,
+          brackets: "left" as const,
+          color: "#6366f1",
+          strokeWidth: 2,
+          padding: 6,
+          iterations: 2,
+          animationDuration: 650,
+        },
+      },
+    ],
+    [],
+  );
+
+  useRoughAnnotation(roughAnnotationTargets);
 
   const handleNavigate = (route: string, requiresAuth = true) => {
     if (requiresAuth && !isAuthenticated) {
@@ -737,8 +781,9 @@ const Home: React.FC = () => {
                 }`}
               >
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
-                  Design architectures.
-                  <br />
+                  Design <span ref={heroTitleRef}>architectures.</span>
+                </h1>
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
                   <span
                     className="text-white/80 inline-block min-h-[1.05em]"
                     aria-live="polite"
@@ -755,7 +800,6 @@ const Home: React.FC = () => {
                   scalability, reliability, data design, and trade-offs with
                   feedback grounded in your diagram.
                 </p>
-
                 <div
                   className="flex flex-col sm:flex-row gap-4 justify-center items-center"
                   data-tour="hero-cta"
@@ -812,13 +856,16 @@ const Home: React.FC = () => {
         {/* The product loop: a concrete preview of what happens after the click. */}
         <section className="relative px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="relative z-10 mx-auto max-w-7xl">
-            <div className="mb-10 max-w-2xl">
+            <div className="mb-10">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
                 The learning loop
               </p>
-              <h2 className="text-3xl font-bold tracking-[-0.03em] text-theme sm:text-4xl">
+              <span
+                ref={learningLoopTitleRef}
+                className="text-3xl font-bold tracking-[-0.03em] text-black sm:text-4xl"
+              >
                 Don&apos;t just draw the boxes. Defend the decisions.
-              </h2>
+              </span>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
                 Diagrammatic turns an interview prompt into a design you can
                 inspect, explain, and improve.
@@ -828,7 +875,10 @@ const Home: React.FC = () => {
             <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
               <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  <span
+                    ref={architectureLabelRef}
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-muted"
+                  >
                     Problem
                   </span>
                   <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-1 text-xs font-medium text-[var(--brand)]">
