@@ -1,10 +1,13 @@
 import { useLayoutEffect, type RefObject } from "react";
-import {
-  annotate,
-  annotationGroup,
-  type RoughAnnotationConfig,
-  type RoughAnnotation,
-} from "rough-notation";
+import { annotate, annotationGroup } from "rough-notation";
+type RoughAnnotationConfig = Omit<
+  Parameters<typeof annotate>[1],
+  "brackets" | "padding"
+> & {
+  brackets?: string | string[];
+  padding?: number | number[];
+};
+type RoughAnnotation = ReturnType<typeof annotate>;
 
 type AnnotationTarget = {
   ref: RefObject<HTMLElement | null>;
@@ -34,7 +37,7 @@ export const useRoughAnnotation = (
             annotate(ref.current, {
               ...config,
               animate: config.animate ?? !prefersReducedMotion,
-            }),
+            } as Parameters<typeof annotate>[1]),
           ]
         : [],
     );

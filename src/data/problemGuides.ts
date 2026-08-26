@@ -2519,12 +2519,166 @@ const partsCompatibilityGuide: ProblemGuide = {
   ],
 };
 
+const priceAlertArchitecture: GuideArchitecture = {
+  title: "Price alert reference architecture",
+  summary:
+    "A scheduled collection pipeline turns marketplace prices into durable events; a stateful evaluator deduplicates transitions before notification delivery.",
+  layers: [
+    {
+      id: "experience",
+      label: "Experience and control plane",
+      description: "Clients manage products, alert rules, channels, and delivery preferences.",
+      componentIds: ["client", "gateway", "alert-service", "catalog-store"],
+    },
+    {
+      id: "collection",
+      label: "Collection and event plane",
+      description: "Schedulers and workers fetch current prices with provider-aware throttling.",
+      componentIds: ["scheduler", "collector", "price-events", "price-store"],
+    },
+    {
+      id: "evaluation",
+      label: "Evaluation and delivery plane",
+      description: "Rules are evaluated against price changes and delivered with retry and idempotency controls.",
+      componentIds: ["evaluator", "notification-service", "delivery-store", "monitoring"],
+    },
+  ],
+  keyPaths: [
+    {
+      id: "alert-creation",
+      label: "Alert creation path",
+      description: "Client → gateway → alert service → durable catalog store.",
+      componentIds: ["client", "gateway", "alert-service", "catalog-store"],
+    },
+    {
+      id: "price-evaluation",
+      label: "Price evaluation path",
+      description: "Scheduler → collectors → price events → evaluator → notification delivery.",
+      componentIds: ["scheduler", "collector", "price-events", "evaluator", "notification-service"],
+    },
+  ],
+  components: [
+    { id: "client", type: "client", componentId: "web-app", label: "Web / Mobile Clients", description: "Users create alerts, view price history, and manage notification preferences.", position: { x: 0, y: 240 }, properties: { traffic: "Alert CRUD and history reads" } },
+    { id: "gateway", type: "api-gateway", componentId: "api-gateway", label: "API Gateway", description: "Authenticates users, validates product identifiers and applies quotas.", position: { x: 420, y: 240 }, properties: { protection: "Auth, validation, rate limits" } },
+    { id: "alert-service", type: "application-server", componentId: "backend-server", label: "Alert Service", description: "Stores alert rules and exposes product, history, and preference APIs.", position: { x: 840, y: 240 }, properties: { consistency: "Conditional writes for rule state" } },
+    { id: "catalog-store", type: "database", componentId: "database", label: "Alert Catalog", description: "Durable source of truth for users, products, rules, preferences, and alert state.", position: { x: 1260, y: 240 }, properties: { accessPattern: "User rules and product subscriptions" } },
+    { id: "scheduler", type: "microservice", componentId: "message-dispatcher", label: "Collection Scheduler", description: "Creates provider-aware collection work for due products and reprioritizes hot demand.", position: { x: 840, y: 620 }, properties: { policy: "Adaptive cadence and backoff" } },
+    { id: "collector", type: "microservice", componentId: "processing-worker", label: "Price Collectors", description: "Fetch current prices, normalize offers, and respect marketplace limits.", position: { x: 1260, y: 620 }, properties: { isolation: "Per-provider quotas and retries" } },
+    { id: "price-events", type: "queue", componentId: "message-broker", label: "Price Event Stream", description: "Durably buffers normalized observations so evaluation can scale independently.", position: { x: 1680, y: 620 }, properties: { delivery: "At-least-once with partitioning" } },
+    { id: "price-store", type: "database", componentId: "database", label: "Price History Store", description: "Keeps the latest observation and compact historical buckets for charts and audits.", position: { x: 1680, y: 120 }, properties: { accessPattern: "Latest price by product and time buckets" } },
+    { id: "evaluator", type: "microservice", componentId: "stream-processor", label: "Rule Evaluator", description: "Loads active rules, compares old and new state, and records a notification decision.", position: { x: 2100, y: 620 }, properties: { correctness: "Transition dedupe and cooldowns" } },
+    { id: "notification-service", type: "notification-service", componentId: "notification-service", label: "Notification Delivery", description: "Sends push, email, or SMS through providers with retries and channel policy.", position: { x: 2520, y: 620 }, properties: { guarantee: "Idempotent, observable delivery" } },
+    { id: "delivery-store", type: "database", componentId: "database", label: "Delivery Ledger", description: "Records notification keys, attempts, provider responses, and user-visible status.", position: { x: 2520, y: 120 }, properties: { key: "rule_id + price_version + channel" } },
+    { id: "monitoring", type: "monitoring", componentId: "monitoring", label: "Monitoring", description: "Tracks freshness, provider errors, queue lag, evaluation rate, and delivery success.", position: { x: 2940, y: 260 }, properties: { signals: "Freshness, lag, errors, duplicates" } },
+  ],
+  connections: [
+    { id: "client-gateway", source: "client", target: "gateway", type: "http", label: "HTTPS", description: "Create or manage an alert." },
+    { id: "gateway-alert", source: "gateway", target: "alert-service", type: "api-call", label: "API", description: "Validate and route alert operations." },
+    { id: "alert-catalog", source: "alert-service", target: "catalog-store", type: "database-connection", label: "Persist", description: "Store rules, preferences, and product subscriptions." },
+    { id: "scheduler-collector", source: "scheduler", target: "collector", type: "message-queue", label: "Collection job", description: "Dispatch due product fetches with provider-aware limits." },
+    { id: "collector-events", source: "collector", target: "price-events", type: "event-stream", label: "Price observed", description: "Publish normalized observations asynchronously." },
+    { id: "collector-history", source: "collector", target: "price-store", type: "database-connection", label: "Latest + history", description: "Update current state and append a compact history point." },
+    { id: "events-evaluator", source: "price-events", target: "evaluator", type: "event-stream", label: "Consume", description: "Evaluate each observation independently and idempotently." },
+    { id: "evaluator-catalog", source: "evaluator", target: "catalog-store", type: "database-connection", label: "Load rules", description: "Read active rules and update their trigger/cooldown state." },
+    { id: "evaluator-delivery", source: "evaluator", target: "notification-service", type: "message-queue", label: "Notify", description: "Create a deduplicated delivery request." },
+    { id: "evaluator-ledger", source: "evaluator", target: "delivery-store", type: "database-connection", label: "Decision", description: "Persist the notification key before delivery." },
+    { id: "delivery-ledger", source: "notification-service", target: "delivery-store", type: "database-connection", label: "Attempt", description: "Record provider attempts and final status." },
+    { id: "service-monitoring", source: "evaluator", target: "monitoring", type: "event-stream", label: "Metrics", description: "Emit freshness, evaluation, and delivery signals." },
+  ],
+};
+
+const priceAlertGuide: ProblemGuide = {
+  prompt: {
+    brief: "Design a service where users watch products across marketplaces and receive one timely notification when a price rule is met, despite stale data, provider limits, retries, and traffic spikes.",
+    successSignals: [
+      "Separate price collection freshness from alert evaluation and notification delivery.",
+      "Make marketplace throttling, retries, and adaptive polling explicit.",
+      "Use durable state and idempotency so at-least-once events do not spam users.",
+      "Define what a price means when variants, sellers, currencies, shipping, or taxes differ.",
+    ],
+  },
+  requirements: {
+    functional: [
+      "Create, pause, resume, and delete alerts for a product or offer.",
+      "Support target-price, percentage-drop, and back-in-stock rules with a cooldown.",
+      "Collect prices from multiple providers and show current price plus history.",
+      "Notify through user-selected channels and expose delivery status.",
+      "Allow users to unsubscribe, change cadence, and export or delete their data.",
+    ],
+    nonFunctional: [
+      "Deliver a triggered alert within 1 minute after a qualifying observation is accepted.",
+      "Never lose a committed alert or price observation; duplicate notifications are unacceptable.",
+      "Respect provider rate limits, robots/terms constraints, user quotas, and notification opt-outs.",
+      "Tolerate provider outages and stale prices without presenting stale data as current.",
+      "Keep alert CRUD responsive even while collection and delivery backlogs grow.",
+    ],
+    scaleAssumptions: [
+      "10 million registered users, 2 million daily active users, and 50 million active alerts.",
+      "100 million product observations per day across providers, with a 10x burst during sales.",
+      "A product is collected every 15 minutes by default; hot products can receive shorter cadences within quota.",
+      "Assume 5% of observations qualify for evaluation and 1% result in a notification after cooldowns.",
+    ],
+    metrics: [
+      { label: "Observation rate", value: "~1.2K/s avg", description: "100M daily observations; provision collectors and queues for ~12K/s bursts." },
+      { label: "Active rules", value: "50M", description: "Rules drive indexed evaluation lookups; do not scan every user on each price event." },
+      { label: "Notification rate", value: "~12/s avg", description: "At 1% of observations, with campaign spikes and provider-specific quotas." },
+      { label: "Freshness target", value: "≤15 min", description: "Default product freshness; show observed_at and provider status with every price." },
+    ],
+  },
+  entities: [
+    { name: "Product / Offer", fields: ["product_id", "provider", "seller_id", "variant", "currency", "availability"], notes: "Normalize identity and offer dimensions before comparing prices; a product page may have many sellers and variants." },
+    { name: "AlertRule", fields: ["rule_id", "user_id", "product_id", "condition", "threshold", "cooldown_until", "status"], notes: "Index active rules by product_id and status so one observation finds only relevant rules." },
+    { name: "PriceObservation", fields: ["observation_id", "offer_id", "price", "shipping", "tax", "observed_at", "source_version"], notes: "Persist provider timestamp and freshness; never silently overwrite a newer observation with a late response." },
+    { name: "NotificationLedger", fields: ["dedupe_key", "rule_id", "channel", "attempts", "provider_id", "status"], notes: "The dedupe key makes retries safe and lets users see whether a triggered alert was delivered." },
+  ],
+  apis: [
+    { method: "POST", path: "/v1/alerts", contract: "{ productId, condition, threshold, channels, cooldown } -> { ruleId, status }", notes: "Authenticate, normalize the product/offer, validate thresholds and consent, then write idempotently." },
+    { method: "GET", path: "/v1/products/{productId}/price", contract: "{ current, observedAt, freshness, providerStatus, history }", notes: "Return the latest accepted observation with explicit freshness and currency/offer semantics." },
+    { method: "PATCH", path: "/v1/alerts/{ruleId}", contract: "{ threshold?, cadence?, channels?, status? } -> updated rule", notes: "Authorize the owner and version the rule so an in-flight evaluation uses a known snapshot." },
+    { method: "POST", path: "/internal/price-observations", contract: "{ offer, price, observedAt, sourceVersion, requestId } -> { accepted, eventId }", notes: "Provider adapters authenticate internally; reject late or malformed observations and dedupe requestId." },
+  ],
+  dataFlow: [
+    { title: "Create the alert", description: "The API validates the rule, resolves the product identity, stores the rule and preferences, and returns immediately without waiting for a price fetch." },
+    { title: "Schedule collection", description: "A scheduler chooses due products using cadence, demand, freshness, provider quotas, and exponential backoff, then dispatches bounded collection jobs." },
+    { title: "Accept a price observation", description: "A provider adapter normalizes currency, variant, seller, shipping, and availability; it rejects late data, stores the latest version, and publishes a durable price event." },
+    { title: "Evaluate the rule", description: "The evaluator loads only active rules for the product, compares the previous accepted state, applies cooldowns, and records a deduplicated notification decision." },
+    { title: "Deliver asynchronously", description: "Channel workers send notifications with provider retries, record attempts in the ledger, and expose failure or opt-out status without blocking collection." },
+  ],
+  architecture: priceAlertArchitecture,
+  deepDives: [
+    { title: "Collection under provider limits", points: ["Treat each provider as a quota domain with concurrency, request, and retry budgets.", "Use adaptive cadence: prioritize active alerts and recently viewed products, but cap per-user and per-provider cost.", "Back off on 429s and outages, preserve next_due_at, and surface freshness rather than fabricating a current price."] },
+    { title: "Correct price semantics", points: ["Define whether the threshold uses item price, delivered price, or total price including shipping and tax.", "Normalize currency with the observation timestamp and keep seller, variant, and availability dimensions in the identity.", "Reject out-of-order observations using provider timestamps and a monotonic source version where available."] },
+    { title: "Exactly-once user experience", points: ["The pipeline can be at-least-once, but the notification ledger must make the user-visible effect idempotent.", "Build dedupe_key from rule, qualifying price version, and channel; write it conditionally before sending.", "Use an outbox or transactional handoff when a rule state change and notification decision must be committed together."] },
+    { title: "Freshness and failure handling", points: ["Measure freshness by provider, product, and alert population; stale data should be visible in the API and UI.", "Keep CRUD on separate capacity from collectors and notification workers.", "After recovery, drain by priority with jitter so a provider outage does not create a thundering herd."] },
+  ],
+  tradeoffs: [
+    { title: "Polling vs provider webhooks", recommendation: "Use webhooks where a provider offers trustworthy price events, with polling as a reconciliation and fallback path.", caution: "Polling is broadly compatible but expensive and bounded by provider quotas; webhooks introduce delivery, authenticity, and coverage gaps." },
+    { title: "Evaluate on every observation vs pre-index rules", recommendation: "Index active rules by normalized product/offer key and evaluate only the affected rules.", caution: "A broad product identity can create hot partitions; shard hot keys or use a two-stage product-to-rule index." },
+    { title: "Immediate vs digest notifications", recommendation: "Offer immediate alerts for high-value thresholds and digests for noisy percentage or inventory changes.", caution: "Immediate delivery increases provider cost and spam risk; digests add latency and require a clear pending-state model." },
+  ],
+  commonMistakes: ["Scanning all 50M rules for every price update.", "Ignoring variant, seller, currency, shipping, tax, and availability semantics.", "Retrying collection forever without honoring provider quotas or backoff.", "Sending before recording a dedupe key, causing duplicate notifications on retries.", "Showing a stale observation as current or hiding provider outage state."],
+  followUps: [
+    { question: "What if a sale causes millions of alerts at once?", answer: "Partition evaluations, apply per-user and channel quotas, enqueue notifications durably, prioritize users with immediate delivery, and fall back to digest or delayed status when provider capacity is exhausted." },
+    { question: "How would you support a product with many offers?", answer: "Model product identity separately from offer identity, define the user's seller/variant policy, and evaluate the cheapest qualifying offer only after currency and delivered-price normalization." },
+    { question: "How do you handle a provider changing its page format?", answer: "Version adapters, validate parsed fields, quarantine suspicious changes, monitor extraction quality, and keep the last known observation labeled stale until the adapter is repaired." },
+    { question: "How would you guarantee users can delete their data?", answer: "Separate operational identifiers from notification payloads, delete or anonymize user-owned rules and delivery history through a tracked workflow, and honor provider retention limits." },
+  ],
+  rubric: [
+    { criterion: "Product semantics", description: "Clarifies what is watched, what price qualifies, freshness, variants, sellers, currencies, and notification behavior." },
+    { criterion: "Collection design", description: "Handles provider quotas, adaptive polling, retries, backoff, parser failures, and stale data explicitly." },
+    { criterion: "Event processing", description: "Uses durable events, indexed rule lookup, out-of-order protection, cooldowns, and bounded partitions." },
+    { criterion: "User-visible correctness", description: "Makes notification decisions idempotent, records delivery state, and prevents duplicate or opt-out violations." },
+    { criterion: "Operations and scale", description: "Separates capacity domains and measures freshness, queue lag, provider health, evaluation throughput, and delivery success." },
+  ],
+};
+
 const PROBLEM_GUIDES: Record<string, ProblemGuide> = {
   "url-shortener": urlShortenerGuide,
   "document-management-system": documentManagementGuide,
   "job-scheduler": jobSchedulerGuide,
   "design-a-parts-compatibility-feature-for-an-ecommerce-site":
     partsCompatibilityGuide,
+  "design-a-price-alert-system": priceAlertGuide,
 };
 
 export const getProblemGuide = (slug: string): ProblemGuide | null =>
@@ -2542,4 +2696,6 @@ export {
   jobSchedulerGuide,
   partsCompatibilityArchitecture,
   partsCompatibilityGuide,
+  priceAlertArchitecture,
+  priceAlertGuide,
 };

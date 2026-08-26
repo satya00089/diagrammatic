@@ -135,6 +135,15 @@
     "tags": ["web-services", "scalability", "caching"]
   },
   {
+    "slug": "design-a-price-alert-system",
+    "title": "Design a Price Alert System",
+    "description": "Design a price-tracking and alerting service that watches products across marketplaces and notifies users when their rules are met.",
+    "difficulty": "Hard",
+    "category": "Event-Driven Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["event-driven", "notifications", "scheduling", "scalability"]
+  },
+  {
     "slug": "payment-system",
     "title": "Digital Payment System",
     "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",

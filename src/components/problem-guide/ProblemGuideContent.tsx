@@ -154,32 +154,40 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   const isPartsCompatibility =
     problemSlug ===
     "design-a-parts-compatibility-feature-for-an-ecommerce-site";
+  const isPriceAlert = problemSlug === "design-a-price-alert-system";
   const isAnnotatedProblem =
     isDocumentManagement ||
     isUrlShortener ||
     isJobScheduler ||
-    isPartsCompatibility;
+    isPartsCompatibility ||
+    isPriceAlert;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
       ? "Redirect traffic"
       : isPartsCompatibility
         ? "Peak lookup rate"
-        : "Peak dispatch rate";
+        : isPriceAlert
+          ? "Observation rate"
+          : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
       ? "Resolve the redirect"
       : isPartsCompatibility
         ? "Revalidate before purchase"
-        : "Claim due work";
+        : isPriceAlert
+          ? "Accept a price observation"
+          : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
       ? "Emit click telemetry"
       : isPartsCompatibility
         ? "Publish catalog changes asynchronously"
-        : "Enqueue an execution";
+        : isPriceAlert
+          ? "Deliver asynchronously"
+          : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
@@ -205,7 +213,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         config: {
           type: "highlight" as const,
           color: isDarkTheme ? "#3730a3" : "#c7d2fe",
-          padding: [7, 10],
+          padding: [7, 10] as [number, number],
           iterations: 1,
           animationDuration: 800,
         },
@@ -237,7 +245,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         config: {
           type: "highlight" as const,
           color: isDarkTheme ? "#3730a3" : "#c7d2fe",
-          padding: [5, 8],
+          padding: [5, 8] as [number, number],
           iterations: 1,
           animationDuration: 650,
         },
