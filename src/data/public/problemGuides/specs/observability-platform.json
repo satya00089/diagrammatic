@@ -1,0 +1,10 @@
+{
+  "slug": "observability-platform",
+  "focus": "collect metrics, logs, and traces, correlate topology, detect anomalies, and query incidents",
+  "action": "ingest and investigate telemetry",
+  "scale": "10M telemetry events per second across thousands of services",
+  "latency": "dashboard query p95 <=2s",
+  "durable": "retained telemetry and alert history",
+  "async": "aggregation, indexing, anomaly detection, and retention",
+  "store": "time-series, log, and trace indexes"
+}

@@ -574,19 +574,22 @@ function mergeProblemCatalogs(featured, live) {
     featured.map((problem) => [problem.title, problem]),
   );
   const merged = live.length
-    ? live.map((problem) => ({
-        ...featuredByTitle.get(problem.title),
-        ...problem,
-      }))
+    ? [
+        ...live.map((problem) => ({
+          ...featuredByTitle.get(problem.title),
+          ...problem,
+        })),
+        ...featured,
+      ]
     : [...featured];
 
-  return merged
+  const normalized = merged
     .filter((problem) => problem?.title && problem?.description)
     .map((problem) => ({
       ...problem,
       slug:
-        featuredByTitle.get(problem.title)?.slug ||
         problem.slug ||
+        featuredByTitle.get(problem.title)?.slug ||
         fallbackProblemSlug(problem.title),
       tags: Array.isArray(problem.tags) ? problem.tags : [],
       requirements: Array.isArray(problem.requirements)
@@ -596,6 +599,10 @@ function mergeProblemCatalogs(featured, live) {
         ? problem.constraints
         : [],
     }));
+
+  return [
+    ...new Map(normalized.map((problem) => [problem.slug, problem])).values(),
+  ];
 }
 
 function addProblemRoutes(problems) {

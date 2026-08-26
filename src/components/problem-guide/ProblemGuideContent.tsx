@@ -8,6 +8,7 @@ import {
 import type { ProblemGuide } from "../../types/problemGuide";
 import PublicArchitectureCanvas from "../public-design/PublicArchitectureCanvas";
 import { useRoughAnnotation } from "../../hooks/useRoughAnnotation";
+import { generatedProblemGuides } from "../../data/generatedProblemGuides";
 
 const problemGuideSections = [
   { id: "requirements", label: "Requirements" },
@@ -160,6 +161,13 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     "design-a-feature-to-show-the-number-of-users-viewing-a-page";
   const isFacebookLikesLiveUpdates =
     problemSlug === "design-facebook-likes-feature-with-live-updates";
+  const isTwitterSystemDesign = problemSlug === "twitter-system-design";
+  const isTopKRankingSystem = problemSlug === "top-k-ranking-system";
+  const isCostOptimizedBatchProcessing =
+    problemSlug === "design-a-cost-optimized-architecture-for-batch-processing";
+  const isGeneratedProblem = Boolean(
+    problemSlug && generatedProblemGuides[problemSlug],
+  );
   const isAnnotatedProblem =
     isDocumentManagement ||
     isUrlShortener ||
@@ -167,7 +175,11 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     isPartsCompatibility ||
     isPriceAlert ||
     isPagePresence ||
-    isFacebookLikesLiveUpdates;
+    isFacebookLikesLiveUpdates ||
+    isTwitterSystemDesign ||
+    isTopKRankingSystem ||
+    isCostOptimizedBatchProcessing ||
+    isGeneratedProblem;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
@@ -180,7 +192,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
             ? "Heartbeat rate"
             : isFacebookLikesLiveUpdates
               ? "Peak write rate"
-              : "Peak dispatch rate";
+              : isTwitterSystemDesign
+                ? "Timeline reads"
+                : isTopKRankingSystem
+                  ? "Peak event rate"
+                  : isCostOptimizedBatchProcessing
+                    ? "Peak runnable tasks"
+                    : isGeneratedProblem
+                      ? guide.requirements.metrics[0]?.label
+                      : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
@@ -193,7 +213,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
             ? "Join the page"
             : isFacebookLikesLiveUpdates
               ? "Commit the user's like state"
-              : "Claim due work";
+              : isTwitterSystemDesign
+                ? "Accept the post"
+                : isTopKRankingSystem
+                  ? "Maintain the Top-K"
+                  : isCostOptimizedBatchProcessing
+                    ? "Commit the durable state"
+                    : isGeneratedProblem
+                      ? guide.dataFlow[1]?.title
+                      : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
@@ -206,7 +234,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
             ? "Expire inactive presence"
             : isFacebookLikesLiveUpdates
               ? "Broadcast asynchronously"
-              : "Enqueue an execution";
+              : isTwitterSystemDesign
+                ? "Read and refresh asynchronously"
+                : isTopKRankingSystem
+                  ? "Serve or rebuild asynchronously"
+                  : isCostOptimizedBatchProcessing
+                    ? "Reconcile and report asynchronously"
+                    : isGeneratedProblem
+                      ? guide.dataFlow[4]?.title
+                      : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
@@ -245,6 +281,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           color: "#f97316",
           strokeWidth: 2,
           padding: 8,
+          multiline: true,
           iterations: 2,
           animationDuration: 700,
         },
@@ -256,6 +293,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           color: isDarkTheme ? "#a5b4fc" : "#6366f1",
           strokeWidth: 2,
           padding: 3,
+          multiline: true,
           iterations: 2,
           animationDuration: 650,
         },
@@ -266,6 +304,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           type: "highlight" as const,
           color: isDarkTheme ? "#3730a3" : "#c7d2fe",
           padding: [5, 8] as [number, number],
+          multiline: true,
           iterations: 1,
           animationDuration: 650,
         },
@@ -278,6 +317,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           color: "#6366f1",
           strokeWidth: 2,
           padding: 6,
+          multiline: true,
           iterations: 2,
           animationDuration: 700,
         },
@@ -306,7 +346,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         <p className="mt-4 text-lg leading-8 text-theme">
           <span
             ref={isAnnotatedProblem ? promptRef : undefined}
-            className="relative inline-block max-w-full px-2 py-1"
+            className="relative inline max-w-full px-2 py-1"
           >
             {guide.prompt.brief}
           </span>

@@ -1,0 +1,10 @@
+{
+  "slug": "ride-sharing-system",
+  "focus": "trip requests, driver availability, geospatial matching, and trip lifecycle",
+  "action": "request and match a ride",
+  "scale": "10M trips per day and 1M location updates per second",
+  "latency": "match p95 <=2s",
+  "durable": "trip state and payment records",
+  "async": "location streams, pricing, notifications, and analytics",
+  "store": "trip state and geospatial driver index"
+}

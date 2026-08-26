@@ -1,0 +1,10 @@
+{
+  "slug": "rag-conversational-ai",
+  "focus": "retrieval-augmented conversations with citations, context, safety, and tenant isolation",
+  "action": "answer a question grounded in enterprise documents",
+  "scale": "1M conversations per day and large multi-tenant corpora",
+  "latency": "first token p95 <=2s",
+  "durable": "conversation and document versions",
+  "async": "ingestion, chunking, embedding, retrieval evaluation, and moderation",
+  "store": "document, vector, and conversation stores"
+}

@@ -1,0 +1,558 @@
+{
+  "prompt": {
+    "brief": "Design a cost-optimized batch-processing platform that accepts large workloads, schedules them across elastic workers, produces durable results, and keeps compute spend low without sacrificing correctness or predictable completion times.",
+    "successSignals": [
+      "Separate durable job intent and input data from ephemeral compute.",
+      "Use queues, capacity-aware scheduling, checkpointing, retries, and idempotent outputs.",
+      "Optimize cost with spot or preemptible capacity, autoscaling, rightsizing, and storage lifecycle policies.",
+      "Define completion SLAs, fairness, tenant quotas, observability, and cheap-capacity fallback behavior."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Submit, validate, pause, cancel, retry, and inspect tenant-owned batch jobs.",
+      "Support dependencies, priorities, resource requirements, deadlines, retries, checkpoints, and partial progress.",
+      "Stage inputs, execute tasks on elastic workers, persist outputs, and expose logs, metrics, and completion status.",
+      "Allow budgets, quotas, regions, data-retention policies, and maximum completion windows."
+    ],
+    "nonFunctional": [
+      "A submitted job and terminal state must be durable; duplicate execution must not duplicate committed outputs.",
+      "Meet a configurable completion SLA, such as 95% of standard jobs completing within 30 minutes.",
+      "Minimize cost while maintaining isolation, fairness, data security, and urgent-work capacity.",
+      "Tolerate worker preemption, zone failure, queue backlog, malformed tasks, slow tenants, and object-store throttling."
+    ],
+    "scaleAssumptions": [
+      "10,000 tenants submit 1 million jobs per day, with 20,000 runnable tasks at peak.",
+      "Inputs and outputs total 5 PB per month; most data is immutable and lifecycle-tiered.",
+      "Use on-demand capacity for deadlines and spot or preemptible capacity for retryable workloads.",
+      "Jobs range from seconds to hours; avoid one queue or database partition becoming the bottleneck."
+    ],
+    "metrics": [
+      {
+        "label": "Peak runnable tasks",
+        "value": "~20K",
+        "description": "Drives queue partitioning, scheduler throughput, and worker-pool autoscaling."
+      },
+      {
+        "label": "Completion SLA",
+        "value": "95% <=30 min",
+        "description": "Cheap capacity is used until deadline risk requires on-demand capacity."
+      },
+      {
+        "label": "Cost target",
+        "value": "Spot-first",
+        "description": "Prefer preemptible capacity for checkpointable work and fall back when SLA risk rises."
+      },
+      {
+        "label": "Data growth",
+        "value": "5PB/month",
+        "description": "Requires lifecycle tiers, locality-aware scheduling, and bounded intermediate data."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "BatchJob",
+      "fields": [
+        "job_id",
+        "tenant_id",
+        "priority",
+        "deadline",
+        "state",
+        "budget",
+        "created_at"
+      ],
+      "notes": "Durable job intent and policy; state transitions are conditional and idempotent."
+    },
+    {
+      "name": "TaskAttempt",
+      "fields": [
+        "task_id",
+        "attempt_id",
+        "worker_pool",
+        "checkpoint_uri",
+        "lease_until",
+        "state"
+      ],
+      "notes": "An attempt is disposable and retryable; leases prevent two workers committing the same attempt."
+    },
+    {
+      "name": "Artifact",
+      "fields": [
+        "artifact_id",
+        "job_id",
+        "uri",
+        "checksum",
+        "tier",
+        "retention_until"
+      ],
+      "notes": "Content-addressed outputs make retries safe and enable deduplication and lifecycle movement."
+    },
+    {
+      "name": "CapacityPolicy",
+      "fields": [
+        "pool",
+        "instance_type",
+        "price_limit",
+        "preemption_rate",
+        "sla_buffer",
+        "region"
+      ],
+      "notes": "Versioned policy controls cost, capacity selection, tenant quotas, and fallback thresholds."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ inputUri, tasks, dependencies, priority, deadline, budget, requestId } -> { jobId, state }",
+      "notes": "Authenticate the tenant, validate the DAG and resource limits, and persist the job idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/jobs/{jobId}",
+      "contract": "{ state, progress, cost, attempts, outputs, updatedAt }",
+      "notes": "Return durable state plus eventually consistent telemetry and explicit progress timestamps."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs/{jobId}/cancel",
+      "contract": "{ requestId } -> { state, cancellationRequestedAt }",
+      "notes": "Record cancellation durably; workers stop at a safe checkpoint."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/worker-leases/claim",
+      "contract": "{ taskId, capabilities } -> { attemptId, leaseUntil, checkpoint }",
+      "notes": "Grant a bounded lease; the worker heartbeats and commits output conditionally."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept the batch job",
+      "description": "The API validates the tenant, input manifest, DAG, resource limits, budget, and deadline, then writes durable job intent."
+    },
+    {
+      "title": "Stage and partition work",
+      "description": "A planner resolves dependencies, creates task records, groups compatible work, and places input metadata near eligible pools."
+    },
+    {
+      "title": "Schedule cost-aware capacity",
+      "description": "The scheduler chooses spot capacity when checkpointing and deadline slack allow it, reserving on-demand capacity as SLA risk rises."
+    },
+    {
+      "title": "Lease, checkpoint, and commit",
+      "description": "Workers claim fenced leases, heartbeat progress, write checkpoints and content-addressed outputs, and conditionally commit one successful attempt."
+    },
+    {
+      "title": "Reconcile and report asynchronously",
+      "description": "A reconciler expires leases, retries safe tasks, releases idle capacity, updates cost and progress telemetry, and archives artifacts by policy."
+    }
+  ],
+  "architecture": {
+    "title": "Cost-optimized batch-processing reference architecture",
+    "summary": "Durable job intent and object-backed artifacts feed a deadline-aware scheduler. Elastic worker pools use cheap preemptible capacity where safe, with checkpointed retries and on-demand fallback for SLA protection.",
+    "layers": [
+      {
+        "id": "control",
+        "label": "Control plane",
+        "description": "Submission, job lifecycle, policy, and tenant quotas.",
+        "componentIds": ["client", "gateway", "job-service", "job-store"]
+      },
+      {
+        "id": "scheduling",
+        "label": "Scheduling plane",
+        "description": "Planning, dependency tracking, queues, and capacity selection.",
+        "componentIds": [
+          "planner",
+          "task-queue",
+          "scheduler",
+          "capacity-manager"
+        ]
+      },
+      {
+        "id": "execution",
+        "label": "Execution and data plane",
+        "description": "Checkpointable workers and durable content-addressed artifacts.",
+        "componentIds": ["worker-pools", "artifact-store", "checkpoint-store"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Retries, cost telemetry, retention, and SLA monitoring.",
+        "componentIds": ["reconciler", "cost-meter", "monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "submit",
+        "label": "Submission path",
+        "description": "Client -> gateway -> job service -> durable job store.",
+        "componentIds": ["client", "gateway", "job-service", "job-store"]
+      },
+      {
+        "id": "execute",
+        "label": "Execution path",
+        "description": "Planner -> queue -> cost-aware scheduler -> workers -> artifacts.",
+        "componentIds": [
+          "planner",
+          "task-queue",
+          "scheduler",
+          "worker-pools",
+          "artifact-store"
+        ]
+      },
+      {
+        "id": "recover",
+        "label": "Recovery path",
+        "description": "Leases and telemetry -> reconciler -> retry or capacity policy changes.",
+        "componentIds": [
+          "worker-pools",
+          "checkpoint-store",
+          "reconciler",
+          "capacity-manager"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Tenant clients",
+        "description": "Submit jobs and inspect state, progress, cost, logs, and artifacts.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "protocol": "HTTPS" }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates tenants, enforces quotas, validates payloads, and rate-limits control operations.",
+        "position": { "x": 360, "y": 280 },
+        "properties": { "protection": "Auth, quotas, validation" }
+      },
+      {
+        "id": "job-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Job service",
+        "description": "Owns job lifecycle, DAG validation, cancellation, authorization, and idempotent transitions.",
+        "position": { "x": 720, "y": 280 },
+        "properties": { "consistency": "Conditional state transitions" }
+      },
+      {
+        "id": "job-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Job metadata store",
+        "description": "Durable source of truth for jobs, tasks, attempts, policies, and terminal results.",
+        "position": { "x": 1080, "y": 280 },
+        "properties": { "partition": "tenant_id and job_id" }
+      },
+      {
+        "id": "planner",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "DAG planner",
+        "description": "Expands dependencies and creates only dependency-ready task batches.",
+        "position": { "x": 1440, "y": 100 },
+        "properties": { "strategy": "Dependency-aware batching" }
+      },
+      {
+        "id": "task-queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Partitioned task queues",
+        "description": "Prioritized queues partitioned by tenant, resource class, locality, and deadline risk.",
+        "position": { "x": 1800, "y": 100 },
+        "properties": { "delivery": "At least once" }
+      },
+      {
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Cost-aware scheduler",
+        "description": "Matches tasks to capacity using price, preemption risk, locality, fairness, and deadline slack.",
+        "position": { "x": 2160, "y": 100 },
+        "properties": { "policy": "Spot-first with SLA fallback" }
+      },
+      {
+        "id": "capacity-manager",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Elastic capacity manager",
+        "description": "Requests, drains, and rightsizes preemptible and on-demand worker pools.",
+        "position": { "x": 2520, "y": 100 },
+        "properties": { "scaling": "Backlog and deadline aware" }
+      },
+      {
+        "id": "worker-pools",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Checkpointable workers",
+        "description": "Execute leased tasks, heartbeat progress, checkpoint state, and commit outputs idempotently.",
+        "position": { "x": 2880, "y": 280 },
+        "properties": { "capacity": "Spot plus on-demand" }
+      },
+      {
+        "id": "artifact-store",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Artifact object store",
+        "description": "Stores immutable inputs, outputs, logs, and manifests with checksums and lifecycle tiers.",
+        "position": { "x": 3240, "y": 280 },
+        "properties": { "retention": "Hot, cool, archive" }
+      },
+      {
+        "id": "checkpoint-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Checkpoint and lease store",
+        "description": "Stores task progress, lease ownership, checkpoint pointers, and attempt fencing state.",
+        "position": { "x": 2880, "y": 560 },
+        "properties": { "consistency": "Conditional lease and commit" }
+      },
+      {
+        "id": "reconciler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Reconciler",
+        "description": "Expires leases, retries safe failures, detects stuck DAGs, and repairs incomplete state.",
+        "position": { "x": 2520, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "cost-meter",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Cost and usage meter",
+        "description": "Attributes compute, storage, and egress cost by tenant, job, pool, and policy.",
+        "position": { "x": 2880, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "SLA and operations",
+        "description": "Tracks queue age, deadline risk, utilization, preemption, cost, and correctness.",
+        "position": { "x": 3240, "y": -220 },
+        "properties": { "alerts": "Backlog, SLA, spend, drift" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Job command",
+        "description": "Tenant submits or inspects a batch job."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "job-service",
+        "type": "api-call",
+        "label": "Validated request",
+        "description": "Gateway forwards authenticated, quota-checked commands."
+      },
+      {
+        "id": "service-store",
+        "source": "job-service",
+        "target": "job-store",
+        "type": "database-connection",
+        "label": "Durable job state",
+        "description": "Persists job intent, tasks, attempts, policy, and terminal state."
+      },
+      {
+        "id": "store-planner",
+        "source": "job-store",
+        "target": "planner",
+        "type": "data-flow",
+        "label": "Runnable DAG",
+        "description": "Planner expands dependency-ready work."
+      },
+      {
+        "id": "planner-queue",
+        "source": "planner",
+        "target": "task-queue",
+        "type": "message-queue",
+        "label": "Task batch",
+        "description": "Queues work by priority, resource class, locality, and deadline."
+      },
+      {
+        "id": "queue-scheduler",
+        "source": "task-queue",
+        "target": "scheduler",
+        "type": "message-queue",
+        "label": "Scheduling demand",
+        "description": "Scheduler considers backlog, capacity, and cost policy."
+      },
+      {
+        "id": "scheduler-capacity",
+        "source": "scheduler",
+        "target": "capacity-manager",
+        "type": "api-call",
+        "label": "Capacity request",
+        "description": "Requests cheap or on-demand capacity based on SLA risk."
+      },
+      {
+        "id": "scheduler-workers",
+        "source": "scheduler",
+        "target": "worker-pools",
+        "type": "data-flow",
+        "label": "Task lease",
+        "description": "Assigns a fenced, time-bounded task attempt."
+      },
+      {
+        "id": "workers-artifacts",
+        "source": "worker-pools",
+        "target": "artifact-store",
+        "type": "data-flow",
+        "label": "Outputs and logs",
+        "description": "Writes checksummed immutable artifacts and logs."
+      },
+      {
+        "id": "workers-checkpoints",
+        "source": "worker-pools",
+        "target": "checkpoint-store",
+        "type": "database-connection",
+        "label": "Lease and checkpoint",
+        "description": "Heartbeats and checkpoints make preemption recovery safe."
+      },
+      {
+        "id": "checkpoint-reconciler",
+        "source": "checkpoint-store",
+        "target": "reconciler",
+        "type": "data-flow",
+        "label": "Expired attempts",
+        "description": "Reconciler retries or marks failures according to policy."
+      },
+      {
+        "id": "reconciler-queue",
+        "source": "reconciler",
+        "target": "task-queue",
+        "type": "message-queue",
+        "label": "Retry task",
+        "description": "Requeues safe work with bounded backoff."
+      },
+      {
+        "id": "workers-meter",
+        "source": "worker-pools",
+        "target": "cost-meter",
+        "type": "data-flow",
+        "label": "Usage events",
+        "description": "Attributes compute and preemption cost asynchronously."
+      },
+      {
+        "id": "queue-monitoring",
+        "source": "task-queue",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Backlog and age",
+        "description": "Monitors queue pressure and deadline risk."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Cost optimization without SLA surprises",
+      "points": [
+        "Use spot or preemptible capacity for checkpointable work and on-demand capacity for deadlines, non-retryable tasks, and recovery bursts.",
+        "Scale on queue age, deadline slack, and expected task duration rather than CPU utilization alone.",
+        "Measure cost per successful output including retries, idle drain time, storage, egress, and operational overhead."
+      ]
+    },
+    {
+      "title": "Checkpointing and exactly-once effects",
+      "points": [
+        "Workers may execute at least once, but content-addressed outputs and conditional commit make visible results idempotent.",
+        "Fence expired workers with lease versions so a delayed attempt cannot commit after another succeeds.",
+        "Choose checkpoint granularity from recomputation cost and checkpoint storage overhead."
+      ]
+    },
+    {
+      "title": "Fairness and tenant isolation",
+      "points": [
+        "Use weighted fair queues, per-tenant concurrency limits, budgets, and noisy-neighbor protection.",
+        "Partition scheduler state so a large tenant cannot monopolize a global lock or starve urgent small jobs.",
+        "Expose cost attribution and policy decisions so budget failures are explainable."
+      ]
+    },
+    {
+      "title": "Data lifecycle and recovery",
+      "points": [
+        "Keep immutable artifacts in object storage with checksums, lifecycle tiers, retention policies, and region restrictions.",
+        "Rebuild projections from durable job state and manifests, not worker-local disks or queue messages.",
+        "Test zone failure, object-store throttling, scheduler restart, mass preemption, and partial DAG completion."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Spot-first versus on-demand capacity",
+      "recommendation": "Use spot-first for checkpointable work and switch based on deadline risk, preemption rate, and recovery cost.",
+      "caution": "Always using the cheapest instance can miss SLAs through repeated preemption or queue starvation."
+    },
+    {
+      "title": "Central scheduler versus decentralized claims",
+      "recommendation": "Use partitioned scheduling decisions with queue leases for predictable fairness and a bounded control plane.",
+      "caution": "A global scheduler becomes a bottleneck; fully decentralized claims make fairness and cost policy difficult."
+    },
+    {
+      "title": "Recompute versus checkpoint",
+      "recommendation": "Checkpoint when recomputation cost exceeds checkpoint storage and write cost; otherwise retry from immutable inputs.",
+      "caution": "Checkpointing every small step can cost more than the work and create object-store pressure."
+    }
+  ],
+  "commonMistakes": [
+    "Treating worker-local state as durable and losing progress after preemption.",
+    "Optimizing instance price while ignoring retries, idle capacity, storage, egress, and missed-SLA cost.",
+    "Using one global queue or lock for every tenant and resource class.",
+    "Claiming exactly-once execution instead of making commits and artifacts idempotent.",
+    "Leaving budgets, fairness, cancellation, retention, and deadline fallback unspecified."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when a job is close to its deadline but only spot capacity is available?",
+      "answer": "Estimate remaining work and preemption risk, then escalate critical tasks to on-demand capacity while preserving checkpointed progress."
+    },
+    {
+      "question": "How would you support streaming or interactive jobs?",
+      "answer": "Use a separate latency-sensitive pool and admission policy rather than weakening batch fairness and cost controls."
+    },
+    {
+      "question": "How do you prevent duplicate outputs after a retry?",
+      "answer": "Use deterministic task and output keys, checksums, conditional commit with attempt fencing, and one canonical successful attempt."
+    },
+    {
+      "question": "How do you prove the platform is cost optimized?",
+      "answer": "Compare cost per successful output and SLA attainment across policies, including retry and storage costs, using replayable simulations."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Cost model",
+      "description": "Includes preemptible capacity, autoscaling, retry cost, storage lifecycle, egress, and cost per successful output."
+    },
+    {
+      "criterion": "Execution correctness",
+      "description": "Durable intent, leases, checkpoints, idempotent outputs, fencing, retries, and terminal state are explicit."
+    },
+    {
+      "criterion": "Scheduling",
+      "description": "Dependencies, priorities, fairness, quotas, deadlines, queue partitioning, and hot-tenant isolation are covered."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Preemption, worker and zone failure, object-store issues, reconciliation, replay, and degraded capacity are addressed."
+    },
+    {
+      "criterion": "Operations",
+      "description": "SLA, backlog, utilization, spend attribution, policy explainability, logs, metrics, and retention are observable."
+    }
+  ]
+}

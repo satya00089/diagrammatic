@@ -1,0 +1,10 @@
+{
+  "slug": "rate-limiter",
+  "focus": "distributed request quotas with accurate windows, low latency, and failure policy",
+  "action": "check whether a request is allowed",
+  "scale": "10M keys and 1M checks per second",
+  "latency": "p99 <=5ms decision",
+  "durable": "policy configuration and audit samples",
+  "async": "configuration propagation, cleanup, and reporting",
+  "store": "sharded counters and token buckets"
+}

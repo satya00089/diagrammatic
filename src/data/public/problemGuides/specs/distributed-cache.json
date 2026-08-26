@@ -1,0 +1,10 @@
+{
+  "slug": "distributed-cache",
+  "focus": "low-latency key-value caching with partitioning, eviction, replication, and recovery",
+  "action": "read or write a cache key",
+  "scale": "10M requests per second and 1TB working set",
+  "latency": "p99 <=5ms cache operations",
+  "durable": "optional snapshots and invalidation intent",
+  "async": "replication, eviction telemetry, and warmup",
+  "store": "sharded in-memory key space"
+}

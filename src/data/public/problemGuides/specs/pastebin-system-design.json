@@ -1,0 +1,10 @@
+{
+  "slug": "pastebin-system-design",
+  "focus": "text snippets with generated URLs, expiration, and sharing",
+  "action": "create and retrieve a paste",
+  "scale": "10M pastes per day and 100K reads per second",
+  "latency": "p95 <=100ms reads",
+  "durable": "paste content and ownership",
+  "async": "expiration cleanup, abuse scanning, and analytics",
+  "store": "paste metadata and object content"
+}

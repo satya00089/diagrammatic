@@ -1,0 +1,613 @@
+{
+  "prompt": {
+    "brief": "Design a Top-K ranking system that continuously tracks changing item scores and serves the best K items quickly for use cases such as App Store rankings, Amazon bestsellers, or trending content.",
+    "successSignals": [
+      "Define the ranking window, score freshness, tie-breaking, and what consistency users need from a result.",
+      "Separate fast candidate updates from the read-optimized Top-K materialization and explain when a heap is insufficient.",
+      "Handle hot keys, high-cardinality partitions, late events, score corrections, and ties without unbounded rescans.",
+      "Keep experimentation, historical analytics, and full result exports asynchronous to protect the serving path."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Ingest score events for items, such as installs, sales, votes, views, or weighted engagement.",
+      "Return the Top-K items for a named scope, category, region, or time window with scores and rank positions.",
+      "Refresh rankings as events arrive and expose the observed timestamp and ranking version.",
+      "Support item eligibility, suppression, deletion, score corrections, and deterministic tie-breaking."
+    ],
+    "nonFunctional": [
+      "Target p95 under 100 ms for a cached Top-K read and under 2 seconds for normal score-to-ranking freshness.",
+      "Do not lose accepted score events; consumers must be idempotent under at-least-once delivery.",
+      "Serve predictable results during bursts, hot categories, large K values, and partial worker or cache failures.",
+      "A ranking projection may be eventually consistent, but its window, version, freshness, and fallback behavior must be explicit."
+    ],
+    "scaleAssumptions": [
+      "100 million eligible items, 10,000 ranking scopes, and 1 million score events per second at peak.",
+      "Most reads request K <= 100, while a small number of export clients request larger pages through an asynchronous job.",
+      "Rankings include hourly, daily, and rolling-7-day windows; event volume and score distributions vary significantly by scope.",
+      "Retain raw events for replay and auditing, but keep serving state bounded to active items and configured windows."
+    ],
+    "metrics": [
+      {
+        "label": "Peak event rate",
+        "value": "~1M/s",
+        "description": "Score updates arrive in bursts; partition ingestion by scope and item while isolating hot scopes."
+      },
+      {
+        "label": "Serving latency",
+        "value": "p95 <=100ms",
+        "description": "Read a precomputed Top-K snapshot instead of sorting all eligible items per request."
+      },
+      {
+        "label": "Ranking freshness",
+        "value": "<=2 seconds",
+        "description": "The target for ordinary scopes; return version and observedAt when a projection is behind."
+      },
+      {
+        "label": "Default K",
+        "value": "K <=100",
+        "description": "Bound the synchronous response and route large result sets through paginated or asynchronous exports."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "ScoreEvent",
+      "fields": [
+        "event_id",
+        "scope_id",
+        "item_id",
+        "delta",
+        "event_time",
+        "source_version"
+      ],
+      "notes": "An immutable event is deduplicated by event_id and retained long enough to replay windows or correct late data."
+    },
+    {
+      "name": "ItemScore",
+      "fields": [
+        "scope_id",
+        "item_id",
+        "window",
+        "score",
+        "updated_at",
+        "eligibility"
+      ],
+      "notes": "A materialized score for one scope and window; update semantics must distinguish additive metrics from replacement corrections."
+    },
+    {
+      "name": "RankingSnapshot",
+      "fields": [
+        "scope_id",
+        "window",
+        "version",
+        "entries",
+        "generated_at",
+        "watermark"
+      ],
+      "notes": "The serving contract is a versioned bounded snapshot, not an implicit promise that every event has already arrived."
+    },
+    {
+      "name": "RankingRule",
+      "fields": [
+        "scope_id",
+        "weights",
+        "window",
+        "tie_breaker",
+        "eligibility_policy",
+        "revision"
+      ],
+      "notes": "Version rules so a replay or experiment can explain why an item received its rank."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/score-events",
+      "contract": "{ eventId, scopeId, itemId, delta, eventTime } -> { accepted, sequence }",
+      "notes": "Authenticate the producer, validate scope and item eligibility, and deduplicate eventId before publishing to the stream."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/rankings/{scopeId}?window=&k=",
+      "contract": "{ items[], k, version, generatedAt, watermark, stale }",
+      "notes": "Serve a bounded snapshot from cache; reject unbounded K and include freshness metadata for clients."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/rankings/{scopeId}/items/{itemId}",
+      "contract": "{ rank, score, version, neighbors? }",
+      "notes": "Look up an item's rank from a rank index or bounded neighbor structure; do not scan the full Top-K list."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/ranking-jobs",
+      "contract": "{ scopeId, window, k, asOf? } -> { jobId, status }",
+      "notes": "Route large K, historical as-of queries, and exports to an asynchronous snapshot job with progress and quota controls."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept a score event",
+      "description": "The ingestion API validates the producer, item, scope, timestamp, and event ID, then appends the event to a durable partitioned stream."
+    },
+    {
+      "title": "Update candidate scores",
+      "description": "Windowed aggregators consume events idempotently, apply the versioned scoring rule, expire old contributions, and write bounded candidate state."
+    },
+    {
+      "title": "Maintain the Top-K",
+      "description": "A ranking worker merges candidate updates into a per-scope data structure, evicts items below the boundary, resolves ties deterministically, and advances a watermark."
+    },
+    {
+      "title": "Publish a ranking snapshot",
+      "description": "The worker atomically publishes a versioned snapshot to the serving cache and emits invalidation or update signals without blocking event ingestion."
+    },
+    {
+      "title": "Serve or rebuild asynchronously",
+      "description": "Reads return the newest acceptable snapshot with freshness metadata; large K, historical queries, replay, and experiments run as isolated background jobs."
+    }
+  ],
+  "architecture": {
+    "title": "Top-K ranking reference architecture",
+    "summary": "Durable score events feed windowed candidate state and a per-scope Top-K projector; versioned snapshots make reads fast while replay and watermarks make eventual consistency visible and repairable.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Serving layer",
+        "description": "Clients request bounded, freshness-aware ranking snapshots and item rank lookups.",
+        "componentIds": ["client", "edge", "ranking-api", "snapshot-cache"]
+      },
+      {
+        "id": "ingestion",
+        "label": "Ingestion and state layer",
+        "description": "Producers append score events while windowed aggregators maintain candidate scores.",
+        "componentIds": [
+          "event-api",
+          "event-stream",
+          "score-store",
+          "rule-store"
+        ]
+      },
+      {
+        "id": "ranking",
+        "label": "Ranking projection layer",
+        "description": "Partition owners maintain Top-K structures and publish atomic snapshots per scope and window.",
+        "componentIds": [
+          "candidate-workers",
+          "topk-projector",
+          "snapshot-store"
+        ]
+      },
+      {
+        "id": "operations",
+        "label": "Replay and operations",
+        "description": "Historical replay, exports, analytics, and observability stay off the synchronous serving path.",
+        "componentIds": [
+          "replay-jobs",
+          "export-jobs",
+          "analytics",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "ingest",
+        "label": "Event ingestion path",
+        "description": "Producer -> event API -> durable stream -> windowed score aggregation.",
+        "componentIds": [
+          "client",
+          "event-api",
+          "event-stream",
+          "candidate-workers",
+          "score-store"
+        ]
+      },
+      {
+        "id": "serve",
+        "label": "Ranking serving path",
+        "description": "Client -> ranking API -> snapshot cache/store -> bounded Top-K response.",
+        "componentIds": [
+          "client",
+          "edge",
+          "ranking-api",
+          "snapshot-cache",
+          "snapshot-store"
+        ]
+      },
+      {
+        "id": "project",
+        "label": "Projection path",
+        "description": "Candidate state -> per-scope Top-K projector -> versioned snapshot publication.",
+        "componentIds": [
+          "score-store",
+          "topk-projector",
+          "snapshot-store",
+          "snapshot-cache"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Ranking clients",
+        "description": "Request Top-K snapshots, show freshness, and use bounded pagination or job status for large results.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "contract": "Bounded K and cursor/job APIs" }
+      },
+      {
+        "id": "edge",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Edge gateway",
+        "description": "Authenticates producers and readers, applies quotas, and routes requests by scope key.",
+        "position": { "x": 360, "y": 280 },
+        "properties": { "protection": "Auth, quotas, abuse limits" }
+      },
+      {
+        "id": "event-api",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Score event API",
+        "description": "Validates event shape, timestamps, eligibility, and producer permissions before durable append.",
+        "position": { "x": 720, "y": 120 },
+        "properties": { "consistency": "Event ID dedupe" }
+      },
+      {
+        "id": "event-stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Score event stream",
+        "description": "Durably retains partitioned events for aggregation, replay, analytics, and correction workflows.",
+        "position": { "x": 1080, "y": 120 },
+        "properties": { "partition": "scope_id and item_id" }
+      },
+      {
+        "id": "rule-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Ranking rules",
+        "description": "Stores versioned weights, windows, eligibility policies, and deterministic tie-break rules.",
+        "position": { "x": 1080, "y": -180 },
+        "properties": { "versioning": "Immutable revisions" }
+      },
+      {
+        "id": "candidate-workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Windowed aggregators",
+        "description": "Deduplicate events, apply score rules, handle late data, and maintain candidate score state by scope and window.",
+        "position": { "x": 1440, "y": 120 },
+        "properties": { "state": "Watermark and corrections" }
+      },
+      {
+        "id": "score-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Candidate score store",
+        "description": "Stores bounded active scores and indexes candidates near each scope's ranking boundary.",
+        "position": { "x": 1800, "y": 120 },
+        "properties": { "access": "Scope, window, score" }
+      },
+      {
+        "id": "topk-projector",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Top-K projector",
+        "description": "Maintains heaps or ordered sets per scope shard, merges hot-scope shards, and advances ranking versions.",
+        "position": { "x": 2160, "y": 120 },
+        "properties": { "algorithm": "Heap plus boundary candidates" }
+      },
+      {
+        "id": "snapshot-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Ranking snapshots",
+        "description": "Persists versioned bounded snapshots for warm recovery, auditing, and cache refill.",
+        "position": { "x": 2520, "y": 120 },
+        "properties": { "recovery": "Replayable projection" }
+      },
+      {
+        "id": "snapshot-cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Serving cache",
+        "description": "Serves recent snapshots with stale markers, stampede protection, and scope-aware TTLs.",
+        "position": { "x": 2520, "y": 440 },
+        "properties": { "latency": "Sub-100ms target" }
+      },
+      {
+        "id": "ranking-api",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Ranking API",
+        "description": "Returns bounded snapshots and item rank lookups, enforcing K limits and freshness policy.",
+        "position": { "x": 2880, "y": 280 },
+        "properties": { "fallback": "Last acceptable snapshot" }
+      },
+      {
+        "id": "replay-jobs",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Replay and repair jobs",
+        "description": "Rebuilds windows from retained events, validates score corrections, and repairs projection drift in a shadow path.",
+        "position": { "x": 1800, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "export-jobs",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Large-query jobs",
+        "description": "Runs large K, historical, and export requests asynchronously with quotas and progress tracking.",
+        "position": { "x": 2160, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Analytics and experiments",
+        "description": "Consumes events and snapshots for trends, offline evaluation, and ranking experiments without affecting serving latency.",
+        "position": { "x": 2520, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Ranking observability",
+        "description": "Tracks event lag, watermark age, boundary churn, cache hit rate, projection drift, and hot-scope saturation.",
+        "position": { "x": 2880, "y": -220 },
+        "properties": { "alerts": "Freshness and correctness" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-edge",
+        "source": "client",
+        "target": "edge",
+        "type": "http",
+        "label": "Read / submit",
+        "description": "Authenticated ranking reads and producer event requests."
+      },
+      {
+        "id": "edge-events",
+        "source": "edge",
+        "target": "event-api",
+        "type": "api-call",
+        "label": "Score event",
+        "description": "Routes validated producer events to ingestion."
+      },
+      {
+        "id": "events-stream",
+        "source": "event-api",
+        "target": "event-stream",
+        "type": "event-stream",
+        "label": "Durable append",
+        "description": "Appends deduplicatable events before downstream processing."
+      },
+      {
+        "id": "rules-workers",
+        "source": "rule-store",
+        "target": "candidate-workers",
+        "type": "database-connection",
+        "label": "Rule revision",
+        "description": "Workers apply the correct versioned scoring rule."
+      },
+      {
+        "id": "stream-workers",
+        "source": "event-stream",
+        "target": "candidate-workers",
+        "type": "message-queue",
+        "label": "Window events",
+        "description": "At-least-once consumption with event dedupe and watermarks."
+      },
+      {
+        "id": "workers-scores",
+        "source": "candidate-workers",
+        "target": "score-store",
+        "type": "database-connection",
+        "label": "Candidate scores",
+        "description": "Writes windowed scores and boundary candidate indexes."
+      },
+      {
+        "id": "scores-projector",
+        "source": "score-store",
+        "target": "topk-projector",
+        "type": "data-flow",
+        "label": "Score changes",
+        "description": "Feeds scope owners with changed candidates and boundary updates."
+      },
+      {
+        "id": "projector-snapshots",
+        "source": "topk-projector",
+        "target": "snapshot-store",
+        "type": "database-connection",
+        "label": "Versioned Top-K",
+        "description": "Publishes an atomic snapshot with watermark and generatedAt."
+      },
+      {
+        "id": "snapshots-cache",
+        "source": "snapshot-store",
+        "target": "snapshot-cache",
+        "type": "data-flow",
+        "label": "Cache refill",
+        "description": "Warms serving cache and provides recovery after eviction."
+      },
+      {
+        "id": "edge-ranking",
+        "source": "edge",
+        "target": "ranking-api",
+        "type": "api-call",
+        "label": "Bounded query",
+        "description": "Routes scope/window/K requests to the serving API."
+      },
+      {
+        "id": "cache-ranking",
+        "source": "snapshot-cache",
+        "target": "ranking-api",
+        "type": "database-connection",
+        "label": "Snapshot read",
+        "description": "Returns the newest acceptable snapshot within the freshness policy."
+      },
+      {
+        "id": "store-ranking",
+        "source": "snapshot-store",
+        "target": "ranking-api",
+        "type": "database-connection",
+        "label": "Recovery read",
+        "description": "Refills or serves when cache state is missing."
+      },
+      {
+        "id": "ranking-client",
+        "source": "ranking-api",
+        "target": "client",
+        "type": "http",
+        "label": "Top-K response",
+        "description": "Returns entries, score, rank, version, and freshness metadata."
+      },
+      {
+        "id": "stream-replay",
+        "source": "event-stream",
+        "target": "replay-jobs",
+        "type": "event-stream",
+        "label": "Replay input",
+        "description": "Rebuilds historical windows and validates corrections asynchronously."
+      },
+      {
+        "id": "ranking-export",
+        "source": "ranking-api",
+        "target": "export-jobs",
+        "type": "message-queue",
+        "label": "Large query",
+        "description": "Offloads large K and historical export work from synchronous reads."
+      },
+      {
+        "id": "stream-analytics",
+        "source": "event-stream",
+        "target": "analytics",
+        "type": "event-stream",
+        "label": "Async events",
+        "description": "Supports experiments and reports without blocking ranking updates."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "event-stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag metrics",
+        "description": "Observes ingestion lag, hot partitions, and consumer health."
+      },
+      {
+        "id": "projector-monitoring",
+        "source": "topk-projector",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Freshness / drift",
+        "description": "Tracks watermark age, boundary churn, and projection divergence."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Maintaining Top-K efficiently",
+      "points": [
+        "For a bounded K, a min-heap can retain the current winners, but updates need a map from item to heap position or lazy deletion to avoid stale entries.",
+        "Keep a candidate buffer around the K boundary because an item just below the cutoff can enter after a score update; a fixed periodic full scan is a recovery path, not the normal request path.",
+        "For high-cardinality or highly skewed scopes, shard candidates, compute local Top-K, and merge local winners with enough boundary slack to preserve correctness."
+      ]
+    },
+    {
+      "title": "Windows, late events, and corrections",
+      "points": [
+        "Use event-time windows with watermarks and a lateness policy; state clearly when a late event can revise a published ranking.",
+        "Treat score replacements and corrections as versioned operations, not blindly additive deltas, and deduplicate event IDs before applying them.",
+        "Publish a new ranking version after correction and expose observedAt so consumers can distinguish a fresh correction from an older snapshot."
+      ]
+    },
+    {
+      "title": "Hot scopes and serving resilience",
+      "points": [
+        "Partition event processing and snapshot publication for hot scopes, then isolate their queues and cache keys from ordinary scopes.",
+        "Cache immutable versioned snapshots with stampede protection; a stale-but-labeled snapshot is preferable to sorting millions of items synchronously.",
+        "Bound K and use asynchronous jobs for large exports, historical as-of queries, and full rank lists."
+      ]
+    },
+    {
+      "title": "Explainability and ranking evolution",
+      "points": [
+        "Store rule revision, score components, watermark, and tie-breaker in the snapshot so a rank can be explained and reproduced.",
+        "Keep raw events and projection versions for replay, offline evaluation, and A/B tests without changing the serving contract.",
+        "Apply eligibility and suppression at both aggregation and serving boundaries because moderation or catalog state can change after an event arrives."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Exact Top-K versus approximate ranking",
+      "recommendation": "Use exact per-scope Top-K for normal bounded K with candidate boundaries, and explicitly offer approximate sketches only when cardinality or throughput makes exact maintenance too expensive.",
+      "caution": "An approximate answer without an error bound or freshness label is difficult to productize; exact rescans per request fail at scale."
+    },
+    {
+      "title": "Streaming updates versus periodic batch",
+      "recommendation": "Use streaming aggregation for freshness and periodic batch or replay jobs for correction, reconciliation, and historical windows.",
+      "caution": "Streaming state is operationally complex, while batch-only ranking creates visible staleness and synchronized compute spikes."
+    },
+    {
+      "title": "Push snapshots versus pull reads",
+      "recommendation": "Publish immutable snapshots to a cache and let clients pull bounded results; optionally send invalidation hints for live dashboards.",
+      "caution": "Pushing every rank change to every viewer multiplies fanout and creates unnecessary coupling between computation and presentation."
+    }
+  ],
+  "commonMistakes": [
+    "Sorting every eligible item synchronously for every Top-K request.",
+    "Using a single global heap without scope partitioning, hot-key protection, or recovery semantics.",
+    "Ignoring event-time windows, late events, duplicate messages, score corrections, and deterministic ties.",
+    "Returning a ranking without version, watermark, generatedAt, or a stale/freshness contract.",
+    "Allowing unlimited K and running exports, historical queries, or analytics on the serving path."
+  ],
+  "followUps": [
+    {
+      "question": "How would you return an item's rank when it is not in the Top-K?",
+      "answer": "Maintain a bounded rank index or score distribution near the requested item, or run an asynchronous rank job for arbitrary positions; do not scan the full population on a latency-sensitive request."
+    },
+    {
+      "question": "How would you support a personalized Top-K per user?",
+      "answer": "Generate bounded candidates from user or segment signals, then rank them with a versioned feature snapshot; cache by user and rule revision with strict privacy and cost limits."
+    },
+    {
+      "question": "What happens when the ranking worker fails?",
+      "answer": "Continue serving the last acceptable immutable snapshot with a stale marker, replay retained events into a shadow projector, compare versions, and switch after validation."
+    },
+    {
+      "question": "How do you validate that a heap implementation is correct?",
+      "answer": "Periodically compare sampled scopes against an offline full sort, monitor boundary churn and score gaps, and use deterministic tie-breaks so discrepancies are reproducible."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Ranking semantics",
+      "description": "The answer defines K, scope, window, event time, ties, eligibility, freshness, and whether results are exact or approximate."
+    },
+    {
+      "criterion": "Algorithm and state",
+      "description": "The design explains bounded heaps or ordered structures, candidate boundaries, shard merging, and update/deletion behavior."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "The architecture handles high event rates, hot scopes, cache reads, bounded K, and asynchronous large queries."
+    },
+    {
+      "criterion": "Correctness",
+      "description": "Idempotency, late events, corrections, replay, watermarks, versioned snapshots, and reconciliation are explicit."
+    },
+    {
+      "criterion": "Operations",
+      "description": "The response includes stale fallback, lag and drift metrics, rule revisions, explainability, and safe ranking evolution."
+    }
+  ]
+}
