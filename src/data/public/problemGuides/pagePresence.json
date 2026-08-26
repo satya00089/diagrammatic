@@ -1,0 +1,489 @@
+{
+  "prompt": {
+    "brief": "Design a feature that shows how many users are viewing the same page right now, while remaining useful under reconnects, duplicate tabs, mobile sleep, hot pages, and a large number of concurrent viewers.",
+    "successSignals": [
+      "Define whether the count is exact, approximate, or eventually consistent and show its freshness.",
+      "Use expiring leases and idempotent session identities instead of one permanent write per page view.",
+      "Separate heartbeat ingestion from count broadcast and keep analytics off the live path.",
+      "Plan for hot rooms, reconnect storms, browser sleep, and regional failure explicitly."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Join a page presence room when a page is opened and leave it when the session closes.",
+      "Show a count that updates while the page remains open, with a freshness timestamp or stale indicator.",
+      "Count one logical session once even if heartbeats are duplicated or retried; optionally merge authenticated tabs by policy.",
+      "Handle disconnects, browser sleep, navigation, reconnects, and page deletion safely."
+    ],
+    "nonFunctional": [
+      "Keep count updates below 2 seconds under normal load and expire abandoned sessions without client leave events.",
+      "Avoid durable per-heartbeat writes; a presence-store failure must not corrupt business data.",
+      "Support privacy controls, origin validation, authentication where required, and per-connection quotas.",
+      "Degrade to a stale/approximate count rather than blocking page rendering when the live service is unavailable."
+    ],
+    "scaleAssumptions": [
+      "50 million daily active viewers and 5 million concurrent page sessions at peak.",
+      "Heartbeats every 15 seconds with a 45-second lease; assume 330K heartbeat messages per second at peak.",
+      "Most rooms have fewer than 100 viewers, but the hottest 100 pages can each reach 100K viewers.",
+      "Count changes are coalesced for 250ms and analytics samples 1 in 100 presence events."
+    ],
+    "metrics": [
+      {
+        "label": "Heartbeat rate",
+        "value": "~330K/s peak",
+        "description": "5M sessions renewing every 15 seconds; capacity must include reconnect bursts."
+      },
+      {
+        "label": "Lease window",
+        "value": "45 seconds",
+        "description": "Three heartbeat intervals tolerate a missed mobile tick while bounding stale presence."
+      },
+      {
+        "label": "Count freshness",
+        "value": "â‰¤2 seconds",
+        "description": "The target for normal live updates; expose stale state when the budget is exceeded."
+      },
+      {
+        "label": "Hot-room fan-out",
+        "value": "100K clients",
+        "description": "Requires coalescing, shard-aware fan-out, and backpressure for popular pages."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "PresenceSession",
+      "fields": [
+        "page_id",
+        "session_id",
+        "user_id?",
+        "last_seen_at",
+        "expires_at",
+        "region",
+        "connection_id"
+      ],
+      "notes": "The session key is stable across heartbeat retries; the lease is disposable and indexed by page_id."
+    },
+    {
+      "name": "PageRoom",
+      "fields": [
+        "page_id",
+        "shard_id",
+        "active_count",
+        "sequence",
+        "last_published_at"
+      ],
+      "notes": "Room state is owned by one shard at a time; active_count is a live projection, not durable history."
+    },
+    {
+      "name": "CountUpdate",
+      "fields": [
+        "page_id",
+        "count",
+        "sequence",
+        "observed_at",
+        "is_approximate"
+      ],
+      "notes": "Clients ignore older sequences and can render a stale badge when observed_at is too old."
+    },
+    {
+      "name": "PresenceEvent",
+      "fields": [
+        "event_id",
+        "page_id",
+        "event_type",
+        "occurred_at",
+        "sample_rate"
+      ],
+      "notes": "Sampled events support trends and abuse analysis without bloating the critical path."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/presence/join",
+      "contract": "{ pageId, sessionId } -> { room, heartbeatEveryMs, leaseMs }",
+      "notes": "Authenticate and authorize page access; make repeated join calls idempotent for the same session."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/presence/heartbeat",
+      "contract": "{ pageId, sessionId, clientSequence } -> { accepted, count, observedAt }",
+      "notes": "Renew the lease only for the owning shard; reject malformed, over-quota, or wrong-origin requests."
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/presence/{pageId}/{sessionId}",
+      "contract": "204 No Content",
+      "notes": "Best-effort cleanup; correctness must still come from TTL expiry when this call is lost."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/pages/{pageId}/presence",
+      "contract": "{ count, observedAt, isApproximate, status }",
+      "notes": "Return a bounded cached snapshot so the page can render without waiting for a live socket."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Join the page",
+      "description": "The client sends a stable session ID; the gateway authenticates and routes page_id to its owning presence shard, which creates or renews the expiring membership lease."
+    },
+    {
+      "title": "Renew the lease",
+      "description": "The client sends a heartbeat every 15 seconds. The shard performs an idempotent TTL renewal and treats duplicate messages as one session."
+    },
+    {
+      "title": "Publish a count change",
+      "description": "On a new session, leave, or expiry, the shard updates the room projection and emits a monotonic count event. The count is live state, not a durable page-view ledger."
+    },
+    {
+      "title": "Broadcast asynchronously",
+      "description": "A fan-out worker coalesces rapid changes and sends the newest sequence to the room. Slow clients receive the latest snapshot rather than every intermediate count."
+    },
+    {
+      "title": "Expire inactive presence",
+      "description": "The store's TTL removes sessions whose heartbeats stopped; expiry notifications or periodic reconciliation correct the room count without relying on browser unload."
+    }
+  ],
+  "architecture": {
+    "title": "Real-time page presence reference architecture",
+    "summary": "Clients send short-lived presence heartbeats; an in-memory membership service owns expiry and publishes a coalesced count to viewers without making every heartbeat a durable database write.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience layer",
+        "description": "Browsers join a page presence room and render a freshness-aware count.",
+        "componentIds": ["client", "gateway", "presence-service"]
+      },
+      {
+        "id": "presence",
+        "label": "Presence layer",
+        "description": "A horizontally scalable connection tier tracks leases and assigns page rooms to shards.",
+        "componentIds": ["presence-service", "room-router", "presence-store"]
+      },
+      {
+        "id": "distribution",
+        "label": "Distribution and operations",
+        "description": "Count changes are coalesced and broadcast; durable analytics remains off the critical path.",
+        "componentIds": [
+          "count-stream",
+          "fanout",
+          "analytics-queue",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "join",
+        "label": "Join and heartbeat path",
+        "description": "Client â†’ gateway â†’ presence service â†’ expiring membership store.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "presence-service",
+          "presence-store"
+        ]
+      },
+      {
+        "id": "broadcast",
+        "label": "Count broadcast path",
+        "description": "Membership change â†’ coalesced count event â†’ fan-out to the page room.",
+        "componentIds": ["presence-service", "count-stream", "fanout", "client"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Page clients",
+        "description": "Open a WebSocket or SSE connection, send a lease heartbeat, and display count plus freshness.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "WebSocket preferred; SSE fallback"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Edge gateway",
+        "description": "Terminates TLS, authenticates optional users, applies connection and message quotas, and routes by page key.",
+        "position": {
+          "x": 420,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, origin checks, rate limits"
+        }
+      },
+      {
+        "id": "presence-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Presence service",
+        "description": "Owns join, heartbeat, leave, expiry, room membership, and count coalescing for its assigned shards.",
+        "position": {
+          "x": 840,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Strong per-room shard ownership"
+        }
+      },
+      {
+        "id": "room-router",
+        "type": "load-balancer",
+        "componentId": "load-balancer",
+        "label": "Room router",
+        "description": "Consistent-hashes page keys so all members of a room meet at the same presence shard.",
+        "position": {
+          "x": 840,
+          "y": 620
+        },
+        "properties": {
+          "routing": "page_id hash with rebalance"
+        }
+      },
+      {
+        "id": "presence-store",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Expiring membership store",
+        "description": "Redis-like shard-local state keyed by page and session with TTL leases; it is reconstructable, not the system of record.",
+        "position": {
+          "x": 1260,
+          "y": 120
+        },
+        "properties": {
+          "expiry": "TTL slightly longer than heartbeat interval"
+        }
+      },
+      {
+        "id": "count-stream",
+        "type": "queue",
+        "componentId": "message-broker",
+        "label": "Count change stream",
+        "description": "Buffers compact count updates and lets fan-out scale separately from heartbeat processing.",
+        "position": {
+          "x": 1260,
+          "y": 500
+        },
+        "properties": {
+          "delivery": "At-least-once; sequence per room"
+        }
+      },
+      {
+        "id": "fanout",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Room fan-out",
+        "description": "Publishes the latest coalesced count to connected clients and drops stale sequence numbers.",
+        "position": {
+          "x": 1680,
+          "y": 500
+        },
+        "properties": {
+          "policy": "Coalesce updates over a short window"
+        }
+      },
+      {
+        "id": "analytics-queue",
+        "type": "queue",
+        "componentId": "message-broker",
+        "label": "Analytics queue",
+        "description": "Receives sampled page-presence events for reporting without coupling analytics to live counts.",
+        "position": {
+          "x": 1680,
+          "y": 820
+        },
+        "properties": {
+          "policy": "Sample and retain bounded history"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Presence monitoring",
+        "description": "Measures active connections, heartbeat lag, expiry rate, room hot spots, fan-out lag, and count error budget.",
+        "position": {
+          "x": 2100,
+          "y": 260
+        },
+        "properties": {
+          "signals": "freshness, lag, drops, shard load"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Connect + heartbeat",
+        "description": "Open a connection and renew the page lease."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "presence-service",
+        "type": "api-call",
+        "label": "Route",
+        "description": "Validate page identity and route the session to its shard."
+      },
+      {
+        "id": "service-store",
+        "source": "presence-service",
+        "target": "presence-store",
+        "type": "database-connection",
+        "label": "Lease",
+        "description": "Add, renew, or remove the session with an expiring key."
+      },
+      {
+        "id": "service-counts",
+        "source": "presence-service",
+        "target": "count-stream",
+        "type": "event-stream",
+        "label": "Count changed",
+        "description": "Publish only a compact room count after membership changes."
+      },
+      {
+        "id": "counts-fanout",
+        "source": "count-stream",
+        "target": "fanout",
+        "type": "message-queue",
+        "label": "Coalesce",
+        "description": "Deliver the latest count to the fan-out worker."
+      },
+      {
+        "id": "fanout-client",
+        "source": "fanout",
+        "target": "client",
+        "type": "websocket",
+        "label": "Live count",
+        "description": "Broadcast count and observed-at timestamp to the page room."
+      },
+      {
+        "id": "service-analytics",
+        "source": "presence-service",
+        "target": "analytics-queue",
+        "type": "event-stream",
+        "label": "Sampled event",
+        "description": "Record aggregate presence analytics asynchronously."
+      },
+      {
+        "id": "service-monitoring",
+        "source": "presence-service",
+        "target": "monitoring",
+        "type": "event-stream",
+        "label": "Metrics",
+        "description": "Expose lease, room, shard, and freshness signals."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Exact versus approximate counts",
+      "points": [
+        "For a room owned by one shard, the count can be exact for known leases at a point in time; cross-region aggregation or sampling should be labeled approximate.",
+        "Return observed_at and a stale threshold so the UI never implies stronger freshness than the system provides.",
+        "If product semantics allow it, show a range or rounded value for privacy and to reduce hot-room fan-out."
+      ]
+    },
+    {
+      "title": "Lease expiry and reconnect storms",
+      "points": [
+        "Use a lease longer than the heartbeat interval, jitter reconnects, and make join/heartbeat idempotent by session_id.",
+        "Do not depend on beforeunload: mobile suspension and network loss are normal, so TTL expiry is the correctness mechanism.",
+        "Rate-limit new connections per IP, user, page, and region; shed optional presence before taking down page requests."
+      ]
+    },
+    {
+      "title": "Hot pages and fan-out",
+      "points": [
+        "Keep room ownership separate from connection handling and coalesce updates over a small window.",
+        "A 100K-viewer room needs a broadcast tree or regional fan-out groups; never enqueue one durable message per viewer per heartbeat.",
+        "Use backpressure and send snapshots so a slow client cannot delay the room."
+      ]
+    },
+    {
+      "title": "Privacy and identity",
+      "points": [
+        "Prefer opaque session IDs and aggregate counts; do not expose viewer identities unless the product explicitly requires it.",
+        "Define whether multiple tabs, devices, and anonymous sessions count separately.",
+        "Apply retention and sampling to analytics, and protect page membership from cross-origin or unauthorized joins."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "WebSocket vs polling",
+      "recommendation": "Use WebSockets for high-change rooms and fall back to short polling or SSE where connection infrastructure is limited.",
+      "caution": "Long-lived sockets cost connection state; polling is simpler but creates synchronized request spikes and slower updates."
+    },
+    {
+      "title": "Redis-like store vs durable database",
+      "recommendation": "Use an expiring, replicated in-memory store for live membership and keep durable analytics separate.",
+      "caution": "A cache restart can lose live state, so clients must reconnect and the UI must tolerate a temporary stale count."
+    },
+    {
+      "title": "Global exact count vs regional approximate count",
+      "recommendation": "Start with a home region per page and aggregate only when product semantics justify the latency and coordination cost.",
+      "caution": "Cross-region strong consistency adds network latency and failure coupling for a feature that is usually informational."
+    }
+  ],
+  "commonMistakes": [
+    "Writing every heartbeat to the primary database.",
+    "Counting connections instead of stable sessions and double-counting reconnects or tabs unintentionally.",
+    "Relying on browser unload to remove presence.",
+    "Broadcasting every heartbeat to every viewer on a hot page.",
+    "Showing an unlabelled stale or approximate count as exact."
+  ],
+  "followUps": [
+    {
+      "question": "What if the presence store fails?",
+      "answer": "Stop claiming fresh counts, serve the last bounded snapshot with a stale state, reconnect clients with jitter, and rebuild memberships from active connections and heartbeats."
+    },
+    {
+      "question": "How would you count only authenticated users?",
+      "answer": "Require an authenticated page-access token at join, bind the session to the user, and define whether multiple tabs count once or once per device."
+    },
+    {
+      "question": "How would you support many regions?",
+      "answer": "Home each page room to a region or shard, publish regional counts, and aggregate with an explicit freshness/approximation contract rather than pretending the total is globally instantaneous."
+    },
+    {
+      "question": "How do you prevent abuse?",
+      "answer": "Validate origin and page authorization, cap connections and heartbeat frequency, detect high-cardinality session creation, and shed anonymous presence first."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Presence semantics",
+      "description": "Clarifies sessions, tabs, authenticated identity, exactness, freshness, and privacy."
+    },
+    {
+      "criterion": "Lease correctness",
+      "description": "Uses idempotent heartbeats, TTL expiry, reconnect handling, and no reliance on unload."
+    },
+    {
+      "criterion": "Real-time delivery",
+      "description": "Separates ingestion from coalesced fan-out, handles hot rooms, slow clients, and backpressure."
+    },
+    {
+      "criterion": "Scale and resilience",
+      "description": "Estimates heartbeat traffic, plans shard ownership, reconnect storms, regional failure, and graceful degradation."
+    },
+    {
+      "criterion": "Operational quality",
+      "description": "Defines freshness, expiry lag, active connections, hot-room load, dropped updates, and privacy/abuse metrics."
+    }
+  ]
+}

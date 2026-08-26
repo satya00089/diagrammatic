@@ -155,12 +155,16 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     problemSlug ===
     "design-a-parts-compatibility-feature-for-an-ecommerce-site";
   const isPriceAlert = problemSlug === "design-a-price-alert-system";
+  const isPagePresence =
+    problemSlug ===
+    "design-a-feature-to-show-the-number-of-users-viewing-a-page";
   const isAnnotatedProblem =
     isDocumentManagement ||
     isUrlShortener ||
     isJobScheduler ||
     isPartsCompatibility ||
-    isPriceAlert;
+    isPriceAlert ||
+    isPagePresence;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
@@ -169,7 +173,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         ? "Peak lookup rate"
         : isPriceAlert
           ? "Observation rate"
-          : "Peak dispatch rate";
+          : isPagePresence
+            ? "Heartbeat rate"
+            : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
@@ -178,7 +184,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         ? "Revalidate before purchase"
         : isPriceAlert
           ? "Accept a price observation"
-          : "Claim due work";
+          : isPagePresence
+            ? "Join the page"
+            : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
@@ -187,7 +195,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
         ? "Publish catalog changes asynchronously"
         : isPriceAlert
           ? "Deliver asynchronously"
-          : "Enqueue an execution";
+          : isPagePresence
+            ? "Expire inactive presence"
+            : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);

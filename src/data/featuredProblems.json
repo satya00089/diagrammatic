@@ -144,6 +144,15 @@
     "tags": ["event-driven", "notifications", "scheduling", "scalability"]
   },
   {
+    "slug": "design-a-feature-to-show-the-number-of-users-viewing-a-page",
+    "title": "Design a Feature to Show the Number of Users Viewing a Page",
+    "description": "Design a real-time presence feature that shows how many users are currently viewing the same page without turning page views into durable chatty writes.",
+    "difficulty": "Medium",
+    "category": "Real-Time Systems",
+    "estimated_time": "45-60 minutes",
+    "tags": ["real-time", "presence", "websockets", "scalability"]
+  },
+  {
     "slug": "payment-system",
     "title": "Digital Payment System",
     "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",

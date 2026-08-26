@@ -1,0 +1,578 @@
+{
+  "prompt": {
+    "brief": "Design a multi-tenant job scheduling service that runs one-time and recurring jobs reliably, even when schedules spike, workers fail, or a dispatcher is restarted.",
+    "successSignals": [
+      "Separate schedule management, due-work detection, dispatch, and execution.",
+      "Explain timing semantics, duplicate delivery, retries, time zones, and missed runs.",
+      "Use durable state and leases so dispatcher and worker failures recover safely.",
+      "Make tenant fairness, backpressure, idempotency, and operational visibility explicit."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Create, update, pause, resume, and delete one-time or recurring schedules.",
+      "Run HTTP, container, or queue-backed jobs with configurable timeout and retry policy.",
+      "Support cron-like expressions, time zones, start/end windows, and misfire policy.",
+      "Expose execution history, current state, manual run, cancellation, and dead-letter replay.",
+      "Isolate tenants with quotas, concurrency limits, authorization, and audit events."
+    ],
+    "nonFunctional": [
+      "Provide at-least-once execution with a clear idempotency contract; exactly-once side effects are the job owner's responsibility.",
+      "Target p99 dispatch lateness below 10 seconds for jobs within the normal capacity envelope.",
+      "Survive dispatcher, worker, queue, and storage node failures without silently losing a due job.",
+      "Keep schedule writes strongly consistent while allowing dashboards and metrics to be eventually consistent.",
+      "Apply backpressure and tenant fairness instead of allowing one customer to exhaust all workers."
+    ],
+    "scaleAssumptions": [
+      "10 million active schedules, with 100 million executions per day.",
+      "Average execution rate is about 1.2K jobs/second; peak bursts reach 10K jobs/second.",
+      "Most schedules are recurring and produce a small schedule row plus one execution record per run.",
+      "Jobs are external work: median runtime is 5 seconds, with a 15-minute maximum lease and timeout."
+    ],
+    "metrics": [
+      {
+        "label": "Average execution rate",
+        "value": "~1.2K/s",
+        "description": "100M daily executions divided across a 24-hour day."
+      },
+      {
+        "label": "Peak dispatch rate",
+        "value": "~10K/s",
+        "description": "Burst budget for aligned cron boundaries and catch-up work."
+      },
+      {
+        "label": "Active schedules",
+        "value": "10M",
+        "description": "The due-time index must be sharded; a full-table scan is not viable."
+      },
+      {
+        "label": "Execution history",
+        "value": "~36.5B/year",
+        "description": "Use retention tiers and archive old records instead of keeping all history hot."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Schedule",
+      "fields": [
+        "schedule_id",
+        "tenant_id",
+        "kind",
+        "expression",
+        "time_zone",
+        "next_run_at",
+        "status",
+        "version"
+      ],
+      "notes": "The schedule is the source of truth; version changes fence stale dispatchers and update the indexed next-run entry."
+    },
+    {
+      "name": "Execution",
+      "fields": [
+        "execution_id",
+        "schedule_id",
+        "scheduled_for",
+        "attempt",
+        "status",
+        "lease_until",
+        "idempotency_key",
+        "started_at",
+        "finished_at"
+      ],
+      "notes": "One logical run can have multiple attempts. The idempotency key remains stable across retries."
+    },
+    {
+      "name": "RetryPolicy",
+      "fields": [
+        "max_attempts",
+        "backoff",
+        "jitter",
+        "retryable_errors",
+        "misfire_policy"
+      ],
+      "notes": "Keep policy with the schedule version so a retry is evaluated against the intended configuration."
+    },
+    {
+      "name": "PartitionLease",
+      "fields": ["partition_id", "owner_id", "fencing_token", "lease_until"],
+      "notes": "Short leases and fencing tokens prevent two dispatcher instances from owning a partition after a pause or network split."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/schedules",
+      "contract": "{ job, trigger, retryPolicy, concurrencyPolicy } -> { scheduleId, nextRunAt }",
+      "notes": "Require tenant authorization and an idempotency key; validate time zone and cron expression before the atomic write."
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/schedules/{scheduleId}",
+      "contract": "{ status?, trigger?, retryPolicy? } -> updated schedule",
+      "notes": "Use an expected version to avoid lost updates and atomically move the due-time index."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/schedules/{scheduleId}/executions",
+      "contract": "Paginated execution attempts and outcomes",
+      "notes": "Read from an execution index; do not scan the scheduler's hot due-time partitions."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/schedules/{scheduleId}/runs",
+      "contract": "{ scheduledFor? } -> { executionId }",
+      "notes": "Manual runs share the normal queue and idempotency path, but are marked as operator-triggered."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Persist the schedule",
+      "description": "Validate the trigger, authorize the tenant, calculate the first next-run timestamp, and write the schedule plus its due-time index entry in one conditional operation."
+    },
+    {
+      "title": "Claim due work",
+      "description": "A dispatcher owns a leased shard, reads a bounded time window, and conditionally claims each due schedule using its version and a run identity."
+    },
+    {
+      "title": "Enqueue an execution",
+      "description": "Create an execution record and publish a durable message. A transactional outbox or idempotent publisher closes the gap between the database write and queue publish."
+    },
+    {
+      "title": "Execute with a lease",
+      "description": "A fair worker consumes the message, acquires or renews the execution lease, invokes the target, and records success or a retryable failure."
+    },
+    {
+      "title": "Advance or recover",
+      "description": "On success, compute the next occurrence. On failure, apply backoff and jitter; after the retry budget, move the execution to a dead-letter state and alert the tenant."
+    }
+  ],
+  "architecture": {
+    "title": "Distributed job scheduler reference architecture",
+    "summary": "A durable schedule store feeds a partitioned dispatcher, which claims due work and hands it to queues so execution remains reliable under retries and worker churn.",
+    "layers": [
+      {
+        "id": "control-plane",
+        "label": "Control plane",
+        "description": "Clients create, inspect, pause, and change schedules.",
+        "componentIds": [
+          "scheduler-client",
+          "scheduler-gateway",
+          "schedule-service"
+        ]
+      },
+      {
+        "id": "dispatch-plane",
+        "label": "Dispatch plane",
+        "description": "Due schedules are discovered, claimed, and converted into durable execution messages.",
+        "componentIds": [
+          "schedule-store",
+          "time-index",
+          "dispatcher",
+          "execution-queue"
+        ]
+      },
+      {
+        "id": "execution-plane",
+        "label": "Execution plane",
+        "description": "Workers execute jobs with leases, retries, and result recording.",
+        "componentIds": [
+          "worker-pool",
+          "execution-store",
+          "event-stream",
+          "observability"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "schedule-path",
+        "label": "Schedule path",
+        "description": "Create or update a schedule and atomically maintain its next-run index.",
+        "componentIds": [
+          "scheduler-client",
+          "scheduler-gateway",
+          "schedule-service",
+          "schedule-store",
+          "time-index"
+        ]
+      },
+      {
+        "id": "dispatch-path",
+        "label": "Dispatch path",
+        "description": "Partition owners claim due entries and enqueue execution attempts.",
+        "componentIds": [
+          "time-index",
+          "dispatcher",
+          "execution-queue",
+          "worker-pool"
+        ]
+      },
+      {
+        "id": "retry-path",
+        "label": "Retry and recovery path",
+        "description": "Failed attempts are rescheduled with backoff or moved to a dead-letter queue for inspection.",
+        "componentIds": [
+          "worker-pool",
+          "execution-store",
+          "event-stream",
+          "observability"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "scheduler-client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Applications and operators that create schedules and inspect execution history.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "operations": "Create, pause, resume, query"
+        }
+      },
+      {
+        "id": "scheduler-gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API Gateway",
+        "description": "Authenticates tenants, validates payloads, and applies quotas and idempotency keys.",
+        "position": {
+          "x": 480,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, rate limits, tenant isolation"
+        }
+      },
+      {
+        "id": "schedule-service",
+        "type": "application-server",
+        "componentId": "backend-server",
+        "label": "Schedule Service",
+        "description": "Owns schedule lifecycle, computes next-run timestamps, and enforces optimistic versioning.",
+        "position": {
+          "x": 960,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent writes and version checks"
+        }
+      },
+      {
+        "id": "schedule-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Schedule Store",
+        "description": "Durable source of truth for schedules, policies, ownership, and lifecycle state.",
+        "position": {
+          "x": 1440,
+          "y": 120
+        },
+        "properties": {
+          "accessPattern": "Tenant and schedule ID; status updates"
+        }
+      },
+      {
+        "id": "time-index",
+        "type": "database",
+        "componentId": "database",
+        "label": "Due-Time Index",
+        "description": "Sharded index ordered by next-run time so dispatchers can scan bounded windows.",
+        "position": {
+          "x": 1440,
+          "y": 400
+        },
+        "properties": {
+          "sharding": "Time bucket plus hash shard"
+        }
+      },
+      {
+        "id": "dispatcher",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Dispatcher Fleet",
+        "description": "Leases partitions, claims due schedules, and creates one execution message per run.",
+        "position": {
+          "x": 1920,
+          "y": 400
+        },
+        "properties": {
+          "coordination": "Lease renewal and fencing tokens"
+        }
+      },
+      {
+        "id": "execution-queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Execution Queue",
+        "description": "Durably buffers runnable attempts and isolates schedule spikes from worker capacity.",
+        "position": {
+          "x": 2400,
+          "y": 400
+        },
+        "properties": {
+          "delivery": "At least once with visibility timeout"
+        }
+      },
+      {
+        "id": "worker-pool",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Worker Pool",
+        "description": "Executes jobs within tenant limits, renews leases, and reports success or failure.",
+        "position": {
+          "x": 2880,
+          "y": 400
+        },
+        "properties": {
+          "isolation": "Per-tenant concurrency and timeout limits"
+        }
+      },
+      {
+        "id": "execution-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Execution Store",
+        "description": "Records attempts, idempotency keys, outcomes, retry state, and dead-letter references.",
+        "position": {
+          "x": 3360,
+          "y": 180
+        },
+        "properties": {
+          "retention": "Hot history plus archived results"
+        }
+      },
+      {
+        "id": "event-stream",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Events and DLQ",
+        "description": "Publishes lifecycle events and retains poison messages for operator replay.",
+        "position": {
+          "x": 3360,
+          "y": 620
+        },
+        "properties": {
+          "events": "Succeeded, failed, retried, skipped"
+        }
+      },
+      {
+        "id": "observability",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks lateness, queue depth, retries, worker saturation, and missed-run alerts.",
+        "position": {
+          "x": 3360,
+          "y": 400
+        },
+        "properties": {
+          "SLOs": "Dispatch lateness, completion rate, recovery time"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "scheduler-client",
+        "target": "scheduler-gateway",
+        "type": "http",
+        "label": "HTTPS",
+        "description": "Submit schedule commands and queries."
+      },
+      {
+        "id": "gateway-service",
+        "source": "scheduler-gateway",
+        "target": "schedule-service",
+        "type": "api-call",
+        "label": "API",
+        "description": "Authenticate and route tenant operations."
+      },
+      {
+        "id": "service-store",
+        "source": "schedule-service",
+        "target": "schedule-store",
+        "type": "database-connection",
+        "label": "Persist",
+        "description": "Store the schedule and lifecycle state."
+      },
+      {
+        "id": "service-index",
+        "source": "schedule-service",
+        "target": "time-index",
+        "type": "database-connection",
+        "label": "Next run",
+        "description": "Maintain the due-time index with the schedule version."
+      },
+      {
+        "id": "index-dispatcher",
+        "source": "time-index",
+        "target": "dispatcher",
+        "type": "data-flow",
+        "label": "Due work",
+        "description": "Read bounded time buckets for dispatch."
+      },
+      {
+        "id": "dispatcher-queue",
+        "source": "dispatcher",
+        "target": "execution-queue",
+        "type": "message-queue",
+        "label": "Enqueue",
+        "description": "Publish an idempotent execution attempt."
+      },
+      {
+        "id": "queue-worker",
+        "source": "execution-queue",
+        "target": "worker-pool",
+        "type": "message-queue",
+        "label": "Consume",
+        "description": "Deliver work with a visibility timeout."
+      },
+      {
+        "id": "worker-execution",
+        "source": "worker-pool",
+        "target": "execution-store",
+        "type": "database-connection",
+        "label": "Record",
+        "description": "Persist attempt outcome and retry state."
+      },
+      {
+        "id": "worker-events",
+        "source": "worker-pool",
+        "target": "event-stream",
+        "type": "event-stream",
+        "label": "Events",
+        "description": "Publish lifecycle events and dead-letter failures."
+      },
+      {
+        "id": "dispatcher-monitoring",
+        "source": "dispatcher",
+        "target": "observability",
+        "type": "event-stream",
+        "label": "Lateness",
+        "description": "Report dispatch lag and partition health.",
+        "properties": {
+          "sourceHandle": "bottom",
+          "targetHandle": "bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.35
+        }
+      },
+      {
+        "id": "worker-monitoring",
+        "source": "worker-pool",
+        "target": "observability",
+        "type": "event-stream",
+        "label": "Health",
+        "description": "Report execution latency, failures, and saturation.",
+        "properties": {
+          "labelPosition": "target",
+          "labelOffset": 0.45
+        }
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Finding due schedules",
+      "points": [
+        "Index by time buckets and hash shards so dispatchers read only a narrow window.",
+        "Use a lease per partition with fencing tokens; a lock alone is unsafe during pauses and network partitions.",
+        "Allow a small look-ahead window and recheck schedule version and status before enqueueing."
+      ]
+    },
+    {
+      "title": "At-least-once execution",
+      "points": [
+        "A worker can finish a side effect and crash before acknowledging the queue, so duplicates are unavoidable.",
+        "Pass a stable execution idempotency key to the job and require downstream writes to deduplicate it.",
+        "Record attempt state with conditional transitions so late acknowledgements cannot overwrite a newer retry."
+      ]
+    },
+    {
+      "title": "Recurring schedules and misfires",
+      "points": [
+        "Store the schedule's time zone and compute occurrences with a tested library; never treat local time as UTC implicitly.",
+        "Define skip, run-once, or catch-up behavior when a schedule is paused or the system is down.",
+        "Bound catch-up work to protect the queue and expose skipped occurrences as observable state."
+      ]
+    },
+    {
+      "title": "Fairness and backpressure",
+      "points": [
+        "Partition queue capacity by tenant or weighted fair scheduling so a noisy customer cannot starve others.",
+        "Enforce per-tenant concurrency and global admission limits before invoking external jobs.",
+        "Scale workers from queue age and lateness, not only queue depth, because long jobs hide waiting time."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Polling vs timing wheel",
+      "recommendation": "Start with sharded time buckets and bounded polling; introduce a timing wheel when sub-second precision or very high schedule density justifies it.",
+      "caution": "A timing wheel reduces scans but adds complexity around persistence, recovery, and long-duration timers."
+    },
+    {
+      "title": "Queue-first vs database-first dispatch",
+      "recommendation": "Create an execution record before publishing and use an outbox or reconciliation worker to guarantee eventual publication.",
+      "caution": "Queue-first is simpler to scale but can lose the durable record needed for audit and deduplication."
+    },
+    {
+      "title": "Exactly-once vs at-least-once",
+      "recommendation": "Promise at-least-once delivery and make idempotency explicit at the execution boundary.",
+      "caution": "Exactly-once claims usually hide an external side-effect boundary that the scheduler cannot atomically control."
+    }
+  ],
+  "commonMistakes": [
+    "Using one global lock or scanning every schedule each second.",
+    "Claiming a schedule without fencing stale dispatcher instances.",
+    "Assuming queue acknowledgement means the external job side effect happened exactly once.",
+    "Ignoring daylight-saving transitions, missed runs, and bounded catch-up.",
+    "Letting retries bypass tenant concurrency limits or overwhelm a downstream service."
+  ],
+  "followUps": [
+    {
+      "question": "How do you recover after a dispatcher is down for ten minutes?",
+      "answer": "A new owner acquires the partition lease, scans from the last durable watermark, applies the schedule's misfire policy, and publishes bounded catch-up work while reporting lateness."
+    },
+    {
+      "question": "How would you support millions of jobs at the same timestamp?",
+      "answer": "Hash schedules across many time-bucket shards, spread enqueue work with jitter where semantics allow it, and apply tenant and global admission limits."
+    },
+    {
+      "question": "How do you cancel a running job?",
+      "answer": "Mark the execution cancelled with a conditional update, send a cancellation signal when the worker supports it, and fence late completion updates; forceful termination remains target-specific."
+    },
+    {
+      "question": "What must be monitored?",
+      "answer": "Track dispatch lateness, due-item age, queue age, lease expirations, retry rate, dead letters, per-tenant saturation, and the gap between persisted executions and published messages."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Core scheduling path",
+      "description": "Separates schedule lifecycle, due-time discovery, durable dispatch, and worker execution with a readable critical path."
+    },
+    {
+      "criterion": "Reliability semantics",
+      "description": "Explains leases, fencing, retries, idempotency, duplicate delivery, outbox recovery, and failure transitions."
+    },
+    {
+      "criterion": "Scale and fairness",
+      "description": "Uses explicit capacity assumptions, sharded indexes, bounded scans, backpressure, and tenant-aware concurrency."
+    },
+    {
+      "criterion": "Time and product behavior",
+      "description": "Covers time zones, recurring rules, misfires, catch-up, cancellation, manual runs, and retention."
+    },
+    {
+      "criterion": "Operations",
+      "description": "Defines lateness and completion SLOs plus metrics and operator workflows for dead letters and stuck leases."
+    }
+  ]
+}
