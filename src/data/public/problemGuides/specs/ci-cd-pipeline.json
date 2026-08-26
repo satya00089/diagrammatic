@@ -1,0 +1,10 @@
+{
+  "slug": "ci-cd-pipeline",
+  "focus": "build, test, artifact, approval, and deployment orchestration",
+  "action": "run a pipeline from a source change",
+  "scale": "100K pipeline runs per day with bursty repositories",
+  "latency": "queue acknowledgement <=1s",
+  "durable": "pipeline definitions and execution state",
+  "async": "workers, artifact storage, deployment, and notifications",
+  "store": "runs, steps, artifacts, and audit records"
+}

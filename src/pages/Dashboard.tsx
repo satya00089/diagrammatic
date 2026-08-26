@@ -14,6 +14,7 @@ import {
   MdSmartToy,
   MdHelpOutline,
 } from "react-icons/md";
+import { HiChevronDown } from "react-icons/hi2";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
@@ -531,20 +532,26 @@ const Dashboard: React.FC = () => {
                       >
                         <MdTune className="w-4 h-4" /> Difficulty
                       </label>
-                      <select
-                        id="difficulty-select"
-                        value={selectedDifficulty}
-                        onChange={(e) =>
-                          dispatch(setSelectedDifficulty(e.target.value))
-                        }
-                        className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
-                      >
-                        {difficulties.map((difficulty) => (
-                          <option key={difficulty} value={difficulty}>
-                            {difficulty}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="select-field-wrapper">
+                        <select
+                          id="difficulty-select"
+                          value={selectedDifficulty}
+                          onChange={(e) =>
+                            dispatch(setSelectedDifficulty(e.target.value))
+                          }
+                          className="select-field select-field--compact"
+                        >
+                          {difficulties.map((difficulty) => (
+                            <option key={difficulty} value={difficulty}>
+                              {difficulty}
+                            </option>
+                          ))}
+                        </select>
+                        <HiChevronDown
+                          aria-hidden="true"
+                          className="select-field-icon"
+                        />
+                      </div>
                     </div>
 
                     {/* Category Filter */}
@@ -555,20 +562,26 @@ const Dashboard: React.FC = () => {
                       >
                         <MdLabel className="w-4 h-4" /> Category
                       </label>
-                      <select
-                        id="category-select"
-                        value={selectedCategory}
-                        onChange={(e) =>
-                          dispatch(setSelectedCategory(e.target.value))
-                        }
-                        className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
-                      >
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="select-field-wrapper">
+                        <select
+                          id="category-select"
+                          value={selectedCategory}
+                          onChange={(e) =>
+                            dispatch(setSelectedCategory(e.target.value))
+                          }
+                          className="select-field select-field--compact"
+                        >
+                          {categories.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                        <HiChevronDown
+                          aria-hidden="true"
+                          className="select-field-icon"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

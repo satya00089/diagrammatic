@@ -1,0 +1,10 @@
+{
+  "slug": "video-streaming-platform",
+  "focus": "upload, encode, catalog, adaptive streaming, CDN delivery, and playback",
+  "action": "play a video at an adaptive bitrate",
+  "scale": "100M daily viewers and 10M concurrent streams",
+  "latency": "startup p95 <=2s",
+  "durable": "video metadata and encoded assets",
+  "async": "encoding, thumbnails, recommendations, and analytics",
+  "store": "catalog metadata and object storage"
+}

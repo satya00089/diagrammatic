@@ -144,6 +144,15 @@
     "tags": ["event-driven", "notifications", "scheduling", "scalability"]
   },
   {
+    "slug": "design-a-feature-to-show-the-number-of-users-viewing-a-page",
+    "title": "Design a Feature to Show the Number of Users Viewing a Page",
+    "description": "Design a real-time presence feature that shows how many users are currently viewing the same page without turning page views into durable chatty writes.",
+    "difficulty": "Medium",
+    "category": "Real-Time Systems",
+    "estimated_time": "45-60 minutes",
+    "tags": ["real-time", "presence", "websockets", "scalability"]
+  },
+  {
     "slug": "payment-system",
     "title": "Digital Payment System",
     "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",
@@ -286,5 +295,1833 @@
     "category": "E-commerce",
     "estimated_time": "60-90 minutes",
     "tags": ["e-commerce", "catalog", "search", "data-modeling", "consistency"]
+  },
+  {
+    "slug": "design-facebook-likes-feature-with-live-updates",
+    "title": "Design Facebook Likes with Live Updates",
+    "description": "Design a like and unlike feature with reliable per-user state, scalable counts, and live updates for viewers of the same post.",
+    "difficulty": "Hard",
+    "category": "Social Media",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "social-media",
+      "real-time",
+      "event-driven",
+      "scalability",
+      "consistency"
+    ]
+  },
+  {
+    "slug": "design-a-cost-optimized-architecture-for-batch-processing",
+    "title": "Design a Cost-Optimized Architecture for Batch Processing",
+    "description": "Design an elastic batch-processing platform that minimizes infrastructure cost while meeting completion SLAs, surviving worker failures, and producing durable results.",
+    "difficulty": "Hard",
+    "category": "Distributed Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "batch-processing",
+      "cost-optimization",
+      "queues",
+      "cloud",
+      "reliability"
+    ]
+  },
+  {
+    "slug": "create-a-document-management-system-like-wikipedia-notion-or-google-docs",
+    "title": "Create a Document Management System like Wikipedia, Notion or Google Docs",
+    "description": "Design a collaborative document editing and management system with version control.",
+    "difficulty": "Easy",
+    "category": "Productivity",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "collaboration",
+      "documents",
+      "real-time",
+      "version-control",
+      "search"
+    ]
+  },
+  {
+    "slug": "design-a-job-scheduler",
+    "title": "Design a Job Scheduler",
+    "description": "Design a distributed job scheduling system to execute tasks at specified times or intervals.",
+    "difficulty": "Easy",
+    "category": "Infrastructure",
+    "estimated_time": "30-45 minutes",
+    "tags": ["scheduling", "distributed-systems", "background-jobs", "cron"]
+  },
+  {
+    "slug": "design-twitter-for-millions-of-users",
+    "title": "Design Twitter for millions of users",
+    "description": "Design a microblogging platform like Twitter/X that handles millions of users posting and reading short messages.",
+    "difficulty": "Easy",
+    "category": "Social Media",
+    "estimated_time": "45-60 minutes",
+    "tags": ["social-media", "real-time", "feeds", "scalability", "messaging"]
+  },
+  {
+    "slug": "top-k-elements-app-store-rankings-amazon-bestsellers",
+    "title": "Top K Elements: App Store Rankings, Amazon Bestsellers",
+    "description": "Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time.",
+    "difficulty": "Easy",
+    "category": "Rankings",
+    "estimated_time": "30-45 minutes",
+    "tags": ["ranking", "top-k", "heap", "real-time", "aggregation"]
+  },
+  {
+    "slug": "design-a-system-to-view-latest-stock-prices-worldwide",
+    "title": "Design a System to View Latest Stock Prices Worldwide",
+    "description": "Design a real-time stock price tracking system with market data from global exchanges.",
+    "difficulty": "Easy",
+    "category": "Financial Systems",
+    "estimated_time": "30-45 minutes",
+    "tags": [
+      "financial",
+      "real-time",
+      "stock-market",
+      "websockets",
+      "data-feeds"
+    ]
+  },
+  {
+    "slug": "design-instagram",
+    "title": "Design Instagram",
+    "description": "Design a photo-sharing social media platform like Instagram with feed, stories, and user interactions.",
+    "difficulty": "Easy",
+    "category": "Social Media",
+    "estimated_time": "45-60 minutes",
+    "tags": ["social-media", "photo-sharing", "cdn", "feeds", "storage"]
+  },
+  {
+    "slug": "design-pastebin",
+    "title": "Design Pastebin",
+    "description": "Design a web service where users can store plain text and share it with others via a generated URL.",
+    "difficulty": "Easy",
+    "category": "Web Services",
+    "estimated_time": "30-45 minutes",
+    "tags": ["web-services", "storage", "caching", "text-storage"]
+  },
+  {
+    "slug": "design-a-system-for-sorting-large-data-sets",
+    "title": "Design a System for Sorting Large Data Sets",
+    "description": "Design a system to efficiently sort datasets that are too large to fit in memory.",
+    "difficulty": "Easy",
+    "category": "Data Processing",
+    "estimated_time": "30-45 minutes",
+    "tags": [
+      "sorting",
+      "algorithms",
+      "data-processing",
+      "external-memory",
+      "distributed"
+    ]
+  },
+  {
+    "slug": "build-a-marketplace-feature-for-facebook",
+    "title": "Build a Marketplace Feature for Facebook",
+    "description": "Design an online marketplace for buying and selling goods locally.",
+    "difficulty": "Easy",
+    "category": "E-commerce",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "e-commerce",
+      "marketplace",
+      "search",
+      "location-services",
+      "messaging"
+    ]
+  },
+  {
+    "slug": "develop-a-weather-application",
+    "title": "Develop a Weather Application",
+    "description": "Design a weather application that provides current conditions, forecasts, and weather alerts.",
+    "difficulty": "Easy",
+    "category": "Consumer Apps",
+    "estimated_time": "30-45 minutes",
+    "tags": ["api-integration", "caching", "location-services", "mobile"]
+  },
+  {
+    "slug": "design-a-complete-ci-cd-pipeline",
+    "title": "Design a Complete CI/CD Pipeline",
+    "description": "Design a complete CI/CD pipeline that automates build, test, and deployment processes with container orchestration and monitoring.",
+    "difficulty": "Medium",
+    "category": "Azure - DevOps",
+    "estimated_time": "45-60 minutes",
+    "tags": ["azure", "azure-devops", "ci-cd", "aks", "containers", "devops"]
+  },
+  {
+    "slug": "design-google-calendar",
+    "title": "Design Google Calendar",
+    "description": "Design a calendar application that allows users to create, manage, and share events and appointments.",
+    "difficulty": "Medium",
+    "category": "Productivity",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "productivity",
+      "scheduling",
+      "calendar",
+      "synchronization",
+      "notifications"
+    ]
+  },
+  {
+    "slug": "design-backend-for-an-app-to-distribute-6-million-free-burgers-in-one-hour",
+    "title": "Design Backend for an App to Distribute 6 Million Free Burgers in One Hour",
+    "description": "Design a system to handle flash distribution of limited items with high concurrency and fairness.",
+    "difficulty": "Medium",
+    "category": "Flash Sales",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "flash-sale",
+      "concurrency",
+      "high-traffic",
+      "inventory",
+      "scalability"
+    ]
+  },
+  {
+    "slug": "build-a-serverless-rest-api",
+    "title": "Build a Serverless REST API",
+    "description": "Design a serverless REST API that handles HTTP requests with CRUD operations, authentication, rate limiting, caching, and performance monitoring.",
+    "difficulty": "Medium",
+    "category": "Azure - Serverless",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "azure",
+      "azure-functions",
+      "api-management",
+      "cosmos-db",
+      "serverless"
+    ]
+  },
+  {
+    "slug": "design-a-real-time-gaming-leaderboard-system",
+    "title": "Design a Real-time Gaming Leaderboard System",
+    "description": "Design a low-latency gaming leaderboard system that updates scores in real-time, handles millions of concurrent players, and provides global and friend-based rankings.",
+    "difficulty": "Medium",
+    "category": "AWS - Gaming",
+    "estimated_time": "45-60 minutes",
+    "tags": ["aws", "gaming", "elasticache", "redis", "lambda", "leaderboard"]
+  },
+  {
+    "slug": "design-a-hotel-booking-system",
+    "title": "Design a Hotel Booking System",
+    "description": "Design a reservation system for booking hotel rooms with availability management and payment processing.",
+    "difficulty": "Medium",
+    "category": "Booking Systems",
+    "estimated_time": "45-60 minutes",
+    "tags": ["booking", "inventory", "transactions", "payments", "concurrency"]
+  },
+  {
+    "slug": "build-a-cognitive-ai-application",
+    "title": "Build a Cognitive AI Application",
+    "description": "Design an AI application that processes text, images, and speech, provides conversational AI, understands user intent, and answers questions from knowledge bases.",
+    "difficulty": "Medium",
+    "category": "Azure - AI/ML",
+    "estimated_time": "45-60 minutes",
+    "tags": ["azure", "cognitive-services", "ai", "bot-service", "nlp"]
+  },
+  {
+    "slug": "design-an-ml-experiment-tracking-system",
+    "title": "Design an ML Experiment Tracking System",
+    "description": "Design an experiment tracking system that logs hyperparameters, metrics, artifacts, and code for ML experiments, enabling comparison, reproducibility, and team collaboration.",
+    "difficulty": "Medium",
+    "category": "MLOps - Experiment Tracking",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "mlops",
+      "experiment-tracking",
+      "reproducibility",
+      "hyperparameters",
+      "metrics",
+      "collaboration"
+    ]
+  },
+  {
+    "slug": "design-a-natural-language-processing-pipeline",
+    "title": "Design a Natural Language Processing Pipeline",
+    "description": "Design an NLP pipeline that processes unstructured text through entity extraction, relation extraction, sentiment analysis, topic modeling, and text classification at scale.",
+    "difficulty": "Medium",
+    "category": "ML - NLP",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "ml",
+      "nlp",
+      "ner",
+      "text-classification",
+      "sentiment-analysis",
+      "transformers"
+    ]
+  },
+  {
+    "slug": "design-a-customer-churn-prediction-system",
+    "title": "Design a Customer Churn Prediction System",
+    "description": "Design an ML system that predicts customer churn probability, identifies at-risk segments, determines churn drivers, and integrates with retention campaign tools for proactive engagement.",
+    "difficulty": "Medium",
+    "category": "ML - Customer Analytics",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "ml",
+      "churn-prediction",
+      "customer-analytics",
+      "classification",
+      "marketing",
+      "retention"
+    ]
+  },
+  {
+    "slug": "design-an-on-call-escalation-system",
+    "title": "Design an On-Call Escalation System",
+    "description": "Design a system to manage on-call schedules and escalate incidents to the right engineers.",
+    "difficulty": "Medium",
+    "category": "Infrastructure",
+    "estimated_time": "30-45 minutes",
+    "tags": [
+      "on-call",
+      "alerting",
+      "incident-management",
+      "notifications",
+      "scheduling"
+    ]
+  },
+  {
+    "slug": "design-web-crawler",
+    "title": "Design Web Crawler",
+    "description": "Design a web crawler that can discover and download billions of web pages efficiently.",
+    "difficulty": "Medium",
+    "category": "Data Collection",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "crawling",
+      "distributed-systems",
+      "web-scraping",
+      "data-collection"
+    ]
+  },
+  {
+    "slug": "design-a-secure-multi-tier-web-application",
+    "title": "Design a Secure Multi-Tier Web Application",
+    "description": "Design a secure web application architecture with network isolation, protection against common web attacks, auto-scaling capabilities, and secure database access.",
+    "difficulty": "Medium",
+    "category": "AWS - Security",
+    "estimated_time": "45-60 minutes",
+    "tags": ["aws", "vpc", "security", "elb", "auto-scaling", "rds", "waf"]
+  },
+  {
+    "slug": "design-a-model-registry-and-versioning-system",
+    "title": "Design a Model Registry and Versioning System",
+    "description": "Design a model registry that tracks model versions and metadata, manages model lifecycle stages, stores model artifacts, and provides approval workflows for production promotion.",
+    "difficulty": "Medium",
+    "category": "MLOps - Model Management",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "mlops",
+      "model-registry",
+      "versioning",
+      "lifecycle-management",
+      "mlflow",
+      "governance"
+    ]
+  },
+  {
+    "slug": "distributed-cache-system",
+    "title": "Distributed Cache System",
+    "description": "Design a distributed caching system like Redis or Memcached that provides fast data access.",
+    "difficulty": "Medium",
+    "category": "Caching Systems",
+    "estimated_time": "30-45 minutes",
+    "tags": [
+      "caching",
+      "distributed-systems",
+      "performance",
+      "memory",
+      "consistency"
+    ]
+  },
+  {
+    "slug": "design-a-user-login-and-authentication-system",
+    "title": "Design a User Login and Authentication System",
+    "description": "Design a secure authentication system with login, registration, and session management.",
+    "difficulty": "Medium",
+    "category": "Security",
+    "estimated_time": "45-60 minutes",
+    "tags": ["security", "authentication", "sessions", "oauth", "passwords"]
+  },
+  {
+    "slug": "design-a-key-value-store",
+    "title": "Design a Key-Value Store",
+    "description": "Design a distributed key-value database like DynamoDB or Cassandra.",
+    "difficulty": "Medium",
+    "category": "Databases",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "databases",
+      "distributed-systems",
+      "nosql",
+      "consistency",
+      "availability"
+    ]
+  },
+  {
+    "slug": "design-a-system-to-monitor-the-health-of-a-cluster",
+    "title": "Design a System to Monitor the Health of a Cluster",
+    "description": "Design a monitoring system to track health, performance, and availability of distributed clusters.",
+    "difficulty": "Medium",
+    "category": "Monitoring",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "monitoring",
+      "health-check",
+      "distributed-systems",
+      "alerting",
+      "metrics"
+    ]
+  },
+  {
+    "slug": "build-an-intelligent-document-processing-pipeline",
+    "title": "Build an Intelligent Document Processing Pipeline",
+    "description": "Design a document processing system that extracts text from PDFs and images, classifies documents, extracts structured data, and validates accuracy.",
+    "difficulty": "Medium",
+    "category": "GCP - Document Processing",
+    "estimated_time": "45-60 minutes",
+    "tags": ["gcp", "document-ai", "ocr", "cloud-functions", "ml"]
+  },
+  {
+    "slug": "build-a-serverless-event-driven-architecture",
+    "title": "Build a Serverless Event-Driven Architecture",
+    "description": "Design an event-driven system that triggers functions based on events, processes messages asynchronously, and integrates with multiple cloud services.",
+    "difficulty": "Medium",
+    "category": "GCP - Serverless",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "gcp",
+      "cloud-functions",
+      "eventarc",
+      "pub-sub",
+      "serverless",
+      "event-driven"
+    ]
+  },
+  {
+    "slug": "develop-a-photo-sharing-platform-like-flickr-or-google-photos",
+    "title": "Develop a Photo Sharing Platform like Flickr or Google Photos",
+    "description": "Design a platform for uploading, organizing, and sharing photos with albums and search.",
+    "difficulty": "Medium",
+    "category": "Media Sharing",
+    "estimated_time": "45-60 minutes",
+    "tags": ["photo-sharing", "storage", "cdn", "image-processing", "search"]
+  },
+  {
+    "slug": "build-a-real-time-analytics-dashboard",
+    "title": "Build a Real-time Analytics Dashboard",
+    "description": "Design a real-time analytics solution that ingests streaming data, runs SQL queries on large datasets, creates interactive dashboards, and refreshes visualizations automatically.",
+    "difficulty": "Medium",
+    "category": "GCP - Analytics",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "gcp",
+      "bigquery",
+      "pub-sub",
+      "analytics",
+      "data-studio",
+      "real-time"
+    ]
+  },
+  {
+    "slug": "design-a-scalable-global-web-application",
+    "title": "Design a Scalable Global Web Application",
+    "description": "Design a web application that deploys globally, auto-scales based on traffic, serves content with low latency, and provides managed database services.",
+    "difficulty": "Medium",
+    "category": "GCP - Web Applications",
+    "estimated_time": "45-60 minutes",
+    "tags": ["gcp", "app-engine", "cloud-sql", "cloud-storage", "cdn"]
+  },
+  {
+    "slug": "design-a-data-labeling-and-annotation-platform",
+    "title": "Design a Data Labeling and Annotation Platform",
+    "description": "Design a data labeling platform that supports image, text, and audio annotation, manages labeling workflows, ensures label quality, and provides active learning-based sample selection.",
+    "difficulty": "Medium",
+    "category": "MLOps - Data Labeling",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "mlops",
+      "data-labeling",
+      "annotation",
+      "active-learning",
+      "data-quality",
+      "crowdsourcing"
+    ]
+  },
+  {
+    "slug": "design-a-global-content-delivery-network",
+    "title": "Design a Global Content Delivery Network",
+    "description": "Design a global CDN architecture that serves static and dynamic content with low latency, customizes content based on location, and protects against DDoS attacks.",
+    "difficulty": "Medium",
+    "category": "AWS - CDN",
+    "estimated_time": "30-45 minutes",
+    "tags": ["aws", "cloudfront", "cdn", "s3", "lambda-edge", "route53"]
+  },
+  {
+    "slug": "design-a-real-time-sentiment-analysis-platform",
+    "title": "Design a Real-time Sentiment Analysis Platform",
+    "description": "Design a platform that analyzes sentiment from social media, reviews, and customer feedback in real-time, detecting emotions, aspect-level opinions, and trend shifts across brands and topics.",
+    "difficulty": "Medium",
+    "category": "ML - Sentiment Analysis",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "ml",
+      "sentiment-analysis",
+      "nlp",
+      "social-media",
+      "real-time",
+      "text-analytics"
+    ]
+  },
+  {
+    "slug": "count-facebook-likes-especially-for-high-profile-users",
+    "title": "Count Facebook Likes, Especially for High-Profile Users",
+    "description": "Design a system to efficiently count and display likes for posts, especially for viral content.",
+    "difficulty": "Medium",
+    "category": "Social Media",
+    "estimated_time": "30-45 minutes",
+    "tags": [
+      "social-media",
+      "counting",
+      "real-time",
+      "scalability",
+      "aggregation"
+    ]
+  },
+  {
+    "slug": "design-a-data-pipeline-for-ml-with-data-quality-gates",
+    "title": "Design a Data Pipeline for ML with Data Quality Gates",
+    "description": "Design a data pipeline that processes raw data into ML-ready datasets with automated data validation, quality gates, schema enforcement, and data versioning.",
+    "difficulty": "Medium",
+    "category": "MLOps - Data Pipeline",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "mlops",
+      "data-pipeline",
+      "data-quality",
+      "data-validation",
+      "data-versioning",
+      "etl"
+    ]
+  },
+  {
+    "slug": "design-a-smart-sla-monitoring-and-prediction-system",
+    "title": "Design a Smart SLA Monitoring and Prediction System",
+    "description": "Design a system that monitors SLA compliance in real-time, predicts SLA breaches before they happen, calculates error budgets, and triggers proactive mitigation actions.",
+    "difficulty": "Medium",
+    "category": "AIOps - SLA Management",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "aiops",
+      "sla-monitoring",
+      "slo",
+      "prediction",
+      "error-budget",
+      "reliability"
+    ]
+  },
+  {
+    "slug": "design-a-scalable-e-commerce-backend",
+    "title": "Design a Scalable E-commerce Backend",
+    "description": "Design a serverless backend architecture for an e-commerce platform that can handle variable traffic and scale automatically.",
+    "difficulty": "Medium",
+    "category": "AWS - Serverless",
+    "estimated_time": "45-60 minutes",
+    "tags": ["aws", "lambda", "api-gateway", "dynamodb", "s3", "serverless"]
+  },
+  {
+    "slug": "url-shortener-like-bit-ly",
+    "title": "URL Shortener (like bit.ly)",
+    "description": "Design a URL shortening service that can handle millions of URLs and redirect requests efficiently.",
+    "difficulty": "Medium",
+    "category": "Web Services",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "web-services",
+      "scalability",
+      "caching",
+      "databases",
+      "load-balancing"
+    ]
+  },
+  {
+    "slug": "design-an-automated-model-retraining-pipeline",
+    "title": "Design an Automated Model Retraining Pipeline",
+    "description": "Design a system that automatically retrains ML models when performance degrades or new data arrives, validates retrained models against quality gates, and deploys approved models to production.",
+    "difficulty": "Medium",
+    "category": "MLOps - Continuous Training",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "mlops",
+      "continuous-training",
+      "retraining",
+      "automation",
+      "ci-cd",
+      "pipeline"
+    ]
+  },
+  {
+    "slug": "build-a-virtual-desktop-infrastructure-solution",
+    "title": "Build a Virtual Desktop Infrastructure Solution",
+    "description": "Design a VDI solution that provides multi-session desktops, manages user profiles, integrates with identity systems, and optimizes costs with autoscaling.",
+    "difficulty": "Hard",
+    "category": "Azure - Virtual Desktop",
+    "estimated_time": "60-90 minutes",
+    "tags": ["azure", "virtual-desktop", "vdi", "fslogix", "remote-work"]
+  },
+  {
+    "slug": "build-a-large-scale-data-migration-solution",
+    "title": "Build a Large-Scale Data Migration Solution",
+    "description": "Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation.",
+    "difficulty": "Hard",
+    "category": "AWS - Migration",
+    "estimated_time": "60-90 minutes",
+    "tags": ["aws", "data-migration", "dms", "snowball", "datasync"]
+  },
+  {
+    "slug": "identify-the-k-most-shared-articles-in-various-time-windows",
+    "title": "Identify the K Most Shared Articles in Various Time Windows",
+    "description": "Design a system to track and identify the top K most shared articles in real-time across different time windows.",
+    "difficulty": "Hard",
+    "category": "Analytics",
+    "estimated_time": "45-60 minutes",
+    "tags": ["analytics", "real-time", "ranking", "streaming", "top-k"]
+  },
+  {
+    "slug": "digital-payment-system",
+    "title": "Digital Payment System",
+    "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",
+    "difficulty": "Hard",
+    "category": "Financial Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "payments",
+      "security",
+      "compliance",
+      "transactions",
+      "fraud-detection"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-alert-correlation-and-noise-reduction-system",
+    "title": "Design an AI-Powered Alert Correlation and Noise Reduction System",
+    "description": "Design a system that reduces alert fatigue by intelligently correlating, deduplicating, and suppressing redundant alerts, grouping related signals into actionable incidents.",
+    "difficulty": "Hard",
+    "category": "AIOps - Alert Management",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "alert-management",
+      "correlation",
+      "noise-reduction",
+      "incident-management",
+      "automation"
+    ]
+  },
+  {
+    "slug": "design-and-implement-a-wire-transfer-api",
+    "title": "Design and Implement a Wire Transfer API",
+    "description": "Design a secure API for bank wire transfers with compliance and fraud detection.",
+    "difficulty": "Hard",
+    "category": "Financial Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["payments", "wire-transfer", "financial", "security", "compliance"]
+  },
+  {
+    "slug": "design-an-intelligent-incident-management-system",
+    "title": "Design an Intelligent Incident Management System",
+    "description": "Design an AIOps-powered incident management system that automatically detects incidents, correlates alerts, identifies affected services, suggests remediation, and learns from past incident resolutions.",
+    "difficulty": "Hard",
+    "category": "AIOps - Incident Management",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "incident-management",
+      "alert-correlation",
+      "automation",
+      "observability",
+      "remediation"
+    ]
+  },
+  {
+    "slug": "design-a-computer-vision-quality-inspection-system",
+    "title": "Design a Computer Vision Quality Inspection System",
+    "description": "Design a computer vision system for automated quality inspection in manufacturing that detects defects on production lines, classifies defect types, and integrates with factory automation systems.",
+    "difficulty": "Hard",
+    "category": "ML - Computer Vision",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "computer-vision",
+      "quality-inspection",
+      "manufacturing",
+      "edge-ai",
+      "defect-detection"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-contact-center-solution",
+    "title": "Design an AI-Powered Contact Center Solution",
+    "description": "Design a contact center that handles voice and text conversations, provides conversational AI, transcribes speech, and analyzes customer sentiment.",
+    "difficulty": "Hard",
+    "category": "GCP - AI/ML",
+    "estimated_time": "60-90 minutes",
+    "tags": ["gcp", "contact-center-ai", "dialogflow", "speech-to-text", "nlp"]
+  },
+  {
+    "slug": "design-a-log-anomaly-detection-system",
+    "title": "Design a Log Anomaly Detection System",
+    "description": "Design a system that automatically detects anomalies in application logs using ML, identifies new error patterns, clusters similar log messages, and correlates log anomalies with system events.",
+    "difficulty": "Hard",
+    "category": "AIOps - Log Analysis",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "log-analysis",
+      "anomaly-detection",
+      "log-parsing",
+      "observability",
+      "ml"
+    ]
+  },
+  {
+    "slug": "design-an-anomaly-detection-system-for-time-series-data",
+    "title": "Design an Anomaly Detection System for Time-Series Data",
+    "description": "Design a system that detects anomalies in high-volume time-series data from metrics, logs, and business KPIs using statistical and ML methods, with adaptive thresholds and root cause hints.",
+    "difficulty": "Hard",
+    "category": "ML - Anomaly Detection",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "anomaly-detection",
+      "time-series",
+      "monitoring",
+      "statistics",
+      "streaming"
+    ]
+  },
+  {
+    "slug": "design-a-credit-scoring-ml-pipeline",
+    "title": "Design a Credit Scoring ML Pipeline",
+    "description": "Design a credit scoring system that uses ML to assess creditworthiness, handles imbalanced data, provides explainable decisions, and complies with fair lending regulations.",
+    "difficulty": "Hard",
+    "category": "ML - Financial Services",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "credit-scoring",
+      "explainability",
+      "fairness",
+      "fintech",
+      "classification"
+    ]
+  },
+  {
+    "slug": "design-an-end-to-end-ml-pipeline-orchestration-platform",
+    "title": "Design an End-to-End ML Pipeline Orchestration Platform",
+    "description": "Design a platform that orchestrates end-to-end ML workflows from data ingestion through model deployment, with DAG-based pipeline definitions, caching, and reproducibility guarantees.",
+    "difficulty": "Hard",
+    "category": "MLOps - Pipeline Orchestration",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "mlops",
+      "pipeline-orchestration",
+      "workflow",
+      "dag",
+      "kubeflow",
+      "automation"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-cloud-cost-optimization-platform",
+    "title": "Design an AI-Powered Cloud Cost Optimization Platform",
+    "description": "Design a platform that uses ML to analyze cloud spending patterns, identify waste, recommend rightsizing, optimize reserved capacity purchases, and forecast future costs across multi-cloud environments.",
+    "difficulty": "Hard",
+    "category": "AIOps - Cost Optimization",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "cost-optimization",
+      "finops",
+      "cloud-spending",
+      "rightsizing",
+      "multi-cloud"
+    ]
+  },
+  {
+    "slug": "ride-sharing-service",
+    "title": "Ride Sharing Service",
+    "description": "Design a ride-sharing platform like Uber or Lyft that matches drivers with passengers in real-time.",
+    "difficulty": "Hard",
+    "category": "Location-based Services",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "location-services",
+      "real-time",
+      "geospatial",
+      "payments",
+      "mobile"
+    ]
+  },
+  {
+    "slug": "build-a-scalable-data-lake-architecture",
+    "title": "Build a Scalable Data Lake Architecture",
+    "description": "Design a data lake architecture that ingests data from multiple sources, catalogs and organizes data, enables SQL queries, and provides data visualization capabilities.",
+    "difficulty": "Hard",
+    "category": "AWS - Data Lake",
+    "estimated_time": "60-90 minutes",
+    "tags": ["aws", "data-lake", "s3", "glue", "athena", "analytics"]
+  },
+  {
+    "slug": "build-a-machine-learning-model-deployment-pipeline",
+    "title": "Build a Machine Learning Model Deployment Pipeline",
+    "description": "Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities.",
+    "difficulty": "Hard",
+    "category": "AWS - Machine Learning",
+    "estimated_time": "60-90 minutes",
+    "tags": ["aws", "sagemaker", "machine-learning", "lambda", "mlops", "ci-cd"]
+  },
+  {
+    "slug": "design-an-a-b-testing-system",
+    "title": "Design an A/B Testing System",
+    "description": "Design a platform to run experiments and A/B tests to compare different versions of features.",
+    "difficulty": "Hard",
+    "category": "Experimentation",
+    "estimated_time": "45-60 minutes",
+    "tags": ["experimentation", "ab-testing", "analytics", "feature-flags"]
+  },
+  {
+    "slug": "build-a-secure-identity-management-solution-for-customers",
+    "title": "Build a Secure Identity Management Solution for Customers",
+    "description": "Design an identity management solution that provides user registration, social identity integration, multi-factor authentication, and conditional access policies.",
+    "difficulty": "Hard",
+    "category": "Azure - Identity",
+    "estimated_time": "45-60 minutes",
+    "tags": ["azure", "azure-ad", "b2c", "identity", "security", "mfa"]
+  },
+  {
+    "slug": "social-media-news-feed",
+    "title": "Social Media News Feed",
+    "description": "Design a news feed system like Facebook or Twitter that can handle billions of posts and personalized feeds.",
+    "difficulty": "Hard",
+    "category": "Social Media",
+    "estimated_time": "60-90 minutes",
+    "tags": ["social-media", "feeds", "scalability", "personalization", "media"]
+  },
+  {
+    "slug": "design-a-video-processing-and-transcoding-pipeline",
+    "title": "Design a Video Processing and Transcoding Pipeline",
+    "description": "Design a video transcoding and processing pipeline that uploads videos, transcodes to multiple formats, generates thumbnails, and delivers content via CDN.",
+    "difficulty": "Hard",
+    "category": "GCP - Media",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "gcp",
+      "transcoding",
+      "media-processing",
+      "cloud-storage",
+      "cloud-run"
+    ]
+  },
+  {
+    "slug": "design-a-predictive-auto-scaling-system",
+    "title": "Design a Predictive Auto-Scaling System",
+    "description": "Design an AIOps system that predicts future resource demands using ML models and proactively scales infrastructure, reducing both over-provisioning costs and under-provisioning incidents.",
+    "difficulty": "Hard",
+    "category": "AIOps - Auto-Scaling",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "auto-scaling",
+      "predictive",
+      "forecasting",
+      "cost-optimization",
+      "cloud"
+    ]
+  },
+  {
+    "slug": "design-a-container-based-microservices-architecture",
+    "title": "Design a Container-Based Microservices Architecture",
+    "description": "Design a container-based microservices platform with service discovery, independent auto-scaling, service mesh for communication, and centralized logging.",
+    "difficulty": "Hard",
+    "category": "AWS - Containers",
+    "estimated_time": "60-90 minutes",
+    "tags": ["aws", "ecs", "eks", "kubernetes", "microservices", "containers"]
+  },
+  {
+    "slug": "design-google-analytics-user-analytics-dashboard-and-pipeline",
+    "title": "Design Google Analytics - User Analytics Dashboard and Pipeline",
+    "description": "Design an analytics platform to track user behavior, generate reports, and provide insights.",
+    "difficulty": "Hard",
+    "category": "Analytics",
+    "estimated_time": "60-90 minutes",
+    "tags": ["analytics", "data-pipeline", "real-time", "reporting", "big-data"]
+  },
+  {
+    "slug": "design-a-real-time-model-monitoring-and-drift-detection-system",
+    "title": "Design a Real-time Model Monitoring and Drift Detection System",
+    "description": "Design a monitoring system that detects data drift, concept drift, and model performance degradation in production ML models, triggering automated alerts and retraining workflows.",
+    "difficulty": "Hard",
+    "category": "MLOps - Model Monitoring",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "mlops",
+      "model-monitoring",
+      "drift-detection",
+      "observability",
+      "alerting",
+      "production-ml"
+    ]
+  },
+  {
+    "slug": "netflix-limit-the-number-of-screens-each-user-can-watch",
+    "title": "Netflix: Limit the Number of Screens Each User Can Watch",
+    "description": "Design a system to enforce concurrent streaming limits per user account.",
+    "difficulty": "Hard",
+    "category": "Access Control",
+    "estimated_time": "45-60 minutes",
+    "tags": [
+      "session-management",
+      "access-control",
+      "distributed-systems",
+      "redis",
+      "concurrency"
+    ]
+  },
+  {
+    "slug": "design-a-model-serving-infrastructure-with-canary-deployments",
+    "title": "Design a Model Serving Infrastructure with Canary Deployments",
+    "description": "Design a model serving infrastructure that deploys ML models as scalable APIs with support for canary deployments, traffic splitting, auto-scaling, and multi-framework model support.",
+    "difficulty": "Hard",
+    "category": "MLOps - Model Serving",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "mlops",
+      "model-serving",
+      "canary-deployment",
+      "kubernetes",
+      "auto-scaling",
+      "inference"
+    ]
+  },
+  {
+    "slug": "design-an-enterprise-data-warehouse-solution",
+    "title": "Design an Enterprise Data Warehouse Solution",
+    "description": "Design a data warehouse solution that ingests data from multiple sources, transforms and cleanses data, runs complex analytical queries, and creates interactive dashboards.",
+    "difficulty": "Hard",
+    "category": "Azure - Data Analytics",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "azure",
+      "synapse",
+      "data-warehouse",
+      "data-lake",
+      "etl",
+      "analytics"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-queue-like-rabbitmq",
+    "title": "Design a Distributed Queue like RabbitMQ",
+    "description": "Design a message queue system for reliable asynchronous communication between distributed services.",
+    "difficulty": "Hard",
+    "category": "Messaging",
+    "estimated_time": "60-90 minutes",
+    "tags": ["messaging", "queues", "distributed-systems", "async", "pub-sub"]
+  },
+  {
+    "slug": "find-a-rider-for-uber-or-uber-eats",
+    "title": "Find a Rider for Uber or Uber Eats",
+    "description": "Design a matching algorithm to efficiently connect riders/customers with drivers in real-time.",
+    "difficulty": "Hard",
+    "category": "Location-based Services",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "matching",
+      "location-services",
+      "real-time",
+      "optimization",
+      "geospatial"
+    ]
+  },
+  {
+    "slug": "design-an-a-b-testing-framework-for-ml-models",
+    "title": "Design an A/B Testing Framework for ML Models",
+    "description": "Design an A/B testing and experimentation framework specifically for ML models in production, supporting traffic splitting, statistical analysis, multi-armed bandits, and automated experiment conclusion.",
+    "difficulty": "Hard",
+    "category": "MLOps - Experimentation",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "mlops",
+      "ab-testing",
+      "experimentation",
+      "statistics",
+      "traffic-routing",
+      "bandits"
+    ]
+  },
+  {
+    "slug": "design-a-file-downloader-library-from-frontend-to-backend",
+    "title": "Design a File Downloader Library from Frontend to Backend",
+    "description": "Design a robust file download system with resume capability, progress tracking, and error handling.",
+    "difficulty": "Hard",
+    "category": "File Transfer",
+    "estimated_time": "45-60 minutes",
+    "tags": ["file-download", "http", "chunking", "resume", "concurrency"]
+  },
+  {
+    "slug": "design-an-ai-driven-change-risk-assessment-system",
+    "title": "Design an AI-Driven Change Risk Assessment System",
+    "description": "Design a system that uses ML to assess the risk of production changes (deployments, config changes, infrastructure updates), predicts potential impact, and recommends safe deployment windows.",
+    "difficulty": "Hard",
+    "category": "AIOps - Change Management",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "change-management",
+      "risk-assessment",
+      "deployment",
+      "ci-cd",
+      "prediction"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-legal-document-analysis-platform",
+    "title": "Design an AI-Powered Legal Document Analysis Platform",
+    "description": "Design a platform that uses AI to analyze legal documents, extract clauses, identify risks, compare contracts, and provide natural language summaries for legal professionals.",
+    "difficulty": "Hard",
+    "category": "AI - Legal Tech",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "legal-tech",
+      "nlp",
+      "document-analysis",
+      "contract-review",
+      "rag"
+    ]
+  },
+  {
+    "slug": "design-a-personalized-recommendation-engine",
+    "title": "Design a Personalized Recommendation Engine",
+    "description": "Design a recommendation system that analyzes user behavior, trains ML models, generates personalized recommendations, and serves predictions via API.",
+    "difficulty": "Hard",
+    "category": "GCP - Recommendations",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "gcp",
+      "recommendations-ai",
+      "machine-learning",
+      "bigquery-ml",
+      "personalization"
+    ]
+  },
+  {
+    "slug": "design-a-real-time-ai-content-moderation-system",
+    "title": "Design a Real-time AI Content Moderation System",
+    "description": "Design an AI-powered content moderation system that detects harmful content across text, images, and video in real-time, supports multiple languages, and provides human-in-the-loop review workflows.",
+    "difficulty": "Hard",
+    "category": "AI - Content Safety",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "content-moderation",
+      "nlp",
+      "computer-vision",
+      "safety",
+      "real-time"
+    ]
+  },
+  {
+    "slug": "design-a-dynamic-pricing-engine",
+    "title": "Design a Dynamic Pricing Engine",
+    "description": "Design an ML-driven dynamic pricing engine that optimizes prices in real-time based on demand, competition, inventory levels, and customer segments to maximize revenue.",
+    "difficulty": "Hard",
+    "category": "ML - Pricing Optimization",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "dynamic-pricing",
+      "optimization",
+      "demand-forecasting",
+      "e-commerce",
+      "revenue"
+    ]
+  },
+  {
+    "slug": "create-a-distributed-file-transfer-system-like-bittorrent",
+    "title": "Create a Distributed File Transfer System like Bittorrent",
+    "description": "Design a peer-to-peer file sharing system for distributing large files efficiently.",
+    "difficulty": "Hard",
+    "category": "File Sharing",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "p2p",
+      "file-sharing",
+      "distributed-systems",
+      "networking",
+      "protocols"
+    ]
+  },
+  {
+    "slug": "design-a-machine-learning-platform",
+    "title": "Design a Machine Learning Platform",
+    "description": "Design an ML platform that trains custom models, automates ML workflows, deploys models as APIs, and monitors model performance in production.",
+    "difficulty": "Hard",
+    "category": "GCP - Machine Learning",
+    "estimated_time": "60-90 minutes",
+    "tags": ["gcp", "vertex-ai", "automl", "machine-learning", "mlops"]
+  },
+  {
+    "slug": "design-a-feature-store-for-machine-learning",
+    "title": "Design a Feature Store for Machine Learning",
+    "description": "Design a feature store that serves features for both training and inference, ensures consistency between offline and online features, handles feature transformations, and provides feature discovery and governance.",
+    "difficulty": "Hard",
+    "category": "MLOps - Feature Management",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "mlops",
+      "feature-store",
+      "feature-engineering",
+      "online-serving",
+      "data-management",
+      "ml-infrastructure"
+    ]
+  },
+  {
+    "slug": "design-a-scalable-iot-platform",
+    "title": "Design a Scalable IoT Platform",
+    "description": "Design an IoT platform that connects millions of devices, ingests sensor data at scale, processes streams in real-time, and detects anomalies.",
+    "difficulty": "Hard",
+    "category": "Azure - IoT",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "azure",
+      "iot-hub",
+      "stream-analytics",
+      "cosmos-db",
+      "time-series",
+      "iot"
+    ]
+  },
+  {
+    "slug": "build-a-big-data-processing-pipeline",
+    "title": "Build a Big Data Processing Pipeline",
+    "description": "Design a batch and streaming data pipeline that processes data transformations, handles both real-time and batch workloads, and stores results for analytics.",
+    "difficulty": "Hard",
+    "category": "GCP - Data Processing",
+    "estimated_time": "60-90 minutes",
+    "tags": ["gcp", "dataflow", "pub-sub", "bigquery", "big-data", "streaming"]
+  },
+  {
+    "slug": "design-typeahead-suggestion-autocomplete",
+    "title": "Design Typeahead Suggestion/Autocomplete",
+    "description": "Design an autocomplete system that provides real-time search suggestions as users type.",
+    "difficulty": "Hard",
+    "category": "Search Systems",
+    "estimated_time": "45-60 minutes",
+    "tags": ["search", "autocomplete", "trie", "real-time", "caching"]
+  },
+  {
+    "slug": "design-a-live-comments-feature-for-facebook",
+    "title": "Design a Live Comments Feature for Facebook",
+    "description": "Design a real-time commenting system for posts with live updates and threading.",
+    "difficulty": "Hard",
+    "category": "Real-time Systems",
+    "estimated_time": "45-60 minutes",
+    "tags": ["real-time", "comments", "websockets", "social-media", "threading"]
+  },
+  {
+    "slug": "design-a-predictive-maintenance-system",
+    "title": "Design a Predictive Maintenance System",
+    "description": "Design an ML system that predicts equipment failures before they occur using sensor data, time-series analysis, and anomaly detection, enabling proactive maintenance scheduling.",
+    "difficulty": "Hard",
+    "category": "ML - Predictive Analytics",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "predictive-maintenance",
+      "time-series",
+      "anomaly-detection",
+      "iot",
+      "manufacturing"
+    ]
+  },
+  {
+    "slug": "design-a-compliance-and-audit-monitoring-solution",
+    "title": "Design a Compliance and Audit Monitoring Solution",
+    "description": "Design a compliance monitoring system that tracks configuration changes, detects security threats, ensures regulatory compliance, and provides centralized audit logging.",
+    "difficulty": "Hard",
+    "category": "AWS - Security & Compliance",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aws",
+      "compliance",
+      "security",
+      "cloudtrail",
+      "config",
+      "guardduty"
+    ]
+  },
+  {
+    "slug": "design-a-real-time-recommendation-system",
+    "title": "Design a Real-time Recommendation System",
+    "description": "Design a recommendation system that generates personalized recommendations using collaborative filtering, content-based approaches, and deep learning, serving predictions with sub-100ms latency.",
+    "difficulty": "Hard",
+    "category": "ML - Recommendation Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "recommendation-systems",
+      "collaborative-filtering",
+      "deep-learning",
+      "embedding",
+      "ranking"
+    ]
+  },
+  {
+    "slug": "design-an-api-rate-limiter",
+    "title": "Design an API Rate Limiter",
+    "description": "Design a rate limiting system to control the number of requests a user can make to an API.",
+    "difficulty": "Hard",
+    "category": "Infrastructure",
+    "estimated_time": "30-45 minutes",
+    "tags": ["rate-limiting", "infrastructure", "distributed-systems", "redis"]
+  },
+  {
+    "slug": "design-an-ai-powered-semantic-search-engine",
+    "title": "Design an AI-Powered Semantic Search Engine",
+    "description": "Design a search engine that understands natural language queries, uses vector embeddings for semantic similarity, supports hybrid search with keyword matching, and provides relevance ranking.",
+    "difficulty": "Hard",
+    "category": "AI - Search & Retrieval",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "search",
+      "embeddings",
+      "vector-database",
+      "nlp",
+      "retrieval"
+    ]
+  },
+  {
+    "slug": "system-to-collect-performance-metrics-from-thousands-of-servers",
+    "title": "System to Collect Performance Metrics from Thousands of Servers",
+    "description": "Design a distributed system to collect, aggregate, and monitor performance metrics from thousands of servers.",
+    "difficulty": "Hard",
+    "category": "Monitoring",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "monitoring",
+      "metrics",
+      "time-series",
+      "distributed-systems",
+      "performance"
+    ]
+  },
+  {
+    "slug": "design-an-intelligent-capacity-planning-system",
+    "title": "Design an Intelligent Capacity Planning System",
+    "description": "Design an AI-driven capacity planning system that forecasts future resource needs, models growth scenarios, optimizes cloud spending, and provides procurement recommendations.",
+    "difficulty": "Hard",
+    "category": "AIOps - Capacity Planning",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aiops",
+      "capacity-planning",
+      "forecasting",
+      "cost-optimization",
+      "resource-management",
+      "cloud"
+    ]
+  },
+  {
+    "slug": "design-a-multi-region-disaster-recovery-solution",
+    "title": "Design a Multi-Region Disaster Recovery Solution",
+    "description": "Design a disaster recovery architecture that ensures business continuity across multiple geographic regions with automatic failover.",
+    "difficulty": "Hard",
+    "category": "AWS - High Availability",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aws",
+      "disaster-recovery",
+      "route53",
+      "rds",
+      "s3",
+      "cloudformation",
+      "multi-region"
+    ]
+  },
+  {
+    "slug": "design-an-ai-based-real-time-fraud-detection-system",
+    "title": "Design an AI-Based Real-time Fraud Detection System",
+    "description": "Design an AI system that detects fraudulent transactions in real-time using ML models, graph analysis, and behavioral patterns, with adaptive learning from new fraud patterns.",
+    "difficulty": "Hard",
+    "category": "AI - Fraud Detection",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "fraud-detection",
+      "real-time",
+      "graph-analysis",
+      "fintech",
+      "streaming"
+    ]
+  },
+  {
+    "slug": "build-a-real-time-data-streaming-pipeline",
+    "title": "Build a Real-time Data Streaming Pipeline",
+    "description": "Design a real-time data pipeline that can ingest, process, and analyze millions of events per second with sub-second latency.",
+    "difficulty": "Hard",
+    "category": "AWS - Data Streaming",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "aws",
+      "kinesis",
+      "streaming",
+      "elasticsearch",
+      "analytics",
+      "real-time"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-botnet",
+    "title": "Design a Distributed Botnet",
+    "description": "Design a distributed system architecture similar to a botnet (for educational/security research purposes).",
+    "difficulty": "Hard",
+    "category": "Distributed Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["distributed-systems", "p2p", "security", "networking", "research"]
+  },
+  {
+    "slug": "design-a-real-time-ai-translation-and-localization-service",
+    "title": "Design a Real-time AI Translation and Localization Service",
+    "description": "Design a real-time translation service that supports text, speech, and document translation across 100+ languages with domain-specific terminology, low latency, and quality estimation.",
+    "difficulty": "Hard",
+    "category": "AI - Language Services",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "translation",
+      "nlp",
+      "speech",
+      "localization",
+      "multilingual"
+    ]
+  },
+  {
+    "slug": "design-a-demand-forecasting-system",
+    "title": "Design a Demand Forecasting System",
+    "description": "Design an ML-based demand forecasting system that predicts future demand across thousands of SKUs at multiple granularities, handling seasonality, promotions, and external factors.",
+    "difficulty": "Hard",
+    "category": "ML - Forecasting",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ml",
+      "demand-forecasting",
+      "time-series",
+      "supply-chain",
+      "retail",
+      "deep-learning"
+    ]
+  },
+  {
+    "slug": "build-a-real-time-analytics-platform",
+    "title": "Build a Real-time Analytics Platform",
+    "description": "Design a real-time analytics solution that ingests millions of events, processes streaming data, detects patterns, and triggers actions based on analytics.",
+    "difficulty": "Hard",
+    "category": "Azure - Streaming",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "azure",
+      "event-hubs",
+      "stream-analytics",
+      "real-time",
+      "analytics"
+    ]
+  },
+  {
+    "slug": "design-a-conversational-ai-platform-with-rag",
+    "title": "Design a Conversational AI Platform with RAG",
+    "description": "Design a conversational AI platform that uses Retrieval-Augmented Generation (RAG) to answer questions from enterprise knowledge bases, maintains conversation context, and provides cited responses.",
+    "difficulty": "Hard",
+    "category": "AI - Conversational AI",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "ai",
+      "rag",
+      "llm",
+      "conversational-ai",
+      "knowledge-base",
+      "embeddings"
+    ]
+  },
+  {
+    "slug": "design-a-multi-modal-ai-assistant",
+    "title": "Design a Multi-Modal AI Assistant",
+    "description": "Design a multi-modal AI assistant that processes text, images, audio, and video inputs, reasoning across modalities to answer questions, generate content, and take actions.",
+    "difficulty": "Very Hard",
+    "category": "AI - Multi-Modal",
+    "estimated_time": "90+ minutes",
+    "tags": ["ai", "multi-modal", "vision", "speech", "llm", "assistant"]
+  },
+  {
+    "slug": "design-a-self-healing-infrastructure-platform",
+    "title": "Design a Self-Healing Infrastructure Platform",
+    "description": "Design a platform that automatically detects, diagnoses, and remediates infrastructure issues without human intervention, using playbook automation and ML-driven decision making.",
+    "difficulty": "Very Hard",
+    "category": "AIOps - Self-Healing",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "aiops",
+      "self-healing",
+      "automation",
+      "remediation",
+      "infrastructure",
+      "reliability"
+    ]
+  },
+  {
+    "slug": "build-a-climate-data-analysis-platform",
+    "title": "Build a Climate Data Analysis Platform",
+    "description": "Design a scientific data analysis platform that processes satellite imagery, analyzes geospatial data, runs climate models, and provides visualization dashboards.",
+    "difficulty": "Very Hard",
+    "category": "GCP - Scientific Computing",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "gcp",
+      "earth-engine",
+      "bigquery",
+      "scientific-computing",
+      "geospatial"
+    ]
+  },
+  {
+    "slug": "create-a-system-to-migrate-large-data-to-google-cloud",
+    "title": "Create a System to Migrate Large Data to Google Cloud",
+    "description": "Design a data migration system to transfer petabytes of data to cloud with minimal downtime.",
+    "difficulty": "Very Hard",
+    "category": "Data Migration",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "data-migration",
+      "cloud",
+      "etl",
+      "distributed-systems",
+      "big-data"
+    ]
+  },
+  {
+    "slug": "design-a-multi-cloud-data-sync-solution",
+    "title": "Design a Multi-Cloud Data Sync Solution",
+    "description": "Design a data synchronization system that replicates data across multiple cloud providers, detects changes, resolves conflicts, and ensures data consistency.",
+    "difficulty": "Very Hard",
+    "category": "Multi-Cloud",
+    "estimated_time": "90+ minutes",
+    "tags": ["multi-cloud", "data-sync", "aws", "azure", "gcp", "storage"]
+  },
+  {
+    "slug": "design-a-hybrid-cloud-infrastructure-solution",
+    "title": "Design a Hybrid Cloud Infrastructure Solution",
+    "description": "Design a hybrid infrastructure that manages on-premises and cloud resources, implements consistent governance, and provides unified monitoring.",
+    "difficulty": "Very Hard",
+    "category": "Azure - Hybrid Cloud",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "azure",
+      "azure-arc",
+      "hybrid-cloud",
+      "expressroute",
+      "azure-stack"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-model-training-platform",
+    "title": "Design a Distributed Model Training Platform",
+    "description": "Design a platform that enables distributed training of large ML models across multiple GPUs and nodes, handles data parallelism and model parallelism, and optimizes training throughput and cost.",
+    "difficulty": "Very Hard",
+    "category": "MLOps - Distributed Training",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "mlops",
+      "distributed-training",
+      "gpu-cluster",
+      "deep-learning",
+      "data-parallelism",
+      "model-parallelism"
+    ]
+  },
+  {
+    "slug": "design-a-credit-card-processing-system",
+    "title": "Design a Credit Card Processing System",
+    "description": "Design a secure payment processing system for credit card transactions with fraud detection.",
+    "difficulty": "Very Hard",
+    "category": "Financial Systems",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "payments",
+      "security",
+      "fraud-detection",
+      "compliance",
+      "financial"
+    ]
+  },
+  {
+    "slug": "design-a-blockchain-network-solution",
+    "title": "Design a Blockchain Network Solution",
+    "description": "Design a blockchain network that deploys smart contracts, integrates with external systems, ensures data integrity, and provides consortium governance.",
+    "difficulty": "Very Hard",
+    "category": "Azure - Blockchain",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "azure",
+      "blockchain",
+      "distributed-ledger",
+      "cosmos-db",
+      "smart-contracts"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-medical-diagnosis-assistant",
+    "title": "Design an AI-Powered Medical Diagnosis Assistant",
+    "description": "Design an AI system that assists clinicians with medical image analysis, symptom assessment, and diagnostic suggestions, with explainable AI and compliance with healthcare regulations.",
+    "difficulty": "Very Hard",
+    "category": "AI - Healthcare",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ai",
+      "healthcare",
+      "medical-imaging",
+      "diagnosis",
+      "explainable-ai",
+      "compliance"
+    ]
+  },
+  {
+    "slug": "design-yelp-or-nearby-friends",
+    "title": "Design Yelp or Nearby Friends",
+    "description": "Design a location-based service to find nearby places or friends based on geographical location.",
+    "difficulty": "Very Hard",
+    "category": "Location-based Services",
+    "estimated_time": "60-90 minutes",
+    "tags": ["location-services", "geospatial", "search", "mobile", "real-time"]
+  },
+  {
+    "slug": "build-a-multi-cloud-kubernetes-orchestration-platform",
+    "title": "Build a Multi-Cloud Kubernetes Orchestration Platform",
+    "description": "Design a unified Kubernetes management solution that orchestrates workloads across multiple cloud providers with centralized monitoring, consistent policies, and disaster recovery.",
+    "difficulty": "Very Hard",
+    "category": "Multi-Cloud",
+    "estimated_time": "90+ minutes",
+    "tags": ["multi-cloud", "kubernetes", "eks", "aks", "gke", "orchestration"]
+  },
+  {
+    "slug": "design-an-autonomous-vehicle-perception-system",
+    "title": "Design an Autonomous Vehicle Perception System",
+    "description": "Design the perception stack for an autonomous vehicle that fuses data from cameras, LiDAR, and radar sensors, detects objects in 3D space, and tracks their movement in real-time.",
+    "difficulty": "Very Hard",
+    "category": "AI - Autonomous Systems",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ai",
+      "autonomous-vehicles",
+      "perception",
+      "lidar",
+      "computer-vision",
+      "sensor-fusion"
+    ]
+  },
+  {
+    "slug": "design-a-secure-multi-cloud-kubernetes-architecture",
+    "title": "Design a Secure Multi-Cloud Kubernetes Architecture",
+    "description": "Design a multi-cloud Kubernetes platform that manages workloads across multiple cloud providers with consistent policies, service mesh, and centralized configuration.",
+    "difficulty": "Very Hard",
+    "category": "GCP - Multi-Cloud",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "gcp",
+      "anthos",
+      "multi-cloud",
+      "kubernetes",
+      "gke",
+      "service-mesh"
+    ]
+  },
+  {
+    "slug": "design-a-control-plane-for-a-distributed-database",
+    "title": "Design a Control Plane for a Distributed Database",
+    "description": "Design the control plane that manages a distributed database cluster including provisioning, scaling, and failure recovery.",
+    "difficulty": "Very Hard",
+    "category": "Database Systems",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "distributed-systems",
+      "databases",
+      "control-plane",
+      "consensus",
+      "orchestration"
+    ]
+  },
+  {
+    "slug": "design-an-automated-root-cause-analysis-platform",
+    "title": "Design an Automated Root Cause Analysis Platform",
+    "description": "Design a platform that automatically identifies root causes of production issues by analyzing metrics, logs, traces, and topology, reducing mean time to resolution significantly.",
+    "difficulty": "Very Hard",
+    "category": "AIOps - Root Cause Analysis",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "aiops",
+      "root-cause-analysis",
+      "causal-inference",
+      "observability",
+      "troubleshooting",
+      "automation"
+    ]
+  },
+  {
+    "slug": "design-a-confidential-computing-solution",
+    "title": "Design a Confidential Computing Solution",
+    "description": "Design a secure compute environment that protects data in use with hardware-based encryption, verifies compute integrity, and manages encryption keys securely.",
+    "difficulty": "Very Hard",
+    "category": "Azure - Security",
+    "estimated_time": "90+ minutes",
+    "tags": ["azure", "confidential-computing", "security", "tee", "encryption"]
+  },
+  {
+    "slug": "design-a-large-language-model-serving-platform",
+    "title": "Design a Large Language Model Serving Platform",
+    "description": "Design a scalable platform that serves large language models (LLMs) for inference, handles concurrent requests, manages GPU resources efficiently, and provides low-latency responses with streaming support.",
+    "difficulty": "Very Hard",
+    "category": "AI - LLM Infrastructure",
+    "estimated_time": "90+ minutes",
+    "tags": ["ai", "llm", "gpu", "inference", "serving", "transformers"]
+  },
+  {
+    "slug": "design-a-knowledge-graph-construction-and-query-system",
+    "title": "Design a Knowledge Graph Construction and Query System",
+    "description": "Design a system that automatically constructs knowledge graphs from unstructured data, performs entity resolution, supports graph-based reasoning, and answers complex queries over the graph.",
+    "difficulty": "Very Hard",
+    "category": "ML - Knowledge Graphs",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ml",
+      "knowledge-graphs",
+      "nlp",
+      "graph-databases",
+      "entity-resolution",
+      "reasoning"
+    ]
+  },
+  {
+    "slug": "develop-an-ads-management-and-display-system-for-a-social-feed",
+    "title": "Develop an Ads Management and Display System for a Social Feed",
+    "description": "Design an advertising platform for targeting, serving, and billing ads in social media feeds.",
+    "difficulty": "Very Hard",
+    "category": "Advertising",
+    "estimated_time": "90+ minutes",
+    "tags": ["advertising", "real-time-bidding", "targeting", "analytics", "ml"]
+  },
+  {
+    "slug": "design-a-high-performance-computing-cluster",
+    "title": "Design a High-Performance Computing Cluster",
+    "description": "Design an HPC cluster that deploys large-scale compute nodes, runs parallel scientific workloads, optimizes job scheduling, and provides low-latency networking.",
+    "difficulty": "Very Hard",
+    "category": "Azure - HPC",
+    "estimated_time": "90+ minutes",
+    "tags": ["azure", "hpc", "batch", "cyclecloud", "high-performance"]
+  },
+  {
+    "slug": "design-a-generative-ai-image-and-video-platform",
+    "title": "Design a Generative AI Image and Video Platform",
+    "description": "Design a platform for generating images and videos from text prompts using diffusion models, with support for fine-tuning, style transfer, inpainting, and content safety filtering.",
+    "difficulty": "Very Hard",
+    "category": "AI - Generative Media",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ai",
+      "generative-ai",
+      "diffusion-models",
+      "image-generation",
+      "gpu",
+      "creative-ai"
+    ]
+  },
+  {
+    "slug": "design-a-gpu-cluster-management-system-for-ml-training",
+    "title": "Design a GPU Cluster Management System for ML Training",
+    "description": "Design a GPU cluster management system that handles job scheduling, resource allocation, multi-tenancy, preemption, and cost optimization for ML training workloads.",
+    "difficulty": "Very Hard",
+    "category": "MLOps - Infrastructure",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "mlops",
+      "gpu-cluster",
+      "scheduling",
+      "resource-management",
+      "kubernetes",
+      "infrastructure"
+    ]
+  },
+  {
+    "slug": "surge-pricing-system-uber-stream-processing",
+    "title": "Surge Pricing System: Uber - Stream Processing",
+    "description": "Design a dynamic pricing system that adjusts prices based on supply-demand in real-time.",
+    "difficulty": "Very Hard",
+    "category": "Pricing Systems",
+    "estimated_time": "90+ minutes",
+    "tags": ["pricing", "real-time", "stream-processing", "geospatial", "ml"]
+  },
+  {
+    "slug": "design-an-ioc-dependency-injection-framework",
+    "title": "Design an IoC/Dependency Injection Framework",
+    "description": "Design a framework for inversion of control and dependency injection to manage object dependencies.",
+    "difficulty": "Very Hard",
+    "category": "Framework Design",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "framework",
+      "design-patterns",
+      "ioc",
+      "dependency-injection",
+      "architecture"
+    ]
+  },
+  {
+    "slug": "design-an-automated-chaos-engineering-platform",
+    "title": "Design an Automated Chaos Engineering Platform",
+    "description": "Design an AI-driven chaos engineering platform that intelligently selects chaos experiments, gradually increases fault severity, detects system weaknesses, and validates resilience hypotheses.",
+    "difficulty": "Very Hard",
+    "category": "AIOps - Chaos Engineering",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "aiops",
+      "chaos-engineering",
+      "reliability",
+      "fault-injection",
+      "resilience",
+      "testing"
+    ]
+  },
+  {
+    "slug": "design-an-eta-service-and-location-sharing-between-driver-and-rider",
+    "title": "Design an ETA Service and Location Sharing Between Driver and Rider",
+    "description": "Design a system to calculate ETA and share real-time location between drivers and riders.",
+    "difficulty": "Very Hard",
+    "category": "Location-based Services",
+    "estimated_time": "90+ minutes",
+    "tags": ["location", "eta", "real-time", "geospatial", "routing", "ml"]
+  },
+  {
+    "slug": "build-a-global-gaming-backend-system",
+    "title": "Build a Global Gaming Backend System",
+    "description": "Design a low-latency gaming backend that handles millions of concurrent players, provides real-time matchmaking, stores player data globally, and manages game sessions.",
+    "difficulty": "Very Hard",
+    "category": "GCP - Gaming",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "gcp",
+      "gaming",
+      "cloud-spanner",
+      "memorystore",
+      "gke",
+      "low-latency"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-metrics-logging-and-aggregation-system",
+    "title": "Design a Distributed Metrics Logging and Aggregation System",
+    "description": "Design a system to collect, store, and analyze metrics from thousands of distributed servers.",
+    "difficulty": "Very Hard",
+    "category": "Monitoring",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "monitoring",
+      "metrics",
+      "time-series",
+      "distributed-systems",
+      "analytics"
+    ]
+  },
+  {
+    "slug": "design-an-intelligent-observability-platform",
+    "title": "Design an Intelligent Observability Platform",
+    "description": "Design a unified observability platform that uses AI to correlate metrics, logs, and traces, provides intelligent querying, automatically discovers service topologies, and reduces mean time to detection.",
+    "difficulty": "Very Hard",
+    "category": "AIOps - Observability",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "aiops",
+      "observability",
+      "monitoring",
+      "opentelemetry",
+      "metrics",
+      "tracing"
+    ]
+  },
+  {
+    "slug": "design-an-ai-powered-code-assistant",
+    "title": "Design an AI-Powered Code Assistant",
+    "description": "Design an AI code assistant that provides inline code completions, generates code from natural language, performs code review, and explains code, integrated with IDEs and CI/CD pipelines.",
+    "difficulty": "Very Hard",
+    "category": "AI - Developer Tools",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ai",
+      "code-generation",
+      "llm",
+      "developer-tools",
+      "ide",
+      "code-review"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-stream-processing-system-like-kafka",
+    "title": "Design a Distributed Stream Processing System like Kafka",
+    "description": "Design a distributed streaming platform for real-time data pipelines and event-driven architectures.",
+    "difficulty": "Very Hard",
+    "category": "Data Streaming",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "streaming",
+      "messaging",
+      "distributed-systems",
+      "event-driven",
+      "kafka"
+    ]
+  },
+  {
+    "slug": "design-a-distributed-tracing-system",
+    "title": "Design a Distributed Tracing System",
+    "description": "Design a system to trace requests across microservices for debugging and performance monitoring.",
+    "difficulty": "Very Hard",
+    "category": "Observability",
+    "estimated_time": "60-90 minutes",
+    "tags": [
+      "tracing",
+      "observability",
+      "microservices",
+      "performance",
+      "debugging"
+    ]
+  },
+  {
+    "slug": "design-a-reinforcement-learning-trading-system",
+    "title": "Design a Reinforcement Learning Trading System",
+    "description": "Design a reinforcement learning-based trading system that learns optimal trading strategies from market data, manages risk, and executes trades with low latency while adapting to market regime changes.",
+    "difficulty": "Very Hard",
+    "category": "ML - Algorithmic Trading",
+    "estimated_time": "90+ minutes",
+    "tags": [
+      "ml",
+      "reinforcement-learning",
+      "algorithmic-trading",
+      "finance",
+      "risk-management",
+      "deep-learning"
+    ]
   }
 ]

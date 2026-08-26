@@ -1,0 +1,10 @@
+{
+  "slug": "notification-system",
+  "focus": "multi-channel notification delivery with preferences, retries, and provider limits",
+  "action": "send a notification",
+  "scale": "100M notifications per day across email, SMS, and push",
+  "latency": "enqueue acknowledgement <=100ms",
+  "durable": "notification intent and delivery ledger",
+  "async": "template rendering, provider delivery, retries, and analytics",
+  "store": "preferences, templates, and delivery state"
+}

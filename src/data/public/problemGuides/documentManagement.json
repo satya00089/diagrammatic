@@ -1,0 +1,767 @@
+{
+  "prompt": {
+    "brief": "Design a collaborative document platform where many users can edit rich documents together, recover from disconnects, search content, and safely restore earlier versions.",
+    "successSignals": [
+      "Separate the low-latency collaboration path from snapshots, search, notifications, and other asynchronous work.",
+      "Choose and explain an OT or CRDT conflict strategy, including ordering, deduplication, reconnect, and offline edits.",
+      "Model document ownership, folder hierarchy, sharing, and permission revocation as first-class behavior.",
+      "Define how the system stores an operation history, materialized snapshots, immutable versions, and large attachments."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Create, edit, archive, and delete rich-text or markdown documents.",
+      "Support multiple users editing the same document in real time with cursor and presence indicators.",
+      "Keep version history and allow an authorized user to restore a previous revision without losing auditability.",
+      "Organize documents in workspaces and nested folders with move and rename operations.",
+      "Share documents with users, groups, or links and enforce viewer, commenter, and editor permissions.",
+      "Search document titles and content while restricting results to documents the requester can access.",
+      "Upload and retrieve large attachments without routing their bytes through the collaboration service."
+    ],
+    "nonFunctional": [
+      "Acknowledge an accepted edit within 150 ms at p95 for an active session in the same region.",
+      "Deliver an accepted edit to other active collaborators within 250 ms at p95 under normal load.",
+      "Never lose an acknowledged operation; reconnecting clients must be able to resume from a known sequence.",
+      "Keep document opens below 300 ms at p95 for warm snapshots and make search eventually consistent.",
+      "Target 99.9% monthly availability for document reads and collaboration sessions, with graceful reconnect behavior.",
+      "Apply authorization on every document read, edit, share, export, and attachment accessâ€”not only at connection time."
+    ],
+    "scaleAssumptions": [
+      "10 million registered users, 1 million daily active users, and 100,000 peak concurrent editing sessions.",
+      "50 million documents with an average current text state of 30 KB; attachments are stored separately and can be much larger.",
+      "About 50 million document opens per day and 20 million edit operations per day, with a 10x peak-over-average factor for hot workspaces.",
+      "An active document has three editors on average; a small number of shared documents can attract thousands of viewers.",
+      "The service is multi-region for reads and sessions, while each document has a single ordering authority at a time."
+    ],
+    "metrics": [
+      {
+        "label": "Peak edit rate",
+        "value": "~2.3K ops/s",
+        "description": "20 million daily operations average to about 230 ops/s; a 10x burst drives the collaboration tier and queue sizing."
+      },
+      {
+        "label": "Peak document opens",
+        "value": "~5.8K req/s",
+        "description": "50 million opens per day average to about 580 req/s; cache and read replicas absorb workspace bursts."
+      },
+      {
+        "label": "Concurrent connections",
+        "value": "100K sessions",
+        "description": "Long-lived WebSocket connections are tracked independently from request-per-second capacity."
+      },
+      {
+        "label": "Current text state",
+        "value": "~1.5 TB",
+        "description": "50 million documents times 30 KB of current content, before indexes, replicas, versions, and attachments."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Document",
+      "fields": [
+        "document_id",
+        "workspace_id",
+        "parent_id",
+        "title",
+        "current_snapshot_id",
+        "current_sequence",
+        "status",
+        "created_by",
+        "updated_at"
+      ],
+      "notes": "Keep the current materialized state and a monotonic sequence for fast opens; use the operation log and immutable versions for history and replay."
+    },
+    {
+      "name": "DocumentOperation",
+      "fields": [
+        "operation_id",
+        "document_id",
+        "client_id",
+        "base_sequence",
+        "operation_payload",
+        "assigned_sequence",
+        "actor_id",
+        "created_at"
+      ],
+      "notes": "The operation ID makes retries idempotent. Partition by document and retain enough history for reconnect and audit requirements."
+    },
+    {
+      "name": "DocumentVersion",
+      "fields": [
+        "version_id",
+        "document_id",
+        "sequence_start",
+        "sequence_end",
+        "snapshot_uri",
+        "created_by",
+        "created_at",
+        "restore_source_version"
+      ],
+      "notes": "Immutable checkpoints make history and restore predictable; a restore creates a new head rather than deleting later versions."
+    },
+    {
+      "name": "PermissionGrant",
+      "fields": [
+        "document_id",
+        "principal_id",
+        "principal_type",
+        "role",
+        "inherited_from",
+        "expires_at",
+        "revoked_at"
+      ],
+      "notes": "Resolve workspace, folder, direct, group, and link permissions into an authorization decision that can be invalidated on revocation."
+    },
+    {
+      "name": "PresenceSession",
+      "fields": [
+        "document_id",
+        "user_id",
+        "connection_id",
+        "cursor_position",
+        "last_heartbeat",
+        "client_version"
+      ],
+      "notes": "Presence is ephemeral state with TTLs. It should disappear after a disconnect and never be required to reconstruct document content."
+    },
+    {
+      "name": "FolderEntry",
+      "fields": [
+        "workspace_id",
+        "parent_id",
+        "child_id",
+        "display_name",
+        "sort_key",
+        "created_at"
+      ],
+      "notes": "Use a stable parent-child index for listing and moving documents; guard against cycles and enforce workspace boundaries."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/workspaces/{workspaceId}/documents",
+      "contract": "{ title, parentId?, format, initialContent? } -> { documentId, currentSequence }",
+      "notes": "Authorize workspace membership, validate content size and parent ownership, and make retries safe with an idempotency key."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/documents/{documentId}",
+      "contract": "{ cursor? } -> { snapshot, currentSequence, permissions, activeEditors }",
+      "notes": "Check ACLs before serving a versioned snapshot, then return a sequence cursor so the client can request missed operations."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/documents/{documentId}/collaborate",
+      "contract": "WebSocket upgrade with { clientId, lastSeenSequence } -> ack, operation, presence, and resync messages",
+      "notes": "Authenticate during upgrade, cap message size, deduplicate operation IDs, preserve per-document ordering, and close or downgrade stale clients."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/documents/{documentId}/versions?cursor=...",
+      "contract": "Paginated immutable versions with author, time, sequence range, and preview metadata",
+      "notes": "Apply the same read permission check as the document itself; version metadata can be indexed separately from snapshot bytes."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/documents/{documentId}/restore",
+      "contract": "{ versionId, idempotencyKey } -> { newVersionId, currentSequence }",
+      "notes": "Create a new head from the selected version, append an auditable restore operation, and broadcast the new state to active sessions."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/search?q=...&workspaceId=...",
+      "contract": "Ranked document hits with title, snippet, version, and permission-safe metadata",
+      "notes": "Filter by tenant and effective ACL fields in the index, then recheck authorization before returning sensitive snippets."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Open a document",
+      "description": "The client authenticates, the gateway authorizes the workspace and document, and the collaboration service loads a versioned snapshot plus its current sequence from cache or durable storage."
+    },
+    {
+      "title": "Join the collaboration session",
+      "description": "The client upgrades to a WebSocket, sends its client ID and last acknowledged sequence, then receives missed operations before live presence and broadcasts begin."
+    },
+    {
+      "title": "Accept and fan out an edit",
+      "description": "The service validates the operation against the caller's role, deduplicates retries, assigns the next per-document sequence, appends it durably, acknowledges the sender, and broadcasts the canonical operation."
+    },
+    {
+      "title": "Buffer asynchronous work",
+      "description": "After the durable append, publish a change event for snapshots, search, notifications, and analytics. Queue lag must not block the active editing session."
+    },
+    {
+      "title": "Compact versions",
+      "description": "Snapshot workers fold a bounded operation range into a compressed immutable revision and update the materialized current document so future opens do not replay the entire history."
+    },
+    {
+      "title": "Recover from disconnects",
+      "description": "A reconnecting client presents its last acknowledged sequence; the service replays retained operations or sends a newer snapshot plus a delta, then resumes live delivery without duplicating edits."
+    }
+  ],
+  "architecture": {
+    "title": "Document management system reference architecture",
+    "summary": "A WebSocket collaboration path orders document operations and fans out updates quickly, while snapshots, search, versions, and notifications are processed asynchronously.",
+    "layers": [
+      {
+        "id": "collaboration",
+        "label": "Collaboration layer",
+        "description": "Clients connect through the edge and gateway to a stateless collaboration service that authenticates sessions, orders operations, and broadcasts updates.",
+        "componentIds": ["client", "edge", "gateway", "collaboration-service"]
+      },
+      {
+        "id": "document-state",
+        "label": "Document state layer",
+        "description": "The operation log is the replayable write history; materialized documents, permissions, presence, and immutable revisions support the main read patterns.",
+        "componentIds": [
+          "presence-store",
+          "document-cache",
+          "operation-log",
+          "document-store",
+          "version-store"
+        ]
+      },
+      {
+        "id": "async-indexing",
+        "label": "Async indexing and delivery",
+        "description": "Durable change events drive snapshotting, full-text indexing, and share notifications without extending edit acknowledgement latency.",
+        "componentIds": [
+          "change-events",
+          "snapshot-worker",
+          "search-worker",
+          "search-index",
+          "notification-service",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "open-and-edit-path",
+        "label": "Open and edit path",
+        "description": "Client -> edge -> gateway -> collaboration service -> cache/store, with accepted operations appended to the per-document log.",
+        "componentIds": [
+          "client",
+          "edge",
+          "gateway",
+          "collaboration-service",
+          "document-cache",
+          "document-store",
+          "operation-log"
+        ]
+      },
+      {
+        "id": "change-processing-path",
+        "label": "Change processing path",
+        "description": "The collaboration service publishes durable change events; workers materialize versions and update the search index independently.",
+        "componentIds": [
+          "collaboration-service",
+          "change-events",
+          "snapshot-worker",
+          "version-store",
+          "search-worker",
+          "search-index"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Web and mobile clients",
+        "description": "Render rich documents, keep a local operation buffer, and maintain a WebSocket session for edits, presence, and reconnects.",
+        "position": {
+          "x": 0,
+          "y": 280
+        },
+        "properties": {
+          "responsibilities": "Editing, local buffering, presence"
+        }
+      },
+      {
+        "id": "edge",
+        "type": "cdn",
+        "componentId": "edge-server",
+        "label": "Edge / CDN",
+        "description": "Terminates TLS, routes long-lived connections, and serves static editor assets close to users.",
+        "position": {
+          "x": 440,
+          "y": 280
+        },
+        "properties": {
+          "responsibility": "TLS, routing, static assets"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API Gateway",
+        "description": "Authenticates users, applies workspace quotas, validates request envelopes, and routes REST and WebSocket traffic.",
+        "position": {
+          "x": 880,
+          "y": 280
+        },
+        "properties": {
+          "protection": "Auth, ACL checks, rate limits"
+        }
+      },
+      {
+        "id": "collaboration-service",
+        "type": "application-server",
+        "componentId": "backend-server",
+        "label": "Collaboration Service",
+        "description": "Maintains document sessions, validates and deduplicates operations, assigns canonical sequence numbers, and broadcasts accepted changes.",
+        "position": {
+          "x": 1320,
+          "y": 280
+        },
+        "properties": {
+          "criticalPath": "Operation acknowledgement and fan-out"
+        }
+      },
+      {
+        "id": "presence-store",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Presence Store",
+        "description": "Stores short-lived cursors, active sessions, and heartbeats; presence is disposable and never part of document durability.",
+        "position": {
+          "x": 1760,
+          "y": -120
+        },
+        "properties": {
+          "expiry": "Heartbeat TTL"
+        }
+      },
+      {
+        "id": "document-cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Document Cache",
+        "description": "Caches recent materialized snapshots and permission summaries to make document opens cheap and protect the primary store.",
+        "position": {
+          "x": 1760,
+          "y": 280
+        },
+        "properties": {
+          "strategy": "Versioned cache-aside"
+        }
+      },
+      {
+        "id": "operation-log",
+        "type": "database",
+        "componentId": "database",
+        "label": "Operation Log",
+        "description": "Durable, append-only history of accepted operations partitioned by document so reconnects and revision replay are deterministic.",
+        "position": {
+          "x": 1760,
+          "y": 540
+        },
+        "properties": {
+          "partitionKey": "document_id",
+          "ordering": "Per-document sequence"
+        }
+      },
+      {
+        "id": "document-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Document and ACL Store",
+        "description": "Stores current document metadata, materialized content, folder membership, workspace membership, and permission grants.",
+        "position": {
+          "x": 2200,
+          "y": 280
+        },
+        "properties": {
+          "accessPatterns": "Document ID, parent folder, workspace"
+        }
+      },
+      {
+        "id": "version-store",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Version and Attachment Store",
+        "description": "Keeps immutable compressed snapshots, exported versions, and large attachments outside the transactional metadata path.",
+        "position": {
+          "x": 2640,
+          "y": 540
+        },
+        "properties": {
+          "durability": "Immutable objects with retention policy"
+        }
+      },
+      {
+        "id": "change-events",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Document Change Queue",
+        "description": "Buffers accepted change events for snapshotting, indexing, notifications, and replay after worker failure.",
+        "position": {
+          "x": 1760,
+          "y": 800
+        },
+        "properties": {
+          "delivery": "Durable, partitioned by document"
+        }
+      },
+      {
+        "id": "snapshot-worker",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Snapshot Worker",
+        "description": "Compacts operation ranges into materialized snapshots and immutable revision checkpoints.",
+        "position": {
+          "x": 2200,
+          "y": 730
+        },
+        "properties": {
+          "trigger": "Every N operations or time interval"
+        }
+      },
+      {
+        "id": "search-worker",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Search Indexer",
+        "description": "Extracts searchable text and ACL-filtering fields, then updates the full-text index with the newest document version.",
+        "position": {
+          "x": 2200,
+          "y": 980
+        },
+        "properties": {
+          "consistency": "Eventually consistent"
+        }
+      },
+      {
+        "id": "search-index",
+        "type": "search-engine",
+        "componentId": "search",
+        "label": "Full-text Search Index",
+        "description": "Indexes document text, titles, folder breadcrumbs, and tenant-scoped permissions for fast workspace search.",
+        "position": {
+          "x": 2640,
+          "y": 980
+        },
+        "properties": {
+          "query": "Workspace + ACL filters + text relevance"
+        }
+      },
+      {
+        "id": "notification-service",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Share Notification Service",
+        "description": "Sends email, push, or in-app notifications for shares, mentions, comments, and important document changes.",
+        "position": {
+          "x": 2200,
+          "y": -120
+        },
+        "properties": {
+          "delivery": "At-least-once with user preferences"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Monitoring",
+        "description": "Tracks edit acknowledgement latency, reconnects, operation conflicts, queue lag, index freshness, and permission failures.",
+        "position": {
+          "x": 2640,
+          "y": -120
+        },
+        "properties": {
+          "signals": "Latency, availability, lag, conflict rate"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-edge",
+        "source": "client",
+        "target": "edge",
+        "type": "http",
+        "label": "HTTPS / WebSocket",
+        "description": "Open documents, edit content, and maintain a live session."
+      },
+      {
+        "id": "edge-gateway",
+        "source": "edge",
+        "target": "gateway",
+        "type": "http",
+        "label": "Route",
+        "description": "Forward REST requests and upgraded collaboration connections."
+      },
+      {
+        "id": "gateway-collaboration",
+        "source": "gateway",
+        "target": "collaboration-service",
+        "type": "websocket",
+        "label": "API / WS",
+        "description": "Authenticate the user and route document operations to the session service."
+      },
+      {
+        "id": "collaboration-presence",
+        "source": "collaboration-service",
+        "target": "presence-store",
+        "type": "data-flow",
+        "label": "Heartbeat",
+        "description": "Refresh cursors and active-session state with a short TTL.",
+        "properties": {
+          "sourceHandle": "top",
+          "targetHandle": "left",
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "collaboration-cache",
+        "source": "collaboration-service",
+        "target": "document-cache",
+        "type": "data-flow",
+        "label": "Read snapshot",
+        "description": "Load the newest cached document snapshot for an open request."
+      },
+      {
+        "id": "cache-document-store",
+        "source": "document-cache",
+        "target": "document-store",
+        "type": "database-connection",
+        "label": "Cache miss",
+        "description": "Fetch the materialized document and ACLs when the cache is stale or empty."
+      },
+      {
+        "id": "collaboration-log",
+        "source": "collaboration-service",
+        "target": "operation-log",
+        "type": "database-connection",
+        "label": "Append op",
+        "description": "Persist an accepted, idempotent operation with a per-document sequence.",
+        "properties": {
+          "sourceHandle": "bottom",
+          "targetHandle": "top",
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "collaboration-document-store",
+        "source": "collaboration-service",
+        "target": "document-store",
+        "type": "database-connection",
+        "label": "Metadata / ACL",
+        "description": "Read permissions and update document metadata in the transactional store.",
+        "properties": {
+          "sourceHandle": "top",
+          "targetHandle": "top",
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "collaboration-events",
+        "source": "collaboration-service",
+        "target": "change-events",
+        "type": "message-queue",
+        "label": "Change event",
+        "description": "Publish accepted operations without delaying the edit acknowledgement.",
+        "properties": {
+          "sourceHandle": "bottom",
+          "targetHandle": "left",
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "events-snapshot",
+        "source": "change-events",
+        "target": "snapshot-worker",
+        "type": "event-stream",
+        "label": "Snapshot work",
+        "description": "Consume ordered operations and compact them into revision checkpoints.",
+        "properties": {
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "snapshot-version-store",
+        "source": "snapshot-worker",
+        "target": "version-store",
+        "type": "data-flow",
+        "label": "Write revision",
+        "description": "Store compressed immutable snapshots and large document artifacts."
+      },
+      {
+        "id": "events-search",
+        "source": "change-events",
+        "target": "search-worker",
+        "type": "event-stream",
+        "label": "Index work",
+        "description": "Extract searchable text from the newest document state.",
+        "properties": {
+          "sourceHandle": "bottom",
+          "targetHandle": "left",
+          "labelPosition": "target"
+        }
+      },
+      {
+        "id": "search-worker-index",
+        "source": "search-worker",
+        "target": "search-index",
+        "type": "data-flow",
+        "label": "Upsert",
+        "description": "Write a versioned search document with tenant and ACL filters."
+      },
+      {
+        "id": "collaboration-notifications",
+        "source": "collaboration-service",
+        "target": "notification-service",
+        "type": "event-stream",
+        "label": "Share event",
+        "description": "Notify recipients asynchronously after a share or mention is accepted.",
+        "properties": {
+          "sourceHandle": "top",
+          "targetHandle": "bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.9
+        }
+      },
+      {
+        "id": "collaboration-monitoring",
+        "source": "collaboration-service",
+        "target": "monitoring",
+        "type": "event-stream",
+        "label": "Telemetry",
+        "description": "Emit session, latency, conflict, and authorization signals.",
+        "properties": {
+          "sourceHandle": "top",
+          "targetHandle": "bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.92
+        }
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Concurrency control: OT, CRDT, and ordering",
+      "points": [
+        "Choose an operation-based CRDT when offline edits and peer-independent merging matter; choose OT when the editor has a centralized transform pipeline and simpler payloads are more important.",
+        "Even with CRDT semantics, assign a canonical per-document sequence so acknowledgements, replay, snapshots, and audit logs have a stable order.",
+        "Every operation needs a client-generated ID, base or causal metadata, a bounded payload, and an idempotent append path so retries cannot duplicate text changes.",
+        "Presence and cursor updates should be lossy and ephemeral; document operations are durable and must be replayable."
+      ]
+    },
+    {
+      "title": "Durability, snapshots, and restore",
+      "points": [
+        "Treat the append-only operation log as the recovery boundary for acknowledged edits and the materialized document as a performance optimization.",
+        "Create snapshots every fixed operation count or time interval, cap replay work, and compact old operations only after retention and audit requirements are satisfied.",
+        "A restore should append a new head that references the source version. Never delete the intervening history just because the visible content moved backward.",
+        "Use immutable compressed objects for large revisions and keep transactional metadataâ€”ownership, sequence pointers, and ACLsâ€”in the document store."
+      ]
+    },
+    {
+      "title": "Permissions and revocation",
+      "points": [
+        "Resolve direct, group, inherited folder, workspace, and link permissions before an operation is accepted; read and export paths need the same policy enforcement.",
+        "Cache authorization decisions with short TTLs and explicit invalidation on share changes. A permission revocation must close or downgrade active sessions quickly.",
+        "Do not rely on search-index filtering alone. Recheck authorization before returning a document, version, attachment, or snippet that may have become stale.",
+        "Keep audit events for share, restore, export, and deletion actions separate from user-visible document content."
+      ]
+    },
+    {
+      "title": "Search and large documents",
+      "points": [
+        "Index asynchronously from the canonical change stream and store the document version in each index record so stale updates cannot overwrite newer content.",
+        "Use tenant and ACL fields in the index to narrow candidates, then perform a final authorization check for sensitive workspaces or rapidly changing permissions.",
+        "For very large documents, paginate blocks or sections, load only the visible range, and keep attachments in object storage with short-lived signed URLs.",
+        "Expose index freshness and queue lag so product behavior can explain why a just-typed phrase is not searchable immediately."
+      ]
+    },
+    {
+      "title": "Connection scale and failure recovery",
+      "points": [
+        "Shard collaboration workers by document ID and keep connection ownership separate from durable storage; a session can move when a worker fails.",
+        "Use heartbeats, backpressure, per-session operation limits, and a reconnect token containing the last acknowledged sequence.",
+        "If the queue or search tier is degraded, keep acknowledged edits and active fan-out working while reporting stale search or delayed notifications.",
+        "Measure acknowledgement latency, broadcast lag, reconnect success, replay depth, conflict rate, snapshot age, permission failures, and queue lag."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "CRDT vs OT",
+      "recommendation": "Use a well-scoped operation-based CRDT when offline editing and multi-device merges are core requirements; use OT when a centralized editor pipeline and smaller operations simplify the product.",
+      "caution": "CRDT metadata and garbage collection can grow substantially. OT requires careful transform rules and a reliable server ordering path."
+    },
+    {
+      "title": "Every operation vs periodic snapshots",
+      "recommendation": "Durably append every accepted operation, then create periodic compressed snapshots for bounded replay and fast opens.",
+      "caution": "Snapshotting every keystroke increases write amplification; snapshotting too rarely makes reconnects, restores, and audits expensive."
+    },
+    {
+      "title": "Relational metadata vs document database",
+      "recommendation": "Keep workspaces, folders, ACLs, and document pointers in a transactional relational model while storing large snapshots and attachments as immutable objects.",
+      "caution": "A single database may need partitioning as tenants grow. A document database can simplify content reads but does not remove ACL, uniqueness, or transaction concerns."
+    },
+    {
+      "title": "Synchronous vs asynchronous search",
+      "recommendation": "Index after the durable document change and expose freshness metadata; keep the edit path independent from search availability.",
+      "caution": "Users may not find a just-created or just-edited document immediately, so the UI needs a clear eventual-consistency expectation."
+    }
+  ],
+  "commonMistakes": [
+    "Broadcasting client edits before the operation is durably accepted or without an idempotency key.",
+    "Using a single mutable document blob as the only source of truth, making history, conflict recovery, and auditability fragile.",
+    "Treating cursor presence as durable content or allowing stale presence to block a document session.",
+    "Checking permissions only when a WebSocket opens and allowing a revoked editor to keep sending operations.",
+    "Putting full-text indexing, email notifications, or attachment bytes on the edit acknowledgement path.",
+    "Ignoring reconnect cursors, queue replay, large-document limits, tenant isolation, and cycle detection in folder moves."
+  ],
+  "followUps": [
+    {
+      "question": "How would offline editing work for a user who reconnects after a day?",
+      "answer": "Keep a durable local operation queue with client IDs and causal metadata, retain enough server history or a checkpoint to compare against the last known sequence, merge with the chosen CRDT or transform pipeline, and require authorization again before applying the offline batch."
+    },
+    {
+      "question": "What if one public document has thousands of viewers?",
+      "answer": "Separate viewers from editors, fan out a compact snapshot or block delta through a read-optimized channel, coalesce bursts, and cap per-document broadcast work so one hot document cannot starve other sessions."
+    },
+    {
+      "question": "What happens when an editor loses permission while connected?",
+      "answer": "Publish an ACL invalidation, close or downgrade the session, reject any in-flight operation that no longer passes authorization, and invalidate cached permission decisions and signed attachment URLs."
+    },
+    {
+      "question": "How would you support comments and mentions?",
+      "answer": "Model comments as anchored, permission-checked entities referencing a document version or block, emit comment and mention events through the same durable change stream, and deliver notifications asynchronously."
+    },
+    {
+      "question": "How would you support data residency or hard deletion?",
+      "answer": "Assign a region and deletion policy at the workspace level, route sessions and object writes accordingly, record a deletion tombstone, remove searchable and cached copies, and run verified object-store erasure workflows with an audit trail."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Core collaboration path",
+      "description": "Separates WebSocket session handling, operation validation, durable acknowledgement, canonical ordering, and live fan-out from slower background work."
+    },
+    {
+      "criterion": "Consistency and recovery",
+      "description": "Explains OT or CRDT behavior, deduplication, sequence cursors, reconnect replay, snapshots, and the failure boundary for acknowledged edits."
+    },
+    {
+      "criterion": "Data and permissions",
+      "description": "Models documents, operations, versions, folders, presence, and ACLs around real access patterns and handles revocation on active sessions."
+    },
+    {
+      "criterion": "Scale and reliability",
+      "description": "Uses explicit traffic and storage assumptions, shards connections by document, bounds replay, handles hot documents, and monitors queue/index lag."
+    },
+    {
+      "criterion": "Product judgment",
+      "description": "Covers search freshness, restore semantics, attachments, offline edits, deletion, tenant isolation, and graceful degradation when optional services fail."
+    }
+  ]
+}

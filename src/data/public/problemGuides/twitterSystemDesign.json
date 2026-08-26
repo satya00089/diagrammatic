@@ -1,0 +1,674 @@
+{
+  "prompt": {
+    "brief": "Design Twitter for millions of users: people can publish short posts, follow accounts, read a home timeline, and see new posts appear without overwhelming the system when popular users publish.",
+    "successSignals": [
+      "Separate the durable post and follow graph from the read-optimized home timeline projection.",
+      "Choose a fanout strategy based on follower count and make celebrity posts safe for hot keys and burst traffic.",
+      "Define cursor pagination, ordering, deletion, privacy, and idempotency instead of treating the feed as an unbounded list.",
+      "Keep media processing, search, analytics, and notifications asynchronous so timeline reads and writes remain predictable."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Allow authenticated users to publish, delete, and read short text posts with optional media references.",
+      "Allow users to follow and unfollow accounts, then read a reverse-chronological home timeline.",
+      "Show a user's profile timeline and a post detail view with replies, reposts, and likes as extensible interactions.",
+      "Refresh the home timeline and notify clients when new posts are available, subject to visibility and moderation rules."
+    ],
+    "nonFunctional": [
+      "Target p95 under 200 ms for a timeline page read and under 150 ms for publishing metadata before asynchronous work.",
+      "A committed post must be durable and eventually visible to eligible followers; brief feed lag is acceptable and observable.",
+      "Support privacy, blocked users, deleted content, abuse controls, rate limits, and authenticated access at every read path.",
+      "Remain available during celebrity-post bursts, regional failures, slow media processing, and partial fanout backlog."
+    ],
+    "scaleAssumptions": [
+      "500 million registered users, 100 million daily active users, and 50 million posts per day.",
+      "Assume 20 timeline reads per daily active user and 10x traffic bursts around major events.",
+      "Most users follow fewer than 1,000 accounts; a small set of accounts has tens of millions of followers.",
+      "Keep post metadata in a durable partitioned store, media in object storage, and feed entries as rebuildable projections with a retention window."
+    ],
+    "metrics": [
+      {
+        "label": "Post rate",
+        "value": "~580/s avg",
+        "description": "50M daily posts with burst capacity for live events and retry storms."
+      },
+      {
+        "label": "Timeline reads",
+        "value": "~23K/s avg",
+        "description": "100M daily users at 20 reads each; cache and precomputed entries absorb hot reads."
+      },
+      {
+        "label": "Read latency",
+        "value": "p95 <=200ms",
+        "description": "Fetch a bounded page by cursor without scanning the entire follow graph."
+      },
+      {
+        "label": "Feed freshness",
+        "value": "<=5 seconds",
+        "description": "Normal fanout target; show a refresh affordance when stream or projection lag grows."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Post",
+      "fields": [
+        "post_id",
+        "author_id",
+        "text",
+        "media_ids",
+        "visibility",
+        "created_at",
+        "state"
+      ],
+      "notes": "The post store is the durable source of truth; immutable content plus moderation state makes fanout and deletion repairable."
+    },
+    {
+      "name": "FollowEdge",
+      "fields": [
+        "follower_id",
+        "followee_id",
+        "state",
+        "created_at",
+        "version"
+      ],
+      "notes": "Maintain follower and following access paths so writes can find recipients and profile reads can list relationships efficiently."
+    },
+    {
+      "name": "TimelineEntry",
+      "fields": [
+        "user_id",
+        "post_id",
+        "author_id",
+        "rank_key",
+        "source",
+        "expires_at"
+      ],
+      "notes": "A read-optimized, rebuildable projection. Store bounded windows and merge with a pull path for high-follower accounts."
+    },
+    {
+      "name": "FeedEvent",
+      "fields": [
+        "event_id",
+        "post_id",
+        "author_id",
+        "event_type",
+        "sequence",
+        "occurred_at"
+      ],
+      "notes": "Partition by author or post for ordered publication events; consumers deduplicate and can replay after failures."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/posts",
+      "contract": "{ text, mediaIds?, visibility, requestId } -> { postId, createdAt }",
+      "notes": "Authenticate, validate length and media ownership, persist the post idempotently, then enqueue publication and indexing work."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/timeline/home?cursor=&limit=",
+      "contract": "{ items[], nextCursor, generatedAt, lagMs }",
+      "notes": "Read a bounded page from the user's feed projection, merge eligible pull sources when needed, and filter deleted or blocked content."
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/users/{userId}/following/{followeeId}",
+      "contract": "{ requestId } -> { following: true, version }",
+      "notes": "Authorize the actor and conditionally create the edge; follow changes affect future fanout and can trigger a bounded backfill policy."
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/users/{userId}/following/{followeeId}",
+      "contract": "{ requestId } -> 204",
+      "notes": "Make unfollow idempotent and remove or tombstone future entries without requiring a full feed rewrite."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/posts/{postId}/stream",
+      "contract": "SSE/WebSocket: { postId, event, sequence }",
+      "notes": "Authorize subscription and send a snapshot or resync marker after reconnect or an event-version gap."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept the post",
+      "description": "The edge authenticates the author, validates content and visibility, and the post service writes durable metadata with a client request ID."
+    },
+    {
+      "title": "Publish the post event",
+      "description": "A transactional outbox or change stream emits one ordered FeedEvent after the post commit; the API acknowledges without waiting for every follower."
+    },
+    {
+      "title": "Choose a fanout strategy",
+      "description": "The fanout service looks up the author's follower count and sends normal authors to push fanout while celebrity authors use pull-on-read or hybrid delivery."
+    },
+    {
+      "title": "Build the home timeline",
+      "description": "Workers write idempotent TimelineEntry records to recipient partitions, apply visibility and block rules, and expire entries outside the feed window."
+    },
+    {
+      "title": "Read and refresh asynchronously",
+      "description": "The timeline API merges a bounded projection with hot-author pull results, returns a cursor and lag metadata, and a live gateway coalesces new-post notifications."
+    }
+  ],
+  "architecture": {
+    "title": "Twitter-style home timeline reference architecture",
+    "summary": "Durable posts and follow edges feed a hybrid timeline pipeline: push fanout serves ordinary accounts, while pull-on-read protects the system from celebrity fanout explosions.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience layer",
+        "description": "Clients publish posts, read cursor-paginated feeds, and receive freshness-aware refresh events.",
+        "componentIds": ["client", "edge", "timeline-service"]
+      },
+      {
+        "id": "source",
+        "label": "Source and control plane",
+        "description": "Post and graph services own durable content, relationships, authorization, and moderation state.",
+        "componentIds": [
+          "post-service",
+          "post-store",
+          "graph-service",
+          "graph-store"
+        ]
+      },
+      {
+        "id": "feed",
+        "label": "Feed and event plane",
+        "description": "Events are partitioned, fanout is hybrid, and timeline projections are independently rebuilt and cached.",
+        "componentIds": [
+          "event-stream",
+          "fanout",
+          "timeline-store",
+          "cache",
+          "live-gateway"
+        ]
+      },
+      {
+        "id": "async",
+        "label": "Asynchronous extensions",
+        "description": "Media, search, notifications, analytics, and repair consume events without blocking the core feed path.",
+        "componentIds": [
+          "media-worker",
+          "search-index",
+          "notifications",
+          "analytics",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "publish",
+        "label": "Publish path",
+        "description": "Client -> edge -> post service -> durable post store -> event stream.",
+        "componentIds": [
+          "client",
+          "edge",
+          "post-service",
+          "post-store",
+          "event-stream"
+        ]
+      },
+      {
+        "id": "timeline",
+        "label": "Home timeline path",
+        "description": "Timeline request -> cache/store, merged with hot-author pull results and visibility checks.",
+        "componentIds": [
+          "client",
+          "edge",
+          "timeline-service",
+          "cache",
+          "timeline-store",
+          "post-store"
+        ]
+      },
+      {
+        "id": "fanout",
+        "label": "Hybrid fanout path",
+        "description": "Feed event -> strategy -> push projection or pull-on-read for high-follower authors.",
+        "componentIds": [
+          "event-stream",
+          "fanout",
+          "graph-store",
+          "timeline-store",
+          "timeline-service"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Web and mobile clients",
+        "description": "Publish posts, request bounded feed pages, and subscribe for new-post notifications.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "protocol": "HTTPS plus SSE/WebSocket" }
+      },
+      {
+        "id": "edge",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Edge gateway",
+        "description": "Terminates TLS, authenticates users, applies quotas, and routes by user or post key.",
+        "position": { "x": 360, "y": 280 },
+        "properties": { "protection": "Auth, rate limits, abuse controls" }
+      },
+      {
+        "id": "post-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Post service",
+        "description": "Validates, authorizes, stores, and deletes posts while emitting durable publication events.",
+        "position": { "x": 720, "y": 120 },
+        "properties": { "consistency": "Idempotent durable commit" }
+      },
+      {
+        "id": "post-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Post store",
+        "description": "Partitioned durable source of truth for post metadata, visibility, and moderation state.",
+        "position": { "x": 1080, "y": 120 },
+        "properties": { "partition": "author_id and time buckets" }
+      },
+      {
+        "id": "graph-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Social graph service",
+        "description": "Manages follow edges, blocks, privacy, and recipient lookups with versioned changes.",
+        "position": { "x": 720, "y": 440 },
+        "properties": { "access": "Follower and following indexes" }
+      },
+      {
+        "id": "graph-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Follow graph",
+        "description": "Durable adjacency lists optimized for follower enumeration and relationship checks.",
+        "position": { "x": 1080, "y": 440 },
+        "properties": { "partition": "followee_id and follower_id" }
+      },
+      {
+        "id": "event-stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Feed event stream",
+        "description": "Retained, partitioned events for fanout, indexing, notifications, analytics, and replay.",
+        "position": { "x": 1440, "y": 120 },
+        "properties": { "ordering": "Per author or post key" }
+      },
+      {
+        "id": "fanout",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Hybrid fanout service",
+        "description": "Chooses push, pull, or hybrid delivery from follower count, backlog, and account policy.",
+        "position": { "x": 1800, "y": 120 },
+        "properties": { "hotKeys": "Celebrity threshold and shard splitting" }
+      },
+      {
+        "id": "timeline-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Timeline projections",
+        "description": "Sharded, rebuildable feed entries keyed by recipient with cursor-friendly rank keys.",
+        "position": { "x": 2160, "y": 120 },
+        "properties": { "retention": "Bounded home-feed window" }
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Feed cache",
+        "description": "Caches recent pages and post summaries with version or lag metadata to absorb read bursts.",
+        "position": { "x": 2160, "y": 440 },
+        "properties": { "policy": "Short TTL and stampede protection" }
+      },
+      {
+        "id": "timeline-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Timeline service",
+        "description": "Reads projections, merges pull sources for hot authors, filters visibility, and creates opaque cursors.",
+        "position": { "x": 2520, "y": 280 },
+        "properties": { "latency": "Bounded parallel reads" }
+      },
+      {
+        "id": "live-gateway",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Live update gateway",
+        "description": "Tracks feed subscribers and coalesces new-post notifications; clients fetch the authoritative page on refresh.",
+        "position": { "x": 2880, "y": 280 },
+        "properties": { "delivery": "At least once, resyncable" }
+      },
+      {
+        "id": "media-worker",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Media pipeline",
+        "description": "Scans, resizes, and publishes media through object storage and a CDN without blocking post metadata.",
+        "position": { "x": 1800, "y": -220 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "search-index",
+        "type": "search-engine",
+        "componentId": "search",
+        "label": "Search index",
+        "description": "Indexes eligible posts and accounts asynchronously for discovery and search queries.",
+        "position": { "x": 2160, "y": -220 },
+        "properties": { "freshness": "Eventual" }
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Notification service",
+        "description": "Delivers mentions, follows, and selected post notifications with dedupe and provider retries.",
+        "position": { "x": 2520, "y": -220 },
+        "properties": { "delivery": "Asynchronous" }
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Analytics and abuse",
+        "description": "Consumes events for trends, ranking signals, abuse detection, and product reporting.",
+        "position": { "x": 2880, "y": -220 },
+        "properties": { "path": "Asynchronous" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks feed lag, fanout backlog, cache hit rate, hot partitions, read latency, and projection drift.",
+        "position": { "x": 3240, "y": -220 },
+        "properties": { "alerts": "Lag, errors, saturation" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-edge",
+        "source": "client",
+        "target": "edge",
+        "type": "http",
+        "label": "Publish / read",
+        "description": "Authenticated API requests for posts, graph actions, and timeline pages."
+      },
+      {
+        "id": "edge-post",
+        "source": "edge",
+        "target": "post-service",
+        "type": "api-call",
+        "label": "Post command",
+        "description": "Routes validated post commands to the owning service."
+      },
+      {
+        "id": "post-store",
+        "source": "post-service",
+        "target": "post-store",
+        "type": "database-connection",
+        "label": "Durable post",
+        "description": "Commits content and visibility state before downstream fanout."
+      },
+      {
+        "id": "edge-graph",
+        "source": "edge",
+        "target": "graph-service",
+        "type": "api-call",
+        "label": "Follow command",
+        "description": "Creates or removes a versioned follow edge."
+      },
+      {
+        "id": "graph-store",
+        "source": "graph-service",
+        "target": "graph-store",
+        "type": "database-connection",
+        "label": "Graph edge",
+        "description": "Maintains both follower and following access patterns."
+      },
+      {
+        "id": "post-events",
+        "source": "post-store",
+        "target": "event-stream",
+        "type": "event-stream",
+        "label": "FeedEvent",
+        "description": "Emits the committed post transition for independent consumers."
+      },
+      {
+        "id": "graph-events",
+        "source": "graph-store",
+        "target": "event-stream",
+        "type": "event-stream",
+        "label": "Graph change",
+        "description": "Publishes follow, unfollow, block, and privacy changes."
+      },
+      {
+        "id": "events-fanout",
+        "source": "event-stream",
+        "target": "fanout",
+        "type": "message-queue",
+        "label": "Publication event",
+        "description": "Fanout strategy is selected using follower cardinality and backlog."
+      },
+      {
+        "id": "fanout-graph",
+        "source": "fanout",
+        "target": "graph-store",
+        "type": "database-connection",
+        "label": "Recipients",
+        "description": "Enumerates bounded recipient batches for push fanout."
+      },
+      {
+        "id": "fanout-timeline",
+        "source": "fanout",
+        "target": "timeline-store",
+        "type": "data-flow",
+        "label": "TimelineEntry",
+        "description": "Writes idempotent entries for ordinary authors and hybrid paths."
+      },
+      {
+        "id": "timeline-cache",
+        "source": "timeline-store",
+        "target": "cache",
+        "type": "database-connection",
+        "label": "Recent pages",
+        "description": "Warms or invalidates bounded recent feed pages."
+      },
+      {
+        "id": "edge-timeline",
+        "source": "edge",
+        "target": "timeline-service",
+        "type": "api-call",
+        "label": "Cursor read",
+        "description": "Routes the user's home timeline request."
+      },
+      {
+        "id": "cache-timeline",
+        "source": "cache",
+        "target": "timeline-service",
+        "type": "data-flow",
+        "label": "Cached snapshot",
+        "description": "Serves recent pages while preserving freshness metadata."
+      },
+      {
+        "id": "store-timeline",
+        "source": "timeline-store",
+        "target": "timeline-service",
+        "type": "database-connection",
+        "label": "Projection read",
+        "description": "Fetches entries by recipient and rank cursor."
+      },
+      {
+        "id": "post-timeline",
+        "source": "post-store",
+        "target": "timeline-service",
+        "type": "database-connection",
+        "label": "Hot-author pull",
+        "description": "Merges recent posts from pull sources and rechecks visibility."
+      },
+      {
+        "id": "timeline-live",
+        "source": "timeline-service",
+        "target": "live-gateway",
+        "type": "event-stream",
+        "label": "New-post hint",
+        "description": "Signals that a later cursor read can fetch newer items."
+      },
+      {
+        "id": "live-client",
+        "source": "live-gateway",
+        "target": "client",
+        "type": "websocket",
+        "label": "Refresh event",
+        "description": "Coalesced notification; the feed API remains authoritative."
+      },
+      {
+        "id": "events-media",
+        "source": "event-stream",
+        "target": "media-worker",
+        "type": "event-stream",
+        "label": "Media job",
+        "description": "Processes media asynchronously and updates its readiness state."
+      },
+      {
+        "id": "events-search",
+        "source": "event-stream",
+        "target": "search-index",
+        "type": "event-stream",
+        "label": "Index event",
+        "description": "Indexes eligible content without delaying publication."
+      },
+      {
+        "id": "events-notifications",
+        "source": "event-stream",
+        "target": "notifications",
+        "type": "event-stream",
+        "label": "Notification event",
+        "description": "Delivers selected notifications with retries and dedupe."
+      },
+      {
+        "id": "events-analytics",
+        "source": "event-stream",
+        "target": "analytics",
+        "type": "event-stream",
+        "label": "Analytics event",
+        "description": "Feeds ranking, reporting, and abuse systems off the critical path."
+      },
+      {
+        "id": "events-monitoring",
+        "source": "event-stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag metrics",
+        "description": "Observes consumer lag, partition pressure, and replay health."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Fanout-on-write, fanout-on-read, or hybrid",
+      "points": [
+        "Push entries for ordinary accounts because most users benefit from a cheap bounded read.",
+        "Pull recent posts for celebrity accounts because writing to tens of millions of recipient partitions per post creates a hot fanout event.",
+        "Use a threshold and hybrid merge in the timeline service; make the strategy observable and adjustable rather than embedding a permanent follower-count constant."
+      ]
+    },
+    {
+      "title": "Timeline storage and pagination",
+      "points": [
+        "Key projections by recipient and use a stable rank key combining event time with a tie-breaker, so pagination does not skip or duplicate posts.",
+        "Return opaque cursors containing the last rank and strategy version; do not use page numbers over a changing feed.",
+        "Keep a bounded window and rebuild entries from posts, graph changes, and visibility state when projections expire or drift."
+      ]
+    },
+    {
+      "title": "Hot posts, bursts, and live updates",
+      "points": [
+        "Partition large recipient writes, rate-limit fanout workers, and isolate celebrity work queues from normal authors.",
+        "The live channel sends a refresh hint or newest sequence rather than the full feed; clients fetch authoritative data through the normal cursor API.",
+        "Monitor event lag and feed freshness, then degrade to pull reads or a stale-marked feed when push delivery is overloaded."
+      ]
+    },
+    {
+      "title": "Privacy, deletion, and ranking evolution",
+      "points": [
+        "Apply visibility, block, mute, and moderation checks during both fanout and read-time merge because policies can change after an entry is written.",
+        "Delete or tombstone source posts and invalidate projections; a feed entry must never be treated as the canonical content.",
+        "Keep the event stream and projection versioned so ranking experiments can create a new projection without rewriting the source data model."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Push versus pull fanout",
+      "recommendation": "Use hybrid fanout: push for normal accounts and pull for high-follower accounts, with a configurable threshold and bounded merge.",
+      "caution": "Pure push amplifies celebrity writes; pure pull makes every timeline read traverse the graph and increases tail latency."
+    },
+    {
+      "title": "Freshness versus read cost",
+      "recommendation": "Precompute a recent feed window and send coalesced refresh hints, accepting seconds of projection lag with visible metrics.",
+      "caution": "Synchronous fanout cannot meet burst availability goals, while an unmarked stale cache creates confusing product behavior."
+    },
+    {
+      "title": "Chronological versus ranked timeline",
+      "recommendation": "Start reverse chronological for explainability, but keep rank_key and projection versions flexible for later ranking signals.",
+      "caution": "Ranking adds feature-store, experimentation, and consistency complexity; it should not obscure the core feed access pattern."
+    }
+  ],
+  "commonMistakes": [
+    "Writing one timeline row synchronously for every follower before acknowledging a post.",
+    "Using a single list per user without partitioning, bounded retention, or repair semantics.",
+    "Ignoring celebrity accounts, burst traffic, cache stampedes, and fanout backlog isolation.",
+    "Using offset pagination over a changing feed instead of a stable cursor and tie-breaker.",
+    "Trusting cached feed entries after a post is deleted or a privacy/block relationship changes."
+  ],
+  "followUps": [
+    {
+      "question": "How would you add replies and threaded conversations?",
+      "answer": "Keep posts immutable with parent_id and conversation_id indexes, then build bounded reply pages and asynchronous counters; do not make the home timeline traverse an entire thread."
+    },
+    {
+      "question": "How would you add personalized ranking?",
+      "answer": "Keep the source post and follow graph unchanged, add a versioned candidate and ranking stage, and materialize ranked windows only where latency and traffic justify it."
+    },
+    {
+      "question": "What happens when a user follows an account?",
+      "answer": "Write the edge immediately, then asynchronously backfill a bounded number of recent eligible posts; the read path can merge the followee's newest posts while backfill catches up."
+    },
+    {
+      "question": "How do you rebuild a damaged timeline?",
+      "answer": "Replay retained post, graph, moderation, and deletion events into a shadow projection for selected users, compare versions and counts, then switch or repair partitions incrementally."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Feed model",
+      "description": "The answer identifies durable posts and graph edges separately from rebuildable recipient timeline projections."
+    },
+    {
+      "criterion": "Fanout strategy",
+      "description": "The design explains hybrid push/pull behavior, celebrity thresholds, partitioning, backpressure, and burst isolation."
+    },
+    {
+      "criterion": "Read path",
+      "description": "Timeline reads are bounded, cursor-paginated, cacheable, visibility-aware, and explicit about freshness and lag."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotent events, replay, projection repair, deletion handling, and degraded pull behavior protect against partial failure."
+    },
+    {
+      "criterion": "Product safety",
+      "description": "Authentication, privacy, blocks, moderation, rate limits, abuse controls, and asynchronous extensions are part of the architecture."
+    }
+  ]
+}

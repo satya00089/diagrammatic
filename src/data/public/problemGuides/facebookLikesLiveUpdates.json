@@ -1,0 +1,511 @@
+{
+  "prompt": {
+    "brief": "Design Facebook's Like feature so a user can like or unlike a post, see an accurate-enough count, and receive live updates when other people interact with the same post.",
+    "successSignals": [
+      "Separate the user's membership state from the denormalized count and define which result must be strongly consistent.",
+      "Make like and unlike idempotent, authorize the actor, and prevent duplicate state transitions under retries.",
+      "Use an ordered event stream and coalesced fan-out for live count updates without turning every viewer into a database reader.",
+      "Handle hot posts, celebrity traffic, reconnects, moderation deletes, and delayed or duplicated events explicitly."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Allow an authenticated user to like or unlike a post and see whether they have liked it.",
+      "Display a count and optionally a preview of representative users who liked the post.",
+      "Push count and membership changes to viewers who are currently looking at the post.",
+      "Keep moderation, privacy, blocked-user, and deleted-post rules reflected in reads and events."
+    ],
+    "nonFunctional": [
+      "The actor's own like state is read-after-write consistent; the aggregate count may be briefly eventually consistent.",
+      "Target p95 under 150 ms for a like write acknowledgement and under 2 seconds for a live count update.",
+      "Do not lose an accepted like or unlike; retries and duplicate deliveries must not create duplicate state.",
+      "A fan-out or analytics outage must not block the write path or expose private interactions."
+    ],
+    "scaleAssumptions": [
+      "1 billion registered users, 300 million daily active users, and 100 million posts receiving interactions each day.",
+      "Assume 20 million like/unlike operations per day on average, with 10x bursts during live events.",
+      "Most posts have fewer than 1,000 active viewers, but the hottest 1,000 posts can each have 100,000 viewers.",
+      "Retain the durable interaction ledger for product and moderation needs; aggregate counts are rebuilt from it when required."
+    ],
+    "metrics": [
+      {
+        "label": "Peak write rate",
+        "value": "~2.3K/s",
+        "description": "20M daily mutations with a 10x burst; provision partitions and queues for more than the average."
+      },
+      {
+        "label": "Write acknowledgement",
+        "value": "p95 <=150ms",
+        "description": "The user sees their own state after the conditional interaction write commits."
+      },
+      {
+        "label": "Live freshness",
+        "value": "<=2 seconds",
+        "description": "Coalesce count changes while exposing the last sequence and an offline/stale state."
+      },
+      {
+        "label": "Hot-post fan-out",
+        "value": "100K viewers",
+        "description": "Shard the subscriber set and send snapshots or deltas with backpressure."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Post",
+      "fields": [
+        "post_id",
+        "author_id",
+        "visibility",
+        "moderation_state",
+        "created_at"
+      ],
+      "notes": "The interaction service checks that the post exists and that the actor can view it before mutating state."
+    },
+    {
+      "name": "Like",
+      "fields": ["post_id", "user_id", "created_at", "state", "request_id"],
+      "notes": "Use (post_id, user_id) as the uniqueness key; a tombstone or version prevents an old retry from resurrecting a like."
+    },
+    {
+      "name": "LikeAggregate",
+      "fields": ["post_id", "count", "version", "updated_at"],
+      "notes": "A denormalized projection optimized for reads; it is corrected by replay or reconciliation rather than being the only source of truth."
+    },
+    {
+      "name": "LikeEvent",
+      "fields": [
+        "event_id",
+        "post_id",
+        "user_id",
+        "operation",
+        "sequence",
+        "occurred_at"
+      ],
+      "notes": "An immutable, partitioned event carries the transition to projection, notifications, analytics, and repair consumers."
+    }
+  ],
+  "apis": [
+    {
+      "method": "PUT",
+      "path": "/v1/posts/{postId}/like",
+      "contract": "{ requestId } -> { liked: true, count, version }",
+      "notes": "Authenticate and authorize the user; conditionally insert the unique interaction and return the committed projection or a safe read of it."
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/posts/{postId}/like",
+      "contract": "{ requestId } -> { liked: false, count, version }",
+      "notes": "Make the delete idempotent and versioned; a repeated request returns the same logical state."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/posts/{postId}/likes",
+      "contract": "{ liked, count, version, previewUsers, observedAt }",
+      "notes": "Read the user's state from the interaction store and the count from the aggregate cache with privacy filtering."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/posts/{postId}/likes/stream",
+      "contract": "SSE/WebSocket: { postId, count, version, operation? }",
+      "notes": "Authorize room membership, resume from last version when possible, and send a snapshot after a gap or reconnect."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Validate the interaction",
+      "description": "The client sends a request ID. The edge and interaction service authenticate the actor, check post visibility and moderation state, and route by post_id."
+    },
+    {
+      "title": "Commit the user's like state",
+      "description": "A conditional write keyed by (post_id, user_id) applies the requested state and request version. Replays return the existing result instead of creating a second like."
+    },
+    {
+      "title": "Publish the durable transition",
+      "description": "After the interaction commit, an outbox or transactionally coupled change stream emits one LikeEvent. The acknowledgement does not wait for fan-out or analytics."
+    },
+    {
+      "title": "Update the aggregate projection",
+      "description": "A partition owner consumes events in order, increments or decrements the post count idempotently, and publishes a monotonic version to the live update stream."
+    },
+    {
+      "title": "Broadcast asynchronously",
+      "description": "The room service coalesces rapid changes and sends the newest count to subscribed viewers. Slow or reconnecting clients receive a fresh snapshot rather than every intermediate delta."
+    }
+  ],
+  "architecture": {
+    "title": "Facebook-like live likes reference architecture",
+    "summary": "A durable interaction ledger is the source of truth for a user's like state; a versioned aggregate and coalesced live stream make counts fast without weakening write correctness.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience layer",
+        "description": "Clients render the actor's state, aggregate count, and freshness-aware live updates.",
+        "componentIds": ["client", "edge", "like-service"]
+      },
+      {
+        "id": "interaction",
+        "label": "Interaction and projection layer",
+        "description": "The ledger commits idempotent state while a stream projects counts and distributes changes.",
+        "componentIds": [
+          "like-store",
+          "outbox",
+          "event-stream",
+          "counter-projector"
+        ]
+      },
+      {
+        "id": "delivery",
+        "label": "Delivery and operations",
+        "description": "Hot-post fan-out, cache reads, repair, moderation, and analytics remain independently scalable.",
+        "componentIds": [
+          "room-service",
+          "presence-store",
+          "cache",
+          "analytics",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "write",
+        "label": "Like write path",
+        "description": "Client -> edge -> like service -> interaction ledger -> event stream.",
+        "componentIds": [
+          "client",
+          "edge",
+          "like-service",
+          "like-store",
+          "outbox",
+          "event-stream"
+        ]
+      },
+      {
+        "id": "live",
+        "label": "Live update path",
+        "description": "Event stream -> counter projector -> room service -> subscribed clients.",
+        "componentIds": [
+          "event-stream",
+          "counter-projector",
+          "room-service",
+          "client"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Post viewers",
+        "description": "Render liked state and count; subscribe to the post room and reconnect with the last seen version.",
+        "position": { "x": 0, "y": 260 },
+        "properties": { "protocol": "HTTPS plus SSE/WebSocket" }
+      },
+      {
+        "id": "edge",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Edge gateway",
+        "description": "Terminates TLS, authenticates users, applies quotas, and routes requests by post key.",
+        "position": { "x": 360, "y": 260 },
+        "properties": { "protection": "Auth, origin checks, rate limits" }
+      },
+      {
+        "id": "like-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Like service",
+        "description": "Checks visibility and moderation rules, applies idempotent like/unlike mutations, and returns committed state.",
+        "position": { "x": 720, "y": 260 },
+        "properties": { "consistency": "Conditional write and request dedupe" }
+      },
+      {
+        "id": "like-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Interaction ledger",
+        "description": "Durable source of truth keyed by post_id and user_id, with versions and tombstones for safe retries.",
+        "position": { "x": 1080, "y": 260 },
+        "properties": { "partition": "post_id plus user_id" }
+      },
+      {
+        "id": "outbox",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Change outbox",
+        "description": "Makes committed state transitions observable to consumers even when the stream is temporarily unavailable.",
+        "position": { "x": 1080, "y": 80 },
+        "properties": { "delivery": "At least once" }
+      },
+      {
+        "id": "event-stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Like event stream",
+        "description": "Partitions events by post_id so each post's transitions can be ordered and replayed.",
+        "position": { "x": 1440, "y": 80 },
+        "properties": { "ordering": "Per-post key" }
+      },
+      {
+        "id": "counter-projector",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Count projector",
+        "description": "Consumes idempotently, maintains versioned aggregates, and emits count changes for delivery.",
+        "position": { "x": 1800, "y": 80 },
+        "properties": { "recovery": "Replay and reconciliation" }
+      },
+      {
+        "id": "room-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Live room service",
+        "description": "Tracks subscribers, shards hot rooms, coalesces updates, and applies backpressure to slow clients.",
+        "position": { "x": 2160, "y": 260 },
+        "properties": { "fanout": "Snapshot plus latest version" }
+      },
+      {
+        "id": "presence-store",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Room membership",
+        "description": "Short-lived subscriber and shard state; loss causes reconnects, not loss of likes.",
+        "position": { "x": 2160, "y": 500 },
+        "properties": { "ttl": "Connection lease" }
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Count cache",
+        "description": "Serves bounded-staleness count snapshots and absorbs read spikes for popular posts.",
+        "position": { "x": 1800, "y": 500 },
+        "properties": { "freshness": "Version and observedAt" }
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Analytics and moderation",
+        "description": "Consumes sampled or full events for trends, abuse detection, audit, and offline repair.",
+        "position": { "x": 1800, "y": -180 },
+        "properties": { "path": "Asynchronous" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks mutation latency, stream lag, projection drift, fan-out drops, and hot-key pressure.",
+        "position": { "x": 2160, "y": -180 },
+        "properties": { "alerts": "Lag, drift, error rate" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-edge",
+        "source": "client",
+        "target": "edge",
+        "type": "http",
+        "label": "Like / read",
+        "description": "Authenticated HTTPS requests and bounded snapshot reads."
+      },
+      {
+        "id": "edge-like",
+        "source": "edge",
+        "target": "like-service",
+        "type": "api-call",
+        "label": "Authorized request",
+        "description": "Routes by post and enforces quotas before application logic."
+      },
+      {
+        "id": "like-store",
+        "source": "like-service",
+        "target": "like-store",
+        "type": "database-connection",
+        "label": "Conditional state",
+        "description": "Unique actor-post mutation with request idempotency."
+      },
+      {
+        "id": "like-outbox",
+        "source": "like-store",
+        "target": "outbox",
+        "type": "data-flow",
+        "label": "Committed transition",
+        "description": "Outbox/change stream preserves accepted mutations for consumers."
+      },
+      {
+        "id": "outbox-stream",
+        "source": "outbox",
+        "target": "event-stream",
+        "type": "message-queue",
+        "label": "LikeEvent",
+        "description": "At-least-once event delivery partitioned by post_id."
+      },
+      {
+        "id": "stream-projector",
+        "source": "event-stream",
+        "target": "counter-projector",
+        "type": "event-stream",
+        "label": "Ordered events",
+        "description": "Projector deduplicates event IDs and advances post versions."
+      },
+      {
+        "id": "projector-cache",
+        "source": "counter-projector",
+        "target": "cache",
+        "type": "database-connection",
+        "label": "Count snapshot",
+        "description": "Publishes the versioned aggregate for fast reads."
+      },
+      {
+        "id": "projector-room",
+        "source": "counter-projector",
+        "target": "room-service",
+        "type": "event-stream",
+        "label": "Count update",
+        "description": "Sends coalescible changes to the live delivery tier."
+      },
+      {
+        "id": "room-members",
+        "source": "room-service",
+        "target": "presence-store",
+        "type": "database-connection",
+        "label": "Room leases",
+        "description": "Short-lived membership state and hot-room shard assignments."
+      },
+      {
+        "id": "room-client",
+        "source": "room-service",
+        "target": "client",
+        "type": "websocket",
+        "label": "Live count",
+        "description": "Pushes newest count and version over SSE or WebSocket."
+      },
+      {
+        "id": "cache-client",
+        "source": "cache",
+        "target": "client",
+        "type": "data-flow",
+        "label": "Snapshot read",
+        "description": "The client can render a stale-marked count when live delivery is unavailable."
+      },
+      {
+        "id": "stream-analytics",
+        "source": "event-stream",
+        "target": "analytics",
+        "type": "event-stream",
+        "label": "Async events",
+        "description": "Analytics and abuse detection do not block user acknowledgement."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "event-stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and drift",
+        "description": "Observability detects consumer lag, hot partitions, and projection divergence."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Strong user state versus approximate aggregate",
+      "points": [
+        "The interaction ledger answers whether this user liked the post and is the correctness boundary for retries, moderation, and audit.",
+        "The count is a projection that can lag or be rebuilt; return version and observedAt so the UI does not imply false precision.",
+        "A read-after-write response can combine the mutation result with the latest known aggregate, while a reconciliation job repairs missed projections."
+      ]
+    },
+    {
+      "title": "Hot posts and fan-out",
+      "points": [
+        "Partition the ledger and event stream by post, then split an exceptionally hot room across delivery shards.",
+        "Coalesce updates over a short window and drop intermediate deltas for slow clients; a client can always recover with a versioned snapshot.",
+        "Use admission limits and backpressure so one celebrity post cannot exhaust connection, broker, or egress capacity for other rooms."
+      ]
+    },
+    {
+      "title": "Idempotency, ordering, and recovery",
+      "points": [
+        "A client request ID protects the write API; event IDs and per-post versions protect at-least-once consumers.",
+        "An unlike must not be overwritten by a late like retry, so compare versions or operation timestamps at the interaction key.",
+        "Replay the event stream into a new aggregate and compare it with the serving projection before repairing drift."
+      ]
+    },
+    {
+      "title": "Privacy, moderation, and deletion",
+      "points": [
+        "Authorize room subscription and filter preview users; never infer visibility from the public count alone.",
+        "A moderated or deleted post stops new mutations and emits a tombstone that invalidates cache, room, and preview data.",
+        "Keep audit retention and user deletion semantics explicit; analytics copies need their own deletion or anonymization workflow."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Exact count versus scalable count",
+      "recommendation": "Use a durable per-user ledger plus an eventually consistent versioned aggregate; make the freshness contract visible.",
+      "caution": "An exact read of every liker is too expensive for hot posts, while an unmarked approximate count can mislead users and reviewers."
+    },
+    {
+      "title": "WebSocket versus SSE",
+      "recommendation": "Use SSE for one-way count updates and WebSocket when the product already needs bidirectional presence or reactions.",
+      "caution": "Either protocol still needs reconnect, authorization refresh, room sharding, and snapshot recovery; transport choice does not solve fan-out."
+    },
+    {
+      "title": "Counter increments versus event replay",
+      "recommendation": "Apply idempotent increments for the serving path and retain events for replay, reconciliation, and new projections.",
+      "caution": "A counter-only design is fast but cannot recover confidently from dropped or duplicated messages."
+    }
+  ],
+  "commonMistakes": [
+    "Treating the aggregate count as the source of truth for whether a user liked a post.",
+    "Writing one durable analytics row for every page viewer or live update.",
+    "Ignoring hot-key fan-out and assuming one process can broadcast to every viewer.",
+    "Using a simple toggle endpoint that is unsafe under retries and concurrent tabs.",
+    "Forgetting privacy, moderation, deleted posts, or stale-count labeling."
+  ],
+  "followUps": [
+    {
+      "question": "How would you show the first 100 people who liked a post?",
+      "answer": "Maintain a privacy-filtered, bounded preview projection keyed by post and cursor, backed by the interaction ledger; never scan the full liker set on each post read."
+    },
+    {
+      "question": "What changes if the product requires an exact count?",
+      "answer": "Keep the same ledger but make the count read from a strongly consistent aggregate or a transactionally maintained sharded counter, accepting higher write coordination and hot-key complexity."
+    },
+    {
+      "question": "How do you support offline mobile likes?",
+      "answer": "Assign client operation IDs and versions, accept queued operations when authorized, resolve conflicts with a documented last-write or server-version rule, and reconcile the local UI from the committed response."
+    },
+    {
+      "question": "How do you detect a broken count projector?",
+      "answer": "Compare sampled ledger counts with projections, alert on event lag and version gaps, and rebuild a shadow projection from the retained stream before switching or repairing it."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Correctness",
+      "description": "The answer distinguishes per-user like state from the count and makes retries, concurrency, and event duplication safe."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "The design accounts for hot posts, partitioning, coalescing, subscriber sharding, cache reads, and burst capacity."
+    },
+    {
+      "criterion": "Freshness",
+      "description": "The response defines acknowledgement and live-update targets and exposes versions or stale state to clients."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Accepted writes survive downstream outages, while replay, reconciliation, and reconnect snapshots recover projections and clients."
+    },
+    {
+      "criterion": "Safety",
+      "description": "Authentication, authorization, privacy, moderation, deletion, quotas, and observability are part of the design rather than afterthoughts."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "slug": "uber-rider-matching",
+  "focus": "match riders or delivery customers to nearby eligible drivers in real time",
+  "action": "find and reserve a driver",
+  "scale": "1M active drivers and 1M location updates per second",
+  "latency": "candidate response <=500ms",
+  "durable": "offer and assignment state",
+  "async": "location ingestion, pricing, retries, and notifications",
+  "store": "assignment ledger and geospatial index"
+}

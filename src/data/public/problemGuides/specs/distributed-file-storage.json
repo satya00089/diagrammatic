@@ -1,0 +1,10 @@
+{
+  "slug": "distributed-file-storage",
+  "focus": "upload, version, sync, sharing, and durable file storage",
+  "action": "upload and share a file",
+  "scale": "100M users and 1PB of new objects per day",
+  "latency": "metadata p95 <=150ms",
+  "durable": "object versions and permissions",
+  "async": "chunk assembly, virus scanning, indexing, and replication",
+  "store": "metadata plus object storage"
+}

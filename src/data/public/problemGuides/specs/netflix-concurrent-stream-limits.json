@@ -1,0 +1,10 @@
+{
+  "slug": "netflix-concurrent-stream-limits",
+  "focus": "enforce per-account concurrent playback limits across devices and regions",
+  "action": "start or renew a playback session",
+  "scale": "100M accounts and millions of session heartbeats",
+  "latency": "playback authorization p95 <=100ms",
+  "durable": "session intent and device policy",
+  "async": "heartbeat expiry, analytics, and entitlement refresh",
+  "store": "account limits and active leases"
+}
