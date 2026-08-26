@@ -268,5 +268,14 @@
     "category": "Location-based Services",
     "estimated_time": "90+ minutes",
     "tags": ["location", "eta", "real-time"]
+  },
+  {
+    "slug": "design-a-parts-compatibility-feature-for-an-ecommerce-site",
+    "title": "Design a Parts Compatibility Feature for an E-commerce Site",
+    "description": "Design a compatibility service that helps shoppers determine whether a part fits their vehicle, device, or existing product before they buy.",
+    "difficulty": "Hard",
+    "category": "E-commerce",
+    "estimated_time": "60-90 minutes",
+    "tags": ["e-commerce", "catalog", "search", "data-modeling", "consistency"]
   }
 ]

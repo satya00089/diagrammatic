@@ -151,23 +151,35 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   const isDocumentManagement = problemSlug === "document-management-system";
   const isUrlShortener = problemSlug === "url-shortener";
   const isJobScheduler = problemSlug === "job-scheduler";
+  const isPartsCompatibility =
+    problemSlug ===
+    "design-a-parts-compatibility-feature-for-an-ecommerce-site";
   const isAnnotatedProblem =
-    isDocumentManagement || isUrlShortener || isJobScheduler;
+    isDocumentManagement ||
+    isUrlShortener ||
+    isJobScheduler ||
+    isPartsCompatibility;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
       ? "Redirect traffic"
-      : "Peak dispatch rate";
+      : isPartsCompatibility
+        ? "Peak lookup rate"
+        : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
       ? "Resolve the redirect"
-      : "Claim due work";
+      : isPartsCompatibility
+        ? "Revalidate before purchase"
+        : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
       ? "Emit click telemetry"
-      : "Enqueue an execution";
+      : isPartsCompatibility
+        ? "Publish catalog changes asynchronously"
+        : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
