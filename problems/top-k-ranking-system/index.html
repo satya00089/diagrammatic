@@ -43,8 +43,8 @@
     <!-- Primary metadata -->
     <title>Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic</title>
     <meta name="title" content="Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic" />
-    <meta name="description" content="Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review." />
-    <meta name="keywords" content="Top K Elements: App Store Rankings, Amazon Bestsellers, system design interview question, ranking, top-k, heap, real-time, aggregation" />
+    <meta name="description" content="Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta name="keywords" content="Top K Elements: App Store Rankings, Amazon Bestsellers, system design interview question, ranking, top-k, heap" />
     <meta name="author" content="Diagrammatic" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href="https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/" />
@@ -58,7 +58,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/" />
     <meta property="og:title" content="Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic" />
-    <meta property="og:description" content="Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta property="og:description" content="Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Top K Elements: App Store Rankings, Amazon Bestsellers practice challenge" />
     <meta property="og:site_name" content="Diagrammatic" />
@@ -68,7 +68,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/" />
     <meta name="twitter:title" content="Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic" />
-    <meta name="twitter:description" content="Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review." />
+    <meta name="twitter:description" content="Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Top K Elements: App Store Rankings, Amazon Bestsellers practice challenge" />
 
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DNvVSKVT.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-B2opfsbX.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","url":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic","description":"Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/"}]},{"@type":"LearningResource","name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice","description":"Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","educationalLevel":"Easy","teaches":["ranking","top-k","heap","real-time","aggregation"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+    <script type="module" crossorigin src="/assets/index-BexRjAkA.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CSWbN2ho.css">
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","url":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice | Diagrammatic","description":"Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/"}]},{"@type":"LearningResource","name":"Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice","description":"Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/","educationalLevel":"Easy","teaches":["ranking","top-k","heap"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -398,12 +398,12 @@
       <main class="static-route-main">
         <section class="static-route-hero">
           <h1>Top K Elements: App Store Rankings, Amazon Bestsellers — System Design Interview Practice</h1>
-          <p>Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time. Work through the requirements, architecture trade-offs, and an interactive design review.</p>
+          <p>Design a system to track and display top K items based on changing metrics in real time. Work through the requirements, architecture trade-offs, and an interactive design review.</p>
           <div class="static-route-actions"><a href="/problems/?q=Top%20K%20Elements%3A%20App%20Store%20Rankings%2C%20Amazon%20Bestsellers">Open this challenge</a><a href="/system-design-interview/">Read the interview guide</a></div>
         </section>
         <section class="static-route-section" id="route-content">
-          <h2>Requirements and concepts to consider</h2>
-          <ul class="static-route-list"><li><strong>Track top K items by sales/downloads/ratings</strong><span>Requirement</span></li><li><strong>Update rankings in real-time or near real-time</strong><span>Requirement</span></li><li><strong>Support different time windows (daily, weekly, monthly)</strong><span>Requirement</span></li><li><strong>Handle millions of items</strong><span>Requirement</span></li><li><strong>Support multiple ranking categories</strong><span>Requirement</span></li><li><strong>Efficient query for top K items</strong><span>Requirement</span></li><li><strong>Handle high update volume</strong><span>Requirement</span></li><li><strong>ranking</strong><span>Concept to explore</span></li><li><strong>top k</strong><span>Concept to explore</span></li><li><strong>heap</strong><span>Concept to explore</span></li><li><strong>real time</strong><span>Concept to explore</span></li><li><strong>aggregation</strong><span>Concept to explore</span></li></ul>
+          <h2>Concepts and architecture decisions to consider</h2>
+          <ul class="static-route-list"><li><strong>ranking</strong><span>Concept to explore</span></li><li><strong>top k</strong><span>Concept to explore</span></li><li><strong>heap</strong><span>Concept to explore</span></li></ul>
         </section>
       </main>
       <footer class="static-route-footer">
