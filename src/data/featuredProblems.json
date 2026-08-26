@@ -10,12 +10,12 @@
   },
   {
     "slug": "job-scheduler",
-    "title": "Design a Job Scheduler",
-    "description": "Design a distributed job scheduling system to execute tasks at specified times or intervals.",
-    "difficulty": "Easy",
-    "category": "Infrastructure",
-    "estimated_time": "30-45 minutes",
-    "tags": ["scheduling", "distributed-systems", "background-jobs"]
+    "title": "Distributed Job Scheduler",
+    "description": "Design a reliable job scheduling service that runs one-time and recurring jobs at scale with retries, deduplication, and observable execution.",
+    "difficulty": "Hard",
+    "category": "Distributed Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["scheduling", "queues", "reliability", "distributed-systems"]
   },
   {
     "slug": "twitter-system-design",
@@ -133,6 +133,15 @@
     "category": "Web Services",
     "estimated_time": "45-60 minutes",
     "tags": ["web-services", "scalability", "caching"]
+  },
+  {
+    "slug": "design-a-price-alert-system",
+    "title": "Design a Price Alert System",
+    "description": "Design a price-tracking and alerting service that watches products across marketplaces and notifies users when their rules are met.",
+    "difficulty": "Hard",
+    "category": "Event-Driven Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["event-driven", "notifications", "scheduling", "scalability"]
   },
   {
     "slug": "payment-system",
@@ -268,5 +277,14 @@
     "category": "Location-based Services",
     "estimated_time": "90+ minutes",
     "tags": ["location", "eta", "real-time"]
+  },
+  {
+    "slug": "design-a-parts-compatibility-feature-for-an-ecommerce-site",
+    "title": "Design a Parts Compatibility Feature for an E-commerce Site",
+    "description": "Design a compatibility service that helps shoppers determine whether a part fits their vehicle, device, or existing product before they buy.",
+    "difficulty": "Hard",
+    "category": "E-commerce",
+    "estimated_time": "60-90 minutes",
+    "tags": ["e-commerce", "catalog", "search", "data-modeling", "consistency"]
   }
 ]

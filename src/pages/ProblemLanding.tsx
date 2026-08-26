@@ -332,6 +332,7 @@ const ProblemLanding: React.FC = () => {
                   <ProblemGuideContent
                     guide={guide}
                     onPractice={startProblem}
+                    problemSlug={slug}
                   />
                 ) : (
                   <>
@@ -474,7 +475,7 @@ const ProblemLanding: React.FC = () => {
                   </>
                 )}
 
-                <section className="rounded-2xl bg-[var(--brand)] px-6 py-8 text-white sm:px-8">
+                <section className="bg-[var(--brand)] px-6 py-8 text-white sm:px-8">
                   <h2 className="text-2xl font-bold">
                     Turn the brief into an architecture
                   </h2>
@@ -486,7 +487,7 @@ const ProblemLanding: React.FC = () => {
                   <button
                     type="button"
                     onClick={startProblem}
-                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-[var(--brand)] shadow-[0_8px_22px_rgba(17,24,39,0.18)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    className="mt-6 inline-flex items-center gap-2 bg-white px-5 py-3 font-semibold text-[var(--brand)] shadow-[0_8px_22px_rgba(17,24,39,0.18)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   >
                     Start this challenge <MdArrowForward aria-hidden="true" />
                   </button>

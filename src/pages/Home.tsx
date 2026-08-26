@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { useTheme } from "../hooks/useTheme";
@@ -11,8 +11,8 @@ import { MdHelpOutline } from "react-icons/md";
 import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
-import { VscAzureDevops } from "react-icons/vsc";
-import { VscAzure } from "react-icons/vsc";
+import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
+import { VscAzureDevops, VscAzure } from "react-icons/vsc";
 import { SiGooglecloud } from "react-icons/si";
 import { FaAws } from "react-icons/fa6";
 import { FaServer, FaBolt, FaNetworkWired, FaCloud } from "react-icons/fa";
@@ -129,6 +129,101 @@ const HERO_ICONS: {
   },
 ];
 
+const FEATURE_DELAYS = ["delay-0", "delay-100", "delay-200", "delay-300"];
+const CAPABILITY_DELAYS = [
+  "delay-0",
+  "delay-[50ms]",
+  "delay-[100ms]",
+  "delay-[150ms]",
+  "delay-[200ms]",
+  "delay-[250ms]",
+];
+
+const getDelayClass = (delays: string[], index: number) =>
+  delays[index] ?? delays.at(-1);
+
+const getRandomUnit = () => {
+  const values = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(values);
+  return values[0] / 2 ** 32;
+};
+
+const pluralize = (count: number, singular: string) =>
+  `${count} ${singular}${count === 1 ? "" : "s"}`;
+
+const UserAvatar: React.FC<{
+  picture?: string | null;
+  name?: string;
+  email?: string;
+}> = ({ picture, name, email }) => {
+  const initials = name?.[0]?.toUpperCase() || email?.[0]?.toUpperCase() || "U";
+
+  if (picture) {
+    return (
+      <img
+        src={picture}
+        alt={name || "User"}
+        className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+      />
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
+      {initials}
+    </div>
+  );
+};
+
+const PermissionIcon: React.FC<{ permission: SavedDiagram["permission"] }> = ({
+  permission,
+}) => {
+  if (permission === "edit") {
+    return (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+      />
+    );
+  }
+
+  return (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+    />
+  );
+};
+
+const PermissionBadge: React.FC<{
+  permission: SavedDiagram["permission"];
+}> = ({ permission }) => {
+  const isEditable = permission === "edit";
+  return (
+    <div
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-all duration-300 ${
+        isEditable
+          ? "bg-emerald-600 text-white hover:shadow-sm"
+          : "bg-slate-500 text-white hover:shadow-sm"
+      }`}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-3.5 w-3.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+      >
+        <PermissionIcon permission={permission} />
+      </svg>
+      <span>{isEditable ? "Can Edit" : "View Only"}</span>
+    </div>
+  );
+};
+
 const Home: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
@@ -148,8 +243,52 @@ const Home: React.FC = () => {
   const [isDeletingHeroMessage, setIsDeletingHeroMessage] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
+  const heroTitleRef = useRef<HTMLSpanElement>(null);
+  const learningLoopTitleRef = useRef<HTMLHeadingElement>(null);
+  const architectureLabelRef = useRef<HTMLSpanElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mousePxRef = useRef({ x: -9999, y: -9999 });
+
+  const roughAnnotationTargets = useMemo(
+    () => [
+      {
+        ref: heroTitleRef,
+        config: {
+          type: "underline" as const,
+          color: "#67e8f9",
+          strokeWidth: 3,
+          padding: 3,
+          iterations: 2,
+          animationDuration: 700,
+        },
+      },
+      {
+        ref: learningLoopTitleRef,
+        config: {
+          type: "highlight" as const,
+          color: "#fde68a",
+          padding: 2,
+          iterations: 1,
+          animationDuration: 850,
+        },
+      },
+      {
+        ref: architectureLabelRef,
+        config: {
+          type: "bracket" as const,
+          brackets: "left" as const,
+          color: "#6366f1",
+          strokeWidth: 2,
+          padding: 6,
+          iterations: 2,
+          animationDuration: 650,
+        },
+      },
+    ],
+    [],
+  );
+
+  useRoughAnnotation(roughAnnotationTargets);
 
   const handleNavigate = (route: string, requiresAuth = true) => {
     if (requiresAuth && !isAuthenticated) {
@@ -289,50 +428,42 @@ const Home: React.FC = () => {
       canvas.height = H;
     };
 
-    const frame = () => {
-      if (W === 0 || H === 0) {
-        rafId = requestAnimationFrame(frame);
-        return;
+    const updateParticle = (p: P, mx: number, my: number) => {
+      const dx = p.x - mx;
+      const dy = p.y - my;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 14400 && d2 > 0) {
+        const d = Math.sqrt(d2);
+        const f = ((120 - d) / 120) * 0.07;
+        p.vx += (dx / d) * f;
+        p.vy += (dy / d) * f;
       }
-      ctx.clearRect(0, 0, W, H);
-      const mx = mousePxRef.current.x;
-      const my = mousePxRef.current.y;
-
-      for (const p of particles) {
-        const dx = p.x - mx;
-        const dy = p.y - my;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < 14400 && d2 > 0) {
-          const d = Math.sqrt(d2);
-          const f = ((120 - d) / 120) * 0.07;
-          p.vx += (dx / d) * f;
-          p.vy += (dy / d) * f;
-        }
-        p.vx *= 0.987;
-        p.vy *= 0.987;
-        const spd = Math.hypot(p.vx, p.vy);
-        if (spd > 1.4) {
-          p.vx = (p.vx / spd) * 1.4;
-          p.vy = (p.vy / spd) * 1.4;
-        }
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) {
-          p.x = 0;
-          p.vx = Math.abs(p.vx);
-        } else if (p.x > W) {
-          p.x = W;
-          p.vx = -Math.abs(p.vx);
-        }
-        if (p.y < 0) {
-          p.y = 0;
-          p.vy = Math.abs(p.vy);
-        } else if (p.y > H) {
-          p.y = H;
-          p.vy = -Math.abs(p.vy);
-        }
+      p.vx *= 0.987;
+      p.vy *= 0.987;
+      const spd = Math.hypot(p.vx, p.vy);
+      if (spd > 1.4) {
+        p.vx = (p.vx / spd) * 1.4;
+        p.vy = (p.vy / spd) * 1.4;
       }
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) {
+        p.x = 0;
+        p.vx = Math.abs(p.vx);
+      } else if (p.x > W) {
+        p.x = W;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y < 0) {
+        p.y = 0;
+        p.vy = Math.abs(p.vy);
+      } else if (p.y > H) {
+        p.y = H;
+        p.vy = -Math.abs(p.vy);
+      }
+    };
 
+    const drawLinks = () => {
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 0.7;
       for (let i = 0; i < particles.length; i++) {
@@ -349,7 +480,9 @@ const Home: React.FC = () => {
           }
         }
       }
+    };
 
+    const drawParticles = () => {
       ctx.fillStyle = "#ffffff";
       ctx.globalAlpha = 0.35;
       for (const p of particles) {
@@ -358,15 +491,28 @@ const Home: React.FC = () => {
         ctx.fill();
       }
       ctx.globalAlpha = 1;
+    };
+
+    const frame = () => {
+      if (W === 0 || H === 0) {
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
+
+      ctx.clearRect(0, 0, W, H);
+      const { x: mx, y: my } = mousePxRef.current;
+      particles.forEach((particle) => updateParticle(particle, mx, my));
+      drawLinks();
+      drawParticles();
       rafId = requestAnimationFrame(frame);
     };
 
     resize();
     particles = Array.from({ length: N }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.55,
-      vy: (Math.random() - 0.5) * 0.55,
+      x: getRandomUnit() * W,
+      y: getRandomUnit() * H,
+      vx: (getRandomUnit() - 0.5) * 0.55,
+      vy: (getRandomUnit() - 0.5) * 0.55,
     }));
     rafId = requestAnimationFrame(frame);
 
@@ -597,19 +743,11 @@ const Home: React.FC = () => {
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
                       >
-                        {user?.picture ? (
-                          <img
-                            src={user.picture}
-                            alt={user.name || "User"}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                            {user?.name?.[0]?.toUpperCase() ||
-                              user?.email?.[0]?.toUpperCase() ||
-                              "U"}
-                          </div>
-                        )}
+                        <UserAvatar
+                          picture={user?.picture}
+                          name={user?.name}
+                          email={user?.email}
+                        />
                         <span className="hidden sm:inline">
                           {user?.name || user?.email}
                         </span>
@@ -737,8 +875,9 @@ const Home: React.FC = () => {
                 }`}
               >
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
-                  Design architectures.
-                  <br />
+                  Design <span ref={heroTitleRef}>architectures.</span>
+                </h1>
+                <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
                   <span
                     className="text-white/80 inline-block min-h-[1.05em]"
                     aria-live="polite"
@@ -755,7 +894,6 @@ const Home: React.FC = () => {
                   scalability, reliability, data design, and trade-offs with
                   feedback grounded in your diagram.
                 </p>
-
                 <div
                   className="flex flex-col sm:flex-row gap-4 justify-center items-center"
                   data-tour="hero-cta"
@@ -812,13 +950,16 @@ const Home: React.FC = () => {
         {/* The product loop: a concrete preview of what happens after the click. */}
         <section className="relative px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="relative z-10 mx-auto max-w-7xl">
-            <div className="mb-10 max-w-2xl">
+            <div className="mb-10">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
                 The learning loop
               </p>
-              <h2 className="text-3xl font-bold tracking-[-0.03em] text-theme sm:text-4xl">
+              <span
+                ref={learningLoopTitleRef}
+                className="text-3xl font-bold tracking-[-0.03em] text-black sm:text-4xl"
+              >
                 Don&apos;t just draw the boxes. Defend the decisions.
-              </h2>
+              </span>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
                 Diagrammatic turns an interview prompt into a design you can
                 inspect, explain, and improve.
@@ -828,7 +969,10 @@ const Home: React.FC = () => {
             <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
               <div className="rounded-2xl border border-theme/10 bg-[var(--surface)] p-5 shadow-[0_14px_35px_rgba(15,23,42,0.08)]">
                 <div className="mb-5 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                  <span
+                    ref={architectureLabelRef}
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-muted"
+                  >
                     Problem
                   </span>
                   <span className="rounded-full bg-[var(--brand)]/10 px-2.5 py-1 text-xs font-medium text-[var(--brand)]">
@@ -1190,10 +1334,11 @@ const Home: React.FC = () => {
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedDiagrams.slice(0, 6).map((diagram) => (
-                      <div
+                      <button
+                        type="button"
                         key={diagram.id}
                         onClick={() => handleOpenDiagram(diagram.id)}
-                        className="group rounded-xl border border-theme/8 p-5 hover:shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer elevated-card-bg"
+                        className="group rounded-xl border border-theme/8 p-5 text-left hover:shadow-sm transition-all duration-200 hover:-translate-y-0.5 cursor-pointer elevated-card-bg"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
@@ -1247,42 +1392,9 @@ const Home: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Permission Badge */}
-                                <div
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-all duration-300 ${
-                                    diagram.permission === "edit"
-                                      ? "bg-emerald-600 text-white hover:shadow-sm"
-                                      : "bg-slate-500 text-white hover:shadow-sm"
-                                  }`}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3.5 w-3.5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2.5}
-                                  >
-                                    {diagram.permission === "edit" ? (
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                      />
-                                    ) : (
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                      />
-                                    )}
-                                  </svg>
-                                  <span>
-                                    {diagram.permission === "edit"
-                                      ? "Can Edit"
-                                      : "View Only"}
-                                  </span>
-                                </div>
+                                <PermissionBadge
+                                  permission={diagram.permission}
+                                />
                               </div>
                             )}
 
@@ -1313,8 +1425,7 @@ const Home: React.FC = () => {
                                 d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                               />
                             </svg>
-                            {diagram.nodes.length} node
-                            {diagram.nodes.length !== 1 ? "s" : ""}
+                            {pluralize(diagram.nodes.length, "node")}
                           </span>
                           <span className="flex items-center gap-1">
                             <svg
@@ -1331,8 +1442,7 @@ const Home: React.FC = () => {
                                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                               />
                             </svg>
-                            {diagram.edges.length} connection
-                            {diagram.edges.length !== 1 ? "s" : ""}
+                            {pluralize(diagram.edges.length, "connection")}
                           </span>
                         </div>
 
@@ -1347,7 +1457,7 @@ const Home: React.FC = () => {
                             },
                           )}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 );
@@ -1374,21 +1484,15 @@ const Home: React.FC = () => {
               data-reveal-group
             >
               {features.map((feature, index) => {
-                const delay =
-                  ["delay-0", "delay-100", "delay-200"][index] ?? "delay-200";
+                const delay = getDelayClass(FEATURE_DELAYS, index);
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={feature.title}
-                    className={`group ${landingCardClass} p-5 sm:p-7 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--bg)] ${delay}`}
+                    className={`group ${landingCardClass} p-5 sm:p-7 text-left cursor-pointer transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--bg)] ${delay}`}
                     onClick={() =>
                       handleNavigate(feature.route, feature.requiresAuth)
                     }
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      handleNavigate(feature.route, feature.requiresAuth)
-                    }
-                    role="button"
-                    tabIndex={0}
                     aria-label={`${feature.action}: ${feature.title}`}
                   >
                     <div className="mb-5 text-[var(--brand)]">
@@ -1401,12 +1505,12 @@ const Home: React.FC = () => {
                       {feature.description}
                     </p>
                     <div className="inline-flex items-center gap-1 text-[var(--brand)] font-medium text-sm">
-                      {feature.action}
+                      {feature.action}{" "}
                       <span className="inline-block transition-transform duration-200 group-hover:translate-x-1 ml-0.5">
                         →
                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -1431,15 +1535,7 @@ const Home: React.FC = () => {
               data-reveal-group
             >
               {capabilities.map((capability, capIndex) => {
-                const delay =
-                  [
-                    "delay-0",
-                    "delay-[50ms]",
-                    "delay-[100ms]",
-                    "delay-[150ms]",
-                    "delay-[200ms]",
-                    "delay-[250ms]",
-                  ][capIndex] ?? "delay-[250ms]";
+                const delay = getDelayClass(CAPABILITY_DELAYS, capIndex);
                 return (
                   <div
                     key={capability.title}
@@ -1478,8 +1574,6 @@ const Home: React.FC = () => {
                 <div
                   key={useCase.title}
                   className="group text-center p-6 rounded-[1.5rem] border border-theme/10 elevated-card-bg shadow-[0_18px_50px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
-                  role="button"
-                  tabIndex={0}
                 >
                   <div className="relative inline-block mb-6">
                     <div
@@ -1531,7 +1625,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded border px-8 font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer"
                     >
-                      Browse Problems
+                      Browse Problems{" "}
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>
@@ -1541,7 +1635,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
                     >
-                      Open Design Studio
+                      Open Design Studio{" "}
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>

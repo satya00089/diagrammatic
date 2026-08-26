@@ -335,6 +335,38 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         />
 
         <Handle
+          id="top-left"
+          type="source"
+          position={Position.Top}
+          isConnectable={true}
+          style={{
+            left: "25%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="top-right"
+          type="source"
+          position={Position.Top}
+          isConnectable={true}
+          style={{
+            left: "75%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
           id="right"
           type="source"
           position={Position.Right}
@@ -342,6 +374,40 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           style={{
             width: "8px",
             height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        {/* Named side handles let architecture diagrams route edges to a
+            deliberate vertical anchor while preserving the default handles. */}
+        <Handle
+          id="right-top"
+          type="source"
+          position={Position.Right}
+          isConnectable={true}
+          style={{
+            top: "25%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="right-bottom"
+          type="source"
+          position={Position.Right}
+          isConnectable={true}
+          style={{
+            top: "75%",
+            width: "8px",
+            height: "8px",
             background: "transparent",
             border: "none",
             opacity: 0,
@@ -365,6 +431,38 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         />
 
         <Handle
+          id="bottom-left"
+          type="source"
+          position={Position.Bottom}
+          isConnectable={true}
+          style={{
+            left: "25%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="bottom-right"
+          type="source"
+          position={Position.Bottom}
+          isConnectable={true}
+          style={{
+            left: "75%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
           id="left"
           type="source"
           position={Position.Left}
@@ -372,6 +470,38 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           style={{
             width: "8px",
             height: "100%",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="left-top"
+          type="source"
+          position={Position.Left}
+          isConnectable={true}
+          style={{
+            top: "25%",
+            width: "8px",
+            height: "8px",
+            background: "transparent",
+            border: "none",
+            opacity: 0,
+            cursor: "crosshair",
+          }}
+        />
+
+        <Handle
+          id="left-bottom"
+          type="source"
+          position={Position.Left}
+          isConnectable={true}
+          style={{
+            top: "75%",
+            width: "8px",
+            height: "8px",
             background: "transparent",
             border: "none",
             opacity: 0,

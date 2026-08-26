@@ -534,8 +534,2151 @@ const urlShortenerGuide: ProblemGuide = {
   ],
 };
 
+const documentManagementArchitecture: GuideArchitecture = {
+  title: "Document management system reference architecture",
+  summary:
+    "A WebSocket collaboration path orders document operations and fans out updates quickly, while snapshots, search, versions, and notifications are processed asynchronously.",
+  layers: [
+    {
+      id: "collaboration",
+      label: "Collaboration layer",
+      description:
+        "Clients connect through the edge and gateway to a stateless collaboration service that authenticates sessions, orders operations, and broadcasts updates.",
+      componentIds: ["client", "edge", "gateway", "collaboration-service"],
+    },
+    {
+      id: "document-state",
+      label: "Document state layer",
+      description:
+        "The operation log is the replayable write history; materialized documents, permissions, presence, and immutable revisions support the main read patterns.",
+      componentIds: [
+        "presence-store",
+        "document-cache",
+        "operation-log",
+        "document-store",
+        "version-store",
+      ],
+    },
+    {
+      id: "async-indexing",
+      label: "Async indexing and delivery",
+      description:
+        "Durable change events drive snapshotting, full-text indexing, and share notifications without extending edit acknowledgement latency.",
+      componentIds: [
+        "change-events",
+        "snapshot-worker",
+        "search-worker",
+        "search-index",
+        "notification-service",
+        "monitoring",
+      ],
+    },
+  ],
+  keyPaths: [
+    {
+      id: "open-and-edit-path",
+      label: "Open and edit path",
+      description:
+        "Client -> edge -> gateway -> collaboration service -> cache/store, with accepted operations appended to the per-document log.",
+      componentIds: [
+        "client",
+        "edge",
+        "gateway",
+        "collaboration-service",
+        "document-cache",
+        "document-store",
+        "operation-log",
+      ],
+    },
+    {
+      id: "change-processing-path",
+      label: "Change processing path",
+      description:
+        "The collaboration service publishes durable change events; workers materialize versions and update the search index independently.",
+      componentIds: [
+        "collaboration-service",
+        "change-events",
+        "snapshot-worker",
+        "version-store",
+        "search-worker",
+        "search-index",
+      ],
+    },
+  ],
+  components: [
+    {
+      id: "client",
+      type: "client",
+      componentId: "web-app",
+      label: "Web and mobile clients",
+      description:
+        "Render rich documents, keep a local operation buffer, and maintain a WebSocket session for edits, presence, and reconnects.",
+      position: { x: 0, y: 280 },
+      properties: { responsibilities: "Editing, local buffering, presence" },
+    },
+    {
+      id: "edge",
+      type: "cdn",
+      componentId: "edge-server",
+      label: "Edge / CDN",
+      description:
+        "Terminates TLS, routes long-lived connections, and serves static editor assets close to users.",
+      position: { x: 440, y: 280 },
+      properties: { responsibility: "TLS, routing, static assets" },
+    },
+    {
+      id: "gateway",
+      type: "api-gateway",
+      componentId: "api-gateway",
+      label: "API Gateway",
+      description:
+        "Authenticates users, applies workspace quotas, validates request envelopes, and routes REST and WebSocket traffic.",
+      position: { x: 880, y: 280 },
+      properties: { protection: "Auth, ACL checks, rate limits" },
+    },
+    {
+      id: "collaboration-service",
+      type: "application-server",
+      componentId: "backend-server",
+      label: "Collaboration Service",
+      description:
+        "Maintains document sessions, validates and deduplicates operations, assigns canonical sequence numbers, and broadcasts accepted changes.",
+      position: { x: 1320, y: 280 },
+      properties: { criticalPath: "Operation acknowledgement and fan-out" },
+    },
+    {
+      id: "presence-store",
+      type: "cache",
+      componentId: "cache",
+      label: "Presence Store",
+      description:
+        "Stores short-lived cursors, active sessions, and heartbeats; presence is disposable and never part of document durability.",
+      position: { x: 1760, y: -120 },
+      properties: { expiry: "Heartbeat TTL" },
+    },
+    {
+      id: "document-cache",
+      type: "cache",
+      componentId: "cache",
+      label: "Document Cache",
+      description:
+        "Caches recent materialized snapshots and permission summaries to make document opens cheap and protect the primary store.",
+      position: { x: 1760, y: 280 },
+      properties: { strategy: "Versioned cache-aside" },
+    },
+    {
+      id: "operation-log",
+      type: "database",
+      componentId: "database",
+      label: "Operation Log",
+      description:
+        "Durable, append-only history of accepted operations partitioned by document so reconnects and revision replay are deterministic.",
+      position: { x: 1760, y: 540 },
+      properties: {
+        partitionKey: "document_id",
+        ordering: "Per-document sequence",
+      },
+    },
+    {
+      id: "document-store",
+      type: "database",
+      componentId: "database",
+      label: "Document and ACL Store",
+      description:
+        "Stores current document metadata, materialized content, folder membership, workspace membership, and permission grants.",
+      position: { x: 2200, y: 280 },
+      properties: { accessPatterns: "Document ID, parent folder, workspace" },
+    },
+    {
+      id: "version-store",
+      type: "file-storage",
+      componentId: "object-storage",
+      label: "Version and Attachment Store",
+      description:
+        "Keeps immutable compressed snapshots, exported versions, and large attachments outside the transactional metadata path.",
+      position: { x: 2640, y: 540 },
+      properties: { durability: "Immutable objects with retention policy" },
+    },
+    {
+      id: "change-events",
+      type: "queue",
+      componentId: "queue",
+      label: "Document Change Queue",
+      description:
+        "Buffers accepted change events for snapshotting, indexing, notifications, and replay after worker failure.",
+      position: { x: 1760, y: 800 },
+      properties: { delivery: "Durable, partitioned by document" },
+    },
+    {
+      id: "snapshot-worker",
+      type: "microservice",
+      componentId: "processing-worker",
+      label: "Snapshot Worker",
+      description:
+        "Compacts operation ranges into materialized snapshots and immutable revision checkpoints.",
+      position: { x: 2200, y: 730 },
+      properties: { trigger: "Every N operations or time interval" },
+    },
+    {
+      id: "search-worker",
+      type: "microservice",
+      componentId: "processing-worker",
+      label: "Search Indexer",
+      description:
+        "Extracts searchable text and ACL-filtering fields, then updates the full-text index with the newest document version.",
+      position: { x: 2200, y: 980 },
+      properties: { consistency: "Eventually consistent" },
+    },
+    {
+      id: "search-index",
+      type: "search-engine",
+      componentId: "search",
+      label: "Full-text Search Index",
+      description:
+        "Indexes document text, titles, folder breadcrumbs, and tenant-scoped permissions for fast workspace search.",
+      position: { x: 2640, y: 980 },
+      properties: { query: "Workspace + ACL filters + text relevance" },
+    },
+    {
+      id: "notification-service",
+      type: "notification-service",
+      componentId: "notification-service",
+      label: "Share Notification Service",
+      description:
+        "Sends email, push, or in-app notifications for shares, mentions, comments, and important document changes.",
+      position: { x: 2200, y: -120 },
+      properties: { delivery: "At-least-once with user preferences" },
+    },
+    {
+      id: "monitoring",
+      type: "monitoring",
+      componentId: "monitoring",
+      label: "Monitoring",
+      description:
+        "Tracks edit acknowledgement latency, reconnects, operation conflicts, queue lag, index freshness, and permission failures.",
+      position: { x: 2640, y: -120 },
+      properties: { signals: "Latency, availability, lag, conflict rate" },
+    },
+  ],
+  connections: [
+    {
+      id: "client-edge",
+      source: "client",
+      target: "edge",
+      type: "http",
+      label: "HTTPS / WebSocket",
+      description: "Open documents, edit content, and maintain a live session.",
+    },
+    {
+      id: "edge-gateway",
+      source: "edge",
+      target: "gateway",
+      type: "http",
+      label: "Route",
+      description:
+        "Forward REST requests and upgraded collaboration connections.",
+    },
+    {
+      id: "gateway-collaboration",
+      source: "gateway",
+      target: "collaboration-service",
+      type: "websocket",
+      label: "API / WS",
+      description:
+        "Authenticate the user and route document operations to the session service.",
+    },
+    {
+      id: "collaboration-presence",
+      source: "collaboration-service",
+      target: "presence-store",
+      type: "data-flow",
+      label: "Heartbeat",
+      description: "Refresh cursors and active-session state with a short TTL.",
+      properties: {
+        sourceHandle: "top",
+        targetHandle: "left",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "collaboration-cache",
+      source: "collaboration-service",
+      target: "document-cache",
+      type: "data-flow",
+      label: "Read snapshot",
+      description:
+        "Load the newest cached document snapshot for an open request.",
+    },
+    {
+      id: "cache-document-store",
+      source: "document-cache",
+      target: "document-store",
+      type: "database-connection",
+      label: "Cache miss",
+      description:
+        "Fetch the materialized document and ACLs when the cache is stale or empty.",
+    },
+    {
+      id: "collaboration-log",
+      source: "collaboration-service",
+      target: "operation-log",
+      type: "database-connection",
+      label: "Append op",
+      description:
+        "Persist an accepted, idempotent operation with a per-document sequence.",
+      properties: {
+        sourceHandle: "bottom",
+        targetHandle: "top",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "collaboration-document-store",
+      source: "collaboration-service",
+      target: "document-store",
+      type: "database-connection",
+      label: "Metadata / ACL",
+      description:
+        "Read permissions and update document metadata in the transactional store.",
+      properties: {
+        sourceHandle: "top",
+        targetHandle: "top",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "collaboration-events",
+      source: "collaboration-service",
+      target: "change-events",
+      type: "message-queue",
+      label: "Change event",
+      description:
+        "Publish accepted operations without delaying the edit acknowledgement.",
+      properties: {
+        sourceHandle: "bottom",
+        targetHandle: "left",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "events-snapshot",
+      source: "change-events",
+      target: "snapshot-worker",
+      type: "event-stream",
+      label: "Snapshot work",
+      description:
+        "Consume ordered operations and compact them into revision checkpoints.",
+      properties: { labelPosition: "target" },
+    },
+    {
+      id: "snapshot-version-store",
+      source: "snapshot-worker",
+      target: "version-store",
+      type: "data-flow",
+      label: "Write revision",
+      description:
+        "Store compressed immutable snapshots and large document artifacts.",
+    },
+    {
+      id: "events-search",
+      source: "change-events",
+      target: "search-worker",
+      type: "event-stream",
+      label: "Index work",
+      description: "Extract searchable text from the newest document state.",
+      properties: {
+        sourceHandle: "bottom",
+        targetHandle: "left",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "search-worker-index",
+      source: "search-worker",
+      target: "search-index",
+      type: "data-flow",
+      label: "Upsert",
+      description:
+        "Write a versioned search document with tenant and ACL filters.",
+    },
+    {
+      id: "collaboration-notifications",
+      source: "collaboration-service",
+      target: "notification-service",
+      type: "event-stream",
+      label: "Share event",
+      description:
+        "Notify recipients asynchronously after a share or mention is accepted.",
+      properties: {
+        sourceHandle: "top",
+        targetHandle: "bottom",
+        labelPosition: "target",
+        labelOffset: 0.9,
+      },
+    },
+    {
+      id: "collaboration-monitoring",
+      source: "collaboration-service",
+      target: "monitoring",
+      type: "event-stream",
+      label: "Telemetry",
+      description:
+        "Emit session, latency, conflict, and authorization signals.",
+      properties: {
+        sourceHandle: "top",
+        targetHandle: "bottom",
+        labelPosition: "target",
+        labelOffset: 0.92,
+      },
+    },
+  ],
+};
+
+const documentManagementGuide: ProblemGuide = {
+  prompt: {
+    brief:
+      "Design a collaborative document platform where many users can edit rich documents together, recover from disconnects, search content, and safely restore earlier versions.",
+    successSignals: [
+      "Separate the low-latency collaboration path from snapshots, search, notifications, and other asynchronous work.",
+      "Choose and explain an OT or CRDT conflict strategy, including ordering, deduplication, reconnect, and offline edits.",
+      "Model document ownership, folder hierarchy, sharing, and permission revocation as first-class behavior.",
+      "Define how the system stores an operation history, materialized snapshots, immutable versions, and large attachments.",
+    ],
+  },
+  requirements: {
+    functional: [
+      "Create, edit, archive, and delete rich-text or markdown documents.",
+      "Support multiple users editing the same document in real time with cursor and presence indicators.",
+      "Keep version history and allow an authorized user to restore a previous revision without losing auditability.",
+      "Organize documents in workspaces and nested folders with move and rename operations.",
+      "Share documents with users, groups, or links and enforce viewer, commenter, and editor permissions.",
+      "Search document titles and content while restricting results to documents the requester can access.",
+      "Upload and retrieve large attachments without routing their bytes through the collaboration service.",
+    ],
+    nonFunctional: [
+      "Acknowledge an accepted edit within 150 ms at p95 for an active session in the same region.",
+      "Deliver an accepted edit to other active collaborators within 250 ms at p95 under normal load.",
+      "Never lose an acknowledged operation; reconnecting clients must be able to resume from a known sequence.",
+      "Keep document opens below 300 ms at p95 for warm snapshots and make search eventually consistent.",
+      "Target 99.9% monthly availability for document reads and collaboration sessions, with graceful reconnect behavior.",
+      "Apply authorization on every document read, edit, share, export, and attachment access—not only at connection time.",
+    ],
+    scaleAssumptions: [
+      "10 million registered users, 1 million daily active users, and 100,000 peak concurrent editing sessions.",
+      "50 million documents with an average current text state of 30 KB; attachments are stored separately and can be much larger.",
+      "About 50 million document opens per day and 20 million edit operations per day, with a 10x peak-over-average factor for hot workspaces.",
+      "An active document has three editors on average; a small number of shared documents can attract thousands of viewers.",
+      "The service is multi-region for reads and sessions, while each document has a single ordering authority at a time.",
+    ],
+    metrics: [
+      {
+        label: "Peak edit rate",
+        value: "~2.3K ops/s",
+        description:
+          "20 million daily operations average to about 230 ops/s; a 10x burst drives the collaboration tier and queue sizing.",
+      },
+      {
+        label: "Peak document opens",
+        value: "~5.8K req/s",
+        description:
+          "50 million opens per day average to about 580 req/s; cache and read replicas absorb workspace bursts.",
+      },
+      {
+        label: "Concurrent connections",
+        value: "100K sessions",
+        description:
+          "Long-lived WebSocket connections are tracked independently from request-per-second capacity.",
+      },
+      {
+        label: "Current text state",
+        value: "~1.5 TB",
+        description:
+          "50 million documents times 30 KB of current content, before indexes, replicas, versions, and attachments.",
+      },
+    ],
+  },
+  entities: [
+    {
+      name: "Document",
+      fields: [
+        "document_id",
+        "workspace_id",
+        "parent_id",
+        "title",
+        "current_snapshot_id",
+        "current_sequence",
+        "status",
+        "created_by",
+        "updated_at",
+      ],
+      notes:
+        "Keep the current materialized state and a monotonic sequence for fast opens; use the operation log and immutable versions for history and replay.",
+    },
+    {
+      name: "DocumentOperation",
+      fields: [
+        "operation_id",
+        "document_id",
+        "client_id",
+        "base_sequence",
+        "operation_payload",
+        "assigned_sequence",
+        "actor_id",
+        "created_at",
+      ],
+      notes:
+        "The operation ID makes retries idempotent. Partition by document and retain enough history for reconnect and audit requirements.",
+    },
+    {
+      name: "DocumentVersion",
+      fields: [
+        "version_id",
+        "document_id",
+        "sequence_start",
+        "sequence_end",
+        "snapshot_uri",
+        "created_by",
+        "created_at",
+        "restore_source_version",
+      ],
+      notes:
+        "Immutable checkpoints make history and restore predictable; a restore creates a new head rather than deleting later versions.",
+    },
+    {
+      name: "PermissionGrant",
+      fields: [
+        "document_id",
+        "principal_id",
+        "principal_type",
+        "role",
+        "inherited_from",
+        "expires_at",
+        "revoked_at",
+      ],
+      notes:
+        "Resolve workspace, folder, direct, group, and link permissions into an authorization decision that can be invalidated on revocation.",
+    },
+    {
+      name: "PresenceSession",
+      fields: [
+        "document_id",
+        "user_id",
+        "connection_id",
+        "cursor_position",
+        "last_heartbeat",
+        "client_version",
+      ],
+      notes:
+        "Presence is ephemeral state with TTLs. It should disappear after a disconnect and never be required to reconstruct document content.",
+    },
+    {
+      name: "FolderEntry",
+      fields: [
+        "workspace_id",
+        "parent_id",
+        "child_id",
+        "display_name",
+        "sort_key",
+        "created_at",
+      ],
+      notes:
+        "Use a stable parent-child index for listing and moving documents; guard against cycles and enforce workspace boundaries.",
+    },
+  ],
+  apis: [
+    {
+      method: "POST",
+      path: "/v1/workspaces/{workspaceId}/documents",
+      contract:
+        "{ title, parentId?, format, initialContent? } -> { documentId, currentSequence }",
+      notes:
+        "Authorize workspace membership, validate content size and parent ownership, and make retries safe with an idempotency key.",
+    },
+    {
+      method: "GET",
+      path: "/v1/documents/{documentId}",
+      contract:
+        "{ cursor? } -> { snapshot, currentSequence, permissions, activeEditors }",
+      notes:
+        "Check ACLs before serving a versioned snapshot, then return a sequence cursor so the client can request missed operations.",
+    },
+    {
+      method: "GET",
+      path: "/v1/documents/{documentId}/collaborate",
+      contract:
+        "WebSocket upgrade with { clientId, lastSeenSequence } -> ack, operation, presence, and resync messages",
+      notes:
+        "Authenticate during upgrade, cap message size, deduplicate operation IDs, preserve per-document ordering, and close or downgrade stale clients.",
+    },
+    {
+      method: "GET",
+      path: "/v1/documents/{documentId}/versions?cursor=...",
+      contract:
+        "Paginated immutable versions with author, time, sequence range, and preview metadata",
+      notes:
+        "Apply the same read permission check as the document itself; version metadata can be indexed separately from snapshot bytes.",
+    },
+    {
+      method: "POST",
+      path: "/v1/documents/{documentId}/restore",
+      contract:
+        "{ versionId, idempotencyKey } -> { newVersionId, currentSequence }",
+      notes:
+        "Create a new head from the selected version, append an auditable restore operation, and broadcast the new state to active sessions.",
+    },
+    {
+      method: "GET",
+      path: "/v1/search?q=...&workspaceId=...",
+      contract:
+        "Ranked document hits with title, snippet, version, and permission-safe metadata",
+      notes:
+        "Filter by tenant and effective ACL fields in the index, then recheck authorization before returning sensitive snippets.",
+    },
+  ],
+  dataFlow: [
+    {
+      title: "Open a document",
+      description:
+        "The client authenticates, the gateway authorizes the workspace and document, and the collaboration service loads a versioned snapshot plus its current sequence from cache or durable storage.",
+    },
+    {
+      title: "Join the collaboration session",
+      description:
+        "The client upgrades to a WebSocket, sends its client ID and last acknowledged sequence, then receives missed operations before live presence and broadcasts begin.",
+    },
+    {
+      title: "Accept and fan out an edit",
+      description:
+        "The service validates the operation against the caller's role, deduplicates retries, assigns the next per-document sequence, appends it durably, acknowledges the sender, and broadcasts the canonical operation.",
+    },
+    {
+      title: "Buffer asynchronous work",
+      description:
+        "After the durable append, publish a change event for snapshots, search, notifications, and analytics. Queue lag must not block the active editing session.",
+    },
+    {
+      title: "Compact versions",
+      description:
+        "Snapshot workers fold a bounded operation range into a compressed immutable revision and update the materialized current document so future opens do not replay the entire history.",
+    },
+    {
+      title: "Recover from disconnects",
+      description:
+        "A reconnecting client presents its last acknowledged sequence; the service replays retained operations or sends a newer snapshot plus a delta, then resumes live delivery without duplicating edits.",
+    },
+  ],
+  architecture: documentManagementArchitecture,
+  deepDives: [
+    {
+      title: "Concurrency control: OT, CRDT, and ordering",
+      points: [
+        "Choose an operation-based CRDT when offline edits and peer-independent merging matter; choose OT when the editor has a centralized transform pipeline and simpler payloads are more important.",
+        "Even with CRDT semantics, assign a canonical per-document sequence so acknowledgements, replay, snapshots, and audit logs have a stable order.",
+        "Every operation needs a client-generated ID, base or causal metadata, a bounded payload, and an idempotent append path so retries cannot duplicate text changes.",
+        "Presence and cursor updates should be lossy and ephemeral; document operations are durable and must be replayable.",
+      ],
+    },
+    {
+      title: "Durability, snapshots, and restore",
+      points: [
+        "Treat the append-only operation log as the recovery boundary for acknowledged edits and the materialized document as a performance optimization.",
+        "Create snapshots every fixed operation count or time interval, cap replay work, and compact old operations only after retention and audit requirements are satisfied.",
+        "A restore should append a new head that references the source version. Never delete the intervening history just because the visible content moved backward.",
+        "Use immutable compressed objects for large revisions and keep transactional metadata—ownership, sequence pointers, and ACLs—in the document store.",
+      ],
+    },
+    {
+      title: "Permissions and revocation",
+      points: [
+        "Resolve direct, group, inherited folder, workspace, and link permissions before an operation is accepted; read and export paths need the same policy enforcement.",
+        "Cache authorization decisions with short TTLs and explicit invalidation on share changes. A permission revocation must close or downgrade active sessions quickly.",
+        "Do not rely on search-index filtering alone. Recheck authorization before returning a document, version, attachment, or snippet that may have become stale.",
+        "Keep audit events for share, restore, export, and deletion actions separate from user-visible document content.",
+      ],
+    },
+    {
+      title: "Search and large documents",
+      points: [
+        "Index asynchronously from the canonical change stream and store the document version in each index record so stale updates cannot overwrite newer content.",
+        "Use tenant and ACL fields in the index to narrow candidates, then perform a final authorization check for sensitive workspaces or rapidly changing permissions.",
+        "For very large documents, paginate blocks or sections, load only the visible range, and keep attachments in object storage with short-lived signed URLs.",
+        "Expose index freshness and queue lag so product behavior can explain why a just-typed phrase is not searchable immediately.",
+      ],
+    },
+    {
+      title: "Connection scale and failure recovery",
+      points: [
+        "Shard collaboration workers by document ID and keep connection ownership separate from durable storage; a session can move when a worker fails.",
+        "Use heartbeats, backpressure, per-session operation limits, and a reconnect token containing the last acknowledged sequence.",
+        "If the queue or search tier is degraded, keep acknowledged edits and active fan-out working while reporting stale search or delayed notifications.",
+        "Measure acknowledgement latency, broadcast lag, reconnect success, replay depth, conflict rate, snapshot age, permission failures, and queue lag.",
+      ],
+    },
+  ],
+  tradeoffs: [
+    {
+      title: "CRDT vs OT",
+      recommendation:
+        "Use a well-scoped operation-based CRDT when offline editing and multi-device merges are core requirements; use OT when a centralized editor pipeline and smaller operations simplify the product.",
+      caution:
+        "CRDT metadata and garbage collection can grow substantially. OT requires careful transform rules and a reliable server ordering path.",
+    },
+    {
+      title: "Every operation vs periodic snapshots",
+      recommendation:
+        "Durably append every accepted operation, then create periodic compressed snapshots for bounded replay and fast opens.",
+      caution:
+        "Snapshotting every keystroke increases write amplification; snapshotting too rarely makes reconnects, restores, and audits expensive.",
+    },
+    {
+      title: "Relational metadata vs document database",
+      recommendation:
+        "Keep workspaces, folders, ACLs, and document pointers in a transactional relational model while storing large snapshots and attachments as immutable objects.",
+      caution:
+        "A single database may need partitioning as tenants grow. A document database can simplify content reads but does not remove ACL, uniqueness, or transaction concerns.",
+    },
+    {
+      title: "Synchronous vs asynchronous search",
+      recommendation:
+        "Index after the durable document change and expose freshness metadata; keep the edit path independent from search availability.",
+      caution:
+        "Users may not find a just-created or just-edited document immediately, so the UI needs a clear eventual-consistency expectation.",
+    },
+  ],
+  commonMistakes: [
+    "Broadcasting client edits before the operation is durably accepted or without an idempotency key.",
+    "Using a single mutable document blob as the only source of truth, making history, conflict recovery, and auditability fragile.",
+    "Treating cursor presence as durable content or allowing stale presence to block a document session.",
+    "Checking permissions only when a WebSocket opens and allowing a revoked editor to keep sending operations.",
+    "Putting full-text indexing, email notifications, or attachment bytes on the edit acknowledgement path.",
+    "Ignoring reconnect cursors, queue replay, large-document limits, tenant isolation, and cycle detection in folder moves.",
+  ],
+  followUps: [
+    {
+      question:
+        "How would offline editing work for a user who reconnects after a day?",
+      answer:
+        "Keep a durable local operation queue with client IDs and causal metadata, retain enough server history or a checkpoint to compare against the last known sequence, merge with the chosen CRDT or transform pipeline, and require authorization again before applying the offline batch.",
+    },
+    {
+      question: "What if one public document has thousands of viewers?",
+      answer:
+        "Separate viewers from editors, fan out a compact snapshot or block delta through a read-optimized channel, coalesce bursts, and cap per-document broadcast work so one hot document cannot starve other sessions.",
+    },
+    {
+      question: "What happens when an editor loses permission while connected?",
+      answer:
+        "Publish an ACL invalidation, close or downgrade the session, reject any in-flight operation that no longer passes authorization, and invalidate cached permission decisions and signed attachment URLs.",
+    },
+    {
+      question: "How would you support comments and mentions?",
+      answer:
+        "Model comments as anchored, permission-checked entities referencing a document version or block, emit comment and mention events through the same durable change stream, and deliver notifications asynchronously.",
+    },
+    {
+      question: "How would you support data residency or hard deletion?",
+      answer:
+        "Assign a region and deletion policy at the workspace level, route sessions and object writes accordingly, record a deletion tombstone, remove searchable and cached copies, and run verified object-store erasure workflows with an audit trail.",
+    },
+  ],
+  rubric: [
+    {
+      criterion: "Core collaboration path",
+      description:
+        "Separates WebSocket session handling, operation validation, durable acknowledgement, canonical ordering, and live fan-out from slower background work.",
+    },
+    {
+      criterion: "Consistency and recovery",
+      description:
+        "Explains OT or CRDT behavior, deduplication, sequence cursors, reconnect replay, snapshots, and the failure boundary for acknowledged edits.",
+    },
+    {
+      criterion: "Data and permissions",
+      description:
+        "Models documents, operations, versions, folders, presence, and ACLs around real access patterns and handles revocation on active sessions.",
+    },
+    {
+      criterion: "Scale and reliability",
+      description:
+        "Uses explicit traffic and storage assumptions, shards connections by document, bounds replay, handles hot documents, and monitors queue/index lag.",
+    },
+    {
+      criterion: "Product judgment",
+      description:
+        "Covers search freshness, restore semantics, attachments, offline edits, deletion, tenant isolation, and graceful degradation when optional services fail.",
+    },
+  ],
+};
+
+const jobSchedulerArchitecture: GuideArchitecture = {
+  title: "Distributed job scheduler reference architecture",
+  summary:
+    "A durable schedule store feeds a partitioned dispatcher, which claims due work and hands it to queues so execution remains reliable under retries and worker churn.",
+  layers: [
+    {
+      id: "control-plane",
+      label: "Control plane",
+      description: "Clients create, inspect, pause, and change schedules.",
+      componentIds: [
+        "scheduler-client",
+        "scheduler-gateway",
+        "schedule-service",
+      ],
+    },
+    {
+      id: "dispatch-plane",
+      label: "Dispatch plane",
+      description:
+        "Due schedules are discovered, claimed, and converted into durable execution messages.",
+      componentIds: [
+        "schedule-store",
+        "time-index",
+        "dispatcher",
+        "execution-queue",
+      ],
+    },
+    {
+      id: "execution-plane",
+      label: "Execution plane",
+      description:
+        "Workers execute jobs with leases, retries, and result recording.",
+      componentIds: [
+        "worker-pool",
+        "execution-store",
+        "event-stream",
+        "observability",
+      ],
+    },
+  ],
+  keyPaths: [
+    {
+      id: "schedule-path",
+      label: "Schedule path",
+      description:
+        "Create or update a schedule and atomically maintain its next-run index.",
+      componentIds: [
+        "scheduler-client",
+        "scheduler-gateway",
+        "schedule-service",
+        "schedule-store",
+        "time-index",
+      ],
+    },
+    {
+      id: "dispatch-path",
+      label: "Dispatch path",
+      description:
+        "Partition owners claim due entries and enqueue execution attempts.",
+      componentIds: [
+        "time-index",
+        "dispatcher",
+        "execution-queue",
+        "worker-pool",
+      ],
+    },
+    {
+      id: "retry-path",
+      label: "Retry and recovery path",
+      description:
+        "Failed attempts are rescheduled with backoff or moved to a dead-letter queue for inspection.",
+      componentIds: [
+        "worker-pool",
+        "execution-store",
+        "event-stream",
+        "observability",
+      ],
+    },
+  ],
+  components: [
+    {
+      id: "scheduler-client",
+      type: "client",
+      componentId: "web-app",
+      label: "Clients",
+      description:
+        "Applications and operators that create schedules and inspect execution history.",
+      position: { x: 0, y: 260 },
+      properties: { operations: "Create, pause, resume, query" },
+    },
+    {
+      id: "scheduler-gateway",
+      type: "api-gateway",
+      componentId: "api-gateway",
+      label: "API Gateway",
+      description:
+        "Authenticates tenants, validates payloads, and applies quotas and idempotency keys.",
+      position: { x: 480, y: 260 },
+      properties: { protection: "Auth, rate limits, tenant isolation" },
+    },
+    {
+      id: "schedule-service",
+      type: "application-server",
+      componentId: "backend-server",
+      label: "Schedule Service",
+      description:
+        "Owns schedule lifecycle, computes next-run timestamps, and enforces optimistic versioning.",
+      position: { x: 960, y: 260 },
+      properties: { consistency: "Idempotent writes and version checks" },
+    },
+    {
+      id: "schedule-store",
+      type: "database",
+      componentId: "database",
+      label: "Schedule Store",
+      description:
+        "Durable source of truth for schedules, policies, ownership, and lifecycle state.",
+      position: { x: 1440, y: 120 },
+      properties: { accessPattern: "Tenant and schedule ID; status updates" },
+    },
+    {
+      id: "time-index",
+      type: "database",
+      componentId: "database",
+      label: "Due-Time Index",
+      description:
+        "Sharded index ordered by next-run time so dispatchers can scan bounded windows.",
+      position: { x: 1440, y: 400 },
+      properties: { sharding: "Time bucket plus hash shard" },
+    },
+    {
+      id: "dispatcher",
+      type: "microservice",
+      componentId: "processing-worker",
+      label: "Dispatcher Fleet",
+      description:
+        "Leases partitions, claims due schedules, and creates one execution message per run.",
+      position: { x: 1920, y: 400 },
+      properties: { coordination: "Lease renewal and fencing tokens" },
+    },
+    {
+      id: "execution-queue",
+      type: "queue",
+      componentId: "queue",
+      label: "Execution Queue",
+      description:
+        "Durably buffers runnable attempts and isolates schedule spikes from worker capacity.",
+      position: { x: 2400, y: 400 },
+      properties: { delivery: "At least once with visibility timeout" },
+    },
+    {
+      id: "worker-pool",
+      type: "microservice",
+      componentId: "backend-server",
+      label: "Worker Pool",
+      description:
+        "Executes jobs within tenant limits, renews leases, and reports success or failure.",
+      position: { x: 2880, y: 400 },
+      properties: { isolation: "Per-tenant concurrency and timeout limits" },
+    },
+    {
+      id: "execution-store",
+      type: "database",
+      componentId: "database",
+      label: "Execution Store",
+      description:
+        "Records attempts, idempotency keys, outcomes, retry state, and dead-letter references.",
+      position: { x: 3360, y: 180 },
+      properties: { retention: "Hot history plus archived results" },
+    },
+    {
+      id: "event-stream",
+      type: "queue",
+      componentId: "queue",
+      label: "Events and DLQ",
+      description:
+        "Publishes lifecycle events and retains poison messages for operator replay.",
+      position: { x: 3360, y: 620 },
+      properties: { events: "Succeeded, failed, retried, skipped" },
+    },
+    {
+      id: "observability",
+      type: "monitoring",
+      componentId: "monitoring",
+      label: "Observability",
+      description:
+        "Tracks lateness, queue depth, retries, worker saturation, and missed-run alerts.",
+      position: { x: 3360, y: 400 },
+      properties: { SLOs: "Dispatch lateness, completion rate, recovery time" },
+    },
+  ],
+  connections: [
+    {
+      id: "client-gateway",
+      source: "scheduler-client",
+      target: "scheduler-gateway",
+      type: "http",
+      label: "HTTPS",
+      description: "Submit schedule commands and queries.",
+    },
+    {
+      id: "gateway-service",
+      source: "scheduler-gateway",
+      target: "schedule-service",
+      type: "api-call",
+      label: "API",
+      description: "Authenticate and route tenant operations.",
+    },
+    {
+      id: "service-store",
+      source: "schedule-service",
+      target: "schedule-store",
+      type: "database-connection",
+      label: "Persist",
+      description: "Store the schedule and lifecycle state.",
+    },
+    {
+      id: "service-index",
+      source: "schedule-service",
+      target: "time-index",
+      type: "database-connection",
+      label: "Next run",
+      description: "Maintain the due-time index with the schedule version.",
+    },
+    {
+      id: "index-dispatcher",
+      source: "time-index",
+      target: "dispatcher",
+      type: "data-flow",
+      label: "Due work",
+      description: "Read bounded time buckets for dispatch.",
+    },
+    {
+      id: "dispatcher-queue",
+      source: "dispatcher",
+      target: "execution-queue",
+      type: "message-queue",
+      label: "Enqueue",
+      description: "Publish an idempotent execution attempt.",
+    },
+    {
+      id: "queue-worker",
+      source: "execution-queue",
+      target: "worker-pool",
+      type: "message-queue",
+      label: "Consume",
+      description: "Deliver work with a visibility timeout.",
+    },
+    {
+      id: "worker-execution",
+      source: "worker-pool",
+      target: "execution-store",
+      type: "database-connection",
+      label: "Record",
+      description: "Persist attempt outcome and retry state.",
+    },
+    {
+      id: "worker-events",
+      source: "worker-pool",
+      target: "event-stream",
+      type: "event-stream",
+      label: "Events",
+      description: "Publish lifecycle events and dead-letter failures.",
+    },
+    {
+      id: "dispatcher-monitoring",
+      source: "dispatcher",
+      target: "observability",
+      type: "event-stream",
+      label: "Lateness",
+      description: "Report dispatch lag and partition health.",
+      properties: {
+        sourceHandle: "bottom",
+        targetHandle: "bottom",
+        labelPosition: "target",
+        labelOffset: 0.35,
+      },
+    },
+    {
+      id: "worker-monitoring",
+      source: "worker-pool",
+      target: "observability",
+      type: "event-stream",
+      label: "Health",
+      description: "Report execution latency, failures, and saturation.",
+      properties: {
+        labelPosition: "target",
+        labelOffset: 0.45,
+      },
+    },
+  ],
+};
+
+const jobSchedulerGuide: ProblemGuide = {
+  prompt: {
+    brief:
+      "Design a multi-tenant job scheduling service that runs one-time and recurring jobs reliably, even when schedules spike, workers fail, or a dispatcher is restarted.",
+    successSignals: [
+      "Separate schedule management, due-work detection, dispatch, and execution.",
+      "Explain timing semantics, duplicate delivery, retries, time zones, and missed runs.",
+      "Use durable state and leases so dispatcher and worker failures recover safely.",
+      "Make tenant fairness, backpressure, idempotency, and operational visibility explicit.",
+    ],
+  },
+  requirements: {
+    functional: [
+      "Create, update, pause, resume, and delete one-time or recurring schedules.",
+      "Run HTTP, container, or queue-backed jobs with configurable timeout and retry policy.",
+      "Support cron-like expressions, time zones, start/end windows, and misfire policy.",
+      "Expose execution history, current state, manual run, cancellation, and dead-letter replay.",
+      "Isolate tenants with quotas, concurrency limits, authorization, and audit events.",
+    ],
+    nonFunctional: [
+      "Provide at-least-once execution with a clear idempotency contract; exactly-once side effects are the job owner's responsibility.",
+      "Target p99 dispatch lateness below 10 seconds for jobs within the normal capacity envelope.",
+      "Survive dispatcher, worker, queue, and storage node failures without silently losing a due job.",
+      "Keep schedule writes strongly consistent while allowing dashboards and metrics to be eventually consistent.",
+      "Apply backpressure and tenant fairness instead of allowing one customer to exhaust all workers.",
+    ],
+    scaleAssumptions: [
+      "10 million active schedules, with 100 million executions per day.",
+      "Average execution rate is about 1.2K jobs/second; peak bursts reach 10K jobs/second.",
+      "Most schedules are recurring and produce a small schedule row plus one execution record per run.",
+      "Jobs are external work: median runtime is 5 seconds, with a 15-minute maximum lease and timeout.",
+    ],
+    metrics: [
+      {
+        label: "Average execution rate",
+        value: "~1.2K/s",
+        description: "100M daily executions divided across a 24-hour day.",
+      },
+      {
+        label: "Peak dispatch rate",
+        value: "~10K/s",
+        description:
+          "Burst budget for aligned cron boundaries and catch-up work.",
+      },
+      {
+        label: "Active schedules",
+        value: "10M",
+        description:
+          "The due-time index must be sharded; a full-table scan is not viable.",
+      },
+      {
+        label: "Execution history",
+        value: "~36.5B/year",
+        description:
+          "Use retention tiers and archive old records instead of keeping all history hot.",
+      },
+    ],
+  },
+  entities: [
+    {
+      name: "Schedule",
+      fields: [
+        "schedule_id",
+        "tenant_id",
+        "kind",
+        "expression",
+        "time_zone",
+        "next_run_at",
+        "status",
+        "version",
+      ],
+      notes:
+        "The schedule is the source of truth; version changes fence stale dispatchers and update the indexed next-run entry.",
+    },
+    {
+      name: "Execution",
+      fields: [
+        "execution_id",
+        "schedule_id",
+        "scheduled_for",
+        "attempt",
+        "status",
+        "lease_until",
+        "idempotency_key",
+        "started_at",
+        "finished_at",
+      ],
+      notes:
+        "One logical run can have multiple attempts. The idempotency key remains stable across retries.",
+    },
+    {
+      name: "RetryPolicy",
+      fields: [
+        "max_attempts",
+        "backoff",
+        "jitter",
+        "retryable_errors",
+        "misfire_policy",
+      ],
+      notes:
+        "Keep policy with the schedule version so a retry is evaluated against the intended configuration.",
+    },
+    {
+      name: "PartitionLease",
+      fields: ["partition_id", "owner_id", "fencing_token", "lease_until"],
+      notes:
+        "Short leases and fencing tokens prevent two dispatcher instances from owning a partition after a pause or network split.",
+    },
+  ],
+  apis: [
+    {
+      method: "POST",
+      path: "/v1/schedules",
+      contract:
+        "{ job, trigger, retryPolicy, concurrencyPolicy } -> { scheduleId, nextRunAt }",
+      notes:
+        "Require tenant authorization and an idempotency key; validate time zone and cron expression before the atomic write.",
+    },
+    {
+      method: "PATCH",
+      path: "/v1/schedules/{scheduleId}",
+      contract: "{ status?, trigger?, retryPolicy? } -> updated schedule",
+      notes:
+        "Use an expected version to avoid lost updates and atomically move the due-time index.",
+    },
+    {
+      method: "GET",
+      path: "/v1/schedules/{scheduleId}/executions",
+      contract: "Paginated execution attempts and outcomes",
+      notes:
+        "Read from an execution index; do not scan the scheduler's hot due-time partitions.",
+    },
+    {
+      method: "POST",
+      path: "/v1/schedules/{scheduleId}/runs",
+      contract: "{ scheduledFor? } -> { executionId }",
+      notes:
+        "Manual runs share the normal queue and idempotency path, but are marked as operator-triggered.",
+    },
+  ],
+  dataFlow: [
+    {
+      title: "Persist the schedule",
+      description:
+        "Validate the trigger, authorize the tenant, calculate the first next-run timestamp, and write the schedule plus its due-time index entry in one conditional operation.",
+    },
+    {
+      title: "Claim due work",
+      description:
+        "A dispatcher owns a leased shard, reads a bounded time window, and conditionally claims each due schedule using its version and a run identity.",
+    },
+    {
+      title: "Enqueue an execution",
+      description:
+        "Create an execution record and publish a durable message. A transactional outbox or idempotent publisher closes the gap between the database write and queue publish.",
+    },
+    {
+      title: "Execute with a lease",
+      description:
+        "A fair worker consumes the message, acquires or renews the execution lease, invokes the target, and records success or a retryable failure.",
+    },
+    {
+      title: "Advance or recover",
+      description:
+        "On success, compute the next occurrence. On failure, apply backoff and jitter; after the retry budget, move the execution to a dead-letter state and alert the tenant.",
+    },
+  ],
+  architecture: jobSchedulerArchitecture,
+  deepDives: [
+    {
+      title: "Finding due schedules",
+      points: [
+        "Index by time buckets and hash shards so dispatchers read only a narrow window.",
+        "Use a lease per partition with fencing tokens; a lock alone is unsafe during pauses and network partitions.",
+        "Allow a small look-ahead window and recheck schedule version and status before enqueueing.",
+      ],
+    },
+    {
+      title: "At-least-once execution",
+      points: [
+        "A worker can finish a side effect and crash before acknowledging the queue, so duplicates are unavoidable.",
+        "Pass a stable execution idempotency key to the job and require downstream writes to deduplicate it.",
+        "Record attempt state with conditional transitions so late acknowledgements cannot overwrite a newer retry.",
+      ],
+    },
+    {
+      title: "Recurring schedules and misfires",
+      points: [
+        "Store the schedule's time zone and compute occurrences with a tested library; never treat local time as UTC implicitly.",
+        "Define skip, run-once, or catch-up behavior when a schedule is paused or the system is down.",
+        "Bound catch-up work to protect the queue and expose skipped occurrences as observable state.",
+      ],
+    },
+    {
+      title: "Fairness and backpressure",
+      points: [
+        "Partition queue capacity by tenant or weighted fair scheduling so a noisy customer cannot starve others.",
+        "Enforce per-tenant concurrency and global admission limits before invoking external jobs.",
+        "Scale workers from queue age and lateness, not only queue depth, because long jobs hide waiting time.",
+      ],
+    },
+  ],
+  tradeoffs: [
+    {
+      title: "Polling vs timing wheel",
+      recommendation:
+        "Start with sharded time buckets and bounded polling; introduce a timing wheel when sub-second precision or very high schedule density justifies it.",
+      caution:
+        "A timing wheel reduces scans but adds complexity around persistence, recovery, and long-duration timers.",
+    },
+    {
+      title: "Queue-first vs database-first dispatch",
+      recommendation:
+        "Create an execution record before publishing and use an outbox or reconciliation worker to guarantee eventual publication.",
+      caution:
+        "Queue-first is simpler to scale but can lose the durable record needed for audit and deduplication.",
+    },
+    {
+      title: "Exactly-once vs at-least-once",
+      recommendation:
+        "Promise at-least-once delivery and make idempotency explicit at the execution boundary.",
+      caution:
+        "Exactly-once claims usually hide an external side-effect boundary that the scheduler cannot atomically control.",
+    },
+  ],
+  commonMistakes: [
+    "Using one global lock or scanning every schedule each second.",
+    "Claiming a schedule without fencing stale dispatcher instances.",
+    "Assuming queue acknowledgement means the external job side effect happened exactly once.",
+    "Ignoring daylight-saving transitions, missed runs, and bounded catch-up.",
+    "Letting retries bypass tenant concurrency limits or overwhelm a downstream service.",
+  ],
+  followUps: [
+    {
+      question:
+        "How do you recover after a dispatcher is down for ten minutes?",
+      answer:
+        "A new owner acquires the partition lease, scans from the last durable watermark, applies the schedule's misfire policy, and publishes bounded catch-up work while reporting lateness.",
+    },
+    {
+      question: "How would you support millions of jobs at the same timestamp?",
+      answer:
+        "Hash schedules across many time-bucket shards, spread enqueue work with jitter where semantics allow it, and apply tenant and global admission limits.",
+    },
+    {
+      question: "How do you cancel a running job?",
+      answer:
+        "Mark the execution cancelled with a conditional update, send a cancellation signal when the worker supports it, and fence late completion updates; forceful termination remains target-specific.",
+    },
+    {
+      question: "What must be monitored?",
+      answer:
+        "Track dispatch lateness, due-item age, queue age, lease expirations, retry rate, dead letters, per-tenant saturation, and the gap between persisted executions and published messages.",
+    },
+  ],
+  rubric: [
+    {
+      criterion: "Core scheduling path",
+      description:
+        "Separates schedule lifecycle, due-time discovery, durable dispatch, and worker execution with a readable critical path.",
+    },
+    {
+      criterion: "Reliability semantics",
+      description:
+        "Explains leases, fencing, retries, idempotency, duplicate delivery, outbox recovery, and failure transitions.",
+    },
+    {
+      criterion: "Scale and fairness",
+      description:
+        "Uses explicit capacity assumptions, sharded indexes, bounded scans, backpressure, and tenant-aware concurrency.",
+    },
+    {
+      criterion: "Time and product behavior",
+      description:
+        "Covers time zones, recurring rules, misfires, catch-up, cancellation, manual runs, and retention.",
+    },
+    {
+      criterion: "Operations",
+      description:
+        "Defines lateness and completion SLOs plus metrics and operator workflows for dead letters and stuck leases.",
+    },
+  ],
+};
+
+const partsCompatibilityArchitecture: GuideArchitecture = {
+  title: "Parts compatibility reference architecture",
+  summary:
+    "A normalized fitment model is published into a versioned read index, while checkout revalidates the selected part against the buyer's vehicle or product context.",
+  layers: [
+    {
+      id: "experience",
+      label: "Shopping experience",
+      description:
+        "Clients collect compatibility context and explain fitment results.",
+      componentIds: ["parts-client", "parts-gateway", "compatibility-service"],
+    },
+    {
+      id: "serving",
+      label: "Compatibility serving",
+      description:
+        "A cache and query index answer high-volume fitment checks without scanning catalog data.",
+      componentIds: ["fitment-cache", "fitment-index", "catalog-store"],
+    },
+    {
+      id: "publishing",
+      label: "Data publishing",
+      description:
+        "Catalog changes are validated, versioned, and propagated asynchronously with replayable events.",
+      componentIds: [
+        "catalog-admin",
+        "catalog-events",
+        "index-worker",
+        "observability",
+      ],
+    },
+  ],
+  keyPaths: [
+    {
+      id: "fitment-path",
+      label: "Fitment lookup",
+      description:
+        "The shopper's normalized context is checked against cache and then a purpose-built fitment index.",
+      componentIds: [
+        "parts-client",
+        "parts-gateway",
+        "compatibility-service",
+        "fitment-cache",
+        "fitment-index",
+      ],
+    },
+    {
+      id: "publication-path",
+      label: "Catalog publication",
+      description:
+        "Approved catalog edits become versioned events and are indexed away from the shopper request path.",
+      componentIds: [
+        "catalog-admin",
+        "catalog-store",
+        "catalog-events",
+        "index-worker",
+        "fitment-index",
+      ],
+    },
+  ],
+  components: [
+    {
+      id: "parts-client",
+      type: "client",
+      componentId: "web-app",
+      label: "Shopper UI",
+      description:
+        "Product pages, fitment selectors, cart, and checkout collect a vehicle or product identity.",
+      position: { x: 0, y: 260 },
+      properties: {
+        context: "Year, make, model, trim, or device/product identifiers",
+      },
+    },
+    {
+      id: "parts-gateway",
+      type: "api-gateway",
+      componentId: "api-gateway",
+      label: "API Gateway",
+      description:
+        "Authenticates users, validates bounded query inputs, and applies rate limits.",
+      position: { x: 480, y: 260 },
+      properties: { protection: "Validation, auth, quotas" },
+    },
+    {
+      id: "compatibility-service",
+      type: "application-server",
+      componentId: "backend-server",
+      label: "Compatibility Service",
+      description:
+        "Normalizes context, evaluates fitment rules, and returns an explainable result with a data version.",
+      position: { x: 960, y: 260 },
+      properties: { consistency: "Read version and checkout revalidation" },
+    },
+    {
+      id: "fitment-cache",
+      type: "cache",
+      componentId: "cache",
+      label: "Fitment Cache",
+      description:
+        "Caches immutable or version-keyed answers for popular product/context pairs.",
+      position: { x: 1920, y: 100 },
+      properties: {
+        key: "productId:contextId:catalogVersion",
+        invalidation: "Versioned keys",
+      },
+    },
+    {
+      id: "fitment-index",
+      type: "search-engine",
+      componentId: "search-engine",
+      label: "Fitment Query Index",
+      description:
+        "Indexes normalized product-to-context relations for fast filtering and faceting.",
+      position: { x: 1920, y: 260 },
+      properties: { accessPattern: "Context plus product/category filters" },
+    },
+    {
+      id: "catalog-store",
+      type: "database",
+      componentId: "database",
+      label: "Catalog and Fitment Store",
+      description:
+        "Durable source of truth for products, aliases, normalized contexts, rules, and publication versions.",
+      position: { x: 1440, y: 420 },
+      properties: { integrity: "Validated rules and effective-dated versions" },
+    },
+    {
+      id: "catalog-admin",
+      type: "client",
+      componentId: "admin-console",
+      label: "Catalog Operations",
+      description:
+        "Merchants and operators review, correct, approve, and roll back compatibility data.",
+      position: { x: 0, y: 700 },
+      properties: { workflow: "Draft, validate, approve, publish" },
+    },
+    {
+      id: "catalog-events",
+      type: "queue",
+      componentId: "queue",
+      label: "Catalog Event Queue",
+      description:
+        "Durably buffers fitment changes and enables retries, replay, and dead-letter handling.",
+      position: { x: 960, y: 700 },
+      properties: { delivery: "At least once" },
+    },
+    {
+      id: "index-worker",
+      type: "microservice",
+      componentId: "processing-worker",
+      label: "Indexing Workers",
+      description:
+        "Consumes validated changes, rebuilds affected documents, and publishes an index version.",
+      position: { x: 1440, y: 700 },
+      properties: { safety: "Idempotent upserts and checkpointed batches" },
+    },
+    {
+      id: "observability",
+      type: "monitoring",
+      componentId: "monitoring",
+      label: "Observability",
+      description:
+        "Tracks lookup latency, stale index age, mismatch reports, queue lag, and publication failures.",
+      position: { x: 1920, y: 700 },
+      properties: { signals: "Latency, freshness, correctness, errors" },
+    },
+  ],
+  connections: [
+    {
+      id: "parts-client-gateway",
+      source: "parts-client",
+      target: "parts-gateway",
+      type: "http",
+      label: "HTTPS",
+      description: "Submit context and product compatibility checks.",
+    },
+    {
+      id: "gateway-service",
+      source: "parts-gateway",
+      target: "compatibility-service",
+      type: "api-call",
+      label: "Query",
+      description: "Validate and route the compatibility request.",
+    },
+    {
+      id: "service-cache",
+      source: "compatibility-service",
+      target: "fitment-cache",
+      type: "database-connection",
+      label: "Cache-aside",
+      description: "Read a version-keyed answer before querying the index.",
+      properties: {
+        sourceHandle: "right-top",
+      }
+    },
+    {
+      id: "service-index",
+      source: "compatibility-service",
+      target: "fitment-index",
+      type: "api-call",
+      label: "Fitment query",
+      description: "Find matching relations and return reasons or exclusions.",
+      properties: {
+        labelPosition: "target",
+        labelOffset: 0.35,
+      },
+    },
+    {
+      id: "service-store",
+      source: "compatibility-service",
+      target: "catalog-store",
+      type: "database-connection",
+      label: "Fallback / version",
+      description:
+        "Read authoritative rules or the current publication version when needed.",
+      properties: {
+        sourceHandle: "right-bottom",
+        targetHandle: "left-top",
+      },
+    },
+    {
+      id: "admin-store",
+      source: "catalog-admin",
+      target: "catalog-store",
+      type: "database-connection",
+      label: "Draft and approve",
+      description: "Persist validated catalog edits and approval state.",
+    },
+    {
+      id: "store-events",
+      source: "catalog-store",
+      target: "catalog-events",
+      type: "event-stream",
+      label: "Published change",
+      description:
+        "Emit an outbox-backed event after a catalog change commits.",
+    },
+    {
+      id: "events-worker",
+      source: "catalog-events",
+      target: "index-worker",
+      type: "message-queue",
+      label: "Consume",
+      description: "Process changes with retries and idempotent checkpoints.",
+    },
+    {
+      id: "worker-index",
+      source: "index-worker",
+      target: "fitment-index",
+      type: "data-flow",
+      label: "Upsert version",
+      description:
+        "Update affected fitment documents and advance the index version.",
+      properties: {
+        targetHandle: "bottom",
+        labelPosition: "target",
+        labelOffset: 0.35,
+      },
+    },
+    {
+      id: "worker-cache",
+      source: "index-worker",
+      target: "fitment-cache",
+      type: "data-flow",
+      label: "Warm / retire",
+      description:
+        "Warm important keys or retire old versioned entries after publication.",
+      properties: {
+        sourceHandle: "right-top",
+        targetHandle: "left-bottom",
+      },
+    },
+    {
+      id: "service-monitoring",
+      source: "compatibility-service",
+      target: "observability",
+      type: "event-stream",
+      label: "SLOs and mismatch",
+      description:
+        "Record latency, errors, stale reads, and user-reported mismatches.",
+      properties: {
+        sourceHandle: "bottom",
+        targetHandle: "bottom",
+        labelPosition: "target",
+      },
+    },
+    {
+      id: "worker-monitoring",
+      source: "index-worker",
+      target: "observability",
+      type: "event-stream",
+      label: "Freshness",
+      description: "Report queue lag, rejected rules, and publication age.",
+      properties: {
+        labelPosition: "target",
+        labelOffset: 0.45,
+      },
+    },
+  ],
+};
+
+const partsCompatibilityGuide: ProblemGuide = {
+  prompt: {
+    brief:
+      "Design a parts compatibility feature for an e-commerce site so a shopper can identify their vehicle, device, or existing product and confidently determine which catalog items fit before adding them to a cart.",
+    successSignals: [
+      "Separate catalog data quality and fitment modeling from the low-latency shopper lookup path.",
+      "Model aliases, normalized product contexts, positive fitment, exclusions, and effective-dated rules explicitly.",
+      "Use a versioned read index and explainable results while revalidating compatibility at cart or checkout.",
+      "Handle catalog publication, corrections, stale indexes, merchant workflows, and mismatch feedback asynchronously.",
+    ],
+  },
+  requirements: {
+    functional: [
+      "Let shoppers select or search for a vehicle, device, or existing product and save that context.",
+      "Show compatible, incompatible, and unknown states for a product, with a short reason where possible.",
+      "Filter category/search results by compatibility and carry the selected context into cart and checkout.",
+      "Let catalog operators import, validate, approve, publish, correct, and roll back fitment data.",
+      "Accept mismatch reports and make their source product, context, and catalog version auditable.",
+    ],
+    nonFunctional: [
+      "Return common fitment checks within 150 ms at p95 and keep the shopper path available during indexing outages.",
+      "Prevent false-positive compatibility claims; an unknown result must not be presented as guaranteed fit.",
+      "Support replayable, idempotent publication with a visible freshness and index-version signal.",
+      "Protect tenant/catalog permissions, validate untrusted identifiers, and avoid leaking private merchant data.",
+    ],
+    scaleAssumptions: [
+      "Assume 50 million products and 200 million normalized product-context relationships across markets.",
+      "Assume 10 million daily active shoppers, 40 compatibility checks per shopper, and 4,600 average checks/second with 10x peak headroom.",
+      "Assume 2 million fitment changes per day, processed in batches; read traffic is roughly 20:1 over writes.",
+      "Assume a context is a bounded identifier set such as vehicle year/make/model/trim, not arbitrary free text.",
+    ],
+    metrics: [
+      {
+        label: "Peak lookup rate",
+        value: "46K checks/s",
+        description: "10x headroom over the estimated 4.6K average checks/s.",
+      },
+      {
+        label: "Lookup target",
+        value: "150 ms p95",
+        description:
+          "Includes normalization, cache/index access, and response formatting.",
+      },
+      {
+        label: "Fitment corpus",
+        value: "200M relations",
+        description:
+          "A purpose-built index avoids scanning the transactional catalog.",
+      },
+      {
+        label: "Publication freshness",
+        value: "< 5 min",
+        description:
+          "Target for approved changes to reach the query index under normal load.",
+      },
+    ],
+  },
+  entities: [
+    {
+      name: "CompatibilityContext",
+      fields: [
+        "context_id",
+        "type",
+        "canonical_attributes",
+        "aliases",
+        "market",
+        "user_id",
+      ],
+      notes:
+        "Canonicalize equivalent identifiers; keep user-saved contexts separate from the global taxonomy.",
+    },
+    {
+      name: "Product",
+      fields: ["product_id", "seller_id", "category", "brand", "sku", "status"],
+      notes:
+        "The product is the stable join key; SKU and seller data can change without rewriting every fitment query.",
+    },
+    {
+      name: "FitmentRule",
+      fields: [
+        "product_id",
+        "context_id",
+        "result",
+        "reason_code",
+        "effective_from",
+        "effective_to",
+        "source",
+      ],
+      notes:
+        "Store explicit include/exclude rules and their provenance; exclusions must override broad positive rules.",
+    },
+    {
+      name: "CatalogVersion",
+      fields: [
+        "version_id",
+        "market",
+        "state",
+        "created_at",
+        "published_at",
+        "index_checkpoint",
+      ],
+      notes:
+        "A version makes results reproducible and permits blue/green index publication and rollback.",
+    },
+    {
+      name: "MismatchReport",
+      fields: [
+        "report_id",
+        "product_id",
+        "context_id",
+        "order_id",
+        "version_id",
+        "status",
+      ],
+      notes:
+        "Keep reports append-only and access-controlled; aggregate them for data-quality operations.",
+    },
+  ],
+  apis: [
+    {
+      method: "GET",
+      path: "/v1/contexts/search?q=2018%20civic",
+      contract: "ContextSearchResult[]",
+      notes:
+        "Normalize and rank aliases; require bounded query length and market scope.",
+    },
+    {
+      method: "POST",
+      path: "/v1/compatibility/check",
+      contract:
+        "{ product_ids[], context_id } -> { results[], catalog_version }",
+      notes:
+        "Read cache/index, return compatible/incompatible/unknown plus reason codes; never infer unknown as compatible.",
+    },
+    {
+      method: "GET",
+      path: "/v1/products?context_id=ctx_123",
+      contract: "ProductPage { items, next_cursor, context_id, version }",
+      notes:
+        "Use cursor pagination and filter in the index; authorize seller visibility before returning products.",
+    },
+    {
+      method: "POST",
+      path: "/v1/cart/items",
+      contract: "{ product_id, quantity, context_id, compatibility_version }",
+      notes:
+        "Persist the context and version; synchronously recheck the item before accepting the cart mutation.",
+    },
+    {
+      method: "POST",
+      path: "/v1/catalog/imports",
+      contract: "{ source_uri, market } -> { import_id, status }",
+      notes:
+        "Admin-only, idempotent import; validate schema and quarantine ambiguous rows before publication.",
+    },
+    {
+      method: "POST",
+      path: "/v1/mismatch-reports",
+      contract: "{ product_id, context_id, order_id?, evidence }",
+      notes:
+        "Rate-limit and redact evidence; enqueue review without blocking the shopper response.",
+    },
+  ],
+  dataFlow: [
+    {
+      title: "Capture the compatibility context",
+      description:
+        "The UI accepts a bounded selector or search result, resolves aliases to a canonical context_id, and stores the user's selected context.",
+    },
+    {
+      title: "Check the cache and query index",
+      description:
+        "The service validates the product and context, checks a version-keyed cache, then queries the fitment index for explicit rules and exclusions.",
+    },
+    {
+      title: "Return an explainable result",
+      description:
+        "The response distinguishes compatible, incompatible, and unknown; it includes a reason code, catalog version, and freshness metadata.",
+    },
+    {
+      title: "Carry context into cart",
+      description:
+        "The cart stores context_id and the observed catalog version so the system can explain what was checked and detect changed data.",
+    },
+    {
+      title: "Revalidate before purchase",
+      description:
+        "Checkout performs a fresh authoritative or current-index check. A changed or unknown result pauses purchase for confirmation rather than silently allowing a mismatch.",
+    },
+    {
+      title: "Publish catalog changes asynchronously",
+      description:
+        "Approved changes commit to the catalog and outbox, flow through a durable queue, and are idempotently indexed before a new version is promoted.",
+    },
+    {
+      title: "Measure and correct quality",
+      description:
+        "Mismatch reports, rejected rules, stale-index alerts, and query metrics feed operator workflows without adding work to the user-facing path.",
+    },
+  ],
+  architecture: partsCompatibilityArchitecture,
+  deepDives: [
+    {
+      title: "Fitment modeling and precedence",
+      points: [
+        "Normalize context dimensions so equivalent representations map to one key.",
+        "Represent positive and negative rules explicitly; define precedence for product, model family, trim, and market overrides.",
+        "Keep provenance and effective dates so operators can explain and roll back a decision.",
+      ],
+    },
+    {
+      title: "Indexing and publication consistency",
+      points: [
+        "Use an outbox or change log so a committed catalog change cannot be lost before enqueueing.",
+        "Build affected documents idempotently, checkpoint batches, and promote a complete index version atomically.",
+        "Expose version and age in responses; stale data can be labeled while the system falls back or blocks high-risk checkout decisions.",
+      ],
+    },
+    {
+      title: "Correctness at cart and checkout",
+      points: [
+        "A cached browse result is advisory; cart and checkout must revalidate against the latest acceptable version.",
+        "Persist the context and version used so a changed rule produces an understandable prompt.",
+        "Use an unknown state and manual confirmation path instead of guessing from category, brand, or text similarity.",
+      ],
+    },
+    {
+      title: "Search, cache, and hot keys",
+      points: [
+        "Search the taxonomy separately from fitment evaluation; autocomplete should not scan the relationship corpus.",
+        "Cache popular product/context answers with versioned keys and bounded TTLs.",
+        "Protect against bots and celebrity products with quotas, request coalescing, and pagination limits.",
+      ],
+    },
+    {
+      title: "Data quality and operations",
+      points: [
+        "Quarantine imports with invalid identifiers, overlaps, missing dimensions, or conflicting exclusions.",
+        "Monitor false-positive reports, unknown rates, publication lag, index divergence, and top mismatch products.",
+        "Support replay, partial rebuilds, blue/green index promotion, and rollback to the prior known-good version.",
+      ],
+    },
+  ],
+  tradeoffs: [
+    {
+      title: "Relational rules vs search index",
+      recommendation:
+        "Keep the relational or document store authoritative and project a query-optimized index for high-volume reads.",
+      caution:
+        "A search index alone makes approvals, effective dates, and transactional correctness harder to audit.",
+    },
+    {
+      title: "Precompute all pairs vs evaluate rules",
+      recommendation:
+        "Precompute common normalized relationships and evaluate narrow exceptions at read time.",
+      caution:
+        "Materializing every product-context pair can explode storage and makes broad taxonomy edits expensive.",
+    },
+    {
+      title: "Strong vs eventual browse consistency",
+      recommendation:
+        "Allow eventual consistency for browse, but require a fresh check at cart and checkout.",
+      caution:
+        "Do not describe an index result as guaranteed fit without stating its version and freshness.",
+    },
+    {
+      title: "Single global taxonomy vs market-specific catalogs",
+      recommendation:
+        "Share canonical identifiers where possible and layer market/seller overrides with explicit precedence.",
+      caution:
+        "Global normalization can hide regional differences in model years, regulations, or inventory.",
+    },
+  ],
+  commonMistakes: [
+    "Using free-text matching as the source of truth for compatibility.",
+    "Returning only a boolean and omitting why a part fits or does not fit.",
+    "Treating a stale search index as authoritative during checkout.",
+    "Ignoring exclusions, aliases, market scope, effective dates, and catalog provenance.",
+    "Updating the index directly without an outbox, idempotency, replay, or rollback strategy.",
+  ],
+  followUps: [
+    {
+      question: "What changes if merchants upload millions of rows at once?",
+      answer:
+        "Quarantine and validate in batches, partition work by catalog/market, apply backpressure, and promote one complete version rather than exposing a partially rebuilt index.",
+    },
+    {
+      question: "How do you support both vehicles and electronics?",
+      answer:
+        "Use a typed context taxonomy and shared rule/publishing interfaces; keep domain-specific normalization and precedence modules behind the compatibility service.",
+    },
+    {
+      question: "What if the index is unavailable during checkout?",
+      answer:
+        "Fail closed for high-risk compatibility claims, use the last known-good version only when policy allows, and make the degraded state visible to the user and operators.",
+    },
+    {
+      question: "How would you prove a bad fitment result?",
+      answer:
+        "Persist the catalog/index version, rule provenance, context normalization, and decision reason, then correlate mismatch reports with orders and publication changes.",
+    },
+  ],
+  rubric: [
+    {
+      criterion: "Product boundary",
+      description:
+        "Clarifies context selection, fitment states, cart/checkout behavior, catalog operations, and non-goals.",
+    },
+    {
+      criterion: "Data modeling",
+      description:
+        "Models canonical contexts, aliases, rules, exclusions, precedence, provenance, effective dates, and versions.",
+    },
+    {
+      criterion: "Serving path",
+      description:
+        "Uses bounded APIs, caching, an appropriate read index, pagination, explainable results, and a stated latency target.",
+    },
+    {
+      criterion: "Correctness",
+      description:
+        "Separates browse eventual consistency from checkout revalidation and handles unknown or stale results safely.",
+    },
+    {
+      criterion: "Publication and operations",
+      description:
+        "Includes validation, outbox/events, idempotent indexing, freshness SLOs, replay, rollback, mismatch feedback, and observability.",
+    },
+  ],
+};
+
+const priceAlertArchitecture: GuideArchitecture = {
+  title: "Price alert reference architecture",
+  summary:
+    "A scheduled collection pipeline turns marketplace prices into durable events; a stateful evaluator deduplicates transitions before notification delivery.",
+  layers: [
+    {
+      id: "experience",
+      label: "Experience and control plane",
+      description: "Clients manage products, alert rules, channels, and delivery preferences.",
+      componentIds: ["client", "gateway", "alert-service", "catalog-store"],
+    },
+    {
+      id: "collection",
+      label: "Collection and event plane",
+      description: "Schedulers and workers fetch current prices with provider-aware throttling.",
+      componentIds: ["scheduler", "collector", "price-events", "price-store"],
+    },
+    {
+      id: "evaluation",
+      label: "Evaluation and delivery plane",
+      description: "Rules are evaluated against price changes and delivered with retry and idempotency controls.",
+      componentIds: ["evaluator", "notification-service", "delivery-store", "monitoring"],
+    },
+  ],
+  keyPaths: [
+    {
+      id: "alert-creation",
+      label: "Alert creation path",
+      description: "Client → gateway → alert service → durable catalog store.",
+      componentIds: ["client", "gateway", "alert-service", "catalog-store"],
+    },
+    {
+      id: "price-evaluation",
+      label: "Price evaluation path",
+      description: "Scheduler → collectors → price events → evaluator → notification delivery.",
+      componentIds: ["scheduler", "collector", "price-events", "evaluator", "notification-service"],
+    },
+  ],
+  components: [
+    { id: "client", type: "client", componentId: "web-app", label: "Web / Mobile Clients", description: "Users create alerts, view price history, and manage notification preferences.", position: { x: 0, y: 240 }, properties: { traffic: "Alert CRUD and history reads" } },
+    { id: "gateway", type: "api-gateway", componentId: "api-gateway", label: "API Gateway", description: "Authenticates users, validates product identifiers and applies quotas.", position: { x: 420, y: 240 }, properties: { protection: "Auth, validation, rate limits" } },
+    { id: "alert-service", type: "application-server", componentId: "backend-server", label: "Alert Service", description: "Stores alert rules and exposes product, history, and preference APIs.", position: { x: 840, y: 240 }, properties: { consistency: "Conditional writes for rule state" } },
+    { id: "catalog-store", type: "database", componentId: "database", label: "Alert Catalog", description: "Durable source of truth for users, products, rules, preferences, and alert state.", position: { x: 1260, y: 240 }, properties: { accessPattern: "User rules and product subscriptions" } },
+    { id: "scheduler", type: "microservice", componentId: "message-dispatcher", label: "Collection Scheduler", description: "Creates provider-aware collection work for due products and reprioritizes hot demand.", position: { x: 840, y: 620 }, properties: { policy: "Adaptive cadence and backoff" } },
+    { id: "collector", type: "microservice", componentId: "processing-worker", label: "Price Collectors", description: "Fetch current prices, normalize offers, and respect marketplace limits.", position: { x: 1260, y: 620 }, properties: { isolation: "Per-provider quotas and retries" } },
+    { id: "price-events", type: "queue", componentId: "message-broker", label: "Price Event Stream", description: "Durably buffers normalized observations so evaluation can scale independently.", position: { x: 1680, y: 620 }, properties: { delivery: "At-least-once with partitioning" } },
+    { id: "price-store", type: "database", componentId: "database", label: "Price History Store", description: "Keeps the latest observation and compact historical buckets for charts and audits.", position: { x: 1680, y: 120 }, properties: { accessPattern: "Latest price by product and time buckets" } },
+    { id: "evaluator", type: "microservice", componentId: "stream-processor", label: "Rule Evaluator", description: "Loads active rules, compares old and new state, and records a notification decision.", position: { x: 2100, y: 620 }, properties: { correctness: "Transition dedupe and cooldowns" } },
+    { id: "notification-service", type: "notification-service", componentId: "notification-service", label: "Notification Delivery", description: "Sends push, email, or SMS through providers with retries and channel policy.", position: { x: 2520, y: 620 }, properties: { guarantee: "Idempotent, observable delivery" } },
+    { id: "delivery-store", type: "database", componentId: "database", label: "Delivery Ledger", description: "Records notification keys, attempts, provider responses, and user-visible status.", position: { x: 2520, y: 120 }, properties: { key: "rule_id + price_version + channel" } },
+    { id: "monitoring", type: "monitoring", componentId: "monitoring", label: "Monitoring", description: "Tracks freshness, provider errors, queue lag, evaluation rate, and delivery success.", position: { x: 2940, y: 260 }, properties: { signals: "Freshness, lag, errors, duplicates" } },
+  ],
+  connections: [
+    { id: "client-gateway", source: "client", target: "gateway", type: "http", label: "HTTPS", description: "Create or manage an alert." },
+    { id: "gateway-alert", source: "gateway", target: "alert-service", type: "api-call", label: "API", description: "Validate and route alert operations." },
+    { id: "alert-catalog", source: "alert-service", target: "catalog-store", type: "database-connection", label: "Persist", description: "Store rules, preferences, and product subscriptions." },
+    { id: "scheduler-collector", source: "scheduler", target: "collector", type: "message-queue", label: "Collection job", description: "Dispatch due product fetches with provider-aware limits." },
+    { id: "collector-events", source: "collector", target: "price-events", type: "event-stream", label: "Price observed", description: "Publish normalized observations asynchronously." },
+    { id: "collector-history", source: "collector", target: "price-store", type: "database-connection", label: "Latest + history", description: "Update current state and append a compact history point." },
+    { id: "events-evaluator", source: "price-events", target: "evaluator", type: "event-stream", label: "Consume", description: "Evaluate each observation independently and idempotently." },
+    { id: "evaluator-catalog", source: "evaluator", target: "catalog-store", type: "database-connection", label: "Load rules", description: "Read active rules and update their trigger/cooldown state." },
+    { id: "evaluator-delivery", source: "evaluator", target: "notification-service", type: "message-queue", label: "Notify", description: "Create a deduplicated delivery request." },
+    { id: "evaluator-ledger", source: "evaluator", target: "delivery-store", type: "database-connection", label: "Decision", description: "Persist the notification key before delivery." },
+    { id: "delivery-ledger", source: "notification-service", target: "delivery-store", type: "database-connection", label: "Attempt", description: "Record provider attempts and final status." },
+    { id: "service-monitoring", source: "evaluator", target: "monitoring", type: "event-stream", label: "Metrics", description: "Emit freshness, evaluation, and delivery signals." },
+  ],
+};
+
+const priceAlertGuide: ProblemGuide = {
+  prompt: {
+    brief: "Design a service where users watch products across marketplaces and receive one timely notification when a price rule is met, despite stale data, provider limits, retries, and traffic spikes.",
+    successSignals: [
+      "Separate price collection freshness from alert evaluation and notification delivery.",
+      "Make marketplace throttling, retries, and adaptive polling explicit.",
+      "Use durable state and idempotency so at-least-once events do not spam users.",
+      "Define what a price means when variants, sellers, currencies, shipping, or taxes differ.",
+    ],
+  },
+  requirements: {
+    functional: [
+      "Create, pause, resume, and delete alerts for a product or offer.",
+      "Support target-price, percentage-drop, and back-in-stock rules with a cooldown.",
+      "Collect prices from multiple providers and show current price plus history.",
+      "Notify through user-selected channels and expose delivery status.",
+      "Allow users to unsubscribe, change cadence, and export or delete their data.",
+    ],
+    nonFunctional: [
+      "Deliver a triggered alert within 1 minute after a qualifying observation is accepted.",
+      "Never lose a committed alert or price observation; duplicate notifications are unacceptable.",
+      "Respect provider rate limits, robots/terms constraints, user quotas, and notification opt-outs.",
+      "Tolerate provider outages and stale prices without presenting stale data as current.",
+      "Keep alert CRUD responsive even while collection and delivery backlogs grow.",
+    ],
+    scaleAssumptions: [
+      "10 million registered users, 2 million daily active users, and 50 million active alerts.",
+      "100 million product observations per day across providers, with a 10x burst during sales.",
+      "A product is collected every 15 minutes by default; hot products can receive shorter cadences within quota.",
+      "Assume 5% of observations qualify for evaluation and 1% result in a notification after cooldowns.",
+    ],
+    metrics: [
+      { label: "Observation rate", value: "~1.2K/s avg", description: "100M daily observations; provision collectors and queues for ~12K/s bursts." },
+      { label: "Active rules", value: "50M", description: "Rules drive indexed evaluation lookups; do not scan every user on each price event." },
+      { label: "Notification rate", value: "~12/s avg", description: "At 1% of observations, with campaign spikes and provider-specific quotas." },
+      { label: "Freshness target", value: "≤15 min", description: "Default product freshness; show observed_at and provider status with every price." },
+    ],
+  },
+  entities: [
+    { name: "Product / Offer", fields: ["product_id", "provider", "seller_id", "variant", "currency", "availability"], notes: "Normalize identity and offer dimensions before comparing prices; a product page may have many sellers and variants." },
+    { name: "AlertRule", fields: ["rule_id", "user_id", "product_id", "condition", "threshold", "cooldown_until", "status"], notes: "Index active rules by product_id and status so one observation finds only relevant rules." },
+    { name: "PriceObservation", fields: ["observation_id", "offer_id", "price", "shipping", "tax", "observed_at", "source_version"], notes: "Persist provider timestamp and freshness; never silently overwrite a newer observation with a late response." },
+    { name: "NotificationLedger", fields: ["dedupe_key", "rule_id", "channel", "attempts", "provider_id", "status"], notes: "The dedupe key makes retries safe and lets users see whether a triggered alert was delivered." },
+  ],
+  apis: [
+    { method: "POST", path: "/v1/alerts", contract: "{ productId, condition, threshold, channels, cooldown } -> { ruleId, status }", notes: "Authenticate, normalize the product/offer, validate thresholds and consent, then write idempotently." },
+    { method: "GET", path: "/v1/products/{productId}/price", contract: "{ current, observedAt, freshness, providerStatus, history }", notes: "Return the latest accepted observation with explicit freshness and currency/offer semantics." },
+    { method: "PATCH", path: "/v1/alerts/{ruleId}", contract: "{ threshold?, cadence?, channels?, status? } -> updated rule", notes: "Authorize the owner and version the rule so an in-flight evaluation uses a known snapshot." },
+    { method: "POST", path: "/internal/price-observations", contract: "{ offer, price, observedAt, sourceVersion, requestId } -> { accepted, eventId }", notes: "Provider adapters authenticate internally; reject late or malformed observations and dedupe requestId." },
+  ],
+  dataFlow: [
+    { title: "Create the alert", description: "The API validates the rule, resolves the product identity, stores the rule and preferences, and returns immediately without waiting for a price fetch." },
+    { title: "Schedule collection", description: "A scheduler chooses due products using cadence, demand, freshness, provider quotas, and exponential backoff, then dispatches bounded collection jobs." },
+    { title: "Accept a price observation", description: "A provider adapter normalizes currency, variant, seller, shipping, and availability; it rejects late data, stores the latest version, and publishes a durable price event." },
+    { title: "Evaluate the rule", description: "The evaluator loads only active rules for the product, compares the previous accepted state, applies cooldowns, and records a deduplicated notification decision." },
+    { title: "Deliver asynchronously", description: "Channel workers send notifications with provider retries, record attempts in the ledger, and expose failure or opt-out status without blocking collection." },
+  ],
+  architecture: priceAlertArchitecture,
+  deepDives: [
+    { title: "Collection under provider limits", points: ["Treat each provider as a quota domain with concurrency, request, and retry budgets.", "Use adaptive cadence: prioritize active alerts and recently viewed products, but cap per-user and per-provider cost.", "Back off on 429s and outages, preserve next_due_at, and surface freshness rather than fabricating a current price."] },
+    { title: "Correct price semantics", points: ["Define whether the threshold uses item price, delivered price, or total price including shipping and tax.", "Normalize currency with the observation timestamp and keep seller, variant, and availability dimensions in the identity.", "Reject out-of-order observations using provider timestamps and a monotonic source version where available."] },
+    { title: "Exactly-once user experience", points: ["The pipeline can be at-least-once, but the notification ledger must make the user-visible effect idempotent.", "Build dedupe_key from rule, qualifying price version, and channel; write it conditionally before sending.", "Use an outbox or transactional handoff when a rule state change and notification decision must be committed together."] },
+    { title: "Freshness and failure handling", points: ["Measure freshness by provider, product, and alert population; stale data should be visible in the API and UI.", "Keep CRUD on separate capacity from collectors and notification workers.", "After recovery, drain by priority with jitter so a provider outage does not create a thundering herd."] },
+  ],
+  tradeoffs: [
+    { title: "Polling vs provider webhooks", recommendation: "Use webhooks where a provider offers trustworthy price events, with polling as a reconciliation and fallback path.", caution: "Polling is broadly compatible but expensive and bounded by provider quotas; webhooks introduce delivery, authenticity, and coverage gaps." },
+    { title: "Evaluate on every observation vs pre-index rules", recommendation: "Index active rules by normalized product/offer key and evaluate only the affected rules.", caution: "A broad product identity can create hot partitions; shard hot keys or use a two-stage product-to-rule index." },
+    { title: "Immediate vs digest notifications", recommendation: "Offer immediate alerts for high-value thresholds and digests for noisy percentage or inventory changes.", caution: "Immediate delivery increases provider cost and spam risk; digests add latency and require a clear pending-state model." },
+  ],
+  commonMistakes: ["Scanning all 50M rules for every price update.", "Ignoring variant, seller, currency, shipping, tax, and availability semantics.", "Retrying collection forever without honoring provider quotas or backoff.", "Sending before recording a dedupe key, causing duplicate notifications on retries.", "Showing a stale observation as current or hiding provider outage state."],
+  followUps: [
+    { question: "What if a sale causes millions of alerts at once?", answer: "Partition evaluations, apply per-user and channel quotas, enqueue notifications durably, prioritize users with immediate delivery, and fall back to digest or delayed status when provider capacity is exhausted." },
+    { question: "How would you support a product with many offers?", answer: "Model product identity separately from offer identity, define the user's seller/variant policy, and evaluate the cheapest qualifying offer only after currency and delivered-price normalization." },
+    { question: "How do you handle a provider changing its page format?", answer: "Version adapters, validate parsed fields, quarantine suspicious changes, monitor extraction quality, and keep the last known observation labeled stale until the adapter is repaired." },
+    { question: "How would you guarantee users can delete their data?", answer: "Separate operational identifiers from notification payloads, delete or anonymize user-owned rules and delivery history through a tracked workflow, and honor provider retention limits." },
+  ],
+  rubric: [
+    { criterion: "Product semantics", description: "Clarifies what is watched, what price qualifies, freshness, variants, sellers, currencies, and notification behavior." },
+    { criterion: "Collection design", description: "Handles provider quotas, adaptive polling, retries, backoff, parser failures, and stale data explicitly." },
+    { criterion: "Event processing", description: "Uses durable events, indexed rule lookup, out-of-order protection, cooldowns, and bounded partitions." },
+    { criterion: "User-visible correctness", description: "Makes notification decisions idempotent, records delivery state, and prevents duplicate or opt-out violations." },
+    { criterion: "Operations and scale", description: "Separates capacity domains and measures freshness, queue lag, provider health, evaluation throughput, and delivery success." },
+  ],
+};
+
 const PROBLEM_GUIDES: Record<string, ProblemGuide> = {
   "url-shortener": urlShortenerGuide,
+  "document-management-system": documentManagementGuide,
+  "job-scheduler": jobSchedulerGuide,
+  "design-a-parts-compatibility-feature-for-an-ecommerce-site":
+    partsCompatibilityGuide,
+  "design-a-price-alert-system": priceAlertGuide,
 };
 
 export const getProblemGuide = (slug: string): ProblemGuide | null =>
@@ -544,4 +2687,15 @@ export const getProblemGuide = (slug: string): ProblemGuide | null =>
 export const getGuideArchitecture = (slug: string): GuideArchitecture | null =>
   getProblemGuide(slug)?.architecture ?? null;
 
-export { urlShortenerArchitecture, urlShortenerGuide };
+export {
+  documentManagementArchitecture,
+  documentManagementGuide,
+  urlShortenerArchitecture,
+  urlShortenerGuide,
+  jobSchedulerArchitecture,
+  jobSchedulerGuide,
+  partsCompatibilityArchitecture,
+  partsCompatibilityGuide,
+  priceAlertArchitecture,
+  priceAlertGuide,
+};

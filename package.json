@@ -50,6 +50,7 @@
     "react-redux": "^9.1.0",
     "react-router-dom": "^7.18.2",
     "remark-gfm": "^4.0.0",
+    "rough-notation": "^0.5.1",
     "y-websocket": "^3.0.0",
     "yjs": "^13.6.27",
     "zustand": "^4.4.7"

@@ -108,22 +108,41 @@ const toFlowNodes = (architecture: GuideArchitecture): Node[] =>
   });
 
 const toFlowEdges = (connections: SystemConnection[]): Edge[] =>
-  connections.map((connection) => ({
-    id: connection.id,
-    source: connection.source,
-    sourceHandle: "right",
-    target: connection.target,
-    targetHandle: "left",
-    type: "customEdge",
-    data: {
-      label: connection.label || connection.type,
-      hasLabel: Boolean(connection.label),
-      description: connection.description,
-      connectionType: connection.type,
-      readOnly: true,
-      pathType: "smoothstep",
-    },
-  }));
+  connections.map((connection) => {
+    const properties = connection.properties ?? {};
+
+    return {
+      id: connection.id,
+      source: connection.source,
+      sourceHandle:
+        typeof properties.sourceHandle === "string"
+          ? properties.sourceHandle
+          : "right",
+      target: connection.target,
+      targetHandle:
+        typeof properties.targetHandle === "string"
+          ? properties.targetHandle
+          : "left",
+      type: "customEdge",
+      data: {
+        label: connection.label || connection.type,
+        hasLabel: Boolean(connection.label),
+        description: connection.description,
+        connectionType: connection.type,
+        readOnly: true,
+        pathType: properties.pathType === "bezier" ? "bezier" : "smoothstep",
+        labelPosition:
+          properties.labelPosition === "source" ||
+          properties.labelPosition === "target"
+            ? properties.labelPosition
+            : "center",
+        labelOffset:
+          typeof properties.labelOffset === "number"
+            ? properties.labelOffset
+            : undefined,
+      },
+    };
+  });
 
 const ArchitectureFlow: React.FC<{
   nodes: Node[];
@@ -137,10 +156,7 @@ const ArchitectureFlow: React.FC<{
     [edges, hoveredEdgeId],
   );
   const highlightedNodeIds = useMemo(
-    () =>
-      new Set(
-        hoveredEdge ? [hoveredEdge.source, hoveredEdge.target] : [],
-      ),
+    () => new Set(hoveredEdge ? [hoveredEdge.source, hoveredEdge.target] : []),
     [hoveredEdge],
   );
   const displayNodes = useMemo(
@@ -168,7 +184,7 @@ const ArchitectureFlow: React.FC<{
   );
 
   return (
-    <div className="relative h-[28rem] min-h-[28rem] w-full overflow-hidden rounded-xl border border-theme/10 bg-[var(--bg)] sm:h-[34rem] sm:min-h-[34rem] lg:h-[38rem] lg:min-h-[38rem] xl:h-[42rem] xl:min-h-[42rem] 2xl:h-[46rem] 2xl:min-h-[46rem]">
+    <div className="relative h-[28rem] min-h-[28rem] w-full overflow-hidden border border-theme/10 bg-[var(--bg)] sm:h-[34rem] sm:min-h-[34rem] lg:h-[38rem] lg:min-h-[38rem] xl:h-[42rem] xl:min-h-[42rem] 2xl:h-[46rem] 2xl:min-h-[46rem]">
       <ReactFlow
         className="public-architecture-canvas"
         nodes={displayNodes}
@@ -237,9 +253,9 @@ const SelectionPanel: React.FC<{
     );
 
     return (
-      <div className="h-full rounded-xl border border-theme/10 bg-[var(--bg)] p-5">
+      <div className="h-full border border-theme/10 bg-[var(--bg)] p-5">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-lg bg-[var(--brand)]/10 p-2 text-[var(--brand)]">
+          <div className="mt-0.5 bg-[var(--brand)]/10 p-2 text-[var(--brand)]">
             <MdAccountTree aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -281,9 +297,9 @@ const SelectionPanel: React.FC<{
     : null;
 
   return (
-    <div className="h-full rounded-xl border border-theme/10 bg-[var(--bg)] p-5">
+    <div className="h-full border border-theme/10 bg-[var(--bg)] p-5">
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-lg bg-[var(--brand)]/10 p-2 text-[var(--brand)]">
+        <div className="mt-0.5 bg-[var(--brand)]/10 p-2 text-[var(--brand)]">
           <MdArrowForward aria-hidden="true" />
         </div>
         <div>
@@ -324,7 +340,7 @@ const PublicArchitectureCanvas: React.FC<{
   const [selection, setSelection] = useState<Selection>(null);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-theme/10 bg-[var(--surface)] shadow-[0_16px_40px_rgba(17,24,39,0.08)]">
+    <section className="overflow-hidden border border-theme/10 bg-[var(--surface)] shadow-[0_16px_40px_rgba(17,24,39,0.08)]">
       <header className="border-b border-theme/10 px-5 py-6 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="min-w-0 flex-1">
@@ -366,25 +382,15 @@ const PublicArchitectureCanvas: React.FC<{
           />
         </ReactFlowProvider>
 
-        <div
-          className={`mt-3 ${
-            selection
-              ? "lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-3"
-              : ""
-          }`}
-        >
-          <div className="rounded-xl border border-theme/10 bg-[var(--bg)] px-4 py-3 text-sm text-muted">
-            <span className="font-semibold text-theme">How to read it:</span>{" "}
-            follow the synchronous path from left to right, then inspect the
-            asynchronous analytics path below it. Select any component or
-            connection for details.
-          </div>
-          {selection && (
-            <div className="mt-3 lg:mt-0">
-              <SelectionPanel
-                architecture={architecture}
-                selection={selection}
-              />
+        <div className="mt-3">
+          {selection ? (
+            <SelectionPanel architecture={architecture} selection={selection} />
+          ) : (
+            <div className="border border-theme/10 bg-[var(--bg)] px-4 py-3 text-sm text-muted">
+              <span className="font-semibold text-theme">How to read it:</span>{" "}
+              follow the primary request path from left to right, then inspect
+              the asynchronous paths below it. Select any component or
+              connection for details.
             </div>
           )}
         </div>
@@ -402,7 +408,7 @@ const PublicArchitectureCanvas: React.FC<{
           <button
             type="button"
             onClick={onPractice}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+            className="inline-flex items-center justify-center gap-2 bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
           >
             Start designing <MdArrowForward aria-hidden="true" />
           </button>
