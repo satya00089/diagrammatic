@@ -10,12 +10,12 @@
   },
   {
     "slug": "job-scheduler",
-    "title": "Design a Job Scheduler",
-    "description": "Design a distributed job scheduling system to execute tasks at specified times or intervals.",
-    "difficulty": "Easy",
-    "category": "Infrastructure",
-    "estimated_time": "30-45 minutes",
-    "tags": ["scheduling", "distributed-systems", "background-jobs"]
+    "title": "Distributed Job Scheduler",
+    "description": "Design a reliable job scheduling service that runs one-time and recurring jobs at scale with retries, deduplication, and observable execution.",
+    "difficulty": "Hard",
+    "category": "Distributed Systems",
+    "estimated_time": "60-90 minutes",
+    "tags": ["scheduling", "queues", "reliability", "distributed-systems"]
   },
   {
     "slug": "twitter-system-design",

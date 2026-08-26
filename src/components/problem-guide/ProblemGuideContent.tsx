@@ -150,16 +150,24 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
 }) => {
   const isDocumentManagement = problemSlug === "document-management-system";
   const isUrlShortener = problemSlug === "url-shortener";
-  const isAnnotatedProblem = isDocumentManagement || isUrlShortener;
+  const isJobScheduler = problemSlug === "job-scheduler";
+  const isAnnotatedProblem =
+    isDocumentManagement || isUrlShortener || isJobScheduler;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
-    : "Redirect traffic";
+    : isUrlShortener
+      ? "Redirect traffic"
+      : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
-    : "Resolve the redirect";
+    : isUrlShortener
+      ? "Resolve the redirect"
+      : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
-    : "Emit click telemetry";
+    : isUrlShortener
+      ? "Emit click telemetry"
+      : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
@@ -255,7 +263,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
             Interview prompt
           </h2>
         </div>
-        <p className="mt-4 max-w-[70ch] text-lg leading-8 text-theme">
+        <p className="mt-4 text-lg leading-8 text-theme">
           <span
             ref={isAnnotatedProblem ? promptRef : undefined}
             className="inline-block max-w-full px-2 py-1"
@@ -365,7 +373,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           title="Key entities"
           description="Model the core entities around their access patterns, and keep high-volume or asynchronous state separate where it improves the design."
         />
-        <div className="mt-7 overflow-x-auto rounded-2xl border border-theme/10">
+        <div className="mt-7 overflow-x-auto border border-theme/10">
           <table className="min-w-[46rem] w-full border-collapse text-left text-sm">
             <caption className="sr-only">
               System entities, fields, and design notes
@@ -399,7 +407,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                       </code>
                     ))}
                   </td>
-                  <td className="max-w-md px-5 py-5 leading-6 text-muted">
+                  <td className="px-5 py-5 leading-6 text-muted">
                     {entity.notes}
                   </td>
                 </tr>
@@ -419,7 +427,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           title="API / interface"
           description="Keep the external contract small, then state the validation, authorization, and consistency behavior behind each endpoint."
         />
-        <div className="mt-7 overflow-x-auto rounded-2xl border border-theme/10">
+        <div className="mt-7 overflow-x-auto border border-theme/10">
           <table className="min-w-[48rem] w-full border-collapse text-left text-sm">
             <caption className="sr-only">
               System API contracts and design notes
@@ -441,15 +449,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
               {guide.apis.map((api) => (
                 <tr key={`${api.method}-${api.path}`} className="align-top">
                   <th scope="row" className="px-5 py-5">
-                    <span className="mr-2 inline-flex rounded-md bg-[var(--brand)]/10 px-2 py-1 text-xs font-bold text-[var(--brand)]">
+                    <span className="mr-2 inline-flex bg-[var(--brand)]/10 px-2 py-1 text-xs font-bold text-[var(--brand)]">
                       {api.method}
                     </span>
                     <code className="font-mono text-[0.82rem]">{api.path}</code>
                   </th>
-                  <td className="max-w-sm px-5 py-5 font-mono text-[0.82rem] leading-6 text-muted">
+                  <td className="px-5 py-5 font-mono text-[0.82rem] leading-6 text-muted">
                     {api.contract}
                   </td>
-                  <td className="max-w-md px-5 py-5 leading-6 text-muted">
+                  <td className="px-5 py-5 leading-6 text-muted">
                     {api.notes}
                   </td>
                 </tr>
@@ -646,9 +654,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
               className="grid gap-2 py-6 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-8"
             >
               <dt className="font-bold">{item.criterion}</dt>
-              <dd className="max-w-[66ch] leading-7 text-muted">
-                {item.description}
-              </dd>
+              <dd className="leading-7 text-muted">{item.description}</dd>
             </div>
           ))}
         </dl>
