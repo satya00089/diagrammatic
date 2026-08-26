@@ -332,6 +332,7 @@ const ProblemLanding: React.FC = () => {
                   <ProblemGuideContent
                     guide={guide}
                     onPractice={startProblem}
+                    problemSlug={slug}
                   />
                 ) : (
                   <>
