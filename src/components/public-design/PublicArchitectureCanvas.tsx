@@ -108,22 +108,41 @@ const toFlowNodes = (architecture: GuideArchitecture): Node[] =>
   });
 
 const toFlowEdges = (connections: SystemConnection[]): Edge[] =>
-  connections.map((connection) => ({
-    id: connection.id,
-    source: connection.source,
-    sourceHandle: "right",
-    target: connection.target,
-    targetHandle: "left",
-    type: "customEdge",
-    data: {
-      label: connection.label || connection.type,
-      hasLabel: Boolean(connection.label),
-      description: connection.description,
-      connectionType: connection.type,
-      readOnly: true,
-      pathType: "smoothstep",
-    },
-  }));
+  connections.map((connection) => {
+    const properties = connection.properties ?? {};
+
+    return {
+      id: connection.id,
+      source: connection.source,
+      sourceHandle:
+        typeof properties.sourceHandle === "string"
+          ? properties.sourceHandle
+          : "right",
+      target: connection.target,
+      targetHandle:
+        typeof properties.targetHandle === "string"
+          ? properties.targetHandle
+          : "left",
+      type: "customEdge",
+      data: {
+        label: connection.label || connection.type,
+        hasLabel: Boolean(connection.label),
+        description: connection.description,
+        connectionType: connection.type,
+        readOnly: true,
+        pathType: properties.pathType === "bezier" ? "bezier" : "smoothstep",
+        labelPosition:
+          properties.labelPosition === "source" ||
+          properties.labelPosition === "target"
+            ? properties.labelPosition
+            : "center",
+        labelOffset:
+          typeof properties.labelOffset === "number"
+            ? properties.labelOffset
+            : undefined,
+      },
+    };
+  });
 
 const ArchitectureFlow: React.FC<{
   nodes: Node[];
@@ -137,10 +156,7 @@ const ArchitectureFlow: React.FC<{
     [edges, hoveredEdgeId],
   );
   const highlightedNodeIds = useMemo(
-    () =>
-      new Set(
-        hoveredEdge ? [hoveredEdge.source, hoveredEdge.target] : [],
-      ),
+    () => new Set(hoveredEdge ? [hoveredEdge.source, hoveredEdge.target] : []),
     [hoveredEdge],
   );
   const displayNodes = useMemo(
@@ -375,9 +391,9 @@ const PublicArchitectureCanvas: React.FC<{
         >
           <div className="rounded-xl border border-theme/10 bg-[var(--bg)] px-4 py-3 text-sm text-muted">
             <span className="font-semibold text-theme">How to read it:</span>{" "}
-            follow the synchronous path from left to right, then inspect the
-            asynchronous analytics path below it. Select any component or
-            connection for details.
+            follow the primary request path from left to right, then inspect the
+            asynchronous paths below it. Select any component or connection for
+            details.
           </div>
           {selection && (
             <div className="mt-3 lg:mt-0">

@@ -9,12 +9,15 @@ import {
 } from "@xyflow/react";
 
 export type EdgePathType = "bezier" | "straight" | "step" | "smoothstep";
+export type EdgeLabelPosition = "source" | "center" | "target";
 
 type CustomEdgeData = {
   label?: string;
   hasLabel?: boolean;
   description?: string;
   pathType?: EdgePathType;
+  labelPosition?: EdgeLabelPosition;
+  labelOffset?: number;
   color?: string;
   strokeWidth?: number;
   animated?: boolean;
@@ -114,6 +117,144 @@ const computeEdgeParams = (
     targetY,
   });
   return { edgePath, centerX, centerY };
+};
+
+type EdgePoint = { x: number; y: number };
+
+const getPathPoints = (edgePath: string): EdgePoint[] => {
+  const points: EdgePoint[] = [];
+  const commandPattern =
+    /([MLQ])\s*(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+)(?:\s+(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+))?/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = commandPattern.exec(edgePath)) !== null) {
+    const isQuadratic = match[1] === "Q";
+    const x = Number(isQuadratic ? match[4] : match[2]);
+    const y = Number(isQuadratic ? match[5] : match[3]);
+
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      points.push({ x, y });
+    }
+  }
+
+  return points;
+};
+
+const getShiftedLabelCenter = ({
+  edgePath,
+  centerX,
+  centerY,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  labelShift,
+}: {
+  edgePath: string;
+  centerX: number;
+  centerY: number;
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  labelShift: number;
+}) => {
+  if (labelShift === 0) return { x: centerX, y: centerY };
+
+  const points = getPathPoints(edgePath);
+  let totalPathLength = 0;
+  const segments = points.slice(1).map((point, index) => {
+    const start = points[index];
+    const deltaX = point.x - start.x;
+    const deltaY = point.y - start.y;
+    const length = Math.hypot(deltaX, deltaY);
+    const pathStart = totalPathLength;
+    totalPathLength += length;
+
+    return {
+      start,
+      end: point,
+      deltaX,
+      deltaY,
+      length,
+      pathStart,
+    };
+  });
+
+  const pathSegments = segments.filter((segment) => segment.length > 0);
+  if (pathSegments.length > 0) {
+    let closestDistance = Number.POSITIVE_INFINITY;
+    let centerPathDistance = 0;
+
+    for (const segment of pathSegments) {
+      const lengthSquared = segment.length ** 2;
+      const projectedProgress = Math.min(
+        Math.max(
+          ((centerX - segment.start.x) * segment.deltaX +
+            (centerY - segment.start.y) * segment.deltaY) /
+            lengthSquared,
+          0,
+        ),
+        1,
+      );
+      const projectedX = segment.start.x + segment.deltaX * projectedProgress;
+      const projectedY = segment.start.y + segment.deltaY * projectedProgress;
+      const distanceToCenter = Math.hypot(
+        projectedX - centerX,
+        projectedY - centerY,
+      );
+
+      if (distanceToCenter < closestDistance) {
+        closestDistance = distanceToCenter;
+        centerPathDistance =
+          segment.pathStart + segment.length * projectedProgress;
+      }
+    }
+
+    const targetPathDistance =
+      labelShift > 0
+        ? centerPathDistance +
+          (totalPathLength - centerPathDistance) * Math.abs(labelShift)
+        : centerPathDistance * (1 - Math.abs(labelShift));
+    let remainingDistance = targetPathDistance;
+
+    for (const segment of pathSegments) {
+      if (remainingDistance <= segment.length) {
+        const progress = remainingDistance / segment.length;
+        return {
+          x: segment.start.x + segment.deltaX * progress,
+          y: segment.start.y + segment.deltaY * progress,
+        };
+      }
+      remainingDistance -= segment.length;
+    }
+
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    return { x: lastSegment.end.x, y: lastSegment.end.y };
+  }
+
+  const directDeltaX = targetX - sourceX;
+  const directDeltaY = targetY - sourceY;
+  const directLengthSquared = directDeltaX ** 2 + directDeltaY ** 2;
+  if (directLengthSquared === 0) return { x: centerX, y: centerY };
+
+  const centerProgress = Math.min(
+    Math.max(
+      ((centerX - sourceX) * directDeltaX +
+        (centerY - sourceY) * directDeltaY) /
+        directLengthSquared,
+      0,
+    ),
+    1,
+  );
+  const endpointProgress = labelShift > 0 ? 1 : 0;
+  const progress =
+    centerProgress + (endpointProgress - centerProgress) * Math.abs(labelShift);
+
+  return {
+    x: sourceX + directDeltaX * progress,
+    y: sourceY + directDeltaY * progress,
+  };
 };
 
 const EdgeLabelContent: React.FC<{
@@ -343,6 +484,26 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     isBiDirectionEdge,
     pathType,
   );
+  const labelOffset = Math.min(
+    Math.max(edgeData?.labelOffset ?? 0.18, 0),
+    0.95,
+  );
+  const labelShift =
+    edgeData?.labelPosition === "source"
+      ? -labelOffset
+      : edgeData?.labelPosition === "target"
+        ? labelOffset
+        : 0;
+  const labelCenter = getShiftedLabelCenter({
+    edgePath,
+    centerX,
+    centerY,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    labelShift,
+  });
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
     if (readOnly) return;
@@ -438,8 +599,8 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
 
       {/* Label area — foreignObject sized generously; inner div centres content */}
       <foreignObject
-        x={centerX - 80}
-        y={centerY - 20}
+        x={labelCenter.x - 80}
+        y={labelCenter.y - 20}
         width={160}
         height={40}
         style={{ overflow: "visible" }}

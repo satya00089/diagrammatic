@@ -243,12 +243,12 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
       <SectionHeading
         id="key-entities"
         title="Key entities"
-        description="Model the redirect lookup separately from high-volume analytics so each storage choice follows a clear access pattern."
+        description="Model the core entities around their access patterns, and keep high-volume or asynchronous state separate where it improves the design."
       />
       <div className="mt-7 overflow-x-auto rounded-2xl border border-theme/10">
         <table className="min-w-[46rem] w-full border-collapse text-left text-sm">
           <caption className="sr-only">
-            URL shortener entities, fields, and design notes
+            System entities, fields, and design notes
           </caption>
           <thead className="bg-[var(--surface)]">
             <tr>
@@ -302,7 +302,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
       <div className="mt-7 overflow-x-auto rounded-2xl border border-theme/10">
         <table className="min-w-[48rem] w-full border-collapse text-left text-sm">
           <caption className="sr-only">
-            URL shortener API contracts and design notes
+            System API contracts and design notes
           </caption>
           <thead className="bg-[var(--surface)]">
             <tr>
@@ -360,9 +360,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
             </span>
             <div>
               <h3 className="text-lg font-bold">{step.title}</h3>
-              <p className="mt-2 leading-7 text-muted">
-                {step.description}
-              </p>
+              <p className="mt-2 leading-7 text-muted">{step.description}</p>
             </div>
           </li>
         ))}
@@ -377,7 +375,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
       <SectionHeading
         id="high-level-design"
         title="High-level design"
-        description="Follow the synchronous redirect path from left to right, then inspect the asynchronous analytics path below it."
+        description="Follow the primary request path from left to right, then inspect the asynchronous paths below it."
       />
       <div className="mt-7">
         <PublicArchitectureCanvas
