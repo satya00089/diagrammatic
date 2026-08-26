@@ -142,6 +142,12 @@ const CAPABILITY_DELAYS = [
 const getDelayClass = (delays: string[], index: number) =>
   delays[index] ?? delays.at(-1);
 
+const getRandomUnit = () => {
+  const values = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(values);
+  return values[0] / 2 ** 32;
+};
+
 const pluralize = (count: number, singular: string) =>
   `${count} ${singular}${count === 1 ? "" : "s"}`;
 
@@ -503,10 +509,10 @@ const Home: React.FC = () => {
 
     resize();
     particles = Array.from({ length: N }, () => ({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.55,
-      vy: (Math.random() - 0.5) * 0.55,
+      x: getRandomUnit() * W,
+      y: getRandomUnit() * H,
+      vx: (getRandomUnit() - 0.5) * 0.55,
+      vy: (getRandomUnit() - 0.5) * 0.55,
     }));
     rafId = requestAnimationFrame(frame);
 
@@ -1499,7 +1505,7 @@ const Home: React.FC = () => {
                       {feature.description}
                     </p>
                     <div className="inline-flex items-center gap-1 text-[var(--brand)] font-medium text-sm">
-                      {feature.action}
+                      {feature.action}{" "}
                       <span className="inline-block transition-transform duration-200 group-hover:translate-x-1 ml-0.5">
                         →
                       </span>
@@ -1619,7 +1625,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded border px-8 font-semibold text-white transition-all duration-200 hover:bg-white/10 hover:-translate-y-0.5 hover:shadow-xl cursor-pointer"
                     >
-                      Browse Problems
+                      Browse Problems{" "}
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>
@@ -1629,7 +1635,7 @@ const Home: React.FC = () => {
                       onClick={() => handleNavigate("/playground/free")}
                       className="inline-flex h-14 shrink-0 items-center justify-center gap-2 rounded bg-white px-8 font-semibold text-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:shadow-xl cursor-pointer"
                     >
-                      Open Design Studio
+                      Open Design Studio{" "}
                       <span aria-hidden="true" className="text-xl leading-none">
                         →
                       </span>
