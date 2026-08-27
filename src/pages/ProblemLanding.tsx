@@ -23,7 +23,6 @@ import type { SystemDesignProblem } from "../types/systemDesign";
 import {
   featuredProblems,
   getFeaturedProblem,
-  getProblemSlug,
 } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 
@@ -104,29 +103,14 @@ const ProblemLanding: React.FC = () => {
 
     const loadProblem = async () => {
       try {
-        const response = await fetch(`${apiUrl}/api/v1/all-problems`, {
+        const response = await fetch(
+          `${apiUrl}/api/v1/problem/slug/${encodeURIComponent(slug)}`,
+          {
           signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Problem catalog unavailable");
-        const problems = (await response.json()) as SystemDesignProblem[];
-        const summary = problems.find(
-          (entry) => getProblemSlug(entry) === slug,
+          },
         );
-        if (!summary) {
-          if (active && !featured) setMissing(true);
-          return;
-        }
-
-        let detail: SystemDesignProblem = summary;
-        try {
-          const detailResponse = await fetch(
-            `${apiUrl}/api/v1/problem/${encodeURIComponent(summary.id)}`,
-            { signal: controller.signal },
-          );
-          if (detailResponse.ok) detail = await detailResponse.json();
-        } catch {
-          // The public summary still produces a complete, usable landing page.
-        }
+        if (!response.ok) throw new Error("Problem catalog unavailable");
+        const detail = (await response.json()) as SystemDesignProblem;
 
         if (active) setProblem({ ...featured, ...detail, slug });
       } catch {

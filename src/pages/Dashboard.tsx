@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   MdPublic,
@@ -26,6 +27,7 @@ import SEO from "../components/SEO";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   fetchProblems,
+  fetchMoreProblems,
   fetchAttemptedProblems,
   setSelectedDifficulty,
   setSelectedCategory,
@@ -35,6 +37,8 @@ import {
 import {
   selectFilteredProblems,
   selectProblemsLoading,
+  selectProblemsLoadingMore,
+  selectProblemsHasMore,
   selectProblemsError,
   selectCategories,
   selectDomains,
@@ -83,6 +87,8 @@ const Dashboard: React.FC = () => {
   // Redux state
   const filteredProblems = useAppSelector(selectFilteredProblems);
   const loading = useAppSelector(selectProblemsLoading);
+  const loadingMore = useAppSelector(selectProblemsLoadingMore);
+  const hasMore = useAppSelector(selectProblemsHasMore);
   const error = useAppSelector(selectProblemsError);
   const categories = useAppSelector(selectCategories);
   const domains = useAppSelector(selectDomains);
@@ -205,6 +211,38 @@ const Dashboard: React.FC = () => {
 
     return scored;
   }, [filteredProblems, user?.preferences, attemptedProblems]);
+
+  const [columnCount, setColumnCount] = useState(1);
+
+  useEffect(() => {
+    const updateColumnCount = () => {
+      setColumnCount(window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1);
+    };
+    updateColumnCount();
+    window.addEventListener("resize", updateColumnCount);
+    return () => window.removeEventListener("resize", updateColumnCount);
+  }, []);
+
+  const virtualizer = useWindowVirtualizer({
+    count: Math.ceil(prioritizedProblems.length / columnCount),
+    estimateSize: () => 390,
+    overscan: 2,
+    getItemKey: (index) => `problem-row-${index}`,
+  });
+
+  const virtualRows = virtualizer.getVirtualItems();
+
+  useEffect(() => {
+    const lastRow = virtualRows[virtualRows.length - 1];
+    if (
+      lastRow &&
+      lastRow.index >= Math.ceil(prioritizedProblems.length / columnCount) - 2 &&
+      hasMore &&
+      !loadingMore
+    ) {
+      dispatch(fetchMoreProblems());
+    }
+  }, [columnCount, dispatch, hasMore, loadingMore, prioritizedProblems.length, virtualRows]);
 
   // Fetch problems from API on mount
   useEffect(() => {
@@ -613,8 +651,26 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Problems Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                  {prioritizedProblems.map((entry, index) => {
+                <div
+                  className="relative pb-12"
+                  style={{ height: `${virtualizer.getTotalSize()}px` }}
+                >
+                  {virtualRows.map((virtualRow) => (
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={virtualizer.measureElement}
+                      className="absolute left-0 top-0 w-full"
+                      style={{ transform: `translateY(${virtualRow.start}px)` }}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+                  {prioritizedProblems
+                    .slice(
+                      virtualRow.index * columnCount,
+                      (virtualRow.index + 1) * columnCount,
+                    )
+                    .map((entry, columnIndex) => {
+                    const index = virtualRow.index * columnCount + columnIndex;
                     const problem = entry.problem;
                     const score = entry.score;
                     const delayClass =
@@ -772,8 +828,27 @@ const Dashboard: React.FC = () => {
                         </div>
                       </div>
                     );
-                  })}
+                    })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                {loadingMore && (
+                  <div className="py-8 text-center text-muted" role="status">
+                    Loading more problems…
+                  </div>
+                )}
+
+                {!loadingMore && hasMore && prioritizedProblems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => dispatch(fetchMoreProblems())}
+                    className="mx-auto mb-10 block rounded-xl border border-[var(--brand)]/35 px-5 py-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+                  >
+                    Load more problems
+                  </button>
+                )}
 
                 {filteredProblems.length === 0 && !loading && (
                   <div className="text-center py-20">
