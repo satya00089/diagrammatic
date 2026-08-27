@@ -50,143 +50,164 @@
   },
   "entities": [
     {
-      "name": "Secure payment platform",
+      "name": "PaymentIntent",
       "fields": [
-        "tenantId",
-        "securePaymentPlatformId",
+        "intentId",
+        "merchantId",
+        "amount",
+        "currency",
         "status",
         "version",
-        "createdAt",
-        "updatedAt"
+        "idempotencyKey"
       ],
-      "notes": "Authoritative Secure payment platform record keyed for its primary command and read paths."
+      "notes": "Versioned state machine for an authorized digital payment system money movement."
     },
     {
-      "name": "Secure payment platform event",
+      "name": "LedgerEntry",
       "fields": [
-        "eventId",
-        "securePaymentPlatformId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "entryId",
+        "intentId",
+        "accountId",
+        "direction",
+        "amount",
+        "currency",
+        "createdAt"
       ],
-      "notes": "Immutable Secure payment platform event with an idempotency key and version for replay."
+      "notes": "Append-only double-entry record for the financial effect of digital payment system."
     },
     {
-      "name": "Secure payment platform policy",
+      "name": "ProviderAttempt",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
-      ],
-      "notes": "Versioned policy controlling Secure payment platform authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "Secure payment platform projection",
-      "fields": [
-        "securePaymentPlatformId",
+        "attemptId",
+        "intentId",
+        "provider",
+        "requestHash",
         "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "providerRef"
       ],
-      "notes": "Rebuildable Secure payment platform projection with observedAt and freshness metadata."
+      "notes": "Retry-safe external attempt with an unknown-outcome reconciliation path."
+    },
+    {
+      "name": "SettlementRecord",
+      "fields": [
+        "settlementId",
+        "intentId",
+        "batchId",
+        "gross",
+        "fees",
+        "status"
+      ],
+      "notes": "Reconciled digital payment system settlement and discrepancy state."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/secure-payment-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { securePaymentPlatformId, status, version }",
-      "notes": "Create or submit Secure payment platform with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/secure-payment-platform/{securePaymentPlatformId}",
-      "contract": "{ securePaymentPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Secure payment platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/secure-payment-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Secure payment platform records with cursor pagination and eligibility filters."
+      "path": "/v1/payment-intents",
+      "contract": "{ amount, currency, merchantId, instrumentRef, idempotencyKey } -> { intentId, status, version }",
+      "notes": "Create an idempotent digital payment system intent while keeping sensitive instrument data outside the application boundary."
     },
     {
       "method": "POST",
-      "path": "/v1/secure-payment-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Secure payment platform rebuild or repair operation and return job status."
+      "path": "/v1/payment-intents/{intentId}/confirm",
+      "contract": "{ expectedVersion, confirmationToken } -> { status, providerAttemptId }",
+      "notes": "Authorize or capture digital payment system with a conditional state transition."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/payment-intents/{intentId}/webhooks",
+      "contract": "{ providerEventId, status, providerRef, signature } -> { accepted }",
+      "notes": "Process signed provider callbacks idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/payment-intents/{intentId}",
+      "contract": "{ status, version, ledgerRefs, settlementStatus }",
+      "notes": "Return digital payment system status without exposing secrets or implying success before reconciliation."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Process payments between users and merchants",
-      "description": "The Secure payment platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Create an idempotent financial intent",
+      "description": "The digital payment system gateway authenticates the merchant, validates amount and currency, tokenizes the instrument reference, and records the idempotency key."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Secure payment platform service records the accepted state and version before acknowledging the client."
+      "title": "Authorize and capture safely",
+      "description": "The orchestrator advances the digital payment system state machine with conditional writes and creates exactly one ledger effect for each business transition."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Secure payment platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Resolve external outcomes",
+      "description": "Provider responses and webhooks are stored as immutable attempts; timeouts remain unknown until digital payment system reconciliation resolves them."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Secure payment platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish status asynchronously",
+      "description": "An outbox emits committed digital payment system events for merchant status, risk, notifications, and settlement without blocking the financial commit."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Secure payment platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Reconcile and repair",
+      "description": "Settlement jobs compare provider reports, ledger entries, and internal intents; discrepancies become auditable repair tasks rather than silent edits."
     }
   ],
   "architecture": {
-    "title": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely. reference architecture",
-    "summary": "The authoritative state records Process payments between users and merchants; asynchronous workers build serving projections while Database transactions and consistency, Encryption for sensitive data, Event sourcing for audit trails stays isolated from the request path.",
+    "title": "Digital Payment System payment architecture",
+    "summary": "Design a secure payment platform for authorization, capture, refunds, payouts, and disputes across cards, bank rails, and wallets, with an auditable ledger and exactly-once financial effects. The design protects a versioned payment state machine and double-entry ledger, isolates provider and fraud behavior, and moves webhooks, settlement reconciliation, and notifications to replayable asynchronous consumers.",
     "layers": [
       {
         "id": "experience",
-        "label": "Secure payment platform request boundary",
-        "description": "Clients submit and read Secure payment platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Customer and merchant payment plane",
+        "description": "Clients submit idempotent payment commands and receive status without coupling to provider latency.",
+        "componentIds": ["client", "gateway", "orchestrator"]
       },
       {
-        "id": "source",
-        "label": "Secure payment platform authoritative state",
-        "description": "Durable Secure payment platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "decision",
+        "label": "Risk and provider authorization plane",
+        "description": "Risk checks and provider adapters are isolated so failures cannot create an unsafe capture.",
+        "componentIds": ["risk", "providers"]
       },
       {
-        "id": "processing",
-        "label": "Secure payment platform processing and serving",
-        "description": "Partitioned Secure payment platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "money",
+        "label": "Ledger and event plane",
+        "description": "Balanced immutable entries become the source for downstream delivery and reconciliation.",
+        "componentIds": ["ledger", "events"]
+      },
+      {
+        "id": "settlement",
+        "label": "Settlement and notification plane",
+        "description": "Provider reports, disputes, refunds, and client notifications converge asynchronously.",
+        "componentIds": ["reconciliation", "notifications"]
       },
       {
         "id": "operations",
-        "label": "Secure payment platform operations",
-        "description": "Secure payment platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Payment safety operations",
+        "description": "Ledger, provider, fraud, and delivery invariants are continuously monitored.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Secure payment platform write path",
-        "description": "Client -> Secure payment platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "payment",
+        "label": "Money movement path",
+        "description": "Client -> gateway -> risk -> orchestrator -> provider -> ledger, with idempotent state transitions.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "risk",
+          "orchestrator",
+          "providers",
+          "ledger"
+        ]
       },
       {
-        "id": "async",
-        "label": "Secure payment platform projection path",
-        "description": "Authoritative Secure payment platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "settlement",
+        "label": "Settlement and delivery path",
+        "description": "Ledger event -> reconciliation and notification workers -> merchant/customer endpoint.",
+        "componentIds": [
+          "ledger",
+          "events",
+          "reconciliation",
+          "notifications",
+          "client"
+        ]
       }
     ],
     "components": [
@@ -194,112 +215,140 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Secure payment platform clients",
-        "description": "Clients use the Process payments between users and merchants workflow and receive explicit status, freshness, or progress.",
+        "label": "Payment clients and merchants",
+        "description": "Customers and merchants create payment intents, confirm instruments, query status, and receive idempotent results.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, mobile SDK, and webhooks"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Secure payment platform gateway",
-        "description": "Authenticates Secure payment platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Payment API gateway",
+        "description": "Authenticates principals, validates payment contracts, applies rate limits, and binds idempotency keys to a tenant and intent.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, PCI boundary, quotas, idempotency"
         }
       },
       {
-        "id": "service",
+        "id": "risk",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Secure payment platform service",
-        "description": "Owns the Process payments between users and merchants command, authorization policy, lifecycle state, and client contract.",
+        "componentId": "auth-service",
+        "label": "Fraud, identity, and risk checks",
+        "description": "Evaluates identity, device, velocity, sanctions, and fraud signals before an intent can advance to authorization.",
         "position": {
           "x": 720,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "safety": "Fail closed for high-risk state transitions"
         }
       },
       {
-        "id": "source",
+        "id": "orchestrator",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Payment orchestration service",
+        "description": "Owns the payment state machine, retries provider-safe steps, handles asynchronous provider updates, and never double-captures an intent.",
+        "position": {
+          "x": 720,
+          "y": 420
+        },
+        "properties": {
+          "consistency": "Versioned state machine and idempotent transitions"
+        }
+      },
+      {
+        "id": "ledger",
         "type": "database",
         "componentId": "database",
-        "label": "Secure payment platform state",
-        "description": "Stores Process payments between users and merchants; Support multiple payment methods (cards, bank transfers, wallets) and supports the primary access patterns.",
+        "label": "Double-entry payment ledger",
+        "description": "Records immutable debits, credits, fees, refunds, reversals, and balance effects with currency and transaction references.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Digital Payment System"
+          "guarantee": "Append-only entries with balanced transaction checks"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Secure payment platform event backbone",
-        "description": "Publishes versioned events for Database transactions and consistency, Encryption for sensitive data, Event sourcing for audit trails after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "providers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Secure payment platform workers",
-        "description": "Workers process Database transactions and consistency, Encryption for sensitive data, Event sourcing for audit trails independently from the user-facing command and retry transient failures.",
+        "label": "Bank and payment-provider adapters",
+        "description": "Isolates provider credentials, tokenization, authorization, capture, refund, timeout, and webhook semantics behind a common contract.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1440,
+          "y": 80
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "providers": "Card network, bank, wallet, and payment processor adapters"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Secure payment platform projection",
-        "description": "Serves low-latency views for Digital Payment System with explicit freshness and fallback behavior.",
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Payment event backbone",
+        "description": "Publishes authorization, capture, refund, ledger, dispute, and webhook events with ordering keys and replay offsets.",
         "position": {
-          "x": 2160,
-          "y": 260
+          "x": 1440,
+          "y": 440
         },
         "properties": {
-          "latency": "Transactions must be secure and encrypted"
+          "delivery": "At least once with event IDs and deduplication"
+        }
+      },
+      {
+        "id": "reconciliation",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Settlement and reconciliation",
+        "description": "Matches provider reports to ledger entries, detects missing or duplicated settlements, and opens repair workflows without rewriting history.",
+        "position": {
+          "x": 1800,
+          "y": 80
+        },
+        "properties": {
+          "correctness": "Provider-to-ledger reconciliation by settlement period"
+        }
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Payment status notifications",
+        "description": "Delivers merchant webhooks and customer notifications with retry, signature verification, and delivery audit.",
+        "position": {
+          "x": 1800,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "Signed, deduplicated webhooks and notifications"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Secure payment platform monitoring",
-        "description": "Tracks Secure payment platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "Payment reliability and risk operations",
+        "description": "Tracks authorization latency, provider errors, duplicate attempts, ledger imbalance, reconciliation gaps, fraud outcomes, and webhook lag.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1080,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Ledger, provider, risk, and delivery anomalies"
         }
       }
     ],
@@ -309,159 +358,179 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Secure payment platform",
-        "description": "Client submits Process payments between users and merchants through the authenticated request boundary."
+        "label": "Payment intent request",
+        "description": "Clients create or confirm a payment with amount, currency, instrument reference, merchant, and idempotency key."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-risk",
         "source": "gateway",
-        "target": "service",
+        "target": "risk",
         "type": "api-call",
-        "label": "Validated Secure payment platform operation",
-        "description": "The gateway forwards a validated Secure payment platform operation after authentication, quota, and idempotency checks."
+        "label": "Authenticated risk evaluation",
+        "description": "The gateway sends tenant and payment context to risk checks before allowing a money-moving transition."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "risk-orchestrator",
+        "source": "risk",
+        "target": "orchestrator",
+        "type": "api-call",
+        "label": "Risk decision",
+        "description": "The risk service returns approve, review, or reject with a reason and policy version; uncertain states do not capture funds."
+      },
+      {
+        "id": "gateway-orchestrator",
+        "source": "gateway",
+        "target": "orchestrator",
+        "type": "api-call",
+        "label": "Versioned payment command",
+        "description": "The orchestrator validates the current intent version and makes retries return the original result for the same idempotency key."
+      },
+      {
+        "id": "orchestrator-ledger",
+        "source": "orchestrator",
+        "target": "ledger",
         "type": "database-connection",
-        "label": "Secure payment platform state commit",
-        "description": "Commits Process payments between users and merchants; Support multiple payment methods (cards, bank transfers, wallets) before downstream asynchronous work."
+        "label": "Ledger transaction",
+        "description": "Authorization, capture, refund, and reversal transitions append balanced ledger entries before the state is acknowledged."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "orchestrator-providers",
+        "source": "orchestrator",
+        "target": "providers",
+        "type": "api-call",
+        "label": "Authorize, capture, or refund",
+        "description": "Adapters call providers with provider-specific idempotency and timeout handling; late webhooks reconcile against the state machine."
+      },
+      {
+        "id": "ledger-events",
+        "source": "ledger",
+        "target": "events",
         "type": "event-stream",
-        "label": "Secure payment platform event",
-        "description": "An outbox or change stream publishes committed Secure payment platform transitions with replayable ordering."
+        "label": "Committed payment event",
+        "description": "An outbox publishes a durable event after the ledger transaction so downstream delivery and reconciliation can replay it."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "events-reconciliation",
+        "source": "events",
+        "target": "reconciliation",
         "type": "message-queue",
-        "label": "Secure payment platform background work",
-        "description": "Workers handle Database transactions and consistency, Encryption for sensitive data, Event sourcing for audit trails with bounded retries and idempotent updates."
+        "label": "Settlement work",
+        "description": "Reconciliation consumes provider reports and payment events to identify missing, duplicated, or misapplied settlements."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Secure payment platform serving update",
-        "description": "Workers update the Secure payment platform projection and expose a freshness watermark."
+        "id": "events-notifications",
+        "source": "events",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Payment status event",
+        "description": "Notification workers deliver signed merchant webhooks and customer updates without blocking the money-moving path."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Secure payment platform projection read",
-        "description": "The Secure payment platform service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
+        "id": "notifications-client",
+        "source": "notifications",
         "target": "client",
         "type": "http",
-        "label": "Secure payment platform result",
-        "description": "Returns the latest acceptable result within Transactions must be secure and encrypted."
+        "label": "Status webhook or receipt",
+        "description": "Clients receive a deduplicated status update with payment version, provider reference, and delivery state."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "orchestrator-monitoring",
+        "source": "orchestrator",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Secure payment platform pipeline health",
-        "description": "Monitors Secure payment platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Payment and provider telemetry",
+        "description": "Operations observes state transitions, provider failures, retry storms, risk decisions, and stuck intents."
+      },
+      {
+        "id": "ledger-monitoring",
+        "source": "ledger",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Ledger correctness telemetry",
+        "description": "Ledger checks publish balance, duplicate, currency, and reconciliation-gap signals for immediate investigation."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Exactly-once financial effects",
       "points": [
-        "Keep the Secure payment platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Secure payment platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Secure payment platform version and observedAt so clients can reason about freshness."
+        "Use the idempotency key at the API, orchestrator, provider-attempt, and ledger boundaries.",
+        "Make capture, refund, reversal, and cancellation transitions conditional on the current intent version.",
+        "Treat provider timeouts as unknown and resolve them through status lookup or signed webhook reconciliation."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Ledger and reconciliation correctness",
       "points": [
-        "Partition Secure payment platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Secure payment platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Secure payment platform projection drift and partial failures."
+        "Keep digital payment system ledger entries append-only and derive balances or views from them.",
+        "Reconcile gross amount, fees, currency, provider reference, and settlement batch with tolerances that are explicit.",
+        "Never repair by deleting history; append a compensating entry and preserve the operator reason."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Risk, privacy, and availability",
       "points": [
-        "Serve the last acceptable Secure payment platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Secure payment platform records for replay and make each downstream effect independently retryable.",
-        "Measure Secure payment platform latency, backlog, freshness, error rate, and correctness drift."
+        "Keep digital payment system instrument data tokenized and minimize PCI or sensitive-data scope.",
+        "Apply risk decisions before irreversible effects and make provider failover policy explicit.",
+        "Expose pending and unknown states instead of retrying blindly or showing a false success."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Single provider versus multi-provider routing",
+      "recommendation": "Start with one provider behind an adapter and add routing only when availability, geography, or cost justifies it.",
+      "caution": "Failing over an unknown digital payment system outcome can double-charge unless reconciliation proves the first attempt’s result."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous confirmation versus asynchronous completion",
+      "recommendation": "Return a durable pending state quickly and complete provider, webhook, and settlement work asynchronously.",
+      "caution": "Holding an HTTP request open across provider and risk systems creates ambiguous retries and poor tail latency."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Ledger-first versus provider-first state",
+      "recommendation": "Make the internal intent and ledger the source of truth for recorded effects while treating provider state as an external fact to reconcile.",
+      "caution": "Letting a provider response directly mutate balances bypasses audit and correction controls."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Retrying a timed-out digital payment system provider call without checking whether the first attempt succeeded.",
+    "Using an idempotency key only at the edge and not at ledger or webhook consumers.",
+    "Updating balances in place without append-only entries and reconciliation.",
+    "Returning success before authorization, capture, or settlement semantics are clear.",
+    "Logging raw card or instrument data in application traces or dead-letter payloads."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid double charging in digital payment system?",
+      "answer": "Persist the idempotency key and request hash, make provider attempts unique, and reconcile unknown outcomes before allowing a new attempt."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What if the provider webhook is duplicated or late?",
+      "answer": "Verify signatures, deduplicate by provider event ID, apply only valid version transitions, and retain the callback for audit."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you recover a ledger discrepancy?",
+      "answer": "Freeze unsafe derived views, compare provider and internal evidence, append a compensating entry with approval, and preserve the original history."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Process payments between users and merchants workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the digital payment system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a payment processing system like PayPal or Stripe that handles financial transactions securely., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative digital payment system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions digital payment system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Secure payment platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the digital payment system user experience."
     }
   ]
 }

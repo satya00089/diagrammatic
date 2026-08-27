@@ -50,136 +50,121 @@
   },
   "entities": [
     {
-      "name": "Identify the K Most Shared Articles in Various Time Windows",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Track article shares in real-time; Identify top K articles in different time windows (5 min, 1 hour, 24 hours); design keys around the main reads and writes."
+      "name": "ScoreEvent",
+      "fields": ["eventId", "itemId", "scope", "metric", "delta", "eventTime"],
+      "notes": "Deduplicated score change for identify the k most shared articles in various time windows."
     },
     {
-      "name": "identify-the-k-most-shared-articles-in-various-time-windows event",
+      "name": "WindowState",
       "fields": [
-        "eventId",
-        "systemToTrackId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Versioned System to track records preserve ownership, lifecycle, audit, and replay semantics."
-    },
-    {
-      "name": "System to track policy",
-      "fields": [
-        "policyId",
-        "tenantId",
         "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "window",
+        "watermark",
+        "algorithmVersion",
+        "correctionCursor"
       ],
-      "notes": "Versioned System to track records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Checkpointed event-time state for a ranking window."
     },
     {
-      "name": "System to track projection",
+      "name": "RankSnapshot",
       "fields": [
-        "systemToTrackId",
-        "status",
+        "scope",
+        "window",
         "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "items",
+        "generatedAt",
+        "freshness"
       ],
-      "notes": "Versioned System to track records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Materialized top-K result with version, ties, and freshness."
+    },
+    {
+      "name": "RankingQuery",
+      "fields": [
+        "queryId",
+        "scope",
+        "window",
+        "k",
+        "snapshotVersion",
+        "nextCursor"
+      ],
+      "notes": "Auditable top-K read contract."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/system-to-track",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { systemToTrackId, status, version }",
-      "notes": "Create or submit System to track with idempotency and return an accepted state/version."
+      "path": "/v1/score-events",
+      "contract": "{ itemId, scope, metric, delta, eventTime, idempotencyKey } -> { accepted, eventId }",
+      "notes": "Accept a score update for identify the k most shared articles in various time windows."
     },
     {
       "method": "GET",
-      "path": "/v1/system-to-track/{systemToTrackId}",
-      "contract": "{ systemToTrackId, status, version, observedAt, freshness }",
-      "notes": "Return the latest System to track state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/system-to-track?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped System to track records with cursor pagination and eligibility filters."
+      "path": "/v1/rankings?scope=&window=&k=",
+      "contract": "{ items[], snapshotVersion, freshness, approximate }",
+      "notes": "Serve the current identify the k most shared articles in various time windows top-K snapshot with tie and freshness metadata."
     },
     {
       "method": "POST",
-      "path": "/v1/system-to-track/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a System to track rebuild or repair operation and return job status."
+      "path": "/v1/rankings/rebuild",
+      "contract": "{ scope, window, fromEventTime, algorithmVersion } -> { jobId, status }",
+      "notes": "Rebuild a identify the k most shared articles in various time windows window from retained score events."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/rankings/{scope}/health",
+      "contract": "{ watermark, lag, errorBound, churn }",
+      "notes": "Expose ranking freshness and accuracy signals."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Track article shares in real-time",
-      "description": "The System to track gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Accept score evidence",
+      "description": "The identify the k most shared articles in various time windows ingestion boundary validates item scope, event time, source identity, and deduplication before publishing a score event."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The System to track service records the accepted state and version before acknowledging the client."
+      "title": "Aggregate event-time windows",
+      "description": "Partitioned workers maintain exact or bounded-approximation identify the k most shared articles in various time windows state with watermarks, late-event policy, and checkpoints."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed System to track events; consumers deduplicate by event ID and track offsets."
+      "title": "Materialize top-K snapshots",
+      "description": "Rankers update a sorted candidate structure and publish an atomic snapshot with tie-breaking and error metadata."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume System to track events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Serve fresh bounded reads",
+      "description": "The query service validates scope and K, reads cache or rank state, and reports stale or approximate results explicitly."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the System to track projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Repair and measure churn",
+      "description": "Rebuilds replay retained events while operations tracks lag, error bounds, hot scopes, score corrections, and ranking churn."
     }
   ],
   "architecture": {
-    "title": "Design a system to track and identify the top K most shared articles in real-time across different time windows. reference architecture",
-    "summary": "The authoritative state records Track article shares in real-time; asynchronous workers build serving projections while Count-min sketch or approximate counting, Min-heap or priority queue for top K, Stream processing for real-time updates stays isolated from the request path.",
+    "title": "Identify The K Most Shared Articles In Various Time Windows domain architecture",
+    "summary": "Design Design a system to track and identify the top K most shared articles in real-time across different time windows. so users can Track article shares in real-time reliably at scale. The design makes identify the k most shared articles in various time windows decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
-        "id": "experience",
-        "label": "System to track request boundary",
-        "description": "Clients submit and read System to track requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "id": "query",
+        "label": "Top-K query plane",
+        "description": "Consumers receive bounded, versioned top-K results with explicit freshness.",
+        "componentIds": ["client", "gateway", "query", "cache"]
       },
       {
-        "id": "source",
-        "label": "System to track authoritative state",
-        "description": "Durable System to track state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Score evidence plane",
+        "description": "Item events and corrections are retained with event-time and source identity.",
+        "componentIds": ["events", "score-store"]
       },
       {
-        "id": "processing",
-        "label": "System to track processing and serving",
-        "description": "Partitioned System to track workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "ranking",
+        "label": "Windowed ranking plane",
+        "description": "Aggregators maintain window state and materialize candidate order efficiently.",
+        "componentIds": ["aggregator", "rank-store"]
       },
       {
         "id": "operations",
-        "label": "System to track operations",
-        "description": "System to track signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Ranking reliability operations",
+        "description": "Freshness, accuracy, churn, and hot-key signals protect ranking quality.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "System to track write path",
-        "description": "Client -> System to track gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "System to track projection path",
-        "description": "Authoritative System to track state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -187,274 +172,294 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "System to track clients",
-        "description": "Clients use the System to track workflow and receive explicit status, freshness, or progress.",
+        "label": "Ranking consumers",
+        "description": "Apps request top-K results for a scope, metric, and time window.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "System to track gateway",
-        "description": "Authenticates System to track requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Ranking query gateway",
+        "description": "Validates scope, K, time window, authorization, and cache policy.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "System to track service",
-        "description": "Owns System to track commands, authorization, lifecycle state, and the client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "System to track state",
-        "description": "Stores authoritative System to track state and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Identify the K Most Shared Articles in Various Time Windows"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "events",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "System to track event backbone",
-        "description": "Publishes committed System to track events with stable keys so consumers can retry and replay safely.",
+        "label": "Score event stream",
+        "description": "Carries item score changes with event time, source, and deduplication identity.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "aggregator",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "System to track workers",
-        "description": "Workers process System to track events asynchronously, retry transient failures, and update projections.",
+        "componentId": "processing-worker",
+        "label": "Windowed score aggregator",
+        "description": "Maintains exact or approximate counts and score windows with checkpoints.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1010,
+          "y": 80
         },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
+        "properties": {}
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "System to track projection",
-        "description": "Serves low-latency System to track views with explicit freshness and fallback behavior.",
+        "id": "score-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Score state store",
+        "description": "Stores item scores, windows, watermarks, and correction metadata.",
         "position": {
-          "x": 2160,
+          "x": 1360,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "rank-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Top-K rank store",
+        "description": "Materializes sorted candidate sets or heaps per scope and window.",
+        "position": {
+          "x": 1710,
           "y": 260
         },
-        "properties": {
-          "latency": "Low latency for ranking updates"
-        }
+        "properties": {}
+      },
+      {
+        "id": "query",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Top-K query service",
+        "description": "Serves bounded results with snapshot version, freshness, and tie-breaking metadata.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Hot ranking cache",
+        "description": "Caches popular scope and window results with version-aware invalidation.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "System to track monitoring",
-        "description": "Tracks System to track latency, backlog, freshness, correctness, and saturation.",
+        "label": "Ranking reliability operations",
+        "description": "Tracks score lag, rank churn, approximation error, hot keys, and query latency.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start System to track",
-        "description": "The client submits an authenticated System to track request through the edge boundary."
+        "label": "Top-K query",
+        "description": "Consumers request a scope, K, time window, and freshness budget."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-cache-1",
         "source": "gateway",
-        "target": "service",
+        "target": "cache",
         "type": "api-call",
-        "label": "Validated System to track operation",
-        "description": "The gateway forwards a validated System to track operation after authentication, quota, and idempotency checks."
+        "label": "Version-aware cache lookup",
+        "description": "The gateway checks a cache entry against the requested window and ranking version."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "gateway-query-2",
+        "source": "gateway",
+        "target": "query",
+        "type": "api-call",
+        "label": "Bounded ranking read",
+        "description": "The query service applies authorization, tie-breaking, and stale-read policy."
+      },
+      {
+        "id": "query-rank-store-3",
+        "source": "query",
+        "target": "rank-store",
         "type": "database-connection",
-        "label": "System to track state commit",
-        "description": "The System to track service commits authoritative state before downstream asynchronous work begins."
+        "label": "Rank snapshot",
+        "description": "The query service reads a materialized candidate set with watermark and version."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "System to track event",
-        "description": "An outbox or change stream publishes committed System to track transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "System to track background work",
-        "description": "Workers consume committed System to track events, perform asynchronous work, and update serving state."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "rank-store-cache-4",
+        "source": "rank-store",
+        "target": "cache",
         "type": "data-flow",
-        "label": "System to track serving update",
-        "description": "Workers update the System to track projection and expose a freshness watermark."
+        "label": "Fresh top-K result",
+        "description": "Fresh snapshots populate the hot cache with version-aware expiry."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "events-aggregator-5",
+        "source": "events",
+        "target": "aggregator",
+        "type": "message-queue",
+        "label": "Score update",
+        "description": "Aggregators consume score changes by scope and window with deduplication."
+      },
+      {
+        "id": "aggregator-score-store-6",
+        "source": "aggregator",
+        "target": "score-store",
         "type": "database-connection",
-        "label": "System to track projection read",
-        "description": "The System to track service reads the latest acceptable projection or authoritative state."
+        "label": "Window state",
+        "description": "Checkpointed aggregation persists watermarks, corrections, and item scores."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "System to track result",
-        "description": "The System to track read path returns the latest acceptable result within its latency target."
+        "id": "score-store-rank-store-7",
+        "source": "score-store",
+        "target": "rank-store",
+        "type": "data-flow",
+        "label": "Top-K materialization",
+        "description": "Rank state updates atomically or exposes the prior valid snapshot."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "aggregator-monitoring-8",
+        "source": "aggregator",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "System to track pipeline health",
-        "description": "Monitors System to track consumer lag, processing health, freshness, and projection correctness."
+        "label": "Aggregation telemetry",
+        "description": "Operations observes lag, correction volume, approximation error, and churn."
+      },
+      {
+        "id": "query-monitoring-9",
+        "source": "query",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Query telemetry",
+        "description": "Operations observes latency, stale reads, cache hit rate, and hot scopes."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "update",
+        "label": "Score update path",
+        "description": "Score event -> aggregator -> score store -> top-K rank store.",
+        "componentIds": ["events", "aggregator", "score-store", "rank-store"]
+      },
+      {
+        "id": "read",
+        "label": "Top-K read path",
+        "description": "Client -> gateway -> cache or query service -> rank store.",
+        "componentIds": ["client", "gateway", "cache", "query", "rank-store"]
+      },
+      {
+        "id": "repair",
+        "label": "Window repair path",
+        "description": "Retained event stream -> checkpointed aggregation -> atomic rank snapshot.",
+        "componentIds": ["events", "aggregator", "rank-store"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Windowing and late events",
       "points": [
-        "Keep the System to track commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional System to track writes, event IDs, and versions so retries and replay are safe.",
-        "Return System to track version and observedAt so clients can reason about freshness."
+        "Define event-time windows, watermark delay, late correction policy, and whether rankings are provisional.",
+        "Use deterministic tie-breaking so pagination and repeated reads are stable.",
+        "Checkpoint state and retain events for correction or replay."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Exact versus approximate top-K",
       "points": [
-        "Partition System to track by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound System to track work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for System to track projection drift and partial failures."
+        "Use exact structures for small or low-volume scopes and sketches or candidate heaps when cardinality demands approximation.",
+        "Expose error bounds and freshness rather than pretending an approximate result is exact.",
+        "Isolate hot scopes and celebrity items from the main partition budget."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Freshness and cache correctness",
       "points": [
-        "Serve the last acceptable System to track projection or an explicit degraded response when workers fail.",
-        "Retain durable System to track records for replay and make each downstream effect independently retryable.",
-        "Measure System to track latency, backlog, freshness, error rate, and correctness drift."
+        "Version snapshots and cache entries by scope and window so a late update cannot resurrect an older result.",
+        "Return watermark, generated time, and approximation state to consumers.",
+        "Measure query tail latency, cache hit rate, update lag, and rank churn together."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Exact versus approximate ranking",
+      "recommendation": "Choose based on K, cardinality, update rate, and error tolerance; make approximation visible in the API.",
+      "caution": "Approximation without a measured error bound undermines trust in identify the k most shared articles in various time windows results."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Push recomputation versus pull query",
+      "recommendation": "Materialize common windows and recompute rare queries on demand with bounded work.",
+      "caution": "Recomputing every query from raw events creates latency spikes and duplicate load."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Short versus long retention",
+      "recommendation": "Retain enough score evidence for late correction and rebuild, then tier older windows.",
+      "caution": "No retained evidence means a ranking bug cannot be repaired reproducibly."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Using offsets instead of event-time windows without a late-data policy.",
+    "Recomputing all items for every score update.",
+    "Returning stale cache entries without a watermark or version.",
+    "Ignoring tie-breaking and producing unstable pages.",
+    "Failing to isolate hot scopes or expose approximation error."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you rebuild a ranking window?",
+      "answer": "Replay retained events into an isolated checkpoint, validate watermark and error bounds, then atomically publish the replacement snapshot."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you handle a hot item or scope?",
+      "answer": "Partition hot scopes separately, coalesce safe deltas, and protect the query path with quotas and bounded update work."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What does accurate enough mean?",
+      "answer": "Define freshness, rank error, tie behavior, and correction latency as measurable API and monitoring contracts."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Track article shares in real-time workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the identify the k most shared articles in various time windows workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a system to track and identify the top K most shared articles in real-time across different time windows., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative identify the k most shared articles in various time windows state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions identify the k most shared articles in various time windows traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain System to track consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the identify the k most shared articles in various time windows user experience."
     }
   ]
 }

@@ -50,143 +50,153 @@
   },
   "entities": [
     {
-      "name": "Production-line vision inspection system",
+      "name": "DatasetVersion",
       "fields": [
-        "tenantId",
-        "productionLineVisionInspectionSystemId",
-        "status",
+        "datasetId",
         "version",
-        "createdAt",
-        "updatedAt"
+        "schemaHash",
+        "qualityStatus",
+        "lineage",
+        "createdAt"
       ],
-      "notes": "Authoritative Production-line vision inspection system record keyed for its primary command and read paths."
+      "notes": "Immutable computer vision quality inspection system input version used for reproducible training, evaluation, or replay."
     },
     {
-      "name": "Production-line vision inspection system event",
+      "name": "FeatureSnapshot",
       "fields": [
-        "eventId",
-        "productionLineVisionInspectionSystemId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "entityId",
+        "featureSetVersion",
+        "eventTime",
+        "values",
+        "sourceWatermarks"
       ],
-      "notes": "Immutable Production-line vision inspection system event with an idempotency key and version for replay."
+      "notes": "Point-in-time computer vision quality inspection system features with source watermarks so online and offline values can be compared."
     },
     {
-      "name": "Production-line vision inspection system policy",
+      "name": "TrainingRun",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "runId",
+        "datasetVersion",
+        "codeVersion",
+        "metrics",
+        "artifactUri",
+        "status"
       ],
-      "notes": "Versioned policy controlling Production-line vision inspection system authorization, routing, or eligibility decisions."
+      "notes": "Audited computer vision quality inspection system run that records data, code, dependency, and evaluation lineage."
     },
     {
-      "name": "Production-line vision inspection system projection",
+      "name": "ModelVersion",
       "fields": [
-        "productionLineVisionInspectionSystemId",
-        "status",
+        "modelId",
         "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "stage",
+        "schema",
+        "qualityGates",
+        "endpoint"
       ],
-      "notes": "Rebuildable Production-line vision inspection system projection with observedAt and freshness metadata."
+      "notes": "A promotable computer vision quality inspection system model version with rollout state, contract, and rollback metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/production-line-vision-inspection-system",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { productionLineVisionInspectionSystemId, status, version }",
-      "notes": "Create or submit Production-line vision inspection system with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/production-line-vision-inspection-system/{productionLineVisionInspectionSystemId}",
-      "contract": "{ productionLineVisionInspectionSystemId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Production-line vision inspection system state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/production-line-vision-inspection-system?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Production-line vision inspection system records with cursor pagination and eligibility filters."
+      "path": "/v1/datasets",
+      "contract": "{ source, schema, lineage, idempotencyKey } -> { datasetId, version, qualityJobId }",
+      "notes": "Register a versioned computer vision quality inspection system dataset and start asynchronous quality and privacy checks."
     },
     {
       "method": "POST",
-      "path": "/v1/production-line-vision-inspection-system/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Production-line vision inspection system rebuild or repair operation and return job status."
+      "path": "/v1/runs",
+      "contract": "{ datasetVersion, featureSetVersion, codeVersion, parameters } -> { runId, status }",
+      "notes": "Start a reproducible computer vision quality inspection system training or evaluation run without holding the request open."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/models/{modelId}/promotions",
+      "contract": "{ version, targetStage, gates } -> { rolloutId, status }",
+      "notes": "Promote a computer vision quality inspection system model only after offline, safety, and compatibility gates pass."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/predictions",
+      "contract": "{ modelVersion, entityId, features } -> { prediction, modelVersion, traceId }",
+      "notes": "Serve a version-pinned computer vision quality inspection system prediction and emit feedback or latency metadata."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Capture high-resolution images from production lines",
-      "description": "The Production-line vision inspection system gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Register and validate training data",
+      "description": "The computer vision quality inspection system gateway records an immutable dataset version, schema, lineage, quality status, and privacy disposition."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Production-line vision inspection system service records the accepted state and version before acknowledging the client."
+      "title": "Build point-in-time features",
+      "description": "Feature workers join computer vision quality inspection system inputs using event-time watermarks, prevent leakage, and publish the same feature contract for training and serving."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Production-line vision inspection system events; consumers deduplicate by event ID and track offsets."
+      "title": "Train and evaluate asynchronously",
+      "description": "The orchestrator schedules computer vision quality inspection system runs with checkpointed artifacts, reproducible environments, and metrics tied to the exact input versions."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Production-line vision inspection system events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Gate and serve a model version",
+      "description": "A registry compares computer vision quality inspection system quality, bias, safety, and compatibility gates before canary or production rollout with an immediate rollback pointer."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Production-line vision inspection system projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Monitor drift and learn from feedback",
+      "description": "Online inference records latency, errors, drift, and delayed labels so computer vision quality inspection system retraining is evidence-driven rather than triggered by guesswork."
     }
   ],
   "architecture": {
-    "title": "Design a computer vision system for automated quality inspection in manufacturing that detects defects on production lines, classifies defect types, and integrates with factory automation systems. reference architecture",
-    "summary": "The authoritative state records Capture high-resolution images from production lines; asynchronous workers build serving projections while Use object detection models (YOLO, Faster R-CNN), Implement anomaly detection with autoencoders for novel defects, Use data augmentation for rare defect types stays isolated from the request path.",
+    "title": "Computer Vision Quality Inspection System ML platform architecture",
+    "summary": "Design a production-line vision inspection system that captures synchronized high-resolution images, detects known and novel defects in real time, and sends safe disposition signals to factory automation. The design separates reproducible data and feature lineage from queued training, approved model promotion, version-pinned serving, and feedback-driven monitoring.",
     "layers": [
       {
         "id": "experience",
-        "label": "Production-line vision inspection system request boundary",
-        "description": "Clients submit and read Production-line vision inspection system requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "ML users and application boundary",
+        "description": "Users and applications register data, launch runs, request predictions, and receive version and confidence metadata.",
+        "componentIds": ["client", "gateway", "ingest"]
       },
       {
-        "id": "source",
-        "label": "Production-line vision inspection system authoritative state",
-        "description": "Durable Production-line vision inspection system state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "data",
+        "label": "Reproducible data and feature plane",
+        "description": "Immutable inputs, feature snapshots, and lineage provide point-in-time-correct training and auditability.",
+        "componentIds": ["data-lake", "feature-store"]
       },
       {
-        "id": "processing",
-        "label": "Production-line vision inspection system processing and serving",
-        "description": "Partitioned Production-line vision inspection system workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "lifecycle",
+        "label": "Training and model lifecycle",
+        "description": "Queued training and evaluation produce only gated, traceable model versions.",
+        "componentIds": ["orchestrator", "registry"]
+      },
+      {
+        "id": "serving",
+        "label": "Inference and feedback plane",
+        "description": "Approved versions serve predictions and collect feedback independently from training capacity.",
+        "componentIds": ["serving", "results"]
       },
       {
         "id": "operations",
-        "label": "Production-line vision inspection system operations",
-        "description": "Production-line vision inspection system signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Model quality and platform operations",
+        "description": "Quality, drift, freshness, resource, and reliability signals are visible by tenant and version.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Production-line vision inspection system write path",
-        "description": "Client -> Production-line vision inspection system gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "training",
+        "label": "Reproducible training path",
+        "description": "Dataset snapshot -> point-in-time features -> queued run -> evaluation gates -> model registry.",
+        "componentIds": [
+          "data-lake",
+          "feature-store",
+          "orchestrator",
+          "registry"
+        ]
       },
       {
-        "id": "async",
-        "label": "Production-line vision inspection system projection path",
-        "description": "Authoritative Production-line vision inspection system state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "inference",
+        "label": "Approved inference path",
+        "description": "Client -> gateway -> version-pinned serving -> prediction result, with feedback returned to the lifecycle plane.",
+        "componentIds": ["client", "gateway", "serving", "results"]
       }
     ],
     "components": [
@@ -194,112 +204,140 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Production-line vision inspection system clients",
-        "description": "Clients use the Capture high-resolution images from production lines workflow and receive explicit status, freshness, or progress.",
+        "label": "ML platform users and producers",
+        "description": "Researchers, data producers, and application clients submit datasets, experiments, model requests, and feedback.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, SDK, and batch export"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Production-line vision inspection system gateway",
-        "description": "Authenticates Production-line vision inspection system requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Model platform API gateway",
+        "description": "Authenticates tenants and service identities, validates dataset and model contracts, applies quotas, and routes interactive requests.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Tenant isolation, quotas, request validation"
         }
       },
       {
-        "id": "service",
+        "id": "ingest",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Production-line vision inspection system service",
-        "description": "Owns the Capture high-resolution images from production lines command, authorization policy, lifecycle state, and client contract.",
+        "label": "Training data intake",
+        "description": "Registers data snapshots, validates schemas and quality gates, and creates reproducible ingestion manifests without blocking on training.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "guarantee": "Schema, lineage, and idempotent snapshot registration"
         }
       },
       {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Production-line vision inspection system state",
-        "description": "Stores Capture high-resolution images from production lines; Detect surface defects (scratches, dents, cracks) and supports the primary access patterns.",
+        "id": "data-lake",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Training data and artifact lake",
+        "description": "Stores immutable raw data, labels, embeddings, evaluation sets, feature exports, and training artifacts with lineage and retention policy.",
         "position": {
           "x": 1080,
+          "y": 80
+        },
+        "properties": {
+          "partitioning": "Tenant, dataset, version, and event time"
+        }
+      },
+      {
+        "id": "feature-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Feature and dataset registry",
+        "description": "Serves point-in-time-correct feature snapshots and records dataset versions, ownership, quality results, and transformation lineage.",
+        "position": {
+          "x": 1080,
+          "y": 440
+        },
+        "properties": {
+          "consistency": "Point-in-time joins and versioned metadata"
+        }
+      },
+      {
+        "id": "orchestrator",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Training and evaluation orchestrator",
+        "description": "Schedules training, validation, backfills, and shadow evaluations; isolates GPU-heavy jobs and retries only safe stages.",
+        "position": {
+          "x": 1440,
           "y": 260
         },
         "properties": {
-          "storage": "Design a Computer Vision Quality Inspection System"
+          "scaling": "Queue-backed GPU/CPU pools with run isolation"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Production-line vision inspection system event backbone",
-        "description": "Publishes versioned events for Use object detection models (YOLO, Faster R-CNN), Implement anomaly detection with autoencoders for novel defects, Use data augmentation for rare defect types after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Production-line vision inspection system workers",
-        "description": "Workers process Use object detection models (YOLO, Faster R-CNN), Implement anomaly detection with autoencoders for novel defects, Use data augmentation for rare defect types independently from the user-facing command and retry transient failures.",
+        "id": "registry",
+        "type": "database",
+        "componentId": "database",
+        "label": "Model registry and lineage",
+        "description": "Stores immutable model versions, metrics, datasets, code references, approvals, rollout stages, and rollback candidates.",
         "position": {
           "x": 1800,
-          "y": 100
+          "y": 80
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "promotion": "Evaluation gates and signed model versions"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Production-line vision inspection system projection",
-        "description": "Serves low-latency views for Design a Computer Vision Quality Inspection System with explicit freshness and fallback behavior.",
+        "id": "serving",
+        "type": "microservice",
+        "componentId": "recommendation-service",
+        "label": "Model serving and inference",
+        "description": "Loads approved models, enforces input and policy checks, serves predictions or generated outputs, and emits latency and quality feedback.",
+        "position": {
+          "x": 1800,
+          "y": 440
+        },
+        "properties": {
+          "latency": "Version-pinned inference with bounded payloads"
+        }
+      },
+      {
+        "id": "results",
+        "type": "database",
+        "componentId": "database",
+        "label": "Prediction and experiment results",
+        "description": "Stores prediction metadata, experiment assignments, explanations, feedback, and replay references without mixing them with model artifacts.",
         "position": {
           "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Defect detection accuracy above 99.5%"
+          "retention": "Tenant-scoped results with privacy and deletion controls"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Production-line vision inspection system monitoring",
-        "description": "Tracks Production-line vision inspection system latency, backlog, freshness, correctness, and saturation.",
+        "label": "Model quality and platform observability",
+        "description": "Tracks data drift, training failures, evaluation regressions, inference latency, GPU utilization, feature freshness, and model feedback.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Quality regressions, drift, backlog, and serving failures"
         }
       }
     ],
@@ -309,159 +347,179 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Production-line vision inspection system",
-        "description": "Client submits Capture high-resolution images from production lines through the authenticated request boundary."
+        "label": "Dataset or inference request",
+        "description": "Computer Vision Quality Inspection System clients submit tenant-scoped data, experiment, prediction, and feedback requests through the authenticated boundary."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-ingest",
         "source": "gateway",
-        "target": "service",
+        "target": "ingest",
         "type": "api-call",
-        "label": "Validated Production-line vision inspection system operation",
-        "description": "The gateway forwards a validated Production-line vision inspection system operation after authentication, quota, and idempotency checks."
+        "label": "Validated data/model command",
+        "description": "The gateway checks identity, schema references, quotas, and idempotency before registering an asynchronous ML operation."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Production-line vision inspection system state commit",
-        "description": "Commits Capture high-resolution images from production lines; Detect surface defects (scratches, dents, cracks) before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Production-line vision inspection system event",
-        "description": "An outbox or change stream publishes committed Production-line vision inspection system transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Production-line vision inspection system background work",
-        "description": "Workers handle Use object detection models (YOLO, Faster R-CNN), Implement anomaly detection with autoencoders for novel defects, Use data augmentation for rare defect types with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "ingest-data-lake",
+        "source": "ingest",
+        "target": "data-lake",
         "type": "data-flow",
-        "label": "Production-line vision inspection system serving update",
-        "description": "Workers update the Production-line vision inspection system projection and expose a freshness watermark."
+        "label": "Immutable dataset snapshot",
+        "description": "Validated source data and artifacts are written with a content hash, source lineage, retention policy, and snapshot version."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "ingest-feature-store",
+        "source": "ingest",
+        "target": "feature-store",
         "type": "database-connection",
-        "label": "Production-line vision inspection system projection read",
-        "description": "The Production-line vision inspection system service reads the latest acceptable projection or authoritative state."
+        "label": "Dataset and feature metadata",
+        "description": "Ingestion records schema, ownership, quality results, and point-in-time feature availability for downstream runs."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "data-lake-orchestrator",
+        "source": "data-lake",
+        "target": "orchestrator",
+        "type": "message-queue",
+        "label": "Reproducible training job",
+        "description": "A versioned manifest starts training or evaluation work; workers read immutable inputs and deduplicate run requests."
+      },
+      {
+        "id": "feature-store-orchestrator",
+        "source": "feature-store",
+        "target": "orchestrator",
+        "type": "database-connection",
+        "label": "Point-in-time features",
+        "description": "The orchestrator requests feature snapshots aligned to the training or evaluation timestamp to prevent leakage."
+      },
+      {
+        "id": "orchestrator-registry",
+        "source": "orchestrator",
+        "target": "registry",
+        "type": "database-connection",
+        "label": "Evaluated model version",
+        "description": "Only a run that passes data, quality, and evaluation gates is registered with metrics, lineage, and promotion status."
+      },
+      {
+        "id": "registry-serving",
+        "source": "registry",
+        "target": "serving",
+        "type": "data-flow",
+        "label": "Approved model rollout",
+        "description": "Serving instances load a pinned approved version and can roll back when quality, safety, or latency thresholds regress."
+      },
+      {
+        "id": "serving-results",
+        "source": "serving",
+        "target": "results",
+        "type": "database-connection",
+        "label": "Prediction and feedback record",
+        "description": "Inference metadata, explanations, experiment assignment, and user feedback are recorded for audit and future evaluation."
+      },
+      {
+        "id": "results-client",
+        "source": "results",
         "target": "client",
         "type": "http",
-        "label": "Production-line vision inspection system result",
-        "description": "Returns the latest acceptable result within Defect detection accuracy above 99.5%."
+        "label": "Prediction or experiment result",
+        "description": "Clients receive the output with model version, confidence or explanation metadata, and an explicit degraded response when unavailable."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "orchestrator-monitoring",
+        "source": "orchestrator",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Production-line vision inspection system pipeline health",
-        "description": "Monitors Production-line vision inspection system consumer lag, processing health, freshness, and projection correctness."
+        "label": "Training and data quality telemetry",
+        "description": "Operations observes queue lag, run duration, data quality failures, resource saturation, and reproducibility gaps."
+      },
+      {
+        "id": "serving-monitoring",
+        "source": "serving",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Inference and drift telemetry",
+        "description": "Serving emits latency, error, feature freshness, drift, safety, and model-quality signals by tenant and model version."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Reproducibility and leakage prevention",
       "points": [
-        "Keep the Production-line vision inspection system commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Production-line vision inspection system writes, event IDs, and versions so retries and replay are safe.",
-        "Return Production-line vision inspection system version and observedAt so clients can reason about freshness."
+        "Pin computer vision quality inspection system data, feature, code, dependency, and model versions for every run.",
+        "Use point-in-time joins and quarantine failed quality or privacy checks before training.",
+        "Keep raw inputs and artifacts immutable so a result can be replayed after a dependency changes."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Safe promotion and serving contracts",
       "points": [
-        "Partition Production-line vision inspection system by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Production-line vision inspection system work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Production-line vision inspection system projection drift and partial failures."
+        "Separate computer vision quality inspection system model registration from deployment and require signed artifacts plus schema compatibility.",
+        "Use shadow traffic, canaries, rollback pointers, and per-version latency/error budgets.",
+        "Return model version and feature freshness so clients can explain or reproduce a prediction."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Drift, feedback, and cost",
       "points": [
-        "Serve the last acceptable Production-line vision inspection system projection or an explicit degraded response when workers fail.",
-        "Retain durable Production-line vision inspection system records for replay and make each downstream effect independently retryable.",
-        "Measure Production-line vision inspection system latency, backlog, freshness, error rate, and correctness drift."
+        "Measure feature drift, prediction drift, label delay, and segment-level quality for computer vision quality inspection system rather than only aggregate accuracy.",
+        "Sample expensive inference and cap retraining concurrency with an explicit GPU or compute budget.",
+        "Keep human corrections and delayed labels linked to the original prediction and model version."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Batch versus online features",
+      "recommendation": "Prefer a shared feature contract with batch backfills and a low-latency online serving path for decisions that need freshness.",
+      "caution": "Two independently defined transformations create training-serving skew and hard-to-debug regressions."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous versus asynchronous inference",
+      "recommendation": "Keep interactive computer vision quality inspection system inference synchronous within a strict budget and queue large or expensive jobs.",
+      "caution": "A request path that waits for model loading, enrichment, or retraining turns downstream slowness into an outage."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Global model versus segment models",
+      "recommendation": "Start with one versioned model and add segment-specific models only when quality or policy evidence justifies the operational cost.",
+      "caution": "Many simultaneously active versions multiply monitoring, rollback, and data-lineage burden."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Training computer vision quality inspection system on mutable data without recording a replayable dataset version.",
+    "Serving features from a different transformation or time window than the training job used.",
+    "Promoting a model on one offline metric without canary, safety, or segment-level checks.",
+    "Treating delayed labels and drift as a dashboard concern instead of a retraining input.",
+    "Allowing retries to create duplicate runs, artifacts, or promotions without idempotency keys."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you roll back a bad computer vision quality inspection system model?",
+      "answer": "Keep immutable artifacts and a last-known-good pointer; switch traffic atomically, stop promotion, and preserve affected prediction traces for analysis."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you detect training-serving skew?",
+      "answer": "Compare feature definitions and sampled values by entity and event time, expose source watermarks, and alert on divergence before quality drops."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What happens when labels arrive weeks later?",
+      "answer": "Store prediction records with model and feature versions, join delayed labels idempotently, and compute drift or quality by cohort."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Capture high-resolution images from production lines workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the computer vision quality inspection system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a computer vision system for automated quality inspection in manufacturing that detects defects on production lines, classifies defect types, and integrates with factory automation systems., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative computer vision quality inspection system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions computer vision quality inspection system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Production-line vision inspection system consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the computer vision quality inspection system user experience."
     }
   ]
 }

@@ -50,136 +50,150 @@
   },
   "entities": [
     {
-      "name": "vector and inverted indexes",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for documents, embeddings, and index versions; design keys around the main reads and writes."
-    },
-    {
-      "name": "semantic-search event",
+      "name": "DocumentVersion",
       "fields": [
-        "eventId",
-        "embeddingHybridRetrievalVectorSearchFiltId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Versioned Embedding, hybrid retrieval, vector search, filt records preserve ownership, lifecycle, audit, and replay semantics."
-    },
-    {
-      "name": "Embedding, hybrid retrieval, vector search, filt policy",
-      "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
+        "documentId",
+        "sourceVersion",
+        "contentHash",
+        "aclVersion",
+        "language",
         "updatedAt"
       ],
-      "notes": "Versioned Embedding, hybrid retrieval, vector search, filt records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Canonical semantic search engine content and access-policy version used for indexing."
     },
     {
-      "name": "Embedding, hybrid retrieval, vector search, filt projection",
+      "name": "IndexGeneration",
       "fields": [
-        "embeddingHybridRetrievalVectorSearchFiltId",
+        "generationId",
+        "sourceWatermark",
+        "schemaVersion",
         "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "alias",
+        "createdAt"
       ],
-      "notes": "Versioned Embedding, hybrid retrieval, vector search, filt records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Rebuildable semantic search engine index generation that can be validated before an atomic alias swap."
+    },
+    {
+      "name": "QuerySession",
+      "fields": [
+        "queryId",
+        "tenantId",
+        "normalizedQuery",
+        "filters",
+        "generationId",
+        "nextCursor"
+      ],
+      "notes": "Auditable semantic search engine query context with filters, cursor, and the generation used to answer it."
+    },
+    {
+      "name": "RankingFeedback",
+      "fields": [
+        "queryId",
+        "documentId",
+        "position",
+        "action",
+        "modelVersion",
+        "occurredAt"
+      ],
+      "notes": "Privacy-scoped semantic search engine relevance signal for offline evaluation and ranking improvement."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/embedding-hybrid-retrieval-vector-search-f",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { embeddingHybridRetrievalVectorSearchFiltId, status, version }",
-      "notes": "Create or submit Embedding, hybrid retrieval, vector search, filt with idempotency and return an accepted state/version."
+      "method": "PUT",
+      "path": "/v1/documents/{documentId}",
+      "contract": "{ content, acl, sourceVersion, idempotencyKey } -> { documentVersion, indexingStatus }",
+      "notes": "Accept a versioned semantic search engine document and enqueue indexing after authorization checks."
     },
     {
       "method": "GET",
-      "path": "/v1/embedding-hybrid-retrieval-vector-search-f/{embeddingHybridRetrievalVectorSearchFiltId}",
-      "contract": "{ embeddingHybridRetrievalVectorSearchFiltId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Embedding, hybrid retrieval, vector search, filt state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/embedding-hybrid-retrieval-vector-search-f?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Embedding, hybrid retrieval, vector search, filt records with cursor pagination and eligibility filters."
+      "path": "/v1/search?q=&cursor=&filter=",
+      "contract": "{ results[], facets, nextCursor, generationId, freshness }",
+      "notes": "Apply tenant, ACL, and query filters before ranking semantic search engine candidates."
     },
     {
       "method": "POST",
-      "path": "/v1/embedding-hybrid-retrieval-vector-search-f/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Embedding, hybrid retrieval, vector search, filt rebuild or repair operation and return job status."
+      "path": "/v1/index-generations",
+      "contract": "{ sourceWatermark, schemaVersion } -> { generationId, buildJobId }",
+      "notes": "Build and validate a semantic search engine generation without exposing partial index state."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search/feedback",
+      "contract": "{ queryId, documentId, action, position } -> { accepted }",
+      "notes": "Record deduplicated semantic search engine relevance feedback with privacy and retention controls."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept search using a natural-language query",
-      "description": "The Embedding, hybrid retrieval, vector search, filt gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Accept and authorize source changes",
+      "description": "The semantic search engine ingestion boundary validates content, tenant ownership, ACLs, versions, and idempotency before publishing a document change."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Embedding, hybrid retrieval, vector search, filt service records the accepted state and version before acknowledging the client."
+      "title": "Retrieve and rank candidates",
+      "description": "The query service applies authorization filters, retrieves from the active semantic search engine generation, ranks within the latency budget, and returns generation freshness."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Embedding, hybrid retrieval, vector search, filt events; consumers deduplicate by event ID and track offsets."
+      "title": "Build a safe index generation",
+      "description": "Partitioned workers transform semantic search engine documents, checkpoint progress, validate counts and ACL parity, then atomically swap the serving alias."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Embedding, hybrid retrieval, vector search, filt events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Handle freshness and deletes",
+      "description": "Tombstones and ACL changes propagate through the same pipeline so deleted or newly restricted semantic search engine content is not left searchable."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Embedding, hybrid retrieval, vector search, filt projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Measure relevance and recover",
+      "description": "Feedback, query traces, lag, and failed partitions drive semantic search engine ranking evaluation, replay, and bounded degraded behavior."
     }
   ],
   "architecture": {
-    "title": "Embedding, hybrid retrieval, vector search, filtering, and relevance ranking reference architecture",
-    "summary": "The authoritative state records search using a natural-language query; asynchronous workers build serving projections while embedding, indexing, re-ranking, and evaluation stays isolated from the request path.",
+    "title": "Semantic Search Engine search architecture",
+    "summary": "Design embedding, hybrid retrieval, vector search, filtering, and relevance ranking so users can search using a natural-language query reliably at scale. The design keeps canonical source versions and ACLs separate from versioned lexical/vector indexes, then uses bounded retrieval, explainable ranking, and generation-aware caching for low-latency results.",
     "layers": [
       {
         "id": "experience",
-        "label": "Embedding, hybrid retrieval, vector search, filt request boundary",
-        "description": "Clients submit and read Embedding, hybrid retrieval, vector search, filt requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Search request plane",
+        "description": "Authenticated clients receive bounded, tenant-authorized query and suggestion responses.",
+        "componentIds": ["client", "gateway", "query"]
       },
       {
-        "id": "source",
-        "label": "Embedding, hybrid retrieval, vector search, filt authoritative state",
-        "description": "Durable Embedding, hybrid retrieval, vector search, filt state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "sources",
+        "label": "Source and indexing plane",
+        "description": "Canonical documents, source versions, and index generations support replay and atomic rebuilds.",
+        "componentIds": ["ingest", "documents", "index"]
       },
       {
-        "id": "processing",
-        "label": "Embedding, hybrid retrieval, vector search, filt processing and serving",
-        "description": "Partitioned Embedding, hybrid retrieval, vector search, filt workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "relevance",
+        "label": "Retrieval and relevance plane",
+        "description": "Candidate retrieval and ranking combine lexical, vector, freshness, and product-specific signals.",
+        "componentIds": ["ranker", "cache"]
       },
       {
         "id": "operations",
-        "label": "Embedding, hybrid retrieval, vector search, filt operations",
-        "description": "Embedding, hybrid retrieval, vector search, filt signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Search quality and operations",
+        "description": "Freshness, relevance, latency, and access-control correctness are measured continuously.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Embedding, hybrid retrieval, vector search, filt write path",
-        "description": "Client -> Embedding, hybrid retrieval, vector search, filt gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "query",
+        "label": "Query serving path",
+        "description": "Client -> gateway -> query understanding -> index -> ranker -> ACL-aware cache -> client.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "query",
+          "index",
+          "ranker",
+          "cache"
+        ]
       },
       {
-        "id": "async",
-        "label": "Embedding, hybrid retrieval, vector search, filt projection path",
-        "description": "Authoritative Embedding, hybrid retrieval, vector search, filt state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "indexing",
+        "label": "Source indexing path",
+        "description": "Source -> ingestion -> canonical document store -> versioned index generation.",
+        "componentIds": ["ingest", "documents", "index"]
       }
     ],
     "components": [
@@ -187,112 +201,126 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Design embedding, hybrid retrieval, vector searc clients",
-        "description": "Clients use the search using a natural-language query workflow and receive explicit status, freshness, or progress.",
+        "label": "Search and suggestion clients",
+        "description": "Users submit queries, typeahead prefixes, filters, and pagination requests and receive relevance and freshness metadata.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS and streaming suggestions"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Design embedding, hybrid retrieval, vector searc gateway",
-        "description": "Authenticates Design embedding, hybrid retrieval, vector searc requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Search API gateway",
+        "description": "Authenticates callers, applies tenant and query quotas, normalizes language and filters, and routes reads separately from indexing.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, rate limits, query validation"
         }
       },
       {
-        "id": "service",
+        "id": "query",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Design embedding, hybrid retrieval, vector searc service",
-        "description": "Owns the search using a natural-language query command, authorization policy, lifecycle state, and client contract.",
+        "label": "Query understanding service",
+        "description": "Tokenizes and expands queries, applies spelling or semantic interpretation, validates filters, and creates a bounded retrieval plan.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "latency": "Bounded query plan and timeout budget"
         }
       },
       {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Design embedding, hybrid retrieval, vector searc state",
-        "description": "Stores documents, embeddings, and index versions and supports the primary access patterns.",
+        "id": "ingest",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Document and source ingestion",
+        "description": "Fetches or accepts source changes, extracts searchable fields, applies ACLs and deduplication, and emits versioned index work.",
+        "position": {
+          "x": 720,
+          "y": -40
+        },
+        "properties": {
+          "guarantee": "Source version and ACL validation before indexing"
+        }
+      },
+      {
+        "id": "documents",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Document and source store",
+        "description": "Retains canonical documents, crawl/import metadata, ACL snapshots, and source versions for reindexing and audit.",
         "position": {
           "x": 1080,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "storage": "vector and inverted indexes"
+          "retention": "Immutable versions with source and access policy lineage"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Design embedding, hybrid retrieval, vector searc event backbone",
-        "description": "Publishes versioned events for embedding, indexing, re-ranking, and evaluation after durable commits.",
+        "id": "index",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Inverted and vector index",
+        "description": "Indexes token, field, facet, and embedding representations with tenant and ACL filters and atomic generation aliases.",
+        "position": {
+          "x": 1080,
+          "y": 420
+        },
+        "properties": {
+          "indexing": "Versioned shards and atomic alias swap"
+        }
+      },
+      {
+        "id": "ranker",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Relevance and ranking service",
+        "description": "Combines lexical, semantic, freshness, popularity, personalization, and business rules while recording explainable ranking features.",
         "position": {
           "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Design embedding, hybrid retrieval, vector searc workers",
-        "description": "Workers process embedding, indexing, re-ranking, and evaluation independently from the user-facing command and retry transient failures.",
-        "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Design embedding, hybrid retrieval, vector searc projection",
-        "description": "Serves low-latency views for vector and inverted indexes with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "p95 <=300ms search"
+          "ranking": "Timeout-bounded ranking with safe lexical fallback"
+        }
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Query and suggestion cache",
+        "description": "Caches normalized query results and prefixes with ACL-aware keys, short TTLs, and generation invalidation after index updates.",
+        "position": {
+          "x": 1800,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Tenant/ACL-scoped TTL and index-generation keys"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Design embedding, hybrid retrieval, vector searc monitoring",
-        "description": "Tracks Design embedding, hybrid retrieval, vector searc latency, backlog, freshness, correctness, and saturation.",
+        "label": "Search quality and operations",
+        "description": "Tracks indexing lag, freshness, zero-result rate, relevance quality, ACL leaks, shard health, cache hit rate, and query tail latency.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Stale index, query tail, quality, and authorization failures"
         }
       }
     ],
@@ -302,159 +330,163 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Design embedding, hybrid retrieval, vector searc",
-        "description": "Client submits search using a natural-language query through the authenticated request boundary."
+        "label": "Query or suggestion",
+        "description": "Clients send a bounded query, filters, cursor, locale, and caller context through the authenticated API."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-query",
         "source": "gateway",
-        "target": "service",
+        "target": "query",
         "type": "api-call",
-        "label": "Validated Design embedding, hybrid retrieval, vector searc operation",
-        "description": "The gateway forwards a validated Design embedding, hybrid retrieval, vector searc operation after authentication, quota, and idempotency checks."
+        "label": "Normalized retrieval plan",
+        "description": "The gateway validates ACL context, quota, and query size before query understanding selects the retrieval strategy."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "query-index",
+        "source": "query",
+        "target": "index",
         "type": "database-connection",
-        "label": "Design embedding, hybrid retrieval, vector searc state commit",
-        "description": "Commits documents, embeddings, and index versions before downstream asynchronous work."
+        "label": "Lexical or vector retrieval",
+        "description": "The query service retrieves tenant-authorized candidates with a timeout and index-generation watermark."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Design embedding, hybrid retrieval, vector searc event",
-        "description": "An outbox or change stream publishes committed Design embedding, hybrid retrieval, vector searc transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Design embedding, hybrid retrieval, vector searc background work",
-        "description": "Workers handle embedding, indexing, re-ranking, and evaluation with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "index-ranker",
+        "source": "index",
+        "target": "ranker",
         "type": "data-flow",
-        "label": "Design embedding, hybrid retrieval, vector searc serving update",
-        "description": "Workers update the Design embedding, hybrid retrieval, vector searc projection and expose a freshness watermark."
+        "label": "Candidate documents",
+        "description": "The ranker receives bounded candidates, fields, facets, and retrieval scores for final ordering."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "ranker-cache",
+        "source": "ranker",
+        "target": "cache",
         "type": "database-connection",
-        "label": "Design embedding, hybrid retrieval, vector searc projection read",
-        "description": "The Design embedding, hybrid retrieval, vector searc service reads the latest acceptable projection or authoritative state."
+        "label": "Ranked result",
+        "description": "Ranked pages or suggestions are cached only with tenant, ACL, query normalization, and index generation in the key."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "cache-client",
+        "source": "cache",
         "target": "client",
         "type": "http",
-        "label": "Design embedding, hybrid retrieval, vector searc result",
-        "description": "Returns the latest acceptable result within p95 <=300ms search."
+        "label": "Search response",
+        "description": "The client receives results, facets, cursors, relevance metadata, and a freshness indicator or explicit timeout fallback."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "ingest-documents",
+        "source": "ingest",
+        "target": "documents",
+        "type": "data-flow",
+        "label": "Canonical source version",
+        "description": "Ingestion writes the source document and import metadata before creating an indexable version."
+      },
+      {
+        "id": "documents-index",
+        "source": "documents",
+        "target": "index",
+        "type": "message-queue",
+        "label": "Indexing work",
+        "description": "Workers extract fields and embeddings, deduplicate versions, and publish changes for partition-local indexing."
+      },
+      {
+        "id": "index-monitoring",
+        "source": "index",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Design embedding, hybrid retrieval, vector searc pipeline health",
-        "description": "Monitors Design embedding, hybrid retrieval, vector searc consumer lag, processing health, freshness, and projection correctness."
+        "label": "Index freshness and health",
+        "description": "Operations observes ingestion-to-index delay, shard failures, ACL filtering, generation swaps, and reindex progress."
+      },
+      {
+        "id": "query-monitoring",
+        "source": "query",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Query quality and latency",
+        "description": "Query telemetry reports tail latency, zero results, cache behavior, ranking outcomes, and privacy-safe quality samples."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "ACL correctness and index generations",
       "points": [
-        "Keep the Embedding, hybrid retrieval, vector search, filt commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Embedding, hybrid retrieval, vector search, filt writes, event IDs, and versions so retries and replay are safe.",
-        "Return Embedding, hybrid retrieval, vector search, filt version and observedAt so clients can reason about freshness."
+        "Filter semantic search engine results by tenant and effective ACL, or prove the active generation contains the same policy snapshot.",
+        "Build shadow generations and swap aliases atomically so partial reindexes are never visible.",
+        "Keep source versions and ACL snapshots for replay when permissions or content change."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Latency, cursors, and graceful degradation",
       "points": [
-        "Partition Embedding, hybrid retrieval, vector search, filt by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Embedding, hybrid retrieval, vector search, filt work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Embedding, hybrid retrieval, vector search, filt projection drift and partial failures."
+        "Use bounded candidate retrieval, stable sort keys, and generation-aware cursors for semantic search engine pagination.",
+        "Serve the last healthy generation when a new build is incomplete, but expose freshness and avoid silently violating authorization.",
+        "Protect the query path with timeouts, circuit breakers, and per-tenant quotas."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Relevance feedback without leakage",
       "points": [
-        "Serve the last acceptable Embedding, hybrid retrieval, vector search, filt projection or an explicit degraded response when workers fail.",
-        "Retain durable Embedding, hybrid retrieval, vector search, filt records for replay and make each downstream effect independently retryable.",
-        "Measure Embedding, hybrid retrieval, vector search, filt latency, backlog, freshness, error rate, and correctness drift."
+        "Separate semantic search engine click or conversion signals from personally identifying data and honor retention or deletion requests.",
+        "Evaluate ranking by query class and tail latency, not only aggregate click-through.",
+        "Use replayable query sets and staged model or synonym changes before production rollout."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Synchronous indexing versus queued indexing",
+      "recommendation": "Commit the source version synchronously and index asynchronously with a visible freshness contract.",
+      "caution": "Waiting for index mutation makes writes fragile and cannot guarantee immediate consistency at scale."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Denormalized ACL fields versus filter-time checks",
+      "recommendation": "Denormalize safe, versioned authorization facts when it meets the policy model, while retaining a source-of-truth check for sensitive results.",
+      "caution": "Stale permissions can become a data-leak path if index updates are treated as authoritative."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Lexical, vector, or hybrid retrieval",
+      "recommendation": "Start with the retrieval method that matches the corpus and latency budget, then add hybrid ranking behind an experiment and rollback boundary.",
+      "caution": "Adding embeddings without freshness, explainability, or access-control design increases cost without improving user trust."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Returning semantic search engine results from an index generation whose ACL snapshot is stale.",
+    "Mutating the live index in place and exposing partially reindexed data.",
+    "Using offset pagination so inserts and deletes reorder later result pages.",
+    "Ignoring tombstones, deletes, or source-version gaps during replay.",
+    "Optimizing click-through while omitting tail latency, zero-result rate, and abusive-query controls."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you prevent a stale semantic search engine index from leaking data?",
+      "answer": "Carry ACL or tenant versions through the document and query path, reject unsafe generations, and fail closed for sensitive filters."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you rebuild without downtime?",
+      "answer": "Build a shadow generation from a source watermark, validate counts and permissions, then swap an alias atomically and retain the previous generation for rollback."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you debug an irrelevant result?",
+      "answer": "Persist the query normalization, candidate set, rank features, model version, generation, and privacy-safe feedback trace."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the search using a natural-language query workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the semantic search engine workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support embedding, hybrid retrieval, vector search, filtering, and relevance ranking, authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative semantic search engine state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions semantic search engine traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Embedding, hybrid retrieval, vector search, filt consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the semantic search engine user experience."
     }
   ]
 }

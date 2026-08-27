@@ -50,256 +50,297 @@
   },
   "entities": [
     {
-      "name": "Type-safe inversion-of-control",
+      "name": "ResourceSpec",
       "fields": [
+        "resourceId",
         "tenantId",
-        "typeSafeInversionOfControlId",
-        "status",
+        "desiredState",
         "version",
-        "createdAt",
+        "policyVersion",
         "updatedAt"
       ],
-      "notes": "Authoritative Type-safe inversion-of-control record keyed for its primary command and read paths."
+      "notes": "Versioned desired state for a ioc dependency injection framework managed resource."
     },
     {
-      "name": "Type-safe inversion-of-control event",
+      "name": "Operation",
       "fields": [
-        "eventId",
-        "typeSafeInversionOfControlId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "operationId",
+        "resourceId",
+        "requestHash",
+        "step",
+        "attempt",
+        "status"
       ],
-      "notes": "Immutable Type-safe inversion-of-control event with an idempotency key and version for replay."
+      "notes": "Durable ioc dependency injection framework reconciliation operation with per-step progress."
     },
     {
-      "name": "Type-safe inversion-of-control policy",
+      "name": "PolicyVersion",
       "fields": [
         "policyId",
-        "tenantId",
         "scope",
         "version",
         "rules",
-        "updatedAt"
+        "effectiveAt",
+        "status"
       ],
-      "notes": "Versioned policy controlling Type-safe inversion-of-control authorization, routing, or eligibility decisions."
+      "notes": "Auditable ioc dependency injection framework policy evaluated before provisioning or mutation."
     },
     {
-      "name": "Type-safe inversion-of-control projection",
+      "name": "ReconciliationCheckpoint",
       "fields": [
-        "typeSafeInversionOfControlId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
+        "resourceId",
+        "provider",
+        "observedVersion",
+        "cursor",
+        "lastError",
         "updatedAt"
       ],
-      "notes": "Rebuildable Type-safe inversion-of-control projection with observedAt and freshness metadata."
+      "notes": "Provider-specific ioc dependency injection framework observation and recovery cursor."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/type-safe-inversion-of-control",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { typeSafeInversionOfControlId, status, version }",
-      "notes": "Create or submit Type-safe inversion-of-control with idempotency and return an accepted state/version."
+      "method": "PUT",
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, expectedVersion, idempotencyKey } -> { version, operationId }",
+      "notes": "Update ioc dependency injection framework desired state with optimistic concurrency."
     },
     {
       "method": "GET",
-      "path": "/v1/type-safe-inversion-of-control/{typeSafeInversionOfControlId}",
-      "contract": "{ typeSafeInversionOfControlId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Type-safe inversion-of-control state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/type-safe-inversion-of-control?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Type-safe inversion-of-control records with cursor pagination and eligibility filters."
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, observedState, version, health, operationStatus }",
+      "notes": "Return ioc dependency injection framework desired and observed state with reconciliation freshness."
     },
     {
       "method": "POST",
-      "path": "/v1/type-safe-inversion-of-control/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Type-safe inversion-of-control rebuild or repair operation and return job status."
+      "path": "/v1/operations/{operationId}/cancel",
+      "contract": "{ reason, expectedVersion } -> { status }",
+      "notes": "Request a safe cancellation or rollback of an in-flight ioc dependency injection framework operation."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/resources/{resourceId}/reconcile",
+      "contract": "{ provider, observedState, idempotencyKey } -> { operationId, status }",
+      "notes": "Trigger an auditable ioc dependency injection framework reconciliation or repair."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Register and resolve dependencies",
-      "description": "The Type-safe inversion-of-control gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Accept a desired-state command",
+      "description": "The ioc dependency injection framework control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Type-safe inversion-of-control service records the accepted state and version before acknowledging the client."
+      "title": "Plan a safe operation",
+      "description": "A planner turns ioc dependency injection framework desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Type-safe inversion-of-control events; consumers deduplicate by event ID and track offsets."
+      "title": "Reconcile providers asynchronously",
+      "description": "Workers apply ioc dependency injection framework operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Type-safe inversion-of-control events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish observed health",
+      "description": "The serving projection joins desired and observed ioc dependency injection framework state with operation status, policy version, freshness, and actionable errors."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Type-safe inversion-of-control projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Recover and audit",
+      "description": "Retries, dead letters, drift detection, and operator approvals repair ioc dependency injection framework resources without losing the original command or provider evidence."
     }
   ],
   "architecture": {
-    "title": "Design a framework for inversion of control and dependency injection to manage object dependencies. reference architecture",
-    "summary": "The authoritative state records Register and resolve dependencies; asynchronous workers build serving projections while Service container/registry pattern, Reflection for auto-wiring, Graph-based dependency resolution stays isolated from the request path.",
+    "title": "Ioc Dependency Injection Framework control-plane architecture",
+    "summary": "Design a type-safe inversion-of-control and dependency-injection framework that supports registration, constructor/property injection, scopes, lifecycle hooks, factories, diagnostics, and safe concurrent resolution. The design separates versioned desired state from leased reconciliation work and provider mutations, making drift, retries, approvals, and audit history explicit while keeping operators responsive during execution backlogs.",
     "layers": [
       {
         "id": "experience",
-        "label": "Type-safe inversion-of-control request boundary",
-        "description": "Clients submit and read Type-safe inversion-of-control requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Operator and automation plane",
+        "description": "Authenticated clients submit desired state and inspect versioned status and audit outcomes.",
+        "componentIds": ["client", "gateway", "control"]
       },
       {
-        "id": "source",
-        "label": "Type-safe inversion-of-control authoritative state",
-        "description": "Durable Type-safe inversion-of-control state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "control",
+        "label": "Desired state and planning plane",
+        "description": "Versioned state, planning, leases, and policy determine safe execution order.",
+        "componentIds": ["state", "scheduler"]
       },
       {
-        "id": "processing",
-        "label": "Type-safe inversion-of-control processing and serving",
-        "description": "Partitioned Type-safe inversion-of-control workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "execution",
+        "label": "Reconciliation and provider plane",
+        "description": "Durable queues and partitioned workers apply idempotent provider operations.",
+        "componentIds": ["queue", "workers", "providers"]
+      },
+      {
+        "id": "events",
+        "label": "Audit and integration plane",
+        "description": "Replayable events feed status, audit, and external integrations.",
+        "componentIds": ["events"]
       },
       {
         "id": "operations",
-        "label": "Type-safe inversion-of-control operations",
-        "description": "Type-safe inversion-of-control signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Infrastructure safety operations",
+        "description": "Drift, lag, failed actions, provider limits, and rollout risk are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Type-safe inversion-of-control write path",
-        "description": "Client -> Type-safe inversion-of-control gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "control",
+        "label": "Desired state path",
+        "description": "Client -> gateway -> control plane -> versioned state -> plan and lease.",
+        "componentIds": ["client", "gateway", "control", "state", "scheduler"]
       },
       {
-        "id": "async",
-        "label": "Type-safe inversion-of-control projection path",
-        "description": "Authoritative Type-safe inversion-of-control state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "execute",
+        "label": "Reconciliation path",
+        "description": "Plan -> queue -> worker -> provider adapter -> observed state and audit event.",
+        "componentIds": [
+          "scheduler",
+          "queue",
+          "workers",
+          "providers",
+          "state",
+          "events"
+        ]
       }
     ],
     "components": [
       {
         "id": "client",
         "type": "client",
-        "componentId": "web-app",
-        "label": "Type-safe inversion-of-control clients",
-        "description": "Clients use the Register and resolve dependencies workflow and receive explicit status, freshness, or progress.",
+        "componentId": "admin-console",
+        "label": "Operators and automation clients",
+        "description": "Operators and automation submit desired state, inspect status, approve changes, and consume audit events.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, CLI, and automation API"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Type-safe inversion-of-control gateway",
-        "description": "Authenticates Type-safe inversion-of-control requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Infrastructure control gateway",
+        "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "RBAC, tenant isolation, quotas, and admission policy"
         }
       },
       {
-        "id": "service",
+        "id": "control",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Type-safe inversion-of-control service",
-        "description": "Owns the Register and resolve dependencies command, authorization policy, lifecycle state, and client contract.",
+        "label": "Domain control plane",
+        "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "consistency": "Versioned desired state and idempotent reconciliation"
         }
       },
       {
-        "id": "source",
+        "id": "state",
         "type": "database",
         "componentId": "database",
-        "label": "Type-safe inversion-of-control state",
-        "description": "Stores Register and resolve dependencies; Support constructor and property injection and supports the primary access patterns.",
+        "label": "Desired state and audit store",
+        "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Design an IoC/Dependency Injection Framework"
+          "storage": "Versioned state with optimistic concurrency and audit retention"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Type-safe inversion-of-control event backbone",
-        "description": "Publishes versioned events for Service container/registry pattern, Reflection for auto-wiring, Graph-based dependency resolution after durable commits.",
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Placement and work scheduler",
+        "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 80
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scheduling": "Leases, fairness, dependency ordering, and backpressure"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Reconciliation and execution queue",
+        "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
+        "position": {
+          "x": 1440,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "Durable jobs with bounded retries and dead letters"
         }
       },
       {
         "id": "workers",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Type-safe inversion-of-control workers",
-        "description": "Workers process Service container/registry pattern, Reflection for auto-wiring, Graph-based dependency resolution independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Partitioned execution workers",
+        "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
         "position": {
           "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Type-safe inversion-of-control projection",
-        "description": "Serves low-latency views for Design an IoC/Dependency Injection Framework with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Minimal performance overhead"
+          "scaling": "Partitioned workers with leases and idempotency"
+        }
+      },
+      {
+        "id": "providers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Infrastructure provider adapters",
+        "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
+        "position": {
+          "x": 2160,
+          "y": 80
+        },
+        "properties": {
+          "providers": "Provider-qualified credentials and capability adapters"
+        }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Control-plane event stream",
+        "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
+        "position": {
+          "x": 2160,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "At least once with ordering keys and replay"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Type-safe inversion-of-control monitoring",
-        "description": "Tracks Type-safe inversion-of-control latency, backlog, freshness, correctness, and saturation.",
+        "label": "Control-plane operations",
+        "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Drift, queue lag, failed actions, and unsafe changes"
         }
       }
     ],
@@ -309,159 +350,179 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Type-safe inversion-of-control",
-        "description": "Client submits Register and resolve dependencies through the authenticated request boundary."
+        "label": "Desired-state or status request",
+        "description": "Operators and automation submit a versioned desired state or inspect a tenant-scoped operation and audit history."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-control",
         "source": "gateway",
-        "target": "service",
+        "target": "control",
         "type": "api-call",
-        "label": "Validated Type-safe inversion-of-control operation",
-        "description": "The gateway forwards a validated Type-safe inversion-of-control operation after authentication, quota, and idempotency checks."
+        "label": "Authorized control command",
+        "description": "The gateway applies RBAC, admission policy, quotas, and idempotency before creating a plan."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "control-state",
+        "source": "control",
+        "target": "state",
         "type": "database-connection",
-        "label": "Type-safe inversion-of-control state commit",
-        "description": "Commits Register and resolve dependencies; Support constructor and property injection before downstream asynchronous work."
+        "label": "Desired state commit",
+        "description": "The control plane stores the accepted version and lifecycle state before scheduling reconciliation."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Type-safe inversion-of-control event",
-        "description": "An outbox or change stream publishes committed Type-safe inversion-of-control transitions with replayable ordering."
+        "id": "state-scheduler",
+        "source": "state",
+        "target": "scheduler",
+        "type": "message-queue",
+        "label": "Reconciliation intent",
+        "description": "A durable event or lease makes new, changed, or drifted resources eligible for partition-local planning."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
+        "id": "scheduler-queue",
+        "source": "scheduler",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Execution plan",
+        "description": "The scheduler emits dependency-ordered work with a lease, policy version, retry budget, and provider target."
+      },
+      {
+        "id": "queue-workers",
+        "source": "queue",
         "target": "workers",
         "type": "message-queue",
-        "label": "Type-safe inversion-of-control background work",
-        "description": "Workers handle Service container/registry pattern, Reflection for auto-wiring, Graph-based dependency resolution with bounded retries and idempotent updates."
+        "label": "Partitioned work item",
+        "description": "Workers claim jobs idempotently, report progress, and isolate provider or tenant failures with dead letters."
       },
       {
-        "id": "workers-read-model",
+        "id": "workers-providers",
         "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Type-safe inversion-of-control serving update",
-        "description": "Workers update the Type-safe inversion-of-control projection and expose a freshness watermark."
+        "target": "providers",
+        "type": "api-call",
+        "label": "Provider operation",
+        "description": "Adapters perform a capability-checked operation with a provider idempotency token and observed-state precondition."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "workers-state",
+        "source": "workers",
+        "target": "state",
         "type": "database-connection",
-        "label": "Type-safe inversion-of-control projection read",
-        "description": "The Type-safe inversion-of-control service reads the latest acceptable projection or authoritative state."
+        "label": "Observed state and result",
+        "description": "Execution records observed state, drift, errors, and operation version without overwriting a newer desired state."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "state-events",
+        "source": "state",
+        "target": "events",
+        "type": "event-stream",
+        "label": "Control-plane event",
+        "description": "An outbox publishes desired-state, execution, drift, and audit events for replayable consumers."
+      },
+      {
+        "id": "events-client",
+        "source": "events",
         "target": "client",
         "type": "http",
-        "label": "Type-safe inversion-of-control result",
-        "description": "Returns the latest acceptable result within Minimal performance overhead."
+        "label": "Status or audit update",
+        "description": "Operators and automation receive versioned status, drift, and audit results through polling, webhook, or subscription APIs."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "queue-monitoring",
+        "source": "queue",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Type-safe inversion-of-control pipeline health",
-        "description": "Monitors Type-safe inversion-of-control consumer lag, processing health, freshness, and projection correctness."
+        "label": "Execution health telemetry",
+        "description": "Operations measures queue age, lease expiry, retry storms, dead letters, worker capacity, and provider throttling."
+      },
+      {
+        "id": "events-monitoring",
+        "source": "events",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Drift and audit telemetry",
+        "description": "Monitoring checks event gaps, reconciliation parity, rollout safety, and audit completeness."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Desired versus observed state",
       "points": [
-        "Keep the Type-safe inversion-of-control commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Type-safe inversion-of-control writes, event IDs, and versions so retries and replay are safe.",
-        "Return Type-safe inversion-of-control version and observedAt so clients can reason about freshness."
+        "Keep ioc dependency injection framework desired state separate from provider-observed state and show both to operators.",
+        "Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects.",
+        "Version policy and resource state so old operations cannot overwrite newer intent."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Provider failures and unknown outcomes",
       "points": [
-        "Partition Type-safe inversion-of-control by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Type-safe inversion-of-control work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Type-safe inversion-of-control projection drift and partial failures."
+        "Use provider-specific idempotency tokens and query-after-timeout behavior for ioc dependency injection framework operations.",
+        "Bound retries with exponential backoff, circuit breakers, and per-provider quotas.",
+        "Route irreconcilable drift to an approval or quarantine path instead of retrying forever."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Blast radius and operations",
       "points": [
-        "Serve the last acceptable Type-safe inversion-of-control projection or an explicit degraded response when workers fail.",
-        "Retain durable Type-safe inversion-of-control records for replay and make each downstream effect independently retryable.",
-        "Measure Type-safe inversion-of-control latency, backlog, freshness, error rate, and correctness drift."
+        "Partition ioc dependency injection framework work by tenant, region, cluster, or resource class and cap concurrent mutations.",
+        "Audit who changed desired state, which policy allowed it, and what provider evidence was observed.",
+        "Alert on drift age, operation backlog, failed steps, policy denials, and stale observations."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Push versus pull reconciliation",
+      "recommendation": "Use event triggers for fast response and periodic scans for missed events, drift, and recovery.",
+      "caution": "A push-only ioc dependency injection framework controller silently misses changes when a provider event is lost."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Central control plane versus provider-native controllers",
+      "recommendation": "Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters.",
+      "caution": "A monolithic controller becomes hard to scale and couples unrelated provider failure domains."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Automatic repair versus approval",
+      "recommendation": "Automate low-risk, reversible ioc dependency injection framework changes and require approval for destructive or high-blast-radius operations.",
+      "caution": "Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating a ioc dependency injection framework API response as proof that the provider has reached the desired state.",
+    "Overwriting desired state with stale observed state after an out-of-order worker response.",
+    "Retrying timed-out provider mutations without an idempotency token or status lookup.",
+    "Running every tenant or region through one queue and allowing a hot failure domain to block all work.",
+    "Omitting policy version, operator identity, provider evidence, and drift age from the audit trail."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a ioc dependency injection framework provider timeout?",
+      "answer": "Persist the operation as unknown, query provider state using the idempotency token, and only retry or compensate after the result is known."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you stop a bad rollout?",
+      "answer": "Use policy gates, concurrency limits, canary scopes, operation cancellation, and a versioned last-known-good desired state."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you detect drift?",
+      "answer": "Compare periodic provider observations with desired state, record the observed version and age, and route policy-compliant repair separately from manual exceptions."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Register and resolve dependencies workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the ioc dependency injection framework workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a framework for inversion of control and dependency injection to manage object dependencies., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative ioc dependency injection framework state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions ioc dependency injection framework traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Type-safe inversion-of-control consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the ioc dependency injection framework user experience."
     }
   ]
 }

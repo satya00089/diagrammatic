@@ -50,136 +50,149 @@
   },
   "entities": [
     {
-      "name": "paste metadata and object content",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for paste content and ownership; design keys around the main reads and writes."
-    },
-    {
-      "name": "pastebin event",
+      "name": "Paste",
       "fields": [
-        "eventId",
-        "textSnippetsId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "pasteId",
+        "ownerId",
+        "contentHash",
+        "visibility",
+        "expiresAt",
+        "createdAt",
+        "status"
       ],
-      "notes": "Versioned Text snippets records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Immutable or versioned text content with ownership and expiry."
     },
     {
-      "name": "Text snippets policy",
+      "name": "ShortAlias",
+      "fields": ["alias", "pasteId", "createdAt", "status"],
+      "notes": "Unique lookup key mapped to a paste without exposing database identifiers."
+    },
+    {
+      "name": "AccessPolicy",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "pasteId",
+        "visibility",
+        "passwordHash",
+        "allowedUsers",
+        "expiresAt",
+        "version"
       ],
-      "notes": "Versioned Text snippets records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Versioned access and retention policy."
     },
     {
-      "name": "Text snippets projection",
+      "name": "AbuseScan",
       "fields": [
-        "textSnippetsId",
+        "scanId",
+        "pasteId",
+        "scannerVersion",
+        "findings",
         "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "completedAt"
       ],
-      "notes": "Versioned Text snippets records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Asynchronous moderation and malware/secret scan result."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/text-snippets",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { textSnippetsId, status, version }",
-      "notes": "Create or submit Text snippets with idempotency and return an accepted state/version."
+      "path": "/v1/pastes",
+      "contract": "{ content, visibility, expiresAt, password?, idempotencyKey } -> { pasteId, alias, status }",
+      "notes": "Validate size, retention, content policy, and ownership before storing the paste."
     },
     {
       "method": "GET",
-      "path": "/v1/text-snippets/{textSnippetsId}",
-      "contract": "{ textSnippetsId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Text snippets state with version, observedAt, and freshness metadata."
+      "path": "/p/{alias}",
+      "contract": "{ content, visibility, expiresAt, cacheStatus }",
+      "notes": "Resolve a short alias with expiry and access checks on every miss."
     },
     {
-      "method": "GET",
-      "path": "/v1/text-snippets?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Text snippets records with cursor pagination and eligibility filters."
+      "method": "PATCH",
+      "path": "/v1/pastes/{pasteId}",
+      "contract": "{ visibility?, expiresAt?, expectedVersion } -> { status, version }",
+      "notes": "Allow only authorized policy changes and invalidate cached reads."
     },
     {
-      "method": "POST",
-      "path": "/v1/text-snippets/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Text snippets rebuild or repair operation and return job status."
+      "method": "DELETE",
+      "path": "/v1/pastes/{pasteId}",
+      "contract": "{ expectedVersion, idempotencyKey } -> { status }",
+      "notes": "Write a tombstone and asynchronously remove content replicas and search/abuse indexes."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept create and retrieve a paste",
-      "description": "The Text snippets gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Create and validate a paste",
+      "description": "The API checks size, expiry, visibility, abuse policy, and idempotency, then stores content and alias metadata durably."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Text snippets service records the accepted state and version before acknowledging the client."
+      "title": "Resolve a short alias",
+      "description": "Edge and cache look up the alias; cache misses read metadata and content, recheck expiry and access policy, and return a bounded response."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Text snippets events; consumers deduplicate by event ID and track offsets."
+      "title": "Scan and moderate asynchronously",
+      "description": "A queue sends content to secret, malware, and abuse scanners; a policy result can hide a paste without deleting audit evidence."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Text snippets events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Expire and delete safely",
+      "description": "Expiry workers write tombstones, evict aliases, and delete content by lifecycle policy while preserving ownership and deletion audit."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Text snippets projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Measure reads without hurting redirects",
+      "description": "Click/read events leave the serving path and are aggregated asynchronously with privacy and retention controls."
     }
   ],
   "architecture": {
-    "title": "Text snippets with generated URLs, expiration, and sharing reference architecture",
-    "summary": "The authoritative state records create and retrieve a paste; asynchronous workers build serving projections while expiration cleanup, abuse scanning, and analytics stays isolated from the request path.",
+    "title": "Pastebin reference architecture",
+    "summary": "A small durable metadata service controls immutable paste bodies, while cache and CDN layers absorb read traffic and event workers handle lifecycle and moderation.",
     "layers": [
       {
-        "id": "experience",
-        "label": "Text snippets request boundary",
-        "description": "Clients submit and read Text snippets requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "id": "edge",
+        "label": "Edge and API",
+        "description": "Clients, rate limits, authentication, and cacheable read responses.",
+        "componentIds": ["client", "gateway", "cache", "cdn"]
       },
       {
         "id": "source",
-        "label": "Text snippets authoritative state",
-        "description": "Durable Text snippets state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "label": "Source data",
+        "description": "Paste metadata, ownership, lifecycle, and content storage.",
+        "componentIds": ["paste-service", "metadata-db", "blob-store"]
       },
       {
-        "id": "processing",
-        "label": "Text snippets processing and serving",
-        "description": "Partitioned Text snippets workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
-      },
-      {
-        "id": "operations",
-        "label": "Text snippets operations",
-        "description": "Text snippets signals expose lag, failures, repair, correctness, and capacity.",
-        "componentIds": ["monitoring"]
+        "id": "async",
+        "label": "Asynchronous lifecycle",
+        "description": "Durable events drive invalidation, expiry, moderation, and analytics.",
+        "componentIds": ["events", "lifecycle", "moderation", "analytics"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Text snippets write path",
-        "description": "Client -> Text snippets gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "write",
+        "label": "Create paste",
+        "description": "Client -> gateway -> paste service -> blob and metadata stores -> response.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "paste-service",
+          "blob-store",
+          "metadata-db"
+        ]
       },
       {
-        "id": "async",
-        "label": "Text snippets projection path",
-        "description": "Authoritative Text snippets state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "read",
+        "label": "Read paste",
+        "description": "Client -> CDN or cache -> authorization-aware service -> immutable content.",
+        "componentIds": [
+          "client",
+          "cdn",
+          "cache",
+          "paste-service",
+          "blob-store"
+        ]
+      },
+      {
+        "id": "lifecycle",
+        "label": "Delete or expire",
+        "description": "Source mutation -> event stream -> purge, tombstone, moderation, and audit consumers.",
+        "componentIds": ["paste-service", "events", "lifecycle", "moderation"]
       }
     ],
     "components": [
@@ -187,112 +200,154 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Design text snippets clients",
-        "description": "Clients use the create and retrieve a paste workflow and receive explicit status, freshness, or progress.",
+        "label": "Web and API clients",
+        "description": "Create, share, and read pastes.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Design text snippets gateway",
-        "description": "Authenticates Design text snippets requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Pastebin-like service where users create text pa gateway",
+        "description": "Authenticates users, limits abuse, and routes read and write traffic.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "controls": "Auth, WAF, quotas"
         }
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Design text snippets service",
-        "description": "Owns the create and retrieve a paste command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Design text snippets state",
-        "description": "Stores paste content and ownership and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "paste metadata and object content"
-        }
-      },
-      {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Design text snippets event backbone",
-        "description": "Publishes versioned events for expiration cleanup, abuse scanning, and analytics after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Design text snippets workers",
-        "description": "Workers process expiration cleanup, abuse scanning, and analytics independently from the user-facing command and retry transient failures.",
-        "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
+        "id": "cache",
         "type": "cache",
         "componentId": "cache",
-        "label": "Design text snippets projection",
-        "description": "Serves low-latency views for paste metadata and object content with explicit freshness and fallback behavior.",
+        "label": "Regional cache",
+        "description": "Caches authorized public metadata and immutable body responses with bounded TTLs.",
         "position": {
-          "x": 2160,
-          "y": 260
+          "x": 720,
+          "y": 80
         },
         "properties": {
-          "latency": "p95 <=100ms reads"
+          "eviction": "Version and purge events"
         }
       },
       {
-        "id": "monitoring",
-        "type": "monitoring",
-        "componentId": "monitoring",
-        "label": "Design text snippets monitoring",
-        "description": "Tracks Design text snippets latency, backlog, freshness, correctness, and saturation.",
+        "id": "cdn",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Content CDN",
+        "description": "Serves public immutable bodies close to readers.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1080,
+          "y": 80
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "delivery": "Edge cache"
+        }
+      },
+      {
+        "id": "paste-service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Paste service",
+        "description": "Owns IDs, validation, authorization, metadata, and lifecycle state.",
+        "position": {
+          "x": 720,
+          "y": 360
+        },
+        "properties": {
+          "consistency": "Durable idempotent writes"
+        }
+      },
+      {
+        "id": "metadata-db",
+        "type": "database",
+        "componentId": "database",
+        "label": "Metadata store",
+        "description": "Stores paste metadata, ownership, hashes, expiry, and tombstones.",
+        "position": {
+          "x": 1080,
+          "y": 360
+        },
+        "properties": {
+          "partition": "paste_id"
+        }
+      },
+      {
+        "id": "blob-store",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Immutable blob store",
+        "description": "Stores paste bodies under checksummed, versioned content keys.",
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "properties": {
+          "retention": "Lifecycle tiers"
+        }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Lifecycle event stream",
+        "description": "Publishes create, delete, expiry, report, and moderation events for replay.",
+        "position": {
+          "x": 1440,
+          "y": 360
+        },
+        "properties": {
+          "delivery": "At least once"
+        }
+      },
+      {
+        "id": "lifecycle",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Expiry and purge workers",
+        "description": "Tombstone expired records, purge caches, and delete eligible blobs.",
+        "position": {
+          "x": 1800,
+          "y": 160
+        },
+        "properties": {
+          "scaling": "Due-time queue"
+        }
+      },
+      {
+        "id": "moderation",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Moderation service",
+        "description": "Processes abuse reports and applies quarantine or removal decisions.",
+        "position": {
+          "x": 1800,
+          "y": 400
+        },
+        "properties": {
+          "path": "Queue and review"
+        }
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Audit and analytics",
+        "description": "Consumes sampled reads and security events without blocking requests.",
+        "position": {
+          "x": 1800,
+          "y": 640
+        },
+        "properties": {
+          "path": "Async"
         }
       }
     ],
@@ -302,159 +357,167 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Design text snippets",
-        "description": "Client submits create and retrieve a paste through the authenticated request boundary."
+        "label": "Paste API",
+        "description": "Create, read, report, and delete requests."
       },
       {
         "id": "gateway-service",
         "source": "gateway",
-        "target": "service",
+        "target": "paste-service",
         "type": "api-call",
-        "label": "Validated Design text snippets operation",
-        "description": "The gateway forwards a validated Design text snippets operation after authentication, quota, and idempotency checks."
+        "label": "Validated request",
+        "description": "Gateway forwards authenticated and rate-limited calls."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Design text snippets state commit",
-        "description": "Commits paste content and ownership before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Design text snippets event",
-        "description": "An outbox or change stream publishes committed Design text snippets transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Design text snippets background work",
-        "description": "Workers handle expiration cleanup, abuse scanning, and analytics with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "service-db",
+        "source": "paste-service",
+        "target": "metadata-db",
         "type": "data-flow",
-        "label": "Design text snippets serving update",
-        "description": "Workers update the Design text snippets projection and expose a freshness watermark."
+        "label": "Metadata",
+        "description": "Metadata and tombstones are the source of truth."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Design text snippets projection read",
-        "description": "The Design text snippets service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Design text snippets result",
-        "description": "Returns the latest acceptable result within p95 <=100ms reads."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
-        "target": "monitoring",
+        "id": "service-blob",
+        "source": "paste-service",
+        "target": "blob-store",
         "type": "data-flow",
-        "label": "Design text snippets pipeline health",
-        "description": "Monitors Design text snippets consumer lag, processing health, freshness, and projection correctness."
+        "label": "Paste body",
+        "description": "Bodies are immutable and addressed by checksum-backed keys."
+      },
+      {
+        "id": "gateway-cache",
+        "source": "gateway",
+        "target": "cache",
+        "type": "api-call",
+        "label": "Read cache",
+        "description": "Cache absorbs repeated public reads after policy checks."
+      },
+      {
+        "id": "cache-cdn",
+        "source": "cache",
+        "target": "cdn",
+        "type": "data-flow",
+        "label": "Edge delivery",
+        "description": "Public immutable responses can be promoted to the CDN."
+      },
+      {
+        "id": "service-events",
+        "source": "paste-service",
+        "target": "events",
+        "type": "async",
+        "label": "Lifecycle events",
+        "description": "Events make purge, expiry, and moderation replayable."
+      },
+      {
+        "id": "events-lifecycle",
+        "source": "events",
+        "target": "lifecycle",
+        "type": "async",
+        "label": "Expiry and purge",
+        "description": "Workers remove stale data and invalidate caches."
+      },
+      {
+        "id": "events-moderation",
+        "source": "events",
+        "target": "moderation",
+        "type": "async",
+        "label": "Reports",
+        "description": "Moderation decisions are decoupled from reads."
+      },
+      {
+        "id": "events-analytics",
+        "source": "events",
+        "target": "analytics",
+        "type": "async",
+        "label": "Audit stream",
+        "description": "Security and product analytics consume events asynchronously."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Alias resolution and cache safety",
       "points": [
-        "Keep the Text snippets commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Text snippets writes, event IDs, and versions so retries and replay are safe.",
-        "Return Text snippets version and observedAt so clients can reason about freshness."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Design for the failure case where a hot alias, abuse burst, or cleanup lag must not expose content or take down reads; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Expiry, deletion, and lifecycle",
       "points": [
-        "Partition Text snippets by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Text snippets work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Text snippets projection drift and partial failures."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Abuse scanning without blocking reads",
       "points": [
-        "Serve the last acceptable Text snippets projection or an explicit degraded response when workers fail.",
-        "Retain durable Text snippets records for replay and make each downstream effect independently retryable.",
-        "Measure Text snippets latency, backlog, freshness, error rate, and correctness drift."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Mutable paste versus immutable versions",
+      "recommendation": "Prefer immutable content versions and an explicit latest pointer when editing is required.",
+      "caution": "In-place edits complicate cache invalidation, audit, and link consistency."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous scan versus fast creation",
+      "recommendation": "Accept within size/policy limits and quarantine or label content while deep scanning asynchronously.",
+      "caution": "Blocking every create on scanners raises tail latency and couples availability to third parties."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Long cache TTL versus revocation",
+      "recommendation": "Use short policy-aware TTLs and targeted invalidation for password, delete, and abuse changes.",
+      "caution": "A long TTL improves hot reads but can serve revoked or expired content."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Caching private or expired pastes under an alias-only key.",
+    "Generating aliases without collision and idempotency handling.",
+    "Deleting content without tombstoning aliases and replicas.",
+    "Running unbounded scanners on the create or read path.",
+    "Collecting raw paste content in analytics logs."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "What if a paste becomes abusive after it is cached?",
+      "answer": "Mark it blocked in the policy store, invalidate the alias cache, and let reads recheck policy before serving stale content."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you handle an alias hot spot?",
+      "answer": "Use edge caching with policy-aware keys, rate limits, and origin shielding while keeping invalidation targeted."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you guarantee expiry?",
+      "answer": "Store expiry with the alias, reject it on every origin read, and use asynchronous deletion only as physical cleanup."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the create and retrieve a paste workflow, scale, latency, durability, and failure contract."
+      "description": "The answer defines short-link resolution, privacy, expiry, deletion, abuse quarantine, cache invalidation, and bounded content handling, scale, latency, durability, authorization, and failure behavior."
     },
     {
       "criterion": "Data model",
-      "description": "Entities and keys support text snippets with generated URLs, expiration, and sharing, authorization, privacy, and lifecycle changes."
+      "description": "Entities and keys make the Pastebin-like paste service state, versions, lifecycle, and derived projections explicit."
     },
     {
       "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
       "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain Text snippets consistency, push/pull, managed services, and the scale boundary."
+      "description": "The candidate can explain the the Pastebin-like paste service consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

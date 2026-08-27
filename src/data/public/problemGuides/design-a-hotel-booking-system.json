@@ -50,143 +50,135 @@
   },
   "entities": [
     {
-      "name": "Hotel reservation platform",
+      "name": "ReservationIntent",
       "fields": [
-        "tenantId",
-        "hotelReservationPlatformId",
+        "intentId",
+        "customerId",
+        "offerId",
         "status",
         "version",
-        "createdAt",
-        "updatedAt"
+        "idempotencyKey"
       ],
-      "notes": "Authoritative Hotel reservation platform record keyed for its primary command and read paths."
+      "notes": "Idempotent hotel booking system reservation intent with an explicit lifecycle."
     },
     {
-      "name": "Hotel reservation platform event",
+      "name": "InventoryClaim",
       "fields": [
-        "eventId",
-        "hotelReservationPlatformId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Immutable Hotel reservation platform event with an idempotency key and version for replay."
-    },
-    {
-      "name": "Hotel reservation platform policy",
-      "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
-      ],
-      "notes": "Versioned policy controlling Hotel reservation platform authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "Hotel reservation platform projection",
-      "fields": [
-        "hotelReservationPlatformId",
+        "claimId",
+        "itemId",
+        "quantity",
+        "expiresAt",
         "status",
-        "version",
-        "observedAt",
-        "freshness",
+        "version"
+      ],
+      "notes": "Short-lived conditional claim that protects scarce availability."
+    },
+    {
+      "name": "PaymentAttempt",
+      "fields": [
+        "attemptId",
+        "intentId",
+        "provider",
+        "requestHash",
+        "status",
+        "providerRef"
+      ],
+      "notes": "Retry-safe payment attempt with unknown-outcome reconciliation."
+    },
+    {
+      "name": "FulfillmentState",
+      "fields": [
+        "intentId",
+        "stage",
+        "owner",
+        "lastEventId",
+        "status",
         "updatedAt"
       ],
-      "notes": "Rebuildable Hotel reservation platform projection with observedAt and freshness metadata."
+      "notes": "Durable downstream reservation fulfillment progress."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/hotel-reservation-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { hotelReservationPlatformId, status, version }",
-      "notes": "Create or submit Hotel reservation platform with idempotency and return an accepted state/version."
-    },
-    {
       "method": "GET",
-      "path": "/v1/hotel-reservation-platform/{hotelReservationPlatformId}",
-      "contract": "{ hotelReservationPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Hotel reservation platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/hotel-reservation-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Hotel reservation platform records with cursor pagination and eligibility filters."
+      "path": "/v1/catalog/search?q=&filters=",
+      "contract": "{ items[], offers[], availabilityVersion, nextCursor }",
+      "notes": "Search hotel booking system candidates with current price, eligibility, and availability metadata."
     },
     {
       "method": "POST",
-      "path": "/v1/hotel-reservation-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Hotel reservation platform rebuild or repair operation and return job status."
+      "path": "/v1/reservations",
+      "contract": "{ offerId, quantity, customerId, idempotencyKey } -> { intentId, status, version }",
+      "notes": "Create an idempotent hotel booking system reservation intent."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/reservations/{intentId}/confirm",
+      "contract": "{ expectedVersion, paymentToken } -> { status, confirmation }",
+      "notes": "Confirm the hotel booking system reservation only after the inventory claim and payment policy pass."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/reservations/{intentId}",
+      "contract": "{ status, claim, paymentStatus, fulfillment, freshness }",
+      "notes": "Return hotel booking system status with explicit pending, expired, or failed state."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Search hotels by location and dates",
-      "description": "The Hotel reservation platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Search and price current candidates",
+      "description": "The hotel booking system query path combines catalog, eligibility, price, and current availability without treating a stale index as a final claim."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Hotel reservation platform service records the accepted state and version before acknowledging the client."
+      "title": "Claim scarce inventory",
+      "description": "The hotel booking system service creates a short-lived conditional claim keyed by item and request idempotency before charging or confirming."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Hotel reservation platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Confirm the reservation safely",
+      "description": "Payment, policy, and inventory transitions are versioned; unknown provider outcomes are reconciled before retry."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Hotel reservation platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish fulfillment work",
+      "description": "The committed hotel booking system intent emits an event for partner, packing, delivery, or campaign dispatch workers."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Hotel reservation platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Expire, cancel, and reconcile",
+      "description": "Expiry and cancellation release claims idempotently while reconciliation compares internal state with external providers or partners."
     }
   ],
   "architecture": {
-    "title": "Design a reservation system for booking hotel rooms with availability management and payment processing. reference architecture",
-    "summary": "The authoritative state records Search hotels by location and dates; asynchronous workers build serving projections while Optimistic or pessimistic locking, Database transactions for booking, Inventory management system stays isolated from the request path.",
+    "title": "Hotel Booking System domain architecture",
+    "summary": "Design a hotel reservation platform that searches location and date availability, holds rooms, accepts payment, confirms bookings, and prevents double booking across channels. The design makes hotel booking system decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Hotel reservation platform request boundary",
-        "description": "Clients submit and read Hotel reservation platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Booking experience and search",
+        "description": "Search and reservation commands enter through a protected API boundary.",
+        "componentIds": ["client", "gateway", "catalog", "search"]
       },
       {
-        "id": "source",
-        "label": "Hotel reservation platform authoritative state",
-        "description": "Durable Hotel reservation platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "inventory",
+        "label": "Availability and reservation truth",
+        "description": "Inventory holds and reservation state use conditional, versioned writes.",
+        "componentIds": ["availability", "booking"]
       },
       {
-        "id": "processing",
-        "label": "Hotel reservation platform processing and serving",
-        "description": "Partitioned Hotel reservation platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "effects",
+        "label": "Payment and partner effects",
+        "description": "External payment and partner operations are reconciled asynchronously.",
+        "componentIds": ["payments", "event-bus", "partner-sync"]
+      },
+      {
+        "id": "delivery",
+        "label": "Customer communication",
+        "description": "Confirmations and changes are independently retryable.",
+        "componentIds": ["notifications"]
       },
       {
         "id": "operations",
-        "label": "Hotel reservation platform operations",
-        "description": "Hotel reservation platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Booking reliability operations",
+        "description": "Oversell, freshness, lag, and uncertain payment signals protect correctness.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Hotel reservation platform write path",
-        "description": "Client -> Hotel reservation platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Hotel reservation platform projection path",
-        "description": "Authoritative Hotel reservation platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +186,340 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Hotel reservation platform clients",
-        "description": "Clients use the Search hotels by location and dates workflow and receive explicit status, freshness, or progress.",
+        "label": "Traveler and partner clients",
+        "description": "Search, hold, book, cancel, and manage reservation clients.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Hotel reservation platform gateway",
-        "description": "Authenticates Hotel reservation platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Booking API gateway",
+        "description": "Authenticates users and partners, applies quotas, validates idempotency, and protects payment flows.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
+        "id": "catalog",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Hotel reservation platform service",
-        "description": "Owns the Search hotels by location and dates command, authorization policy, lifecycle state, and client contract.",
+        "label": "Property and rate catalog",
+        "description": "Owns normalized property, room, rate, policy, and partner mapping data.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "search",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Availability search index",
+        "description": "Serves geo, date-range, occupancy, and amenity candidate searches from derived inventory.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "availability",
         "type": "database",
         "componentId": "database",
-        "label": "Hotel reservation platform state",
-        "description": "Stores Search hotels by location and dates; Check room availability in real-time and supports the primary access patterns.",
+        "label": "Inventory and hold store",
+        "description": "Authoritative room or seat inventory with short-lived holds and conditional decrement.",
         "position": {
-          "x": 1080,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "storage": "Design a Hotel Booking System"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Hotel reservation platform event backbone",
-        "description": "Publishes versioned events for Optimistic or pessimistic locking, Database transactions for booking, Inventory management system after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "booking",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Hotel reservation platform workers",
-        "description": "Workers process Optimistic or pessimistic locking, Database transactions for booking, Inventory management system independently from the user-facing command and retry transient failures.",
+        "label": "Reservation service",
+        "description": "Owns booking state, cancellation policy, confirmation numbers, and partner reconciliation.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Hotel reservation platform projection",
-        "description": "Serves low-latency views for Design a Hotel Booking System with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "Prevent double booking"
-        }
+        "properties": {}
+      },
+      {
+        "id": "payments",
+        "type": "external-api",
+        "componentId": "external-api",
+        "label": "Payment provider adapter",
+        "description": "Tokenized authorization and capture boundary with unknown-outcome reconciliation.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "event-bus",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Reservation event bus",
+        "description": "Publishes holds, bookings, cancellations, and inventory changes for asynchronous work.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "partner-sync",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Partner sync workers",
+        "description": "Reconcile rate and inventory feeds, confirmations, cancellations, and late partner responses.",
+        "position": {
+          "x": 2060,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Confirmation delivery",
+        "description": "Sends confirmation, change, cancellation, and support messages with delivery audit.",
+        "position": {
+          "x": 2060,
+          "y": 80
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Hotel reservation platform monitoring",
-        "description": "Tracks Hotel reservation platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "Booking reliability operations",
+        "description": "Tracks oversells, hold expiry, payment uncertainty, partner lag, and search freshness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Hotel reservation platform",
-        "description": "Client submits Search hotels by location and dates through the authenticated request boundary."
+        "label": "Search or booking request",
+        "description": "Clients submit date, occupancy, hold, booking, and cancellation requests."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-catalog-1",
         "source": "gateway",
-        "target": "service",
+        "target": "catalog",
         "type": "api-call",
-        "label": "Validated Hotel reservation platform operation",
-        "description": "The gateway forwards a validated Hotel reservation platform operation after authentication, quota, and idempotency checks."
+        "label": "Catalog lookup",
+        "description": "The gateway retrieves normalized property, rate, and policy facts."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "gateway-search-2",
+        "source": "gateway",
+        "target": "search",
+        "type": "api-call",
+        "label": "Candidate availability query",
+        "description": "Search applies geo, date, occupancy, and policy filters within a latency budget."
+      },
+      {
+        "id": "search-availability-3",
+        "source": "search",
+        "target": "availability",
         "type": "database-connection",
-        "label": "Hotel reservation platform state commit",
-        "description": "Commits Search hotels by location and dates; Check room availability in real-time before downstream asynchronous work."
+        "label": "Authoritative availability check",
+        "description": "Candidates are checked against current inventory before a hold or booking."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "gateway-booking-4",
+        "source": "gateway",
+        "target": "booking",
+        "type": "api-call",
+        "label": "Reservation command",
+        "description": "The reservation service validates policy and binds the idempotency key."
+      },
+      {
+        "id": "booking-availability-5",
+        "source": "booking",
+        "target": "availability",
+        "type": "database-connection",
+        "label": "Conditional hold or decrement",
+        "description": "Inventory is held or committed conditionally to prevent oversell."
+      },
+      {
+        "id": "booking-payments-6",
+        "source": "booking",
+        "target": "payments",
+        "type": "api-call",
+        "label": "Tokenized authorization",
+        "description": "Payment is authorized through an adapter and unknown results are reconciled."
+      },
+      {
+        "id": "booking-event-bus-7",
+        "source": "booking",
+        "target": "event-bus",
         "type": "event-stream",
-        "label": "Hotel reservation platform event",
-        "description": "An outbox or change stream publishes committed Hotel reservation platform transitions with replayable ordering."
+        "label": "Committed reservation event",
+        "description": "An outbox publishes hold, booking, cancellation, and inventory events."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "event-bus-partner-sync-8",
+        "source": "event-bus",
+        "target": "partner-sync",
         "type": "message-queue",
-        "label": "Hotel reservation platform background work",
-        "description": "Workers handle Optimistic or pessimistic locking, Database transactions for booking, Inventory management system with bounded retries and idempotent updates."
+        "label": "Partner reconciliation",
+        "description": "Workers process confirmations and inventory changes with bounded retries."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Hotel reservation platform serving update",
-        "description": "Workers update the Hotel reservation platform projection and expose a freshness watermark."
+        "id": "event-bus-notifications-9",
+        "source": "event-bus",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Confirmation or change",
+        "description": "Customers receive deduplicated status updates without blocking the booking commit."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Hotel reservation platform projection read",
-        "description": "The Hotel reservation platform service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Hotel reservation platform result",
-        "description": "Returns the latest acceptable result within Prevent double booking."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "booking-monitoring-10",
+        "source": "booking",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Hotel reservation platform pipeline health",
-        "description": "Monitors Hotel reservation platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Reservation telemetry",
+        "description": "Operations observes policy conflicts, latency, and duplicate commands."
+      },
+      {
+        "id": "event-bus-monitoring-11",
+        "source": "event-bus",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Partner and hold telemetry",
+        "description": "Operations observes feed lag, hold expiry, oversell risk, and reconciliation backlog."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "search",
+        "label": "Search path",
+        "description": "Client -> gateway -> search index -> availability details.",
+        "componentIds": ["client", "gateway", "search", "availability"]
+      },
+      {
+        "id": "book",
+        "label": "Hold and booking path",
+        "description": "Client -> reservation service -> inventory hold -> payment -> confirmed reservation.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "booking",
+          "availability",
+          "payments"
+        ]
+      },
+      {
+        "id": "reconcile",
+        "label": "Partner reconciliation path",
+        "description": "Reservation events -> partner sync -> inventory and booking correction.",
+        "componentIds": ["booking", "event-bus", "partner-sync", "availability"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Inventory claims and oversell control",
       "points": [
-        "Keep the Hotel reservation platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Hotel reservation platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Hotel reservation platform version and observedAt so clients can reason about freshness."
+        "Use conditional writes or a serialized inventory partition for hotel booking system scarce capacity.",
+        "Give holds an expiry and reaper, but never release a confirmed claim from a stale worker.",
+        "Separate searchable availability from the authoritative claim path."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Payment and unknown outcomes",
       "points": [
-        "Partition Hotel reservation platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Hotel reservation platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Hotel reservation platform projection drift and partial failures."
+        "Bind hotel booking system payment attempts to the intent and request hash, not just the customer session.",
+        "Treat timeout as unknown, query or reconcile provider state, and avoid a blind second charge.",
+        "Keep sensitive payment tokens outside business records and logs."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Fulfillment and partner recovery",
       "points": [
-        "Serve the last acceptable Hotel reservation platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Hotel reservation platform records for replay and make each downstream effect independently retryable.",
-        "Measure Hotel reservation platform latency, backlog, freshness, error rate, and correctness drift."
+        "Publish hotel booking system events after commit, consume at least once, and track per-stage progress.",
+        "Use reconciliation against partner feeds or delivery evidence instead of assuming a callback arrives.",
+        "Expose pending and expired status so the client can explain what happened."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Reservation versus oversell tolerance",
+      "recommendation": "Prefer a short-lived hotel booking system claim for scarce inventory and state the consistency scope explicitly.",
+      "caution": "A cache or search index cannot safely decrement the final room count."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous checkout versus asynchronous fulfillment",
+      "recommendation": "Commit the reservation intent synchronously and move partner or delivery work behind events.",
+      "caution": "Waiting for downstream fulfillment makes retries ambiguous and increases checkout tail latency."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Precompute availability versus compute at read time",
+      "recommendation": "Precompute common search dimensions but validate the final claim against authoritative state.",
+      "caution": "Serving only a precomputed hotel booking system availability view creates oversell or stale-price failures."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Charging before a hotel booking system inventory claim is durable.",
+    "Retrying a timed-out payment without resolving the first attempt.",
+    "Letting stale search results act as the final availability decision.",
+    "Making cancellation and hold expiry non-idempotent.",
+    "Failing to reconcile late partner confirmations, refunds, or delivery failures."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid double reservations?",
+      "answer": "Persist the hotel booking system request idempotency key, condition the intent transition, and make inventory, payment, and fulfillment consumers deduplicate the same command."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What if inventory changes between search and checkout?",
+      "answer": "Recheck authoritative availability, return an explicit unavailable or repriced result, and do not silently convert a failed claim into a confirmed one."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you repair a stuck fulfillment?",
+      "answer": "Use an operation timeline, provider evidence, retry-safe transitions, and an operator-approved compensating action or cancellation."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Search hotels by location and dates workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the hotel booking system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a reservation system for booking hotel rooms with availability management and payment processing., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative hotel booking system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions hotel booking system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Hotel reservation platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the hotel booking system user experience."
     }
   ]
 }

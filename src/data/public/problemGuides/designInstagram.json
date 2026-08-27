@@ -239,8 +239,13 @@
         "componentId": "web-app",
         "label": "Mobile and web clients",
         "description": "Upload media, browse feeds and stories, and submit social actions.",
-        "position": { "x": 0, "y": 280 },
-        "properties": { "protocol": "HTTPS" }
+        "position": {
+          "x": 0,
+          "y": 280
+        },
+        "properties": {
+          "protocol": "HTTPS"
+        }
       },
       {
         "id": "gateway",
@@ -248,8 +253,13 @@
         "componentId": "api-gateway",
         "label": "Global Instagram-like photo gateway",
         "description": "Authenticates requests, applies quotas, and issues signed upload URLs.",
-        "position": { "x": 360, "y": 280 },
-        "properties": { "controls": "Auth, rate limits, abuse checks" }
+        "position": {
+          "x": 360,
+          "y": 280
+        },
+        "properties": {
+          "controls": "Auth, rate limits, abuse checks"
+        }
       },
       {
         "id": "objects",
@@ -257,8 +267,13 @@
         "componentId": "file-storage",
         "label": "Object storage",
         "description": "Stores originals, renditions, thumbnails, and manifests with lifecycle tiers.",
-        "position": { "x": 720, "y": 40 },
-        "properties": { "durability": "Versioned and checksummed" }
+        "position": {
+          "x": 720,
+          "y": 40
+        },
+        "properties": {
+          "durability": "Versioned and checksummed"
+        }
       },
       {
         "id": "content",
@@ -266,8 +281,13 @@
         "componentId": "backend-server",
         "label": "Content service",
         "description": "Owns posts, stories, visibility, expiry, deletion, and publication state.",
-        "position": { "x": 720, "y": 360 },
-        "properties": { "consistency": "Idempotent source commit" }
+        "position": {
+          "x": 720,
+          "y": 360
+        },
+        "properties": {
+          "consistency": "Idempotent source commit"
+        }
       },
       {
         "id": "content-db",
@@ -275,8 +295,13 @@
         "componentId": "database",
         "label": "Content database",
         "description": "Stores durable metadata and moderation state keyed by content and owner.",
-        "position": { "x": 1080, "y": 360 },
-        "properties": { "partition": "owner_id, content_id" }
+        "position": {
+          "x": 1080,
+          "y": 360
+        },
+        "properties": {
+          "partition": "owner_id, content_id"
+        }
       },
       {
         "id": "graph",
@@ -284,8 +309,13 @@
         "componentId": "backend-server",
         "label": "Social graph service",
         "description": "Manages follows, blocks, private-account policy, and relationship reads.",
-        "position": { "x": 1080, "y": 600 },
-        "properties": { "indexes": "Follower and following" }
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "properties": {
+          "indexes": "Follower and following"
+        }
       },
       {
         "id": "graph-db",
@@ -293,8 +323,13 @@
         "componentId": "database",
         "label": "Graph store",
         "description": "Stores adjacency lists and relationship versions for efficient fanout checks.",
-        "position": { "x": 1440, "y": 600 },
-        "properties": { "partition": "followee_id, follower_id" }
+        "position": {
+          "x": 1440,
+          "y": 600
+        },
+        "properties": {
+          "partition": "followee_id, follower_id"
+        }
       },
       {
         "id": "workers",
@@ -302,8 +337,13 @@
         "componentId": "backend-server",
         "label": "Media workers",
         "description": "Scan, resize, transcode, and publish rendition manifests asynchronously.",
-        "position": { "x": 1440, "y": 40 },
-        "properties": { "scaling": "Queue depth and media duration" }
+        "position": {
+          "x": 1440,
+          "y": 40
+        },
+        "properties": {
+          "scaling": "Queue depth and media duration"
+        }
       },
       {
         "id": "events",
@@ -311,8 +351,13 @@
         "componentId": "message-broker",
         "label": "Global Instagram-like photo event backbone",
         "description": "Retains publication, graph, interaction, deletion, and moderation events for replay.",
-        "position": { "x": 1800, "y": 280 },
-        "properties": { "delivery": "At least once" }
+        "position": {
+          "x": 1800,
+          "y": 280
+        },
+        "properties": {
+          "delivery": "At least once"
+        }
       },
       {
         "id": "fanout",
@@ -320,8 +365,13 @@
         "componentId": "backend-server",
         "label": "Hybrid fanout service",
         "description": "Pushes normal authors and uses pull or hybrid delivery for celebrity authors.",
-        "position": { "x": 2160, "y": 40 },
-        "properties": { "policy": "Follower threshold and sharded work" }
+        "position": {
+          "x": 2160,
+          "y": 40
+        },
+        "properties": {
+          "policy": "Follower threshold and sharded work"
+        }
       },
       {
         "id": "feed-db",
@@ -329,8 +379,13 @@
         "componentId": "database",
         "label": "Feed projection store",
         "description": "Stores bounded cursor-friendly feed entries and story indexes.",
-        "position": { "x": 2520, "y": 280 },
-        "properties": { "retention": "Rebuildable recent window" }
+        "position": {
+          "x": 2520,
+          "y": 280
+        },
+        "properties": {
+          "retention": "Rebuildable recent window"
+        }
       },
       {
         "id": "feed",
@@ -338,8 +393,13 @@
         "componentId": "backend-server",
         "label": "Feed and story service",
         "description": "Reads projections, merges hot-author candidates, and applies visibility and expiry filters.",
-        "position": { "x": 2880, "y": 280 },
-        "properties": { "latency": "Bounded parallel reads" }
+        "position": {
+          "x": 2880,
+          "y": 280
+        },
+        "properties": {
+          "latency": "Bounded parallel reads"
+        }
       },
       {
         "id": "cdn",
@@ -347,8 +407,13 @@
         "componentId": "cdn",
         "label": "Media CDN",
         "description": "Serves signed rendition URLs near viewers and supports purge on takedown.",
-        "position": { "x": 3240, "y": 280 },
-        "properties": { "delivery": "Edge cache" }
+        "position": {
+          "x": 3240,
+          "y": 280
+        },
+        "properties": {
+          "delivery": "Edge cache"
+        }
       },
       {
         "id": "interactions",
@@ -356,8 +421,13 @@
         "componentId": "backend-server",
         "label": "Interaction service",
         "description": "Commits likes and comments with actor-object uniqueness and event publication.",
-        "position": { "x": 2160, "y": 600 },
-        "properties": { "consistency": "Conditional writes" }
+        "position": {
+          "x": 2160,
+          "y": 600
+        },
+        "properties": {
+          "consistency": "Conditional writes"
+        }
       },
       {
         "id": "moderation",
@@ -365,8 +435,13 @@
         "componentId": "backend-server",
         "label": "Moderation service",
         "description": "Scans media and reports, then emits takedown or appeal decisions.",
-        "position": { "x": 2520, "y": -160 },
-        "properties": { "path": "Async with serving recheck" }
+        "position": {
+          "x": 2520,
+          "y": -160
+        },
+        "properties": {
+          "path": "Async with serving recheck"
+        }
       },
       {
         "id": "notifications",
@@ -374,8 +449,13 @@
         "componentId": "notification-service",
         "label": "Notifications",
         "description": "Delivers selected follows and interactions with preferences and retries.",
-        "position": { "x": 2880, "y": -160 },
-        "properties": { "delivery": "Async and deduplicated" }
+        "position": {
+          "x": 2880,
+          "y": -160
+        },
+        "properties": {
+          "delivery": "Async and deduplicated"
+        }
       },
       {
         "id": "analytics",
@@ -383,8 +463,13 @@
         "componentId": "analytics",
         "label": "Analytics and discovery",
         "description": "Consumes events for ranking features, search, recommendations, and abuse signals.",
-        "position": { "x": 3240, "y": -160 },
-        "properties": { "path": "Async" }
+        "position": {
+          "x": 3240,
+          "y": -160
+        },
+        "properties": {
+          "path": "Async"
+        }
       },
       {
         "id": "monitoring",
@@ -392,8 +477,13 @@
         "componentId": "monitoring",
         "label": "Global Instagram-like photo monitoring",
         "description": "Tracks upload readiness, feed lag, fanout backlog, CDN hit rate, and expiry correctness.",
-        "position": { "x": 3600, "y": -160 },
-        "properties": { "alerts": "Latency, lag, errors, drift" }
+        "position": {
+          "x": 3600,
+          "y": -160
+        },
+        "properties": {
+          "alerts": "Latency, lag, errors, drift"
+        }
       }
     ],
     "connections": [

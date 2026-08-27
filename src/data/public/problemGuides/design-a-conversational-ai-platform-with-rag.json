@@ -50,100 +50,101 @@
   },
   "entities": [
     {
-      "name": "Enterprise RAG platform",
+      "name": "DocumentVersion",
       "fields": [
-        "tenantId",
-        "enterpriseRagPlatformId",
-        "status",
+        "documentId",
         "version",
-        "createdAt",
-        "updatedAt"
+        "aclVersion",
+        "contentHash",
+        "sourceTimestamp",
+        "status"
       ],
-      "notes": "Authoritative Enterprise RAG platform record keyed for its primary command and read paths."
+      "notes": "Permissioned canonical document version used for indexing."
     },
     {
-      "name": "Enterprise RAG platform event",
+      "name": "Chunk",
       "fields": [
-        "eventId",
-        "enterpriseRagPlatformId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "chunkId",
+        "documentVersion",
+        "textHash",
+        "embeddingVersion",
+        "aclVersion",
+        "status"
       ],
-      "notes": "Immutable Enterprise RAG platform event with an idempotency key and version for replay."
+      "notes": "Searchable chunk retaining document and access-policy lineage."
     },
     {
-      "name": "Enterprise RAG platform policy",
+      "name": "ConversationTurn",
+      "fields": [
+        "conversationId",
+        "turnId",
+        "question",
+        "retrievedChunkIds",
+        "modelVersion",
+        "citations",
+        "status"
+      ],
+      "notes": "Persisted question/answer turn with evidence and model metadata."
+    },
+    {
+      "name": "RetrievalPolicy",
       "fields": [
         "policyId",
         "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "allowedSources",
+        "modelPolicy",
+        "retention",
+        "version"
       ],
-      "notes": "Versioned policy controlling Enterprise RAG platform authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "Enterprise RAG platform projection",
-      "fields": [
-        "enterpriseRagPlatformId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
-      ],
-      "notes": "Rebuildable Enterprise RAG platform projection with observedAt and freshness metadata."
+      "notes": "Tenant policy controlling source access, model safety, and retention."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/enterprise-rag-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { enterpriseRagPlatformId, status, version }",
-      "notes": "Create or submit Enterprise RAG platform with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/enterprise-rag-platform/{enterpriseRagPlatformId}",
-      "contract": "{ enterpriseRagPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Enterprise RAG platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/enterprise-rag-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Enterprise RAG platform records with cursor pagination and eligibility filters."
+      "path": "/v1/knowledge/documents",
+      "contract": "{ sourceUri, content, acl, version } -> { documentId, indexJobId }",
+      "notes": "Validate ownership and ACLs, persist the source version, and enqueue chunking."
     },
     {
       "method": "POST",
-      "path": "/v1/enterprise-rag-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Enterprise RAG platform rebuild or repair operation and return job status."
+      "path": "/v1/conversations/{conversationId}/answers",
+      "contract": "{ question, cursor?, modelPolicy } -> { turnId, streamUrl }",
+      "notes": "Create an answer turn with tenant policy, token, and latency budgets."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/conversations/{conversationId}/turns/{turnId}",
+      "contract": "{ answer, citations, retrievalVersion, modelVersion, status }",
+      "notes": "Return the durable turn and its citation/evidence metadata."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/knowledge/reindex",
+      "contract": "{ sourceVersion, idempotencyKey } -> { generationId, status }",
+      "notes": "Build a permission-checked index generation without exposing partial results."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Ingest and index enterprise documents",
-      "description": "The Enterprise RAG platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Ingest permissioned enterprise documents",
+      "description": "The ingestion service validates source ownership, ACLs, version, and deletion policy, then stores the canonical document before creating chunk and embedding work."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The platform records a versioned document ingestion request and conversation turn before indexing or generation."
+      "title": "Retrieve evidence for a question",
+      "description": "The retriever applies tenant and document ACLs, combines lexical and vector search, reranks bounded candidates, and records the index generation used."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Enterprise RAG platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Build a grounded conversation context",
+      "description": "The context builder loads the conversation window, trims or summarizes within a token budget, attaches citations, and rejects evidence that is stale or unauthorized."
     },
     {
-      "title": "Build the read model",
-      "description": "Indexing workers parse versioned documents, preserve ACL metadata, create chunks and embeddings, update lexical/vector indexes, and expose indexing watermarks."
+      "title": "Generate and validate a cited answer",
+      "description": "The model gateway uses a pinned prompt and model policy, checks citation coverage and unsafe output, and falls back to a retrieval-only response when generation is unavailable."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Enterprise RAG platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Stream the answer and retain the turn",
+      "description": "The response gateway streams tokens with a resume cursor, then commits the conversation turn, citations, model version, and feedback without blocking retrieval workers."
     }
   ],
   "architecture": {
@@ -527,88 +528,88 @@
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "ACL-aware retrieval and deletion",
       "points": [
-        "Keep the Enterprise RAG platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Enterprise RAG platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Enterprise RAG platform version and observedAt so clients can reason about freshness."
+        "For the enterprise RAG platform, every citation must resolve to an authorized retrieved passage from a versioned source.",
+        "Design for the failure case where stale permissions, missing evidence, or a model timeout must produce a safe qualified response; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Context budgets and grounded generation",
       "points": [
-        "Partition Enterprise RAG platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Enterprise RAG platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Enterprise RAG platform projection drift and partial failures."
+        "For the enterprise RAG platform, every citation must resolve to an authorized retrieved passage from a versioned source.",
+        "Keep this concern off unrelated request paths and partition it by the the enterprise RAG platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Streaming reliability and model fallbacks",
       "points": [
-        "Serve the last acceptable Enterprise RAG platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Enterprise RAG platform records for replay and make each downstream effect independently retryable.",
-        "Measure Enterprise RAG platform latency, backlog, freshness, error rate, and correctness drift."
+        "For the enterprise RAG platform, every citation must resolve to an authorized retrieved passage from a versioned source.",
+        "Keep this concern off unrelated request paths and partition it by the the enterprise RAG platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Hybrid retrieval versus one index",
+      "recommendation": "Use lexical and vector retrieval with ACL filters and a lexical fallback for exact identifiers and predictable latency.",
+      "caution": "A vector-only design can lose exact matches and makes freshness and authorization harder to reason about."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Long context versus bounded cost",
+      "recommendation": "Use a bounded conversation window, evidence budget, and deterministic summarization before generation.",
+      "caution": "Unbounded history increases token cost, latency, and the chance of unsupported claims."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Model quality versus safe fallback",
+      "recommendation": "Gate generation on citation and safety checks and fall back to cited retrieval results or abstention.",
+      "caution": "Returning a fluent answer without evidence is worse than a transparent refusal for enterprise knowledge."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Retrieving documents without applying the current ACL.",
+    "Treating vector similarity as evidence without citation coverage.",
+    "Allowing conversation context or token use to grow without bounds.",
+    "Persisting an answer without model, retrieval, and source versions.",
+    "Retrying streamed generation without a resume cursor or deduplication."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "What happens when a document is deleted?",
+      "answer": "Write a durable tombstone, invalidate chunks and caches, rebuild affected index generations, and verify old citations no longer resolve."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you prevent prompt injection from a document?",
+      "answer": "Classify untrusted content, keep system policy outside retrieved text, constrain tools, and require citation and output safety checks."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you support a provider outage?",
+      "answer": "Use retrieval-only or cached cited responses, apply provider circuit breakers and token budgets, and preserve the turn as pending when generation is unknown."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines ingestion, authorized retrieval, cited generation, scale, durability, and failure contracts."
+      "description": "The answer defines permissioned ingestion, hybrid retrieval, citation grounding, bounded context, safe fallback, streaming, and auditability, scale, latency, durability, authorization, and failure behavior."
     },
     {
       "criterion": "Data model",
-      "description": "Entities and document/tenant/conversation keys support ACL-safe RAG, citations, privacy, and lifecycle changes."
+      "description": "Entities and keys make the enterprise RAG platform state, versions, lifecycle, and derived projections explicit."
     },
     {
       "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
       "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain Enterprise RAG platform consistency, push/pull, managed services, and the scale boundary."
+      "description": "The candidate can explain the the enterprise RAG platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

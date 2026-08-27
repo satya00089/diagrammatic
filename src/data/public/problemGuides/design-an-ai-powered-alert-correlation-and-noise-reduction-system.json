@@ -277,8 +277,13 @@
         "componentId": "web-app",
         "label": "Sources and operator console",
         "description": "Monitoring integrations submit alerts; responders inspect incident timelines, evidence, confidence, suppression expiry, and raw signals.",
-        "position": { "x": 0, "y": 260 },
-        "properties": { "protocol": "Webhook, SDK, HTTPS, and streaming UI" }
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "Webhook, SDK, HTTPS, and streaming UI"
+        }
       },
       {
         "id": "gateway",
@@ -286,7 +291,10 @@
         "componentId": "api-gateway",
         "label": "Ingestion and query gateway",
         "description": "Authenticates source credentials and operator identity, enforces tenant isolation and quotas, validates payload size, and routes alert, query, and action requests.",
-        "position": { "x": 360, "y": 260 },
+        "position": {
+          "x": 360,
+          "y": 260
+        },
         "properties": {
           "protection": "Tenant auth, rate limits, payload validation"
         }
@@ -297,7 +305,10 @@
         "componentId": "backend-server",
         "label": "Alert intake and normalizer",
         "description": "Maps source schemas into a normalized alert, derives a stable fingerprint, performs bounded deduplication, and sends urgent signals to conservative routing.",
-        "position": { "x": 720, "y": 260 },
+        "position": {
+          "x": 720,
+          "y": 260
+        },
         "properties": {
           "guarantee": "Acknowledge only after raw-alert append; retain duplicate deliveries"
         }
@@ -308,7 +319,10 @@
         "componentId": "database",
         "label": "Raw alert and action log",
         "description": "Append-only tenant-partitioned storage for original alert payloads, normalized fields, operator actions, and idempotency records.",
-        "position": { "x": 1080, "y": 260 },
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
         "properties": {
           "storage": "Immutable raw evidence with retention, encryption, and replay"
         }
@@ -319,7 +333,10 @@
         "componentId": "message-broker",
         "label": "Alert event backbone",
         "description": "Publishes alert-accepted, topology-updated, decision-created, action-recorded, and notification events with tenant/time partitioning and replay offsets.",
-        "position": { "x": 1440, "y": 100 },
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
         "properties": {
           "delivery": "At least once with event IDs and consumer deduplication"
         }
@@ -330,7 +347,10 @@
         "componentId": "database",
         "label": "Topology and feature store",
         "description": "Serves versioned service ownership, dependency edges, maintenance windows, historical fingerprints, and bounded temporal features for correlation.",
-        "position": { "x": 1440, "y": 420 },
+        "position": {
+          "x": 1440,
+          "y": 420
+        },
         "properties": {
           "freshness": "Versioned snapshots with explicit valid-time and update watermark"
         }
@@ -341,7 +361,10 @@
         "componentId": "backend-server",
         "label": "Correlation and explanation workers",
         "description": "Combine fingerprint, temporal, topology, message-similarity, and historical features; produce explainable attach, merge, split, or new-incident decisions with confidence.",
-        "position": { "x": 1800, "y": 260 },
+        "position": {
+          "x": 1800,
+          "y": 260
+        },
         "properties": {
           "scaling": "Tenant/time partitions, bounded windows, model and policy version pinning"
         }
@@ -352,7 +375,10 @@
         "componentId": "backend-server",
         "label": "Suppression and routing policy",
         "description": "Evaluates severity, confidence, maintenance, expiry, escalation, and fail-open rules; refuses unsafe suppression and records the policy version used.",
-        "position": { "x": 2160, "y": 260 },
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
         "properties": {
           "safety": "Urgent visibility and conservative fail-open behavior"
         }
@@ -363,7 +389,10 @@
         "componentId": "database",
         "label": "Incident state store",
         "description": "Stores versioned incident aggregates, alert membership, correlation evidence, suppression state, and notification intents for active incident reads.",
-        "position": { "x": 2520, "y": 260 },
+        "position": {
+          "x": 2520,
+          "y": 260
+        },
         "properties": {
           "consistency": "Optimistic incident versions and idempotent decision application"
         }
@@ -374,7 +403,10 @@
         "componentId": "cache",
         "label": "Incident search projection",
         "description": "Indexes active and historical incidents, evidence, service filters, confidence, suppression expiry, and freshness for the operator console.",
-        "position": { "x": 2880, "y": 420 },
+        "position": {
+          "x": 2880,
+          "y": 420
+        },
         "properties": {
           "latency": "Incident list and detail p95 under 2 seconds"
         }
@@ -385,7 +417,10 @@
         "componentId": "backend-server",
         "label": "Notification and escalation worker",
         "description": "Delivers incident transitions to paging, chat, email, and webhooks with idempotency keys, retry policies, deduplication, and provider circuit breakers.",
-        "position": { "x": 2520, "y": 80 },
+        "position": {
+          "x": 2520,
+          "y": 80
+        },
         "properties": {
           "delivery": "At least once with provider-specific deduplication and audit"
         }
@@ -396,7 +431,10 @@
         "componentId": "monitoring",
         "label": "Quality and safety observability",
         "description": "Tracks ingest loss, queue lag, correlation latency, false merges and splits, suppressed-critical alerts, notification delivery, model drift, and replay parity.",
-        "position": { "x": 2160, "y": -120 },
+        "position": {
+          "x": 2160,
+          "y": -120
+        },
         "properties": {
           "alerts": "Raw fallback, lag, quality regressions, and provider failures"
         }

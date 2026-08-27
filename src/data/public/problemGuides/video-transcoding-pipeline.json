@@ -50,136 +50,150 @@
   },
   "entities": [
     {
-      "name": "media metadata and object storage",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for source object and job state; design keys around the main reads and writes."
+      "name": "MediaAsset",
+      "fields": [
+        "assetId",
+        "ownerId",
+        "sourceUri",
+        "checksum",
+        "privacy",
+        "status"
+      ],
+      "notes": "Canonical uploaded video transcoding pipeline asset and lifecycle state."
     },
     {
-      "name": "video-transcoding event",
-      "fields": [
-        "eventId",
-        "uploadValidationTranscodingThumbnailsManId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "MediaRendition",
+      "fields": ["assetId", "profile", "codec", "uri", "checksum", "status"],
+      "notes": "Derived video transcoding pipeline output identified by a deterministic profile and content hash."
     },
     {
-      "name": "Policy and configuration",
+      "name": "PlaybackSession",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "sessionId",
+        "assetId",
+        "viewerId",
+        "entitlementVersion",
+        "edgeRegion",
+        "expiresAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Short-lived video transcoding pipeline access session that binds authorization to delivery."
     },
     {
-      "name": "Read model",
+      "name": "ProcessingJob",
       "fields": [
-        "uploadValidationTranscodingThumbnailsManId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "jobId",
+        "assetId",
+        "operation",
+        "attempt",
+        "checkpoint",
+        "status"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Retry-safe video transcoding pipeline processing job with checkpoints and per-rendition progress."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/upload-validation-transcoding-thumbnails-m",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { uploadValidationTranscodingThumbnailsManId, status, version }",
-      "notes": "Create or submit Upload, validation, transcoding, thumbnails, man with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/upload-validation-transcoding-thumbnails-m/{uploadValidationTranscodingThumbnailsManId}",
-      "contract": "{ uploadValidationTranscodingThumbnailsManId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Upload, validation, transcoding, thumbnails, man state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/upload-validation-transcoding-thumbnails-m?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Upload, validation, transcoding, thumbnails, man records with cursor pagination and eligibility filters."
+      "path": "/v1/assets/uploads",
+      "contract": "{ contentType, size, checksum } -> { assetId, uploadUrl }",
+      "notes": "Issue a scoped video transcoding pipeline upload URL and register the source before transfer."
     },
     {
       "method": "POST",
-      "path": "/v1/upload-validation-transcoding-thumbnails-m/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Upload, validation, transcoding, thumbnails, man rebuild or repair operation and return job status."
+      "path": "/v1/assets/{assetId}/process",
+      "contract": "{ profiles[], priority, idempotencyKey } -> { jobId, status }",
+      "notes": "Start idempotent video transcoding pipeline processing for requested output profiles."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/assets/{assetId}/manifest",
+      "contract": "{ renditions[], policy, freshness }",
+      "notes": "Return available video transcoding pipeline renditions only after entitlement and integrity checks."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/playback-sessions",
+      "contract": "{ assetId, viewerId, device, entitlement } -> { sessionId, manifestUrl, expiresAt }",
+      "notes": "Create a short-lived authorized video transcoding pipeline delivery session."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept process an uploaded video",
-      "description": "The Upload, validation, transcoding, thumbnails, man gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Reserve a resumable upload",
+      "description": "The video transcoding pipeline gateway authenticates the owner, reserves metadata, validates size and checksum, and returns a scoped upload URL."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Upload, validation, transcoding, thumbnails, man service records the accepted state and version before acknowledging the client."
+      "title": "Commit and verify the source",
+      "description": "A completion callback verifies the video transcoding pipeline object, records an immutable checksum, and publishes a processing job only once."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Upload, validation, transcoding, thumbnails, man events; consumers deduplicate by event ID and track offsets."
+      "title": "Process renditions asynchronously",
+      "description": "Workers execute video transcoding pipeline transforms with deterministic profiles, checkpointing, bounded retries, and a dead-letter path for corrupt inputs."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Upload, validation, transcoding, thumbnails, man events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish an entitlement-aware manifest",
+      "description": "A manifest projection exposes only completed video transcoding pipeline renditions and carries policy, checksum, and freshness metadata."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Upload, validation, transcoding, thumbnails, man projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Deliver, invalidate, and recover",
+      "description": "CDN delivery is protected by expiring URLs and revocation signals; failed video transcoding pipeline jobs and stale manifests are replayable without duplicating outputs."
     }
   ],
   "architecture": {
-    "title": "Upload, validation, transcoding, thumbnails, manifests, and CDN delivery reference architecture",
-    "summary": "The authoritative state records process an uploaded video; asynchronous workers build serving projections while transcoding, packaging, moderation, and CDN publish stays isolated from the request path.",
+    "title": "Video Transcoding Pipeline media architecture",
+    "summary": "Design upload, validation, transcoding, thumbnails, manifests, and CDN delivery so users can process an uploaded video reliably at scale. The design keeps originals durable and private, turns processing into idempotent queue work, publishes only verified renditions, and serves playback through entitlement-scoped CDN manifests.",
     "layers": [
       {
         "id": "experience",
-        "label": "Upload, validation, transcoding, thumbnails, man request boundary",
-        "description": "Clients submit and read Upload, validation, transcoding, thumbnails, man requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Media client and access plane",
+        "description": "Upload, status, metadata, entitlement, and playback requests are authenticated and quota-protected.",
+        "componentIds": ["client", "upload"]
       },
       {
         "id": "source",
-        "label": "Upload, validation, transcoding, thumbnails, man authoritative state",
-        "description": "Durable Upload, validation, transcoding, thumbnails, man state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "label": "Original media and metadata plane",
+        "description": "Original bytes and ownership state remain durable sources for replay, processing, and deletion.",
+        "componentIds": ["object-store", "metadata"]
       },
       {
         "id": "processing",
-        "label": "Upload, validation, transcoding, thumbnails, man processing and serving",
-        "description": "Partitioned Upload, validation, transcoding, thumbnails, man workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "label": "Media processing plane",
+        "description": "Durable prioritized jobs produce verified renditions and manifests asynchronously.",
+        "componentIds": ["queue", "processor", "catalog"]
+      },
+      {
+        "id": "delivery",
+        "label": "Playback and download plane",
+        "description": "The CDN serves signed segments and downloads from complete, policy-approved renditions.",
+        "componentIds": ["cdn"]
       },
       {
         "id": "operations",
-        "label": "Upload, validation, transcoding, thumbnails, man operations",
-        "description": "Upload, validation, transcoding, thumbnails, man signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Media lifecycle operations",
+        "description": "Pipeline, delivery, abuse, storage, and deletion correctness are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Upload, validation, transcoding, thumbnails, man write path",
-        "description": "Client -> Upload, validation, transcoding, thumbnails, man gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "upload",
+        "label": "Upload and processing path",
+        "description": "Client -> gateway -> object store and metadata -> processing queue -> rendition catalog.",
+        "componentIds": [
+          "client",
+          "upload",
+          "object-store",
+          "metadata",
+          "queue",
+          "processor",
+          "catalog"
+        ]
       },
       {
-        "id": "async",
-        "label": "Upload, validation, transcoding, thumbnails, man projection path",
-        "description": "Authoritative Upload, validation, transcoding, thumbnails, man state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "playback",
+        "label": "Playback path",
+        "description": "Client -> gateway -> entitlement -> rendition catalog -> signed CDN manifest -> client.",
+        "componentIds": ["client", "upload", "metadata", "catalog", "cdn"]
       }
     ],
     "components": [
@@ -187,274 +201,292 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Design upload, validation, transcoding, thumbnai clients",
-        "description": "Clients use the process an uploaded video workflow and receive explicit status, freshness, or progress.",
+        "label": "Media upload and playback clients",
+        "description": "Users upload media, inspect processing status, browse metadata, and request adaptive playback or downloads.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS upload, signed URLs, and adaptive streaming"
         }
       },
       {
-        "id": "gateway",
+        "id": "upload",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Design upload, validation, transcoding, thumbnai gateway",
-        "description": "Authenticates Design upload, validation, transcoding, thumbnai requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Upload and playback gateway",
+        "description": "Authenticates users, issues scoped upload/download URLs, validates metadata, and protects playback and upload quotas.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, signed URLs, quotas, and abuse controls"
         }
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Design upload, validation, transcoding, thumbnai service",
-        "description": "Owns the process an uploaded video command, authorization policy, lifecycle state, and client contract.",
+        "id": "object-store",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Original media object store",
+        "description": "Stores immutable originals and intermediate assets with checksum, encryption, lifecycle, and tenant ownership metadata.",
         "position": {
           "x": 720,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "storage": "Content-addressed objects and lifecycle tiers"
         }
       },
       {
-        "id": "source",
+        "id": "metadata",
         "type": "database",
         "componentId": "database",
-        "label": "Design upload, validation, transcoding, thumbnai state",
-        "description": "Stores source object and job state and supports the primary access patterns.",
+        "label": "Media metadata and entitlement store",
+        "description": "Stores ownership, privacy, captions, renditions, processing state, playback policy, and deletion tombstones.",
+        "position": {
+          "x": 720,
+          "y": 420
+        },
+        "properties": {
+          "consistency": "Versioned metadata and entitlement checks"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Media processing queue",
+        "description": "Buffers thumbnail, waveform, caption, transcode, moderation, and packaging work with priority and retry isolation.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "media metadata and object storage"
+          "delivery": "Durable jobs, visibility timeout, and dead-letter handling"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Design upload, validation, transcoding, thumbnai event backbone",
-        "description": "Publishes versioned events for transcoding, packaging, moderation, and CDN publish after durable commits.",
+        "id": "processor",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Transcoding and media processing",
+        "description": "Generates codec/bitrate renditions, thumbnails, captions, and manifests while reporting progress and content safety results.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scaling": "CPU/GPU pools partitioned by media size and priority"
         }
       },
       {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Design upload, validation, transcoding, thumbnai workers",
-        "description": "Workers process transcoding, packaging, moderation, and CDN publish independently from the user-facing command and retry transient failures.",
+        "id": "catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Rendition and playback catalog",
+        "description": "Records available renditions, codecs, bitrates, segment manifests, captions, checksums, and processing versions.",
         "position": {
           "x": 1800,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "consistency": "Publish only complete, checksum-verified renditions"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Design upload, validation, transcoding, thumbnai projection",
-        "description": "Serves low-latency views for media metadata and object storage with explicit freshness and fallback behavior.",
+        "id": "cdn",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Playback and download CDN",
+        "description": "Serves signed, cacheable media segments and downloads from the rendition catalog while enforcing entitlement and expiry.",
         "position": {
           "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "upload acknowledgement <=1s"
+          "caching": "Signed URLs, cache keys, and regional origins"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Design upload, validation, transcoding, thumbnai monitoring",
-        "description": "Tracks Design upload, validation, transcoding, thumbnai latency, backlog, freshness, correctness, and saturation.",
+        "label": "Media pipeline and delivery operations",
+        "description": "Tracks upload success, processing backlog, rendition failures, storage growth, CDN errors, playback startup, abuse, and deletion completion.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Backlog, processing quality, CDN, and lifecycle failures"
         }
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-upload",
         "source": "client",
-        "target": "gateway",
+        "target": "upload",
         "type": "http",
-        "label": "Start Design upload, validation, transcoding, thumbnai",
-        "description": "Client submits process an uploaded video through the authenticated request boundary."
+        "label": "Upload or playback request",
+        "description": "Clients request a scoped upload URL, metadata change, processing status, or playback entitlement."
       },
       {
-        "id": "gateway-service",
-        "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated Design upload, validation, transcoding, thumbnai operation",
-        "description": "The gateway forwards a validated Design upload, validation, transcoding, thumbnai operation after authentication, quota, and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Design upload, validation, transcoding, thumbnai state commit",
-        "description": "Commits source object and job state before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Design upload, validation, transcoding, thumbnai event",
-        "description": "An outbox or change stream publishes committed Design upload, validation, transcoding, thumbnai transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Design upload, validation, transcoding, thumbnai background work",
-        "description": "Workers handle transcoding, packaging, moderation, and CDN publish with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "upload-object-store",
+        "source": "upload",
+        "target": "object-store",
         "type": "data-flow",
-        "label": "Design upload, validation, transcoding, thumbnai serving update",
-        "description": "Workers update the Design upload, validation, transcoding, thumbnai projection and expose a freshness watermark."
+        "label": "Original media upload",
+        "description": "The client uploads directly to object storage using a short-lived signed URL; checksum and size are verified before acceptance."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "upload-metadata",
+        "source": "upload",
+        "target": "metadata",
         "type": "database-connection",
-        "label": "Design upload, validation, transcoding, thumbnai projection read",
-        "description": "The Design upload, validation, transcoding, thumbnai service reads the latest acceptable projection or authoritative state."
+        "label": "Media registration",
+        "description": "The gateway records owner, privacy, content type, checksum, and entitlement state before scheduling processing."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "metadata-queue",
+        "source": "metadata",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Processing job",
+        "description": "A durable job describes the source object, requested renditions, policy version, and idempotency key."
+      },
+      {
+        "id": "queue-processor",
+        "source": "queue",
+        "target": "processor",
+        "type": "message-queue",
+        "label": "Transcode or moderation work",
+        "description": "Workers claim bounded jobs, retry transient failures, and isolate large or expensive media from interactive status reads."
+      },
+      {
+        "id": "processor-catalog",
+        "source": "processor",
+        "target": "catalog",
+        "type": "database-connection",
+        "label": "Verified rendition",
+        "description": "A rendition is published only after checksum, duration, codec, moderation, and completeness checks pass."
+      },
+      {
+        "id": "catalog-cdn",
+        "source": "catalog",
+        "target": "cdn",
+        "type": "data-flow",
+        "label": "Signed playback manifest",
+        "description": "The CDN obtains an entitlement-scoped manifest and serves segments from the correct rendition origin."
+      },
+      {
+        "id": "cdn-client",
+        "source": "cdn",
         "target": "client",
         "type": "http",
-        "label": "Design upload, validation, transcoding, thumbnai result",
-        "description": "Returns the latest acceptable result within upload acknowledgement <=1s."
+        "label": "Media playback or download",
+        "description": "Clients receive signed manifests or downloads with expiry and an explicit unavailable-rendition fallback."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "processor-monitoring",
+        "source": "processor",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Design upload, validation, transcoding, thumbnai pipeline health",
-        "description": "Monitors Design upload, validation, transcoding, thumbnai consumer lag, processing health, freshness, and projection correctness."
+        "label": "Processing progress and quality",
+        "description": "Operations observes queue age, worker saturation, transcode failures, moderation outcomes, and completion time."
+      },
+      {
+        "id": "cdn-monitoring",
+        "source": "cdn",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Playback and delivery telemetry",
+        "description": "Delivery metrics report startup latency, rebuffering, cache misses, signed URL failures, and regional errors."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Integrity and idempotent processing",
       "points": [
-        "Keep the Upload, validation, transcoding, thumbnails, man commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Upload, validation, transcoding, thumbnails, man writes, event IDs, and versions so retries and replay are safe.",
-        "Return Upload, validation, transcoding, thumbnails, man version and observedAt so clients can reason about freshness."
+        "Use checksums and immutable source objects for video transcoding pipeline deduplication and audit.",
+        "Derive output keys from asset, profile, and transform version so retries cannot corrupt a completed rendition.",
+        "Make completion callbacks and worker claims conditional on job version and attempt."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Authorization at the edge",
       "points": [
-        "Partition Upload, validation, transcoding, thumbnails, man by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Upload, validation, transcoding, thumbnails, man work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Upload, validation, transcoding, thumbnails, man projection drift and partial failures."
+        "Bind video transcoding pipeline manifests and signed URLs to the viewer, entitlement version, and expiry.",
+        "Propagate takedown, privacy, and subscription changes to edge caches with bounded revocation delay.",
+        "Never let a cache hit bypass the policy decision for private or paid content."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Cost, hot assets, and backpressure",
       "points": [
-        "Serve the last acceptable Upload, validation, transcoding, thumbnails, man projection or an explicit degraded response when workers fail.",
-        "Retain durable Upload, validation, transcoding, thumbnails, man records for replay and make each downstream effect independently retryable.",
-        "Measure Upload, validation, transcoding, thumbnails, man latency, backlog, freshness, error rate, and correctness drift."
+        "Separate interactive manifest latency from expensive video transcoding pipeline processing and encode work.",
+        "Use queue priority, concurrency limits, and lifecycle policies for source and rendition storage.",
+        "Measure cache hit rate, startup latency, processing backlog, failed bytes, and egress cost by profile."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Process on upload versus on demand",
+      "recommendation": "Precompute common video transcoding pipeline profiles and generate rare profiles on demand with a durable job state.",
+      "caution": "Generating every possible profile up front wastes storage and processing budget."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Origin storage versus CDN caching",
+      "recommendation": "Keep the origin authoritative and use CDN caching for immutable or versioned outputs with explicit invalidation.",
+      "caution": "A cache cannot be the only copy of a video transcoding pipeline rendition or the recovery path becomes undefined."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Quality versus delivery cost",
+      "recommendation": "Choose profiles from device, bandwidth, and business requirements, then measure quality and egress by cohort.",
+      "caution": "Maximal bitrate or resolution can make tail startup and cost unacceptable without improving viewing outcomes."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Letting video transcoding pipeline processing run synchronously in the upload request.",
+    "Treating an upload-complete callback as trustworthy without checksum or size verification.",
+    "Using non-deterministic output paths so retries create duplicate or mismatched renditions.",
+    "Caching private or revoked content without an entitlement-aware invalidation plan.",
+    "Ignoring storage lifecycle, egress, queue backlog, and corrupt-input observability."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you make video transcoding pipeline processing retry-safe?",
+      "answer": "Use deterministic output identities, conditional job transitions, per-stage checkpoints, and a manifest that publishes only verified outputs."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What happens when an asset is deleted while processing?",
+      "answer": "Write a tombstone, cancel or quarantine pending work, revoke delivery, and let cleanup workers delete derived outputs idempotently."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you control media cost?",
+      "answer": "Track bytes by source, profile, cache, and region; apply lifecycle tiers and queue policies while preserving the outputs required by the product contract."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the process an uploaded video workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the video transcoding pipeline workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support upload, validation, transcoding, thumbnails, manifests, and CDN delivery, authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative video transcoding pipeline state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions video transcoding pipeline traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Upload, validation, transcoding, thumbnails, man consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the video transcoding pipeline user experience."
     }
   ]
 }

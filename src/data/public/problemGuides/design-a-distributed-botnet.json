@@ -50,143 +50,135 @@
   },
   "entities": [
     {
-      "name": "For defensive security research, design a contro",
+      "name": "EvidenceRecord",
       "fields": [
-        "tenantId",
-        "forDefensiveSecurityResearchDesignAControId",
-        "status",
-        "version",
-        "createdAt",
-        "updatedAt"
-      ],
-      "notes": "Authoritative For defensive security research, design a contro record keyed for its primary command and read paths."
-    },
-    {
-      "name": "For defensive security research, design a contro event",
-      "fields": [
-        "eventId",
-        "forDefensiveSecurityResearchDesignAControId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Immutable For defensive security research, design a contro event with an idempotency key and version for replay."
-    },
-    {
-      "name": "For defensive security research, design a contro policy",
-      "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
-      ],
-      "notes": "Versioned policy controlling For defensive security research, design a contro authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "For defensive security research, design a contro projection",
-      "fields": [
-        "forDefensiveSecurityResearchDesignAControId",
-        "status",
-        "version",
+        "evidenceId",
+        "source",
+        "indicator",
         "observedAt",
-        "freshness",
+        "confidence",
+        "retentionClass"
+      ],
+      "notes": "Attributed defensive evidence for distributed botnet analysis."
+    },
+    {
+      "name": "Indicator",
+      "fields": [
+        "indicatorId",
+        "kind",
+        "valueHash",
+        "firstSeen",
+        "lastSeen",
+        "confidence"
+      ],
+      "notes": "Normalized hash, domain, IP, or behavior indicator."
+    },
+    {
+      "name": "CampaignCluster",
+      "fields": [
+        "clusterId",
+        "indicatorIds",
+        "hypotheses",
+        "score",
+        "status",
         "updatedAt"
       ],
-      "notes": "Rebuildable For defensive security research, design a contro projection with observedAt and freshness metadata."
+      "notes": "Explainable cluster of related defensive observations."
+    },
+    {
+      "name": "ContainmentAction",
+      "fields": [
+        "actionId",
+        "scope",
+        "policyVersion",
+        "approval",
+        "providerRef",
+        "status"
+      ],
+      "notes": "Audited and scoped defensive response."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/for-defensive-security-research-design-a-c",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { forDefensiveSecurityResearchDesignAControId, status, version }",
-      "notes": "Create or submit For defensive security research, design a contro with idempotency and return an accepted state/version."
+      "path": "/v1/evidence",
+      "contract": "{ source, observations, provenance } -> { evidenceId, accepted }",
+      "notes": "Ingest defensive distributed botnet evidence with provenance."
     },
     {
       "method": "GET",
-      "path": "/v1/for-defensive-security-research-design-a-c/{forDefensiveSecurityResearchDesignAControId}",
-      "contract": "{ forDefensiveSecurityResearchDesignAControId, status, version, observedAt, freshness }",
-      "notes": "Return the latest For defensive security research, design a contro state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/for-defensive-security-research-design-a-c?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped For defensive security research, design a contro records with cursor pagination and eligibility filters."
+      "path": "/v1/campaigns?indicator=",
+      "contract": "{ clusters[], evidenceRefs[], freshness }",
+      "notes": "Query explainable correlated activity."
     },
     {
       "method": "POST",
-      "path": "/v1/for-defensive-security-research-design-a-c/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a For defensive security research, design a contro rebuild or repair operation and return job status."
+      "path": "/v1/containment-actions",
+      "contract": "{ scope, action, reason, approvalToken } -> { actionId, status }",
+      "notes": "Create a reviewed defensive containment action."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/evidence/{evidenceId}/timeline",
+      "contract": "{ records[], gaps, confidence }",
+      "notes": "Return a replayable evidence timeline."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Command and control architecture",
-      "description": "The For defensive security research, design a contro gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Ingest attributed defensive evidence",
+      "description": "The distributed botnet gateway validates source, provenance, timestamp, tenant, and retention before accepting observations."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The For defensive security research, design a contro service records the accepted state and version before acknowledging the client."
+      "title": "Normalize and correlate indicators",
+      "description": "Workers deduplicate indicators, link relationships, and preserve confidence rather than collapsing uncertain evidence."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed For defensive security research, design a contro events; consumers deduplicate by event ID and track offsets."
+      "title": "Analyze suspicious samples safely",
+      "description": "Sandbox jobs run in an isolated environment and publish behavior evidence without uncontrolled external actions."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume For defensive security research, design a contro events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Review and contain",
+      "description": "Analysts inspect evidence and approve scoped, reversible defensive actions through integration adapters."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the For defensive security research, design a contro projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Measure false positives and recover",
+      "description": "Operations evaluates evidence gaps, detection quality, containment latency, and action rollback or replay."
     }
   ],
   "architecture": {
-    "title": "Design a distributed system architecture similar to a botnet (for educational/security research purposes). reference architecture",
-    "summary": "The authoritative state records Command and control architecture; asynchronous workers build serving projections while Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels stays isolated from the request path.",
+    "title": "Distributed Botnet domain architecture",
+    "summary": "For defensive security research, design a controlled botnet-emulation lab and detection platform that models distributed command patterns safely, without providing deployable malware or unauthorized control mechanisms. The design makes distributed botnet decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "For defensive security research, design a contro request boundary",
-        "description": "Clients submit and read For defensive security research, design a contro requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Defensive analyst plane",
+        "description": "Analysts investigate and approve scoped defensive actions through an authenticated console.",
+        "componentIds": ["client", "gateway"]
       },
       {
-        "id": "source",
-        "label": "For defensive security research, design a contro authoritative state",
-        "description": "Durable For defensive security research, design a contro state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Evidence and normalization plane",
+        "description": "Endpoint and sandbox evidence remains attributable, deduplicated, and replayable.",
+        "componentIds": ["telemetry", "normalizer", "sandbox"]
       },
       {
-        "id": "processing",
-        "label": "For defensive security research, design a contro processing and serving",
-        "description": "Partitioned For defensive security research, design a contro workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "intelligence",
+        "label": "Correlation and detection plane",
+        "description": "Indicators and observations become explainable campaign and detection state.",
+        "componentIds": ["graph", "detector"]
+      },
+      {
+        "id": "response",
+        "label": "Reviewed containment plane",
+        "description": "Actions are approved, reversible where possible, and audited through integrations.",
+        "componentIds": ["actions", "notifications"]
       },
       {
         "id": "operations",
-        "label": "For defensive security research, design a contro operations",
-        "description": "For defensive security research, design a contro signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Security operations",
+        "description": "Evidence, false-positive, and response signals protect defensive correctness.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "For defensive security research, design a contro write path",
-        "description": "Client -> For defensive security research, design a contro gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "For defensive security research, design a contro projection path",
-        "description": "Authoritative For defensive security research, design a contro state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +186,320 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "For defensive security research, design a contro clients",
-        "description": "Clients use the Command and control architecture workflow and receive explicit status, freshness, or progress.",
+        "label": "Security analyst console",
+        "description": "Analysts submit indicators, inspect campaigns, and approve containment actions.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "For defensive security research, design a contro gateway",
-        "description": "Authenticates For defensive security research, design a contro requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Threat-intelligence gateway",
+        "description": "Authenticates analysts, scopes tenants, validates evidence, and requires approval for actions.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "For defensive security research, design a contro service",
-        "description": "Owns the Command and control architecture command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "For defensive security research, design a contro state",
-        "description": "Stores Command and control architecture; Distributed node communication and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design a Distributed Botnet"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "telemetry",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "For defensive security research, design a contro event backbone",
-        "description": "Publishes versioned events for Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels after durable commits.",
+        "label": "Endpoint telemetry stream",
+        "description": "Ingests defensive endpoint, DNS, network, and sandbox observations with provenance.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "normalizer",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "For defensive security research, design a contro workers",
-        "description": "Workers process Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Indicator normalizer",
+        "description": "Deduplicates and normalizes hashes, domains, IPs, behaviors, and evidence references.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1010,
+          "y": 80
         },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
+        "properties": {}
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "For defensive security research, design a contro projection",
-        "description": "Serves low-latency views for Design a Distributed Botnet with explicit freshness and fallback behavior.",
+        "id": "graph",
+        "type": "database",
+        "componentId": "database",
+        "label": "Threat relationship graph",
+        "description": "Links indicators, samples, infrastructure, sightings, and confidence over time.",
         "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "Resilient to takedown attempts"
-        }
+        "properties": {}
+      },
+      {
+        "id": "detector",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Correlation and detection service",
+        "description": "Groups observations into campaigns and produces explainable defensive detections.",
+        "position": {
+          "x": 1710,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "sandbox",
+        "type": "processing-worker",
+        "componentId": "processing-worker",
+        "label": "Isolated malware sandbox",
+        "description": "Analyzes suspicious samples in a contained environment with no uncontrolled external actions.",
+        "position": {
+          "x": 1360,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "actions",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Containment workflow",
+        "description": "Creates reviewed block, quarantine, or investigation actions through approved integrations.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Analyst notifications",
+        "description": "Delivers high-confidence campaign and containment updates with audit references.",
+        "position": {
+          "x": 2410,
+          "y": 260
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "For defensive security research, design a contro monitoring",
-        "description": "Tracks For defensive security research, design a contro latency, backlog, freshness, correctness, and saturation.",
+        "label": "Security operations",
+        "description": "Tracks evidence quality, false positives, containment latency, and workflow authorization.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start For defensive security research, design a contro",
-        "description": "Client submits Command and control architecture through the authenticated request boundary."
+        "label": "Investigation or approval",
+        "description": "Analysts submit evidence queries and approve scoped defensive actions."
       },
       {
-        "id": "gateway-service",
-        "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated For defensive security research, design a contro operation",
-        "description": "The gateway forwards a validated For defensive security research, design a contro operation after authentication, quota, and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "For defensive security research, design a contro state commit",
-        "description": "Commits Command and control architecture; Distributed node communication before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "For defensive security research, design a contro event",
-        "description": "An outbox or change stream publishes committed For defensive security research, design a contro transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "telemetry-normalizer-1",
+        "source": "telemetry",
+        "target": "normalizer",
         "type": "message-queue",
-        "label": "For defensive security research, design a contro background work",
-        "description": "Workers handle Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels with bounded retries and idempotent updates."
+        "label": "Endpoint evidence",
+        "description": "Defensive telemetry is normalized with source, timestamp, and provenance."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "For defensive security research, design a contro serving update",
-        "description": "Workers update the For defensive security research, design a contro projection and expose a freshness watermark."
-      },
-      {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "normalizer-graph-2",
+        "source": "normalizer",
+        "target": "graph",
         "type": "database-connection",
-        "label": "For defensive security research, design a contro projection read",
-        "description": "The For defensive security research, design a contro service reads the latest acceptable projection or authoritative state."
+        "label": "Indicator relationship",
+        "description": "Normalized indicators and sightings become versioned graph facts."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "telemetry-sandbox-3",
+        "source": "telemetry",
+        "target": "sandbox",
+        "type": "message-queue",
+        "label": "Suspicious sample",
+        "description": "Samples are analyzed in an isolated sandbox with bounded resource and network policy."
+      },
+      {
+        "id": "sandbox-graph-4",
+        "source": "sandbox",
+        "target": "graph",
+        "type": "data-flow",
+        "label": "Behavioral evidence",
+        "description": "Sandbox observations link behavior to indicators and confidence."
+      },
+      {
+        "id": "graph-detector-5",
+        "source": "graph",
+        "target": "detector",
+        "type": "api-call",
+        "label": "Correlation candidates",
+        "description": "The detector groups evidence and produces explainable defensive findings."
+      },
+      {
+        "id": "detector-client-6",
+        "source": "detector",
         "target": "client",
         "type": "http",
-        "label": "For defensive security research, design a contro result",
-        "description": "Returns the latest acceptable result within Resilient to takedown attempts."
+        "label": "Analyst finding",
+        "description": "Analysts see evidence, confidence, scope, and recommended containment."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "client-actions-7",
+        "source": "client",
+        "target": "actions",
+        "type": "api-call",
+        "label": "Approved containment",
+        "description": "Only an authorized approval creates a block, quarantine, or investigation action."
+      },
+      {
+        "id": "actions-notifications-8",
+        "source": "actions",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Response status",
+        "description": "Analysts receive integration results and audit references."
+      },
+      {
+        "id": "detector-monitoring-9",
+        "source": "detector",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "For defensive security research, design a contro pipeline health",
-        "description": "Monitors For defensive security research, design a contro consumer lag, processing health, freshness, and projection correctness."
+        "label": "Detection quality telemetry",
+        "description": "Operations observes false positives, confidence, and evidence gaps."
+      },
+      {
+        "id": "actions-monitoring-10",
+        "source": "actions",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Containment telemetry",
+        "description": "Operations observes authorization, latency, failures, and rollback state."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "evidence",
+        "label": "Evidence to intelligence",
+        "description": "Telemetry or samples -> normalization -> graph -> correlation and detection.",
+        "componentIds": [
+          "telemetry",
+          "normalizer",
+          "sandbox",
+          "graph",
+          "detector"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Reviewed defensive response",
+        "description": "Detection -> analyst review -> scoped containment action -> notification.",
+        "componentIds": ["detector", "client", "actions", "notifications"]
+      },
+      {
+        "id": "audit",
+        "label": "Evidence and action audit",
+        "description": "Every finding and action keeps provenance, confidence, actor, and integration response.",
+        "componentIds": ["gateway", "graph", "actions", "monitoring"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Evidence provenance and confidence",
       "points": [
-        "Keep the For defensive security research, design a contro commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional For defensive security research, design a contro writes, event IDs, and versions so retries and replay are safe.",
-        "Return For defensive security research, design a contro version and observedAt so clients can reason about freshness."
+        "Preserve source, collection time, transformation, and evidence references for every indicator.",
+        "Separate observed facts from hypotheses and make confidence or scoring explainable.",
+        "Use retention classes and tenant isolation for sensitive security data."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Safe correlation",
       "points": [
-        "Partition For defensive security research, design a contro by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound For defensive security research, design a contro work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for For defensive security research, design a contro projection drift and partial failures."
+        "Use a graph or relationship store for indicators, sightings, samples, and infrastructure links.",
+        "Keep correlation asynchronous and replayable so a detector change can be evaluated against historical evidence.",
+        "Quarantine low-confidence clusters from automatic containment."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Reviewed containment",
       "points": [
-        "Serve the last acceptable For defensive security research, design a contro projection or an explicit degraded response when workers fail.",
-        "Retain durable For defensive security research, design a contro records for replay and make each downstream effect independently retryable.",
-        "Measure For defensive security research, design a contro latency, backlog, freshness, error rate, and correctness drift."
+        "Require scoped authorization, approval, expiry, and provider acknowledgement for actions.",
+        "Make actions idempotent and reversible where possible, retaining the original evidence and decision.",
+        "Measure false positives, missed detections, action latency, and rollback failures."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Automatic versus analyst-approved response",
+      "recommendation": "Automate only high-confidence, low-blast-radius actions and require approval for disruptive changes.",
+      "caution": "A false positive can create a larger outage than the threat it was meant to contain."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Central graph versus stream-only detection",
+      "recommendation": "Keep a durable relationship graph for investigation and a stream path for fast detections.",
+      "caution": "A graph-only hot path creates latency and contention; stream-only analysis loses history."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Evidence retention versus privacy",
+      "recommendation": "Retain enough evidence for incident reconstruction and delete or hash sensitive payloads according to policy.",
+      "caution": "Unlimited raw security data increases breach impact and storage cost."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating a weak indicator as proof of a campaign.",
+    "Allowing detection logic to trigger unreviewed broad actions.",
+    "Dropping provenance or transformation history during normalization.",
+    "Running analysis with uncontrolled external network access.",
+    "Measuring detections without false-positive, containment, and rollback metrics."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid a false-positive containment?",
+      "answer": "Require confidence and policy gates, scope the action, use approval for high blast radius, and retain a fast rollback path."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you replay a detector?",
+      "answer": "Keep normalized evidence and detector version, run against an isolated output, compare findings, and publish only after review."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you protect sensitive evidence?",
+      "answer": "Tenant-isolate data, minimize raw payloads, encrypt references, apply retention classes, and audit every access."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Command and control architecture workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the distributed botnet workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a distributed system architecture similar to a botnet (for educational/security research purposes)., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative distributed botnet state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions distributed botnet traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain For defensive security research, design a contro consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the distributed botnet user experience."
     }
   ]
 }

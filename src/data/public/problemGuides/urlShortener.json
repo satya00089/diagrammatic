@@ -54,85 +54,94 @@
   },
   "entities": [
     {
-      "name": "Link",
+      "name": "ShortLink",
       "fields": [
-        "code",
-        "destination_url",
-        "owner_id",
-        "created_at",
-        "expires_at",
-        "status"
+        "linkId",
+        "alias",
+        "ownerId",
+        "destination",
+        "status",
+        "expiresAt",
+        "version"
       ],
-      "notes": "The critical lookup is by code. Keep this row compact so a redirect needs one indexed read."
+      "notes": "Authoritative link metadata and lifecycle state."
     },
     {
-      "name": "AliasReservation",
-      "fields": ["alias", "owner_id", "created_at", "moderation_status"],
-      "notes": "Separating custom aliases makes uniqueness, reserved words, and moderation explicit."
+      "name": "RedirectLookup",
+      "fields": [
+        "alias",
+        "destination",
+        "status",
+        "version",
+        "cachedAt",
+        "expiresAt"
+      ],
+      "notes": "Read-optimized alias projection with expiry."
     },
     {
       "name": "ClickEvent",
       "fields": [
-        "code",
-        "occurred_at",
+        "eventId",
+        "alias",
+        "occurredAt",
         "referrer",
-        "user_agent_hash",
-        "ip_prefix"
+        "region",
+        "userAgentHash"
       ],
-      "notes": "Publish asynchronously and minimize retention of identifying network data."
+      "notes": "Privacy-scoped redirect event emitted off the hot path."
     },
     {
-      "name": "ClickAggregate",
-      "fields": ["code", "bucket_start", "dimension", "count"],
-      "notes": "Precomputed buckets serve dashboards without scanning the raw event stream."
+      "name": "AnalyticsAggregate",
+      "fields": ["alias", "bucket", "clicks", "uniqueEstimate", "updatedAt"],
+      "notes": "Rebuildable time-bucketed click aggregate."
     }
   ],
   "apis": [
     {
       "method": "POST",
       "path": "/v1/links",
-      "contract": "{ destinationUrl, customAlias?, expiresAt? } -> { shortUrl, code }",
-      "notes": "Validate the destination, enforce quota, and reserve custom aliases atomically."
+      "contract": "{ destination, customAlias?, expiresAt?, idempotencyKey } -> { linkId, alias, status }",
+      "notes": "Validate destination, reserve a collision-free alias, and write link metadata."
     },
     {
       "method": "GET",
-      "path": "/{code}",
-      "contract": "302 redirect to the stored destination",
-      "notes": "The hot path should complete with one cache read or one indexed datastore lookup."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/links/{code}/analytics",
-      "contract": "Click aggregates grouped by time bucket and selected dimensions",
-      "notes": "Serve precomputed results from an analytics store with owner authorization."
+      "path": "/{alias}",
+      "contract": "302/307 with destination and cache headers",
+      "notes": "Resolve from edge/cache with a database fallback and enforce status/expiry."
     },
     {
       "method": "PATCH",
-      "path": "/v1/links/{code}",
-      "contract": "{ destinationUrl?, expiresAt?, status? } -> updated link",
-      "notes": "Authorize the owner and invalidate cached mappings after every accepted change."
+      "path": "/v1/links/{linkId}",
+      "contract": "{ destination?, expiresAt?, status?, expectedVersion } -> { alias, version }",
+      "notes": "Update authorized metadata and invalidate the alias projection."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/links/{linkId}/analytics?from=&to=",
+      "contract": "{ buckets[], totals, freshness }",
+      "notes": "Read asynchronous click aggregates with a known processing watermark."
     }
   ],
   "dataFlow": [
     {
-      "title": "Create the link",
-      "description": "Validate the URL and quota, reserve a code, persist the link row, warm the cache, and return the public short URL."
+      "title": "Create a compact link",
+      "description": "The service validates the destination and policy, allocates a collision-free alias, and commits metadata before returning it."
     },
     {
-      "title": "Generate a code",
-      "description": "Encode a unique numeric ID with Base62, or generate random Base62 strings and retry safely when an insert collides."
-    },
-    {
-      "title": "Resolve the redirect",
-      "description": "Read code-to-destination from cache, fall back to the link store, verify status and expiry, then return the redirect."
+      "title": "Resolve a redirect",
+      "description": "Edge and link cache resolve the alias; a miss reads the link store, checks status and expiry, then returns the redirect with bounded latency."
     },
     {
       "title": "Emit click telemetry",
-      "description": "Publish a compact click event to a durable queue without waiting for analytics processing."
+      "description": "The redirect path appends a privacy-scoped click event asynchronously or through a buffered queue without waiting for analytics."
     },
     {
-      "title": "Build aggregates",
-      "description": "Workers roll events into minute and hour buckets for dashboards, anomaly detection, and operational reporting."
+      "title": "Aggregate analytics",
+      "description": "Workers deduplicate events, build time buckets, and expose a processing watermark for dashboards."
+    },
+    {
+      "title": "Expire, update, or delete",
+      "description": "Lifecycle workers and owner commands invalidate caches, tombstone aliases, and retain only policy-approved analytics and audit data."
     }
   ],
   "architecture": {
@@ -154,7 +163,7 @@
       {
         "id": "state",
         "label": "State layer",
-        "description": "Fast redirect lookups and the durable source of truth for link metadata.",
+        "description": "Fast redirect lookups backed by authoritative link metadata.",
         "componentIds": ["link-cache", "link-store"]
       },
       {
@@ -284,7 +293,7 @@
         "type": "database",
         "componentId": "database",
         "label": "Link Store",
-        "description": "Durable source of truth for links, aliases, ownership, and expiry.",
+        "description": "Authoritative store for links, aliases, ownership, and expiry.",
         "position": {
           "x": 2400,
           "y": 340
@@ -443,96 +452,88 @@
   },
   "deepDives": [
     {
-      "title": "Short-code generation",
+      "title": "Alias allocation and collision safety",
       "points": [
-        "A database sequence is easy to explain but becomes a coordination dependency at larger scale.",
-        "Snowflake-style IDs remove the central database dependency and remain roughly time sortable.",
-        "Random codes improve unguessability when the namespace is large and collision retries are handled transactionally."
+        "For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy.",
+        "Design for the failure case where hot aliases, cache staleness, destination abuse, and analytics bursts must not affect redirects or expose deleted links; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Redirect caching",
+      "title": "Redirect cache and invalidation",
       "points": [
-        "Cache code-to-destination mappings aggressively because reads dominate writes.",
-        "Use bounded TTLs plus explicit invalidation for edited, disabled, deleted, and expired links.",
-        "Protect against hot keys with replicated caches, request coalescing, and edge caching where analytics permits it."
+        "For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy.",
+        "Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Abuse and safety",
+      "title": "Asynchronous click analytics",
       "points": [
-        "Check destination reputation and scan suspicious links before broad distribution.",
-        "Rate limit creation by account and network signals, with tighter limits for anonymous users.",
-        "Provide a rapid takedown path that changes link status and invalidates every cache layer."
-      ]
-    },
-    {
-      "title": "Reliability and operations",
-      "points": [
-        "Track redirect latency, cache hit rate, error rate, queue lag, and takedown propagation time.",
-        "Degrade by dropping optional analytics before sacrificing redirect availability.",
-        "Use multi-region reads and a clearly defined ownership model for writes and alias uniqueness."
+        "For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy.",
+        "Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "301 vs 302 redirects",
-      "recommendation": "Prefer 302 while destinations can change or click accounting is important.",
-      "caution": "Browsers and crawlers may cache 301 responses for a long time, making corrections difficult."
+      "title": "Random IDs versus sequential aliases",
+      "recommendation": "Use collision-safe random or centrally allocated IDs with a uniqueness constraint and idempotency.",
+      "caution": "Sequential IDs are compact but reveal volume and become allocation hot spots without careful sharding."
     },
     {
-      "title": "Random codes vs sequential IDs",
-      "recommendation": "Use random codes for harder enumeration; use Base62-encoded IDs for simpler uniqueness and capacity planning.",
-      "caution": "Sequential IDs reveal growth, while random codes require a collision-safe insert path."
+      "title": "Long cache TTL versus revocation",
+      "recommendation": "Cache active links with TTL and targeted invalidation on update, delete, or expiry; always enforce a bounded expiry policy.",
+      "caution": "Long TTL improves hit rate but serves stale destinations after owner changes."
     },
     {
-      "title": "Raw click events vs aggregates",
-      "recommendation": "Retain short-lived raw events when fraud analysis or reprocessing is valuable, then keep long-lived aggregates.",
-      "caution": "Raw events increase cost and privacy exposure; aggregate-only storage limits future analysis."
+      "title": "Synchronous click logging versus redirect latency",
+      "recommendation": "Buffer or enqueue click events and keep redirect success independent of analytics availability.",
+      "caution": "Synchronous analytics adds tail latency and lets an analytics outage take down redirects."
     }
   ],
   "commonMistakes": [
-    "Writing analytics synchronously before returning the redirect.",
-    "Ignoring custom-alias collisions, reserved words, and moderation.",
-    "Choosing a code namespace without estimating its usable lifetime.",
-    "Forgetting expiry, deletion, editing, and cache invalidation behavior.",
-    "Assuming every link is public and safe to enumerate."
+    "Generating aliases without a uniqueness/idempotency boundary.",
+    "Caching a redirect forever without expiry or invalidation.",
+    "Following redirects through a slow analytics transaction.",
+    "Allowing open redirects or malicious destinations without policy.",
+    "Treating analytics aggregates as exact source-of-truth events."
   ],
   "followUps": [
     {
-      "question": "What happens when one link suddenly goes viral?",
-      "answer": "Keep resolution cache-first, replicate the hot key, coalesce misses, prewarm edge caches when a spike is detected, and absorb click events with a partitioned durable queue."
+      "question": "What if two requests choose the same custom alias?",
+      "answer": "Reserve the alias with a conditional uniqueness write, return a conflict, and make retries with the same idempotency key return the original link."
     },
     {
-      "question": "How would you reduce phishing and malware abuse?",
-      "answer": "Combine destination reputation, automated scanning, creation rate limits, user reports, and a fast disable workflow that invalidates cached redirects globally."
+      "question": "How do you revoke a viral link quickly?",
+      "answer": "Write a disabled/tombstone state, invalidate edge and regional caches, and recheck status on origin misses until TTLs expire."
     },
     {
-      "question": "How would editable destinations work?",
-      "answer": "Keep the short code stable, authorize every update, version the link row, and use explicit cache invalidation with a short TTL as a safety net."
-    },
-    {
-      "question": "How would you support multiple regions?",
-      "answer": "Serve redirects from regional caches and replicas, assign a write owner for each code or alias namespace, and replicate updates with clear conflict rules."
+      "question": "How do you handle a click-event backlog?",
+      "answer": "Keep redirects available, bound queue retention, scale analytics consumers, and report a delayed analytics watermark rather than blocking traffic."
     }
   ],
   "rubric": [
     {
-      "criterion": "Core flows",
-      "description": "Separates creation from redirect resolution and optimizes the read-heavy critical path."
+      "criterion": "Requirements",
+      "description": "The answer defines collision-safe aliases, low-latency cache reads, expiry/revocation, destination safety, and decoupled click analytics, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Data design",
-      "description": "Uses a compact lookup model, enforces code and alias uniqueness, and defines lifecycle state."
+      "criterion": "Data model",
+      "description": "Entities and keys make the low-latency URL shortener state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Scale and reliability",
-      "description": "Includes realistic capacity math, caching, hot-key handling, async analytics, and failure behavior."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Product judgment",
-      "description": "Covers expiration, edits, deletion, ownership, abuse, privacy, and operational visibility."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the low-latency URL shortener consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

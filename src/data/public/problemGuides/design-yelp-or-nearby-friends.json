@@ -50,143 +50,136 @@
   },
   "entities": [
     {
-      "name": "Geo-discovery service",
+      "name": "LocationUpdate",
       "fields": [
-        "tenantId",
-        "geoDiscoveryServiceId",
-        "status",
-        "version",
-        "createdAt",
-        "updatedAt"
-      ],
-      "notes": "Authoritative Geo-discovery service record keyed for its primary command and read paths."
-    },
-    {
-      "name": "Geo-discovery service event",
-      "fields": [
-        "eventId",
-        "geoDiscoveryServiceId",
-        "eventType",
-        "version",
+        "updateId",
+        "subjectId",
+        "cell",
+        "accuracy",
         "occurredAt",
-        "payload"
+        "consentVersion",
+        "expiresAt"
       ],
-      "notes": "Immutable Geo-discovery service event with an idempotency key and version for replay."
+      "notes": "Expiring, consent-scoped location evidence for yelp or nearby friends."
     },
     {
-      "name": "Geo-discovery service policy",
+      "name": "AudiencePolicy",
       "fields": [
         "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "subjectId",
+        "audience",
+        "precision",
+        "blockedIds",
+        "version"
       ],
-      "notes": "Versioned policy controlling Geo-discovery service authorization, routing, or eligibility decisions."
+      "notes": "Versioned privacy and sharing policy."
     },
     {
-      "name": "Geo-discovery service projection",
+      "name": "PlaceRecord",
       "fields": [
-        "geoDiscoveryServiceId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "placeId",
+        "category",
+        "cell",
+        "attributes",
+        "ownerId",
+        "version"
       ],
-      "notes": "Rebuildable Geo-discovery service projection with observedAt and freshness metadata."
+      "notes": "Versioned place metadata used by nearby discovery."
+    },
+    {
+      "name": "NearbyQuery",
+      "fields": [
+        "queryId",
+        "requesterId",
+        "center",
+        "radius",
+        "filters",
+        "freshness"
+      ],
+      "notes": "Auditable nearby query and freshness contract."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/geo-discovery-service",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { geoDiscoveryServiceId, status, version }",
-      "notes": "Create or submit Geo-discovery service with idempotency and return an accepted state/version."
+      "path": "/v1/location-updates",
+      "contract": "{ location, accuracy, consentVersion, idempotencyKey } -> { updateId, expiresAt }",
+      "notes": "Accept an opted-in yelp or nearby friends location update."
     },
     {
       "method": "GET",
-      "path": "/v1/geo-discovery-service/{geoDiscoveryServiceId}",
-      "contract": "{ geoDiscoveryServiceId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Geo-discovery service state with version, observedAt, and freshness metadata."
+      "path": "/v1/nearby?lat=&lon=&radius=&category=",
+      "contract": "{ places[], friends[], freshness, policyVersion }",
+      "notes": "Return privacy-filtered nearby yelp or nearby friends results."
     },
     {
-      "method": "GET",
-      "path": "/v1/geo-discovery-service?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Geo-discovery service records with cursor pagination and eligibility filters."
+      "method": "PUT",
+      "path": "/v1/audiences/{id}",
+      "contract": "{ audience, precision, blockedIds, expectedVersion } -> { version }",
+      "notes": "Change visibility and precision policy with optimistic concurrency."
     },
     {
-      "method": "POST",
-      "path": "/v1/geo-discovery-service/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Geo-discovery service rebuild or repair operation and return job status."
+      "method": "DELETE",
+      "path": "/v1/location-updates/{id}",
+      "contract": "{ accepted, purgeAfter }",
+      "notes": "Revoke or delete retained location evidence and derived entries."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Find nearby places/friends within radius",
-      "description": "The Geo-discovery service gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Capture consent-scoped updates",
+      "description": "The yelp or nearby friends gateway validates consent, precision, retention, timestamp, accuracy, and rate limits."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Geo-discovery service service records the accepted state and version before acknowledging the client."
+      "title": "Build an expiring geo projection",
+      "description": "Workers index coarse cells with policy version and expiry while precise history remains restricted."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Geo-discovery service events; consumers deduplicate by event ID and track offsets."
+      "title": "Evaluate nearby queries",
+      "description": "The query service retrieves bounded candidates, applies blocks and audience policy, then ranks by distance, category, and freshness."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Geo-discovery service events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Deliver opt-in proximity effects",
+      "description": "Approved location or place changes trigger deduplicated notifications without exposing unnecessary precision."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Geo-discovery service projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Purge, audit, and recover",
+      "description": "Expiry and deletion workers remove raw, index, cache, and notification state and repair missed invalidations."
     }
   ],
   "architecture": {
-    "title": "Design a location-based service to find nearby places or friends based on geographical location. reference architecture",
-    "summary": "The authoritative state records Find nearby places/friends within radius; asynchronous workers build serving projections while Geospatial indexing (Quadtree, Geohash), Separate read and write paths, Cache popular locations stays isolated from the request path.",
+    "title": "Yelp Or Nearby Friends domain architecture",
+    "summary": "A privacy-first geo discovery design for yelp or nearby friends. Consent and audience policy are evaluated before retrieval, while coarse expiring indexes serve low-latency nearby results and remain rebuildable.",
     "layers": [
       {
         "id": "experience",
-        "label": "Geo-discovery service request boundary",
-        "description": "Clients submit and read Geo-discovery service requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Nearby query and privacy plane",
+        "description": "Queries and visibility controls pass through identity, consent, audience, and freshness checks.",
+        "componentIds": ["client", "gateway", "query", "policy"]
       },
       {
-        "id": "source",
-        "label": "Geo-discovery service authoritative state",
-        "description": "Durable Geo-discovery service state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Location and place evidence",
+        "description": "Updates, place edits, relationship facts, and policy changes remain attributable and replayable.",
+        "componentIds": ["ingest", "place-store", "events"]
       },
       {
-        "id": "processing",
-        "label": "Geo-discovery service processing and serving",
-        "description": "Partitioned Geo-discovery service workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "derived",
+        "label": "Geospatial serving plane",
+        "description": "Coarse, expiring indexes serve bounded candidates without becoming the source of truth.",
+        "componentIds": ["geo-index"]
+      },
+      {
+        "id": "delivery",
+        "label": "Opt-in notification plane",
+        "description": "Proximity notifications are independent, deduplicated, and policy-approved.",
+        "componentIds": ["notifications"]
       },
       {
         "id": "operations",
-        "label": "Geo-discovery service operations",
-        "description": "Geo-discovery service signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Geo privacy operations",
+        "description": "Freshness, policy, abuse, and deletion signals protect users and service quality.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Geo-discovery service write path",
-        "description": "Client -> Geo-discovery service gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Geo-discovery service projection path",
-        "description": "Authoritative Geo-discovery service state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +187,328 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Geo-discovery service clients",
-        "description": "Clients use the Find nearby places/friends within radius workflow and receive explicit status, freshness, or progress.",
+        "label": "Nearby discovery clients",
+        "description": "Users query places or opted-in friends and manage privacy controls.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Geo-discovery service gateway",
-        "description": "Authenticates Geo-discovery service requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Geo discovery API",
+        "description": "Authenticates requests, validates consent, applies precision and rate limits, and redacts sensitive fields.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
+        "id": "ingest",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Geo-discovery service service",
-        "description": "Owns the Find nearby places/friends within radius command, authorization policy, lifecycle state, and client contract.",
+        "label": "Location and place ingestion",
+        "description": "Accepts opted-in location updates and place edits with accuracy, timestamp, and retention metadata.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "policy",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Audience and privacy policy",
+        "description": "Evaluates sharing scope, blocked users, precision, expiry, and deletion policy.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "geo-index",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Expiring geospatial index",
+        "description": "Indexes coarse, expiring candidates for bounded radius and category queries.",
+        "position": {
+          "x": 1010,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "place-store",
         "type": "database",
         "componentId": "database",
-        "label": "Geo-discovery service state",
-        "description": "Stores Find nearby places/friends within radius; Search by location, category, rating and supports the primary access patterns.",
+        "label": "Place and relationship store",
+        "description": "Stores place metadata, friend edges, visibility state, and versioned edits.",
         "position": {
-          "x": 1080,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "storage": "Design Yelp or Nearby Friends"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Geo-discovery service event backbone",
-        "description": "Publishes versioned events for Geospatial indexing (Quadtree, Geohash), Separate read and write paths, Cache popular locations after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "query",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Geo-discovery service workers",
-        "description": "Workers process Geospatial indexing (Quadtree, Geohash), Separate read and write paths, Cache popular locations independently from the user-facing command and retry transient failures.",
+        "label": "Nearby query service",
+        "description": "Combines geo candidates with category, ranking, distance, freshness, and privacy filters.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Geo-discovery service projection",
-        "description": "Serves low-latency views for Design Yelp or Nearby Friends with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1710,
           "y": 260
         },
-        "properties": {
-          "latency": "Low latency for location queries"
-        }
+        "properties": {}
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Geo update event stream",
+        "description": "Carries location, place, consent, block, deletion, and invalidation events.",
+        "position": {
+          "x": 1010,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Opt-in proximity notifications",
+        "description": "Delivers approved nearby or place updates with deduplication and audit.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Geo-discovery service monitoring",
-        "description": "Tracks Geo-discovery service latency, backlog, freshness, correctness, and saturation.",
+        "label": "Geo privacy operations",
+        "description": "Tracks stale locations, policy denials, precision leakage, hot cells, and invalidation lag.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Geo-discovery service",
-        "description": "Client submits Find nearby places/friends within radius through the authenticated request boundary."
+        "label": "Nearby query or location update",
+        "description": "Clients submit consent-aware updates, nearby queries, place edits, or privacy commands."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-policy-1",
         "source": "gateway",
-        "target": "service",
+        "target": "policy",
         "type": "api-call",
-        "label": "Validated Geo-discovery service operation",
-        "description": "The gateway forwards a validated Geo-discovery service operation after authentication, quota, and idempotency checks."
+        "label": "Privacy policy decision",
+        "description": "The gateway evaluates audience, precision, consent, blocks, expiry, and rate limits."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Geo-discovery service state commit",
-        "description": "Commits Find nearby places/friends within radius; Search by location, category, rating before downstream asynchronous work."
+        "id": "policy-ingest-2",
+        "source": "policy",
+        "target": "ingest",
+        "type": "api-call",
+        "label": "Allowed update",
+        "description": "Only policy-approved location or place updates enter the ingestion pipeline."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "ingest-events-3",
+        "source": "ingest",
+        "target": "events",
         "type": "event-stream",
-        "label": "Geo-discovery service event",
-        "description": "An outbox or change stream publishes committed Geo-discovery service transitions with replayable ordering."
+        "label": "Geo update event",
+        "description": "Events carry accuracy, event time, consent version, expiry, and source identity."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "events-geo-index-4",
+        "source": "events",
+        "target": "geo-index",
         "type": "message-queue",
-        "label": "Geo-discovery service background work",
-        "description": "Workers handle Geospatial indexing (Quadtree, Geohash), Separate read and write paths, Cache popular locations with bounded retries and idempotent updates."
+        "label": "Expiring geo projection",
+        "description": "Workers update coarse cells and remove expired or revoked candidates."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Geo-discovery service serving update",
-        "description": "Workers update the Geo-discovery service projection and expose a freshness watermark."
+        "id": "gateway-query-5",
+        "source": "gateway",
+        "target": "query",
+        "type": "api-call",
+        "label": "Nearby query",
+        "description": "The query service applies bounded candidate retrieval, relationship, category, and privacy rules."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "query-geo-index-6",
+        "source": "query",
+        "target": "geo-index",
         "type": "database-connection",
-        "label": "Geo-discovery service projection read",
-        "description": "The Geo-discovery service service reads the latest acceptable projection or authoritative state."
+        "label": "Geo candidates",
+        "description": "The service retrieves a bounded candidate set by cell, radius, and freshness."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Geo-discovery service result",
-        "description": "Returns the latest acceptable result within Low latency for location queries."
+        "id": "query-place-store-7",
+        "source": "query",
+        "target": "place-store",
+        "type": "database-connection",
+        "label": "Place and relationship facts",
+        "description": "The service applies place edits, blocks, ranking, and audience state."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "events-notifications-8",
+        "source": "events",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Opt-in proximity event",
+        "description": "Notifications deliver only approved, deduplicated nearby or place updates."
+      },
+      {
+        "id": "policy-monitoring-9",
+        "source": "policy",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Geo-discovery service pipeline health",
-        "description": "Monitors Geo-discovery service consumer lag, processing health, freshness, and projection correctness."
+        "label": "Policy telemetry",
+        "description": "Operations observes denials, access anomalies, precision, and deletion state."
+      },
+      {
+        "id": "geo-index-monitoring-10",
+        "source": "geo-index",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Geo freshness telemetry",
+        "description": "Operations observes stale candidates, hot cells, invalidation lag, and query latency."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "update",
+        "label": "Consent-aware update path",
+        "description": "Client -> gateway -> policy -> ingest -> event stream -> geo index.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "policy",
+          "ingest",
+          "events",
+          "geo-index"
+        ]
+      },
+      {
+        "id": "query",
+        "label": "Nearby discovery path",
+        "description": "Client -> gateway -> geo candidates -> privacy and relationship filter -> result.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "query",
+          "geo-index",
+          "policy",
+          "place-store"
+        ]
+      },
+      {
+        "id": "notify",
+        "label": "Opt-in proximity path",
+        "description": "Approved update -> notification service -> client.",
+        "componentIds": ["events", "policy", "notifications", "client"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Privacy before retrieval",
       "points": [
-        "Keep the Geo-discovery service commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Geo-discovery service writes, event IDs, and versions so retries and replay are safe.",
-        "Return Geo-discovery service version and observedAt so clients can reason about freshness."
+        "Evaluate requester, subject, audience, block, precision, consent, and expiry before returning any candidate.",
+        "Use coarse cells or transformed coordinates for the index and keep precise history in a restricted store.",
+        "Fail closed when policy version or freshness is unknown."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Hot cells and stale presence",
       "points": [
-        "Partition Geo-discovery service by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Geo-discovery service work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Geo-discovery service projection drift and partial failures."
+        "Partition by geo cell and time, isolate dense venues, and bound candidate fan-out.",
+        "Carry last-seen and expiry metadata so an old heartbeat is never treated as current.",
+        "Coalesce safe updates while preserving consent and deletion semantics."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Deletion and audit",
       "points": [
-        "Serve the last acceptable Geo-discovery service projection or an explicit degraded response when workers fail.",
-        "Retain durable Geo-discovery service records for replay and make each downstream effect independently retryable.",
-        "Measure Geo-discovery service latency, backlog, freshness, error rate, and correctness drift."
+        "Make user deletion remove raw, index, cache, and notification state through an idempotent workflow.",
+        "Keep a minimal policy audit trail without retaining unnecessary precise location.",
+        "Measure denials, stale results, precision, invalidation lag, and unusual access."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Precision versus privacy",
+      "recommendation": "Return the coarsest precision that satisfies the use case and make finer precision explicit and consented.",
+      "caution": "A precise global index increases privacy risk and hot-key pressure."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Push versus pull nearby results",
+      "recommendation": "Use pull for authoritative nearby queries and push only for opt-in, policy-approved changes.",
+      "caution": "Push-only sharing can leak state after consent or connectivity changes."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "History versus ephemeral presence",
+      "recommendation": "Keep presence ephemeral and retain history only for an explicit user benefit and retention policy.",
+      "caution": "Unlimited location history increases breach and deletion burden without improving nearby reads."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Indexing precise locations without consent or expiry.",
+    "Checking privacy after geo candidates have already been exposed.",
+    "Treating a stale heartbeat as current presence.",
+    "Failing to purge index, cache, and notification state after deletion or blocks.",
+    "Allowing one dense cell or user to exhaust nearby-query fan-out."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you prevent a blocked user from appearing in yelp or nearby friends?",
+      "answer": "Version block and audience policy, propagate invalidation before serving, and fail closed when the derived policy is stale."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you handle a hot venue?",
+      "answer": "Shard or coalesce the cell, cap candidate work, and serve a bounded result with freshness metadata."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What does deletion mean?",
+      "answer": "Revoke access immediately, asynchronously purge raw and derived state, and expose completion or residual-retention status."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Find nearby places/friends within radius workflow, scale, latency, durability, and failure contract."
+      "description": "The answer covers yelp or nearby friends updates, nearby queries, privacy, TTLs, filters, ranking, deletion, and degradation."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a location-based service to find nearby places or friends based on geographical location., authorization, privacy, and lifecycle changes."
+      "criterion": "Privacy",
+      "description": "The answer evaluates consent and audience policy before retrieval, uses coarse expiring indexes, and defines deletion."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions geo cells, isolates hot venues, bounds fan-out, and serves explicit freshness."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Geo-discovery service consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer measures stale presence, policy denials, precision, invalidation lag, abuse, and query latency."
     }
   ]
 }

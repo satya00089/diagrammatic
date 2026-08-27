@@ -50,136 +50,150 @@
   },
   "entities": [
     {
-      "name": "Netflix: Limit the Number of Screens Each User Can Watch",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Track active streaming sessions per account; Enforce screen limits (e.g., 2, 4 screens); design keys around the main reads and writes."
+      "name": "MediaAsset",
+      "fields": [
+        "assetId",
+        "ownerId",
+        "sourceUri",
+        "checksum",
+        "privacy",
+        "status"
+      ],
+      "notes": "Canonical uploaded netflix limit the number of screens each user can watch asset and lifecycle state."
     },
     {
-      "name": "netflix-limit-the-number-of-screens-each-user-can-watch event",
-      "fields": [
-        "eventId",
-        "systemToEnforceConcurrentStreamingLimitsPeId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Versioned System to enforce concurrent streaming limits pe records preserve ownership, lifecycle, audit, and replay semantics."
+      "name": "MediaRendition",
+      "fields": ["assetId", "profile", "codec", "uri", "checksum", "status"],
+      "notes": "Derived netflix limit the number of screens each user can watch output identified by a deterministic profile and content hash."
     },
     {
-      "name": "System to enforce concurrent streaming limits pe policy",
+      "name": "PlaybackSession",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "sessionId",
+        "assetId",
+        "viewerId",
+        "entitlementVersion",
+        "edgeRegion",
+        "expiresAt"
       ],
-      "notes": "Versioned System to enforce concurrent streaming limits pe records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Short-lived netflix limit the number of screens each user can watch access session that binds authorization to delivery."
     },
     {
-      "name": "System to enforce concurrent streaming limits pe projection",
+      "name": "ProcessingJob",
       "fields": [
-        "systemToEnforceConcurrentStreamingLimitsPeId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "jobId",
+        "assetId",
+        "operation",
+        "attempt",
+        "checkpoint",
+        "status"
       ],
-      "notes": "Versioned System to enforce concurrent streaming limits pe records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Retry-safe netflix limit the number of screens each user can watch processing job with checkpoints and per-rendition progress."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/system-to-enforce-concurrent-streaming-lim",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { systemToEnforceConcurrentStreamingLimitsPeId, status, version }",
-      "notes": "Create or submit System to enforce concurrent streaming limits pe with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/system-to-enforce-concurrent-streaming-lim/{systemToEnforceConcurrentStreamingLimitsPeId}",
-      "contract": "{ systemToEnforceConcurrentStreamingLimitsPeId, status, version, observedAt, freshness }",
-      "notes": "Return the latest System to enforce concurrent streaming limits pe state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/system-to-enforce-concurrent-streaming-lim?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped System to enforce concurrent streaming limits pe records with cursor pagination and eligibility filters."
+      "path": "/v1/assets/uploads",
+      "contract": "{ contentType, size, checksum } -> { assetId, uploadUrl }",
+      "notes": "Issue a scoped netflix limit the number of screens each user can watch upload URL and register the source before transfer."
     },
     {
       "method": "POST",
-      "path": "/v1/system-to-enforce-concurrent-streaming-lim/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a System to enforce concurrent streaming limits pe rebuild or repair operation and return job status."
+      "path": "/v1/assets/{assetId}/process",
+      "contract": "{ profiles[], priority, idempotencyKey } -> { jobId, status }",
+      "notes": "Start idempotent netflix limit the number of screens each user can watch processing for requested output profiles."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/assets/{assetId}/manifest",
+      "contract": "{ renditions[], policy, freshness }",
+      "notes": "Return available netflix limit the number of screens each user can watch renditions only after entitlement and integrity checks."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/playback-sessions",
+      "contract": "{ assetId, viewerId, device, entitlement } -> { sessionId, manifestUrl, expiresAt }",
+      "notes": "Create a short-lived authorized netflix limit the number of screens each user can watch delivery session."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Track active streaming sessions per account",
-      "description": "The System to enforce concurrent streaming limits pe gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Reserve a resumable upload",
+      "description": "The netflix limit the number of screens each user can watch gateway authenticates the owner, reserves metadata, validates size and checksum, and returns a scoped upload URL."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The System to enforce concurrent streaming limits pe service records the accepted state and version before acknowledging the client."
+      "title": "Commit and verify the source",
+      "description": "A completion callback verifies the netflix limit the number of screens each user can watch object, records an immutable checksum, and publishes a processing job only once."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed System to enforce concurrent streaming limits pe events; consumers deduplicate by event ID and track offsets."
+      "title": "Process renditions asynchronously",
+      "description": "Workers execute netflix limit the number of screens each user can watch transforms with deterministic profiles, checkpointing, bounded retries, and a dead-letter path for corrupt inputs."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume System to enforce concurrent streaming limits pe events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish an entitlement-aware manifest",
+      "description": "A manifest projection exposes only completed netflix limit the number of screens each user can watch renditions and carries policy, checksum, and freshness metadata."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the System to enforce concurrent streaming limits pe projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Deliver, invalidate, and recover",
+      "description": "CDN delivery is protected by expiring URLs and revocation signals; failed netflix limit the number of screens each user can watch jobs and stale manifests are replayable without duplicating outputs."
     }
   ],
   "architecture": {
-    "title": "Design a system to enforce concurrent streaming limits per user account. reference architecture",
-    "summary": "The authoritative state records Track active streaming sessions per account; asynchronous workers build serving projections while Distributed session store (Redis), Heartbeat mechanism for active sessions, TTL for session expiration stays isolated from the request path.",
+    "title": "Netflix Limit The Number Of Screens Each User Can Watch media architecture",
+    "summary": "Design Design a system to enforce concurrent streaming limits per user account. so users can Track active streaming sessions per account reliably at scale. The design keeps originals durable and private, turns processing into idempotent queue work, publishes only verified renditions, and serves playback through entitlement-scoped CDN manifests.",
     "layers": [
       {
         "id": "experience",
-        "label": "System to enforce concurrent streaming limits pe request boundary",
-        "description": "Clients submit and read System to enforce concurrent streaming limits pe requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Media client and access plane",
+        "description": "Upload, status, metadata, entitlement, and playback requests are authenticated and quota-protected.",
+        "componentIds": ["client", "upload"]
       },
       {
         "id": "source",
-        "label": "System to enforce concurrent streaming limits pe authoritative state",
-        "description": "Durable System to enforce concurrent streaming limits pe state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "label": "Original media and metadata plane",
+        "description": "Original bytes and ownership state remain durable sources for replay, processing, and deletion.",
+        "componentIds": ["object-store", "metadata"]
       },
       {
         "id": "processing",
-        "label": "System to enforce concurrent streaming limits pe processing and serving",
-        "description": "Partitioned System to enforce concurrent streaming limits pe workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "label": "Media processing plane",
+        "description": "Durable prioritized jobs produce verified renditions and manifests asynchronously.",
+        "componentIds": ["queue", "processor", "catalog"]
+      },
+      {
+        "id": "delivery",
+        "label": "Playback and download plane",
+        "description": "The CDN serves signed segments and downloads from complete, policy-approved renditions.",
+        "componentIds": ["cdn"]
       },
       {
         "id": "operations",
-        "label": "System to enforce concurrent streaming limits pe operations",
-        "description": "System to enforce concurrent streaming limits pe signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Media lifecycle operations",
+        "description": "Pipeline, delivery, abuse, storage, and deletion correctness are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "System to enforce concurrent streaming limits pe write path",
-        "description": "Client -> System to enforce concurrent streaming limits pe gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "upload",
+        "label": "Upload and processing path",
+        "description": "Client -> gateway -> object store and metadata -> processing queue -> rendition catalog.",
+        "componentIds": [
+          "client",
+          "upload",
+          "object-store",
+          "metadata",
+          "queue",
+          "processor",
+          "catalog"
+        ]
       },
       {
-        "id": "async",
-        "label": "System to enforce concurrent streaming limits pe projection path",
-        "description": "Authoritative System to enforce concurrent streaming limits pe state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "playback",
+        "label": "Playback path",
+        "description": "Client -> gateway -> entitlement -> rendition catalog -> signed CDN manifest -> client.",
+        "componentIds": ["client", "upload", "metadata", "catalog", "cdn"]
       }
     ],
     "components": [
@@ -187,274 +201,292 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "System to enforce concurrent streaming limits pe clients",
-        "description": "Clients use the System to enforce concurrent streaming limits pe workflow and receive explicit status, freshness, or progress.",
+        "label": "Media upload and playback clients",
+        "description": "Users upload media, inspect processing status, browse metadata, and request adaptive playback or downloads.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS upload, signed URLs, and adaptive streaming"
         }
       },
       {
-        "id": "gateway",
+        "id": "upload",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "System to enforce concurrent streaming limits pe gateway",
-        "description": "Authenticates System to enforce concurrent streaming limits pe requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Upload and playback gateway",
+        "description": "Authenticates users, issues scoped upload/download URLs, validates metadata, and protects playback and upload quotas.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, signed URLs, quotas, and abuse controls"
         }
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "System to enforce concurrent streaming limits pe service",
-        "description": "Owns System to enforce concurrent streaming limits pe commands, authorization, lifecycle state, and the client contract.",
+        "id": "object-store",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Original media object store",
+        "description": "Stores immutable originals and intermediate assets with checksum, encryption, lifecycle, and tenant ownership metadata.",
         "position": {
           "x": 720,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "storage": "Content-addressed objects and lifecycle tiers"
         }
       },
       {
-        "id": "source",
+        "id": "metadata",
         "type": "database",
         "componentId": "database",
-        "label": "System to enforce concurrent streaming limits pe state",
-        "description": "Stores authoritative System to enforce concurrent streaming limits pe state and supports the primary access patterns.",
+        "label": "Media metadata and entitlement store",
+        "description": "Stores ownership, privacy, captions, renditions, processing state, playback policy, and deletion tombstones.",
+        "position": {
+          "x": 720,
+          "y": 420
+        },
+        "properties": {
+          "consistency": "Versioned metadata and entitlement checks"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Media processing queue",
+        "description": "Buffers thumbnail, waveform, caption, transcode, moderation, and packaging work with priority and retry isolation.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Netflix: Limit the Number of Screens Each User Can Watch"
+          "delivery": "Durable jobs, visibility timeout, and dead-letter handling"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "System to enforce concurrent streaming limits pe event backbone",
-        "description": "Publishes committed System to enforce concurrent streaming limits pe events with stable keys so consumers can retry and replay safely.",
+        "id": "processor",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Transcoding and media processing",
+        "description": "Generates codec/bitrate renditions, thumbnails, captions, and manifests while reporting progress and content safety results.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scaling": "CPU/GPU pools partitioned by media size and priority"
         }
       },
       {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "System to enforce concurrent streaming limits pe workers",
-        "description": "Workers process System to enforce concurrent streaming limits pe events asynchronously, retry transient failures, and update projections.",
+        "id": "catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Rendition and playback catalog",
+        "description": "Records available renditions, codecs, bitrates, segment manifests, captions, checksums, and processing versions.",
         "position": {
           "x": 1800,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "consistency": "Publish only complete, checksum-verified renditions"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "System to enforce concurrent streaming limits pe projection",
-        "description": "Serves low-latency System to enforce concurrent streaming limits pe views with explicit freshness and fallback behavior.",
+        "id": "cdn",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Playback and download CDN",
+        "description": "Serves signed, cacheable media segments and downloads from the rendition catalog while enforcing entitlement and expiry.",
         "position": {
           "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Low latency for session validation"
+          "caching": "Signed URLs, cache keys, and regional origins"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "System to enforce concurrent streaming limits pe monitoring",
-        "description": "Tracks System to enforce concurrent streaming limits pe latency, backlog, freshness, correctness, and saturation.",
+        "label": "Media pipeline and delivery operations",
+        "description": "Tracks upload success, processing backlog, rendition failures, storage growth, CDN errors, playback startup, abuse, and deletion completion.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Backlog, processing quality, CDN, and lifecycle failures"
         }
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-upload",
         "source": "client",
-        "target": "gateway",
+        "target": "upload",
         "type": "http",
-        "label": "Start System to enforce concurrent streaming limits pe",
-        "description": "The client submits an authenticated System to enforce concurrent streaming limits pe request through the edge boundary."
+        "label": "Upload or playback request",
+        "description": "Clients request a scoped upload URL, metadata change, processing status, or playback entitlement."
       },
       {
-        "id": "gateway-service",
-        "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated System to enforce concurrent streaming limits pe operation",
-        "description": "The gateway forwards a validated System to enforce concurrent streaming limits pe operation after authentication, quota, and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "System to enforce concurrent streaming limits pe state commit",
-        "description": "The System to enforce concurrent streaming limits pe service commits authoritative state before downstream asynchronous work begins."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "System to enforce concurrent streaming limits pe event",
-        "description": "An outbox or change stream publishes committed System to enforce concurrent streaming limits pe transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "System to enforce concurrent streaming limits pe background work",
-        "description": "Workers consume committed System to enforce concurrent streaming limits pe events, perform asynchronous work, and update serving state."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "upload-object-store",
+        "source": "upload",
+        "target": "object-store",
         "type": "data-flow",
-        "label": "System to enforce concurrent streaming limits pe serving update",
-        "description": "Workers update the System to enforce concurrent streaming limits pe projection and expose a freshness watermark."
+        "label": "Original media upload",
+        "description": "The client uploads directly to object storage using a short-lived signed URL; checksum and size are verified before acceptance."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "upload-metadata",
+        "source": "upload",
+        "target": "metadata",
         "type": "database-connection",
-        "label": "System to enforce concurrent streaming limits pe projection read",
-        "description": "The System to enforce concurrent streaming limits pe service reads the latest acceptable projection or authoritative state."
+        "label": "Media registration",
+        "description": "The gateway records owner, privacy, content type, checksum, and entitlement state before scheduling processing."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "metadata-queue",
+        "source": "metadata",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Processing job",
+        "description": "A durable job describes the source object, requested renditions, policy version, and idempotency key."
+      },
+      {
+        "id": "queue-processor",
+        "source": "queue",
+        "target": "processor",
+        "type": "message-queue",
+        "label": "Transcode or moderation work",
+        "description": "Workers claim bounded jobs, retry transient failures, and isolate large or expensive media from interactive status reads."
+      },
+      {
+        "id": "processor-catalog",
+        "source": "processor",
+        "target": "catalog",
+        "type": "database-connection",
+        "label": "Verified rendition",
+        "description": "A rendition is published only after checksum, duration, codec, moderation, and completeness checks pass."
+      },
+      {
+        "id": "catalog-cdn",
+        "source": "catalog",
+        "target": "cdn",
+        "type": "data-flow",
+        "label": "Signed playback manifest",
+        "description": "The CDN obtains an entitlement-scoped manifest and serves segments from the correct rendition origin."
+      },
+      {
+        "id": "cdn-client",
+        "source": "cdn",
         "target": "client",
         "type": "http",
-        "label": "System to enforce concurrent streaming limits pe result",
-        "description": "The System to enforce concurrent streaming limits pe read path returns the latest acceptable result within its latency target."
+        "label": "Media playback or download",
+        "description": "Clients receive signed manifests or downloads with expiry and an explicit unavailable-rendition fallback."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "processor-monitoring",
+        "source": "processor",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "System to enforce concurrent streaming limits pe pipeline health",
-        "description": "Monitors System to enforce concurrent streaming limits pe consumer lag, processing health, freshness, and projection correctness."
+        "label": "Processing progress and quality",
+        "description": "Operations observes queue age, worker saturation, transcode failures, moderation outcomes, and completion time."
+      },
+      {
+        "id": "cdn-monitoring",
+        "source": "cdn",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Playback and delivery telemetry",
+        "description": "Delivery metrics report startup latency, rebuffering, cache misses, signed URL failures, and regional errors."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Integrity and idempotent processing",
       "points": [
-        "Keep the System to enforce concurrent streaming limits pe commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional System to enforce concurrent streaming limits pe writes, event IDs, and versions so retries and replay are safe.",
-        "Return System to enforce concurrent streaming limits pe version and observedAt so clients can reason about freshness."
+        "Use checksums and immutable source objects for netflix limit the number of screens each user can watch deduplication and audit.",
+        "Derive output keys from asset, profile, and transform version so retries cannot corrupt a completed rendition.",
+        "Make completion callbacks and worker claims conditional on job version and attempt."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Authorization at the edge",
       "points": [
-        "Partition System to enforce concurrent streaming limits pe by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound System to enforce concurrent streaming limits pe work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for System to enforce concurrent streaming limits pe projection drift and partial failures."
+        "Bind netflix limit the number of screens each user can watch manifests and signed URLs to the viewer, entitlement version, and expiry.",
+        "Propagate takedown, privacy, and subscription changes to edge caches with bounded revocation delay.",
+        "Never let a cache hit bypass the policy decision for private or paid content."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Cost, hot assets, and backpressure",
       "points": [
-        "Serve the last acceptable System to enforce concurrent streaming limits pe projection or an explicit degraded response when workers fail.",
-        "Retain durable System to enforce concurrent streaming limits pe records for replay and make each downstream effect independently retryable.",
-        "Measure System to enforce concurrent streaming limits pe latency, backlog, freshness, error rate, and correctness drift."
+        "Separate interactive manifest latency from expensive netflix limit the number of screens each user can watch processing and encode work.",
+        "Use queue priority, concurrency limits, and lifecycle policies for source and rendition storage.",
+        "Measure cache hit rate, startup latency, processing backlog, failed bytes, and egress cost by profile."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Process on upload versus on demand",
+      "recommendation": "Precompute common netflix limit the number of screens each user can watch profiles and generate rare profiles on demand with a durable job state.",
+      "caution": "Generating every possible profile up front wastes storage and processing budget."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Origin storage versus CDN caching",
+      "recommendation": "Keep the origin authoritative and use CDN caching for immutable or versioned outputs with explicit invalidation.",
+      "caution": "A cache cannot be the only copy of a netflix limit the number of screens each user can watch rendition or the recovery path becomes undefined."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Quality versus delivery cost",
+      "recommendation": "Choose profiles from device, bandwidth, and business requirements, then measure quality and egress by cohort.",
+      "caution": "Maximal bitrate or resolution can make tail startup and cost unacceptable without improving viewing outcomes."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Letting netflix limit the number of screens each user can watch processing run synchronously in the upload request.",
+    "Treating an upload-complete callback as trustworthy without checksum or size verification.",
+    "Using non-deterministic output paths so retries create duplicate or mismatched renditions.",
+    "Caching private or revoked content without an entitlement-aware invalidation plan.",
+    "Ignoring storage lifecycle, egress, queue backlog, and corrupt-input observability."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you make netflix limit the number of screens each user can watch processing retry-safe?",
+      "answer": "Use deterministic output identities, conditional job transitions, per-stage checkpoints, and a manifest that publishes only verified outputs."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What happens when an asset is deleted while processing?",
+      "answer": "Write a tombstone, cancel or quarantine pending work, revoke delivery, and let cleanup workers delete derived outputs idempotently."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you control media cost?",
+      "answer": "Track bytes by source, profile, cache, and region; apply lifecycle tiers and queue policies while preserving the outputs required by the product contract."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Track active streaming sessions per account workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the netflix limit the number of screens each user can watch workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a system to enforce concurrent streaming limits per user account., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative netflix limit the number of screens each user can watch state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions netflix limit the number of screens each user can watch traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain System to enforce concurrent streaming limits pe consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the netflix limit the number of screens each user can watch user experience."
     }
   ]
 }

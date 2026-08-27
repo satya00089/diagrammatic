@@ -50,143 +50,135 @@
   },
   "entities": [
     {
-      "name": "Intelligent capacity-planning platform",
+      "name": "DemandSignal",
       "fields": [
-        "tenantId",
-        "intelligentCapacityPlanningPlatformId",
-        "status",
-        "version",
-        "createdAt",
-        "updatedAt"
+        "sourceId",
+        "resourceId",
+        "metric",
+        "eventTime",
+        "value",
+        "quality"
       ],
-      "notes": "Authoritative Intelligent capacity-planning platform record keyed for its primary command and read paths."
+      "notes": "Timestamped demand or utilization evidence for intelligent capacity planning system."
     },
     {
-      "name": "Intelligent capacity-planning platform event",
+      "name": "CapacityForecast",
       "fields": [
-        "eventId",
-        "intelligentCapacityPlanningPlatformId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "forecastId",
+        "resourceId",
+        "horizon",
+        "quantiles",
+        "drivers",
+        "modelVersion"
       ],
-      "notes": "Immutable Intelligent capacity-planning platform event with an idempotency key and version for replay."
+      "notes": "Versioned forecast with intervals, assumptions, and confidence."
     },
     {
-      "name": "Intelligent capacity-planning platform policy",
+      "name": "PlanningScenario",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "scenarioId",
+        "baselineId",
+        "changes",
+        "dependencyImpact",
+        "costEstimate",
+        "createdBy"
       ],
-      "notes": "Versioned policy controlling Intelligent capacity-planning platform authorization, routing, or eligibility decisions."
+      "notes": "Auditable what-if capacity or failure scenario."
     },
     {
-      "name": "Intelligent capacity-planning platform projection",
+      "name": "CapacityDecision",
       "fields": [
-        "intelligentCapacityPlanningPlatformId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "decisionId",
+        "scenarioId",
+        "recommendation",
+        "owner",
+        "approval",
+        "executionStatus"
       ],
-      "notes": "Rebuildable Intelligent capacity-planning platform projection with observedAt and freshness metadata."
+      "notes": "Governed capacity recommendation and execution state."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/intelligent-capacity-planning-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { intelligentCapacityPlanningPlatformId, status, version }",
-      "notes": "Create or submit Intelligent capacity-planning platform with idempotency and return an accepted state/version."
+      "path": "/v1/signals",
+      "contract": "{ resourceId, metric, eventTime, value, source } -> { accepted, eventId }",
+      "notes": "Ingest resource and demand evidence for intelligent capacity planning system."
     },
     {
       "method": "GET",
-      "path": "/v1/intelligent-capacity-planning-platform/{intelligentCapacityPlanningPlatformId}",
-      "contract": "{ intelligentCapacityPlanningPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Intelligent capacity-planning platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/intelligent-capacity-planning-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Intelligent capacity-planning platform records with cursor pagination and eligibility filters."
+      "path": "/v1/forecasts/{resourceId}?horizon=",
+      "contract": "{ baseline, intervals, drivers, freshness, confidence }",
+      "notes": "Return an explainable intelligent capacity planning system capacity forecast."
     },
     {
       "method": "POST",
-      "path": "/v1/intelligent-capacity-planning-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Intelligent capacity-planning platform rebuild or repair operation and return job status."
+      "path": "/v1/scenarios",
+      "contract": "{ baselineId, changes, failureMode } -> { scenarioId, status }",
+      "notes": "Run a intelligent capacity planning system what-if scenario asynchronously."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/decisions/{decisionId}/approve",
+      "contract": "{ actor, scope, expiresAt } -> { executionId, status }",
+      "notes": "Approve a bounded capacity action with owner and rollback metadata."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Forecast resource utilization trends",
-      "description": "The Intelligent capacity-planning platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Collect resource and demand evidence",
+      "description": "The intelligent capacity planning system gateway validates metric ownership, event time, resource identity, quality, and correction semantics."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Intelligent capacity-planning platform service records the accepted state and version before acknowledging the client."
+      "title": "Build baseline and scenario forecasts",
+      "description": "Forecast workers combine demand drivers, seasonality, deployments, failures, and cost assumptions into versioned outputs."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Intelligent capacity-planning platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Calculate headroom and risk",
+      "description": "Planning workers estimate saturation horizon, dependency impact, confidence intervals, procurement options, and cost."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Intelligent capacity-planning platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Govern a capacity decision",
+      "description": "Recommendations carry evidence, owner, policy, approval, execution, and rollback state instead of mutating infrastructure directly."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Intelligent capacity-planning platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Measure outcomes and correct",
+      "description": "Operators compare intelligent capacity planning system forecasts with actual demand, record overrides, replay bad ranges, and improve model calibration."
     }
   ],
   "architecture": {
-    "title": "Design an AI-driven capacity planning system that forecasts future resource needs, models growth scenarios, optimizes cloud spending, and provides procurement recommendations. reference architecture",
-    "summary": "The authoritative state records Forecast resource utilization trends; asynchronous workers build serving projections while Use time-series decomposition for trend/seasonal analysis, Implement simulation-based capacity modeling, Use optimization algorithms for instance type selection stays isolated from the request path.",
+    "title": "Intelligent Capacity Planning System domain architecture",
+    "summary": "A forecast-to-decision design for intelligent capacity planning system. It separates resource evidence, scenario forecasts, headroom planning, and governed capacity changes so recommendations remain explainable and reversible.",
     "layers": [
       {
         "id": "experience",
-        "label": "Intelligent capacity-planning platform request boundary",
-        "description": "Clients submit and read Intelligent capacity-planning platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Planning and governance plane",
+        "description": "Planners inspect evidence, scenarios, and policy-gated decisions through authenticated APIs.",
+        "componentIds": ["client", "gateway", "catalog"]
       },
       {
-        "id": "source",
-        "label": "Intelligent capacity-planning platform authoritative state",
-        "description": "Durable Intelligent capacity-planning platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Demand and resource evidence",
+        "description": "Metrics, ownership, topology, and cost facts remain timestamped and replayable.",
+        "componentIds": ["metrics", "catalog"]
       },
       {
-        "id": "processing",
-        "label": "Intelligent capacity-planning platform processing and serving",
-        "description": "Partitioned Intelligent capacity-planning platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "forecast",
+        "label": "Forecast and scenario plane",
+        "description": "Forecast workers build versioned baselines, intervals, and what-if scenarios.",
+        "componentIds": ["forecast", "scenario"]
+      },
+      {
+        "id": "decision",
+        "label": "Capacity decision and delivery plane",
+        "description": "Recommendations, approvals, execution, and status delivery are independently retryable.",
+        "componentIds": ["planner", "decision", "notifications"]
       },
       {
         "id": "operations",
-        "label": "Intelligent capacity-planning platform operations",
-        "description": "Intelligent capacity-planning platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Capacity reliability operations",
+        "description": "Freshness, quality, cost, and action signals protect planning decisions.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Intelligent capacity-planning platform write path",
-        "description": "Client -> Intelligent capacity-planning platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Intelligent capacity-planning platform projection path",
-        "description": "Authoritative Intelligent capacity-planning platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +186,314 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Intelligent capacity-planning platform clients",
-        "description": "Clients use the Forecast resource utilization trends workflow and receive explicit status, freshness, or progress.",
+        "label": "Capacity planning console",
+        "description": "Operators inspect forecasts, scenarios, headroom, cost, approvals, and recommendations.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Intelligent capacity-planning platform gateway",
-        "description": "Authenticates Intelligent capacity-planning platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Capacity planning API",
+        "description": "Authenticates metric producers and planners, validates scope, and applies quotas.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Intelligent capacity-planning platform service",
-        "description": "Owns the Forecast resource utilization trends command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Intelligent capacity-planning platform state",
-        "description": "Stores Forecast resource utilization trends; Model multiple growth scenarios (base, high, low) and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design an Intelligent Capacity Planning System"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "metrics",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Intelligent capacity-planning platform event backbone",
-        "description": "Publishes versioned events for Use time-series decomposition for trend/seasonal analysis, Implement simulation-based capacity modeling, Use optimization algorithms for instance type selection after durable commits.",
+        "label": "Resource and demand stream",
+        "description": "Carries resource utilization, traffic, business demand, deployment, and failure signals.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Resource and ownership catalog",
+        "description": "Stores resource topology, owners, quotas, cost rates, and dependency versions.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "forecast",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Intelligent capacity-planning platform workers",
-        "description": "Workers process Use time-series decomposition for trend/seasonal analysis, Implement simulation-based capacity modeling, Use optimization algorithms for instance type selection independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Demand forecast engine",
+        "description": "Builds baseline and scenario forecasts with intervals, seasonality, and model version.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Intelligent capacity-planning platform projection",
-        "description": "Serves low-latency views for Design an Intelligent Capacity Planning System with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "latency": "Forecast accuracy within 10% for 90-day horizon"
-        }
+        "properties": {}
+      },
+      {
+        "id": "scenario",
+        "type": "database",
+        "componentId": "database",
+        "label": "Forecast and scenario store",
+        "description": "Stores forecast versions, assumptions, confidence, corrections, and what-if outputs.",
+        "position": {
+          "x": 1360,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "planner",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Headroom and capacity planner",
+        "description": "Calculates saturation risk, procurement or scaling options, cost, and dependency impact.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "decision",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Governed capacity decision service",
+        "description": "Routes recommendations through owner approval, policy, execution, and rollback state.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Capacity risk delivery",
+        "description": "Sends saturation, forecast, approval, and execution status notifications.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Intelligent capacity-planning platform monitoring",
-        "description": "Tracks Intelligent capacity-planning platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "Capacity planning operations",
+        "description": "Tracks forecast freshness, confidence, cost, saturation risk, approval lag, and action outcomes.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Intelligent capacity-planning platform",
-        "description": "Client submits Forecast resource utilization trends through the authenticated request boundary."
+        "label": "Planning query or command",
+        "description": "Planners query forecasts, create scenarios, approve decisions, and record overrides."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-catalog-1",
         "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated Intelligent capacity-planning platform operation",
-        "description": "The gateway forwards a validated Intelligent capacity-planning platform operation after authentication, quota, and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "target": "catalog",
         "type": "database-connection",
-        "label": "Intelligent capacity-planning platform state commit",
-        "description": "Commits Forecast resource utilization trends; Model multiple growth scenarios (base, high, low) before downstream asynchronous work."
+        "label": "Resource and owner context",
+        "description": "The API reads resource topology, ownership, policy, quota, and cost metadata."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Intelligent capacity-planning platform event",
-        "description": "An outbox or change stream publishes committed Intelligent capacity-planning platform transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "metrics-forecast-2",
+        "source": "metrics",
+        "target": "forecast",
         "type": "message-queue",
-        "label": "Intelligent capacity-planning platform background work",
-        "description": "Workers handle Use time-series decomposition for trend/seasonal analysis, Implement simulation-based capacity modeling, Use optimization algorithms for instance type selection with bounded retries and idempotent updates."
+        "label": "Demand and utilization event",
+        "description": "Forecast workers consume timestamped metrics, business drivers, deployments, and failures."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "catalog-forecast-3",
+        "source": "catalog",
+        "target": "forecast",
         "type": "data-flow",
-        "label": "Intelligent capacity-planning platform serving update",
-        "description": "Workers update the Intelligent capacity-planning platform projection and expose a freshness watermark."
+        "label": "Forecast features",
+        "description": "The engine joins resource dependencies, ownership, and cost assumptions."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "forecast-scenario-4",
+        "source": "forecast",
+        "target": "scenario",
         "type": "database-connection",
-        "label": "Intelligent capacity-planning platform projection read",
-        "description": "The Intelligent capacity-planning platform service reads the latest acceptable projection or authoritative state."
+        "label": "Versioned forecast",
+        "description": "Forecasts, intervals, assumptions, corrections, and model version are stored durably."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Intelligent capacity-planning platform result",
-        "description": "Returns the latest acceptable result within Forecast accuracy within 10% for 90-day horizon."
+        "id": "scenario-planner-5",
+        "source": "scenario",
+        "target": "planner",
+        "type": "message-queue",
+        "label": "Planning input",
+        "description": "Planner workers calculate headroom, saturation risk, cost, and options asynchronously."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "catalog-planner-6",
+        "source": "catalog",
+        "target": "planner",
+        "type": "data-flow",
+        "label": "Dependency and quota context",
+        "description": "Plans account for shared bottlenecks, quotas, and failure scenarios."
+      },
+      {
+        "id": "planner-decision-7",
+        "source": "planner",
+        "target": "decision",
+        "type": "message-queue",
+        "label": "Capacity recommendation",
+        "description": "Recommendations carry evidence, owner, policy, approval, and rollback metadata."
+      },
+      {
+        "id": "decision-notifications-8",
+        "source": "decision",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Risk or approval status",
+        "description": "Owners receive deduplicated risk and execution status updates."
+      },
+      {
+        "id": "forecast-monitoring-9",
+        "source": "forecast",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Intelligent capacity-planning platform pipeline health",
-        "description": "Monitors Intelligent capacity-planning platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Forecast quality telemetry",
+        "description": "Operations observes freshness, confidence, missing drivers, and forecast error."
+      },
+      {
+        "id": "decision-monitoring-10",
+        "source": "decision",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Decision telemetry",
+        "description": "Operations observes approval lag, action failures, cost, and rollback state."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "forecast",
+        "label": "Evidence to forecast path",
+        "description": "Resource and demand metrics -> forecast engine -> versioned scenario store.",
+        "componentIds": ["metrics", "catalog", "forecast", "scenario"]
+      },
+      {
+        "id": "plan",
+        "label": "Forecast to capacity decision",
+        "description": "Forecast and topology -> planner -> governed decision service.",
+        "componentIds": ["scenario", "catalog", "planner", "decision"]
+      },
+      {
+        "id": "notify",
+        "label": "Risk and approval path",
+        "description": "Saturation risk or recommendation -> notification -> owner approval and execution.",
+        "componentIds": ["planner", "decision", "notifications", "client"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Forecast quality and uncertainty",
       "points": [
-        "Keep the Intelligent capacity-planning platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Intelligent capacity-planning platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Intelligent capacity-planning platform version and observedAt so clients can reason about freshness."
+        "Keep baseline, interval, driver, horizon, and model versions together so planners understand uncertainty.",
+        "Separate missing data from low demand and lower confidence when telemetry or dependencies are incomplete.",
+        "Evaluate error by resource class, seasonality, scale event, and forecast horizon."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Scenarios and dependency impact",
       "points": [
-        "Partition Intelligent capacity-planning platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Intelligent capacity-planning platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Intelligent capacity-planning platform projection drift and partial failures."
+        "Model shared quotas, bottlenecks, failure domains, and correlated demand rather than forecasting each resource independently.",
+        "Run what-if scenarios against an immutable baseline and never overwrite the production forecast.",
+        "Show cost, headroom, assumptions, and downstream impact with every recommendation."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Governed execution",
       "points": [
-        "Serve the last acceptable Intelligent capacity-planning platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Intelligent capacity-planning platform records for replay and make each downstream effect independently retryable.",
-        "Measure Intelligent capacity-planning platform latency, backlog, freshness, error rate, and correctness drift."
+        "Require owner, policy, blast-radius, approval, and rollback metadata before an action can execute.",
+        "Keep recommendation state separate from observed infrastructure state and reconcile after execution.",
+        "Measure approval latency, action success, cost variance, rollback, and forecast-to-outcome error."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Baseline model versus scenario simulation",
+      "recommendation": "Use a stable baseline for planning and isolate scenarios for what-if decisions and failure analysis.",
+      "caution": "Mixing hypothetical demand into the baseline makes actual forecast accuracy impossible to measure."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Automatic scaling versus approved capacity",
+      "recommendation": "Let existing autoscaling handle bounded real-time response and use governed recommendations for procurement or structural changes.",
+      "caution": "A forecast error should not trigger an unbounded or irreversible capacity action."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Central forecast versus owner-specific models",
+      "recommendation": "Centralize evidence, contracts, and evaluation while allowing resource owners to supply domain drivers and constraints.",
+      "caution": "A single global model can hide resource-specific seasonality and policy limits."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Forecasting from utilization alone while ignoring demand drivers and deployments.",
+    "Showing point estimates without intervals, assumptions, or freshness.",
+    "Running scenarios by mutating the baseline forecast in place.",
+    "Turning a recommendation into infrastructure mutation without approval or rollback.",
+    "Measuring forecast accuracy without cost, saturation, and action outcomes."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a sudden demand spike?",
+      "answer": "Use a low-latency signal path for immediate saturation response, expose forecast uncertainty, and keep structural capacity decisions behind bounded policy and approval."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you prevent stale forecasts from driving action?",
+      "answer": "Carry source watermarks and forecast freshness, reject expired recommendations, and require a recomputation when critical drivers or topology change."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you reconcile an executed recommendation?",
+      "answer": "Record the execution ID, observe actual resource state, compare cost and headroom to the forecast, and append a correction or rollback rather than rewriting history."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Forecast resource utilization trends workflow, scale, latency, durability, and failure contract."
+      "description": "The answer covers intelligent capacity planning system signals, demand forecasts, scenarios, headroom, cost, approvals, execution, and rollback."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design an AI-driven capacity planning system that forecasts future resource needs, models growth scenarios, optimizes cloud spending, and provides procurement recommendations., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer preserves forecast versions, uncertainty, data quality, and separate desired versus observed capacity state."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Safety",
+      "description": "The answer makes recommendations explainable, policy-gated, bounded, auditable, and reversible."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Intelligent capacity-planning platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer measures freshness, forecast error, saturation risk, approval lag, cost variance, and recovery."
     }
   ]
 }

@@ -50,256 +50,297 @@
   },
   "entities": [
     {
-      "name": "Multi-region disaster-recovery architecture",
+      "name": "ResourceSpec",
       "fields": [
+        "resourceId",
         "tenantId",
-        "multiRegionDisasterRecoveryArchitectureId",
-        "status",
+        "desiredState",
         "version",
-        "createdAt",
+        "policyVersion",
         "updatedAt"
       ],
-      "notes": "Authoritative Multi-region disaster-recovery architecture record keyed for its primary command and read paths."
+      "notes": "Versioned desired state for a multi region disaster recovery solution managed resource."
     },
     {
-      "name": "Multi-region disaster-recovery architecture event",
+      "name": "Operation",
       "fields": [
-        "eventId",
-        "multiRegionDisasterRecoveryArchitectureId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "operationId",
+        "resourceId",
+        "requestHash",
+        "step",
+        "attempt",
+        "status"
       ],
-      "notes": "Immutable Multi-region disaster-recovery architecture event with an idempotency key and version for replay."
+      "notes": "Durable multi region disaster recovery solution reconciliation operation with per-step progress."
     },
     {
-      "name": "Multi-region disaster-recovery architecture policy",
+      "name": "PolicyVersion",
       "fields": [
         "policyId",
-        "tenantId",
         "scope",
         "version",
         "rules",
-        "updatedAt"
+        "effectiveAt",
+        "status"
       ],
-      "notes": "Versioned policy controlling Multi-region disaster-recovery architecture authorization, routing, or eligibility decisions."
+      "notes": "Auditable multi region disaster recovery solution policy evaluated before provisioning or mutation."
     },
     {
-      "name": "Multi-region disaster-recovery architecture projection",
+      "name": "ReconciliationCheckpoint",
       "fields": [
-        "multiRegionDisasterRecoveryArchitectureId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
+        "resourceId",
+        "provider",
+        "observedVersion",
+        "cursor",
+        "lastError",
         "updatedAt"
       ],
-      "notes": "Rebuildable Multi-region disaster-recovery architecture projection with observedAt and freshness metadata."
+      "notes": "Provider-specific multi region disaster recovery solution observation and recovery cursor."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/multi-region-disaster-recovery-architectur",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { multiRegionDisasterRecoveryArchitectureId, status, version }",
-      "notes": "Create or submit Multi-region disaster-recovery architecture with idempotency and return an accepted state/version."
+      "method": "PUT",
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, expectedVersion, idempotencyKey } -> { version, operationId }",
+      "notes": "Update multi region disaster recovery solution desired state with optimistic concurrency."
     },
     {
       "method": "GET",
-      "path": "/v1/multi-region-disaster-recovery-architectur/{multiRegionDisasterRecoveryArchitectureId}",
-      "contract": "{ multiRegionDisasterRecoveryArchitectureId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Multi-region disaster-recovery architecture state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/multi-region-disaster-recovery-architectur?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Multi-region disaster-recovery architecture records with cursor pagination and eligibility filters."
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, observedState, version, health, operationStatus }",
+      "notes": "Return multi region disaster recovery solution desired and observed state with reconciliation freshness."
     },
     {
       "method": "POST",
-      "path": "/v1/multi-region-disaster-recovery-architectur/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Multi-region disaster-recovery architecture rebuild or repair operation and return job status."
+      "path": "/v1/operations/{operationId}/cancel",
+      "contract": "{ reason, expectedVersion } -> { status }",
+      "notes": "Request a safe cancellation or rollback of an in-flight multi region disaster recovery solution operation."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/resources/{resourceId}/reconcile",
+      "contract": "{ provider, observedState, idempotencyKey } -> { operationId, status }",
+      "notes": "Trigger an auditable multi region disaster recovery solution reconciliation or repair."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Ensure business continuity during outages",
-      "description": "The Multi-region disaster-recovery architecture gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Accept a desired-state command",
+      "description": "The multi region disaster recovery solution control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Multi-region disaster-recovery architecture service records the accepted state and version before acknowledging the client."
+      "title": "Plan a safe operation",
+      "description": "A planner turns multi region disaster recovery solution desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Multi-region disaster-recovery architecture events; consumers deduplicate by event ID and track offsets."
+      "title": "Reconcile providers asynchronously",
+      "description": "Workers apply multi region disaster recovery solution operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Multi-region disaster-recovery architecture events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish observed health",
+      "description": "The serving projection joins desired and observed multi region disaster recovery solution state with operation status, policy version, freshness, and actionable errors."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Multi-region disaster-recovery architecture projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Recover and audit",
+      "description": "Retries, dead letters, drift detection, and operator approvals repair multi region disaster recovery solution resources without losing the original command or provider evidence."
     }
   ],
   "architecture": {
-    "title": "Design a disaster recovery architecture that ensures business continuity across multiple geographic regions with automatic failover. reference architecture",
-    "summary": "The authoritative state records Ensure business continuity during outages; asynchronous workers build serving projections while Use Route 53 health checks for failover, RDS Multi-AZ for database HA, S3 Cross-Region Replication for objects stays isolated from the request path.",
+    "title": "Multi Region Disaster Recovery Solution control-plane architecture",
+    "summary": "Design a multi-region disaster-recovery architecture that meets explicit RPO/RTO targets, replicates data and artifacts, detects regional failure, fails over safely, and supports tested restoration and failback. The design separates versioned desired state from leased reconciliation work and provider mutations, making drift, retries, approvals, and audit history explicit.",
     "layers": [
       {
         "id": "experience",
-        "label": "Multi-region disaster-recovery architecture request boundary",
-        "description": "Clients submit and read Multi-region disaster-recovery architecture requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Operator and automation plane",
+        "description": "Authenticated clients submit desired state and inspect versioned status and audit outcomes.",
+        "componentIds": ["client", "gateway", "control"]
       },
       {
-        "id": "source",
-        "label": "Multi-region disaster-recovery architecture authoritative state",
-        "description": "Durable Multi-region disaster-recovery architecture state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "control",
+        "label": "Desired state and planning plane",
+        "description": "Versioned state, planning, leases, and policy determine safe execution order.",
+        "componentIds": ["state", "scheduler"]
       },
       {
-        "id": "processing",
-        "label": "Multi-region disaster-recovery architecture processing and serving",
-        "description": "Partitioned Multi-region disaster-recovery architecture workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "execution",
+        "label": "Reconciliation and provider plane",
+        "description": "Durable queues and partitioned workers apply idempotent provider operations.",
+        "componentIds": ["queue", "workers", "providers"]
+      },
+      {
+        "id": "events",
+        "label": "Audit and integration plane",
+        "description": "Replayable events feed status, audit, and external integrations.",
+        "componentIds": ["events"]
       },
       {
         "id": "operations",
-        "label": "Multi-region disaster-recovery architecture operations",
-        "description": "Multi-region disaster-recovery architecture signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Infrastructure safety operations",
+        "description": "Drift, lag, failed actions, provider limits, and rollout risk are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Multi-region disaster-recovery architecture write path",
-        "description": "Client -> Multi-region disaster-recovery architecture gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "control",
+        "label": "Desired state path",
+        "description": "Client -> gateway -> control plane -> versioned state -> plan and lease.",
+        "componentIds": ["client", "gateway", "control", "state", "scheduler"]
       },
       {
-        "id": "async",
-        "label": "Multi-region disaster-recovery architecture projection path",
-        "description": "Authoritative Multi-region disaster-recovery architecture state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "execute",
+        "label": "Reconciliation path",
+        "description": "Plan -> queue -> worker -> provider adapter -> observed state and audit event.",
+        "componentIds": [
+          "scheduler",
+          "queue",
+          "workers",
+          "providers",
+          "state",
+          "events"
+        ]
       }
     ],
     "components": [
       {
         "id": "client",
         "type": "client",
-        "componentId": "web-app",
-        "label": "Multi-region disaster-recovery architecture clients",
-        "description": "Clients use the Ensure business continuity during outages workflow and receive explicit status, freshness, or progress.",
+        "componentId": "admin-console",
+        "label": "Operators and automation clients",
+        "description": "Operators and automation submit desired state, inspect status, approve changes, and consume audit events.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, CLI, and automation API"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Multi-region disaster-recovery architecture gateway",
-        "description": "Authenticates Multi-region disaster-recovery architecture requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Infrastructure control gateway",
+        "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "RBAC, tenant isolation, quotas, and admission policy"
         }
       },
       {
-        "id": "service",
+        "id": "control",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Multi-region disaster-recovery architecture service",
-        "description": "Owns the Ensure business continuity during outages command, authorization policy, lifecycle state, and client contract.",
+        "label": "Domain control plane",
+        "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "consistency": "Versioned desired state and idempotent reconciliation"
         }
       },
       {
-        "id": "source",
+        "id": "state",
         "type": "database",
         "componentId": "database",
-        "label": "Multi-region disaster-recovery architecture state",
-        "description": "Stores Ensure business continuity during outages; Replicate data across multiple regions and supports the primary access patterns.",
+        "label": "Desired state and audit store",
+        "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Design a Multi-Region Disaster Recovery Solution"
+          "storage": "Versioned state with optimistic concurrency and audit retention"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Multi-region disaster-recovery architecture event backbone",
-        "description": "Publishes versioned events for Use Route 53 health checks for failover, RDS Multi-AZ for database HA, S3 Cross-Region Replication for objects after durable commits.",
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Placement and work scheduler",
+        "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 80
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scheduling": "Leases, fairness, dependency ordering, and backpressure"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Reconciliation and execution queue",
+        "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
+        "position": {
+          "x": 1440,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "Durable jobs with bounded retries and dead letters"
         }
       },
       {
         "id": "workers",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Multi-region disaster-recovery architecture workers",
-        "description": "Workers process Use Route 53 health checks for failover, RDS Multi-AZ for database HA, S3 Cross-Region Replication for objects independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Partitioned execution workers",
+        "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
         "position": {
           "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Multi-region disaster-recovery architecture projection",
-        "description": "Serves low-latency views for Design a Multi-Region Disaster Recovery Solution with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "RPO (Recovery Point Objective) < 5 minutes"
+          "scaling": "Partitioned workers with leases and idempotency"
+        }
+      },
+      {
+        "id": "providers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Infrastructure provider adapters",
+        "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
+        "position": {
+          "x": 2160,
+          "y": 80
+        },
+        "properties": {
+          "providers": "Provider-qualified credentials and capability adapters"
+        }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Control-plane event stream",
+        "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
+        "position": {
+          "x": 2160,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "At least once with ordering keys and replay"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Multi-region disaster-recovery architecture monitoring",
-        "description": "Tracks Multi-region disaster-recovery architecture latency, backlog, freshness, correctness, and saturation.",
+        "label": "Control-plane operations",
+        "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Drift, queue lag, failed actions, and unsafe changes"
         }
       }
     ],
@@ -309,159 +350,179 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Multi-region disaster-recovery architecture",
-        "description": "Client submits Ensure business continuity during outages through the authenticated request boundary."
+        "label": "Desired-state or status request",
+        "description": "Operators and automation submit a versioned desired state or inspect a tenant-scoped operation and audit history."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-control",
         "source": "gateway",
-        "target": "service",
+        "target": "control",
         "type": "api-call",
-        "label": "Validated Multi-region disaster-recovery architecture operation",
-        "description": "The gateway forwards a validated Multi-region disaster-recovery architecture operation after authentication, quota, and idempotency checks."
+        "label": "Authorized control command",
+        "description": "The gateway applies RBAC, admission policy, quotas, and idempotency before creating a plan."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "control-state",
+        "source": "control",
+        "target": "state",
         "type": "database-connection",
-        "label": "Multi-region disaster-recovery architecture state commit",
-        "description": "Commits Ensure business continuity during outages; Replicate data across multiple regions before downstream asynchronous work."
+        "label": "Desired state commit",
+        "description": "The control plane stores the accepted version and lifecycle state before scheduling reconciliation."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Multi-region disaster-recovery architecture event",
-        "description": "An outbox or change stream publishes committed Multi-region disaster-recovery architecture transitions with replayable ordering."
+        "id": "state-scheduler",
+        "source": "state",
+        "target": "scheduler",
+        "type": "message-queue",
+        "label": "Reconciliation intent",
+        "description": "A durable event or lease makes new, changed, or drifted resources eligible for partition-local planning."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
+        "id": "scheduler-queue",
+        "source": "scheduler",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Execution plan",
+        "description": "The scheduler emits dependency-ordered work with a lease, policy version, retry budget, and provider target."
+      },
+      {
+        "id": "queue-workers",
+        "source": "queue",
         "target": "workers",
         "type": "message-queue",
-        "label": "Multi-region disaster-recovery architecture background work",
-        "description": "Workers handle Use Route 53 health checks for failover, RDS Multi-AZ for database HA, S3 Cross-Region Replication for objects with bounded retries and idempotent updates."
+        "label": "Partitioned work item",
+        "description": "Workers claim jobs idempotently, report progress, and isolate provider or tenant failures with dead letters."
       },
       {
-        "id": "workers-read-model",
+        "id": "workers-providers",
         "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Multi-region disaster-recovery architecture serving update",
-        "description": "Workers update the Multi-region disaster-recovery architecture projection and expose a freshness watermark."
+        "target": "providers",
+        "type": "api-call",
+        "label": "Provider operation",
+        "description": "Adapters perform a capability-checked operation with a provider idempotency token and observed-state precondition."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "workers-state",
+        "source": "workers",
+        "target": "state",
         "type": "database-connection",
-        "label": "Multi-region disaster-recovery architecture projection read",
-        "description": "The Multi-region disaster-recovery architecture service reads the latest acceptable projection or authoritative state."
+        "label": "Observed state and result",
+        "description": "Execution records observed state, drift, errors, and operation version without overwriting a newer desired state."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "state-events",
+        "source": "state",
+        "target": "events",
+        "type": "event-stream",
+        "label": "Control-plane event",
+        "description": "An outbox publishes desired-state, execution, drift, and audit events for replayable consumers."
+      },
+      {
+        "id": "events-client",
+        "source": "events",
         "target": "client",
         "type": "http",
-        "label": "Multi-region disaster-recovery architecture result",
-        "description": "Returns the latest acceptable result within RPO (Recovery Point Objective) < 5 minutes."
+        "label": "Status or audit update",
+        "description": "Operators and automation receive versioned status, drift, and audit results through polling, webhook, or subscription APIs."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "queue-monitoring",
+        "source": "queue",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Multi-region disaster-recovery architecture pipeline health",
-        "description": "Monitors Multi-region disaster-recovery architecture consumer lag, processing health, freshness, and projection correctness."
+        "label": "Execution health telemetry",
+        "description": "Operations measures queue age, lease expiry, retry storms, dead letters, worker capacity, and provider throttling."
+      },
+      {
+        "id": "events-monitoring",
+        "source": "events",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Drift and audit telemetry",
+        "description": "Monitoring checks event gaps, reconciliation parity, rollout safety, and audit completeness."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Desired versus observed state",
       "points": [
-        "Keep the Multi-region disaster-recovery architecture commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Multi-region disaster-recovery architecture writes, event IDs, and versions so retries and replay are safe.",
-        "Return Multi-region disaster-recovery architecture version and observedAt so clients can reason about freshness."
+        "Keep multi region disaster recovery solution desired state separate from provider-observed state and show both to operators.",
+        "Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects.",
+        "Version policy and resource state so old operations cannot overwrite newer intent."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Provider failures and unknown outcomes",
       "points": [
-        "Partition Multi-region disaster-recovery architecture by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Multi-region disaster-recovery architecture work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Multi-region disaster-recovery architecture projection drift and partial failures."
+        "Use provider-specific idempotency tokens and query-after-timeout behavior for multi region disaster recovery solution operations.",
+        "Bound retries with exponential backoff, circuit breakers, and per-provider quotas.",
+        "Route irreconcilable drift to an approval or quarantine path instead of retrying forever."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Blast radius and operations",
       "points": [
-        "Serve the last acceptable Multi-region disaster-recovery architecture projection or an explicit degraded response when workers fail.",
-        "Retain durable Multi-region disaster-recovery architecture records for replay and make each downstream effect independently retryable.",
-        "Measure Multi-region disaster-recovery architecture latency, backlog, freshness, error rate, and correctness drift."
+        "Partition multi region disaster recovery solution work by tenant, region, cluster, or resource class and cap concurrent mutations.",
+        "Audit who changed desired state, which policy allowed it, and what provider evidence was observed.",
+        "Alert on drift age, operation backlog, failed steps, policy denials, and stale observations."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Push versus pull reconciliation",
+      "recommendation": "Use event triggers for fast response and periodic scans for missed events, drift, and recovery.",
+      "caution": "A push-only multi region disaster recovery solution controller silently misses changes when a provider event is lost."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Central control plane versus provider-native controllers",
+      "recommendation": "Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters.",
+      "caution": "A monolithic controller becomes hard to scale and couples unrelated provider failure domains."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Automatic repair versus approval",
+      "recommendation": "Automate low-risk, reversible multi region disaster recovery solution changes and require approval for destructive or high-blast-radius operations.",
+      "caution": "Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating a multi region disaster recovery solution API response as proof that the provider has reached the desired state.",
+    "Overwriting desired state with stale observed state after an out-of-order worker response.",
+    "Retrying timed-out provider mutations without an idempotency token or status lookup.",
+    "Running every tenant or region through one queue and allowing a hot failure domain to block all work.",
+    "Omitting policy version, operator identity, provider evidence, and drift age from the audit trail."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a multi region disaster recovery solution provider timeout?",
+      "answer": "Persist the operation as unknown, query provider state using the idempotency token, and only retry or compensate after the result is known."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you stop a bad rollout?",
+      "answer": "Use policy gates, concurrency limits, canary scopes, operation cancellation, and a versioned last-known-good desired state."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you detect drift?",
+      "answer": "Compare periodic provider observations with desired state, record the observed version and age, and route policy-compliant repair separately from manual exceptions."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Ensure business continuity during outages workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the multi region disaster recovery solution workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a disaster recovery architecture that ensures business continuity across multiple geographic regions with automatic failover., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative multi region disaster recovery solution state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions multi region disaster recovery solution traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Multi-region disaster-recovery architecture consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the multi region disaster recovery solution user experience."
     }
   ]
 }

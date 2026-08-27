@@ -50,143 +50,134 @@
   },
   "entities": [
     {
-      "name": "Secure multi-tier web application",
+      "name": "AccessSession",
       "fields": [
-        "tenantId",
-        "secureMultiTierWebApplicationId",
+        "sessionId",
+        "principalId",
+        "roles",
+        "credentialVersion",
+        "expiresAt"
+      ],
+      "notes": "Short-lived authenticated session for secure multi tier web application with revocation and rotation metadata."
+    },
+    {
+      "name": "SecureWebResource",
+      "fields": [
+        "recordId",
+        "ownerId",
         "status",
         "version",
         "createdAt",
         "updatedAt"
       ],
-      "notes": "Authoritative Secure multi-tier web application record keyed for its primary command and read paths."
+      "notes": "Authoritative private application state protected by network-zone and role policy."
     },
     {
-      "name": "Secure multi-tier web application event",
+      "name": "AuditEvent",
       "fields": [
         "eventId",
-        "secureMultiTierWebApplicationId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "principalId",
+        "action",
+        "resourceId",
+        "policyVersion",
+        "occurredAt"
       ],
-      "notes": "Immutable Secure multi-tier web application event with an idempotency key and version for replay."
+      "notes": "Tamper-evident access, policy, and deployment evidence for secure multi tier web application."
     },
     {
-      "name": "Secure multi-tier web application policy",
+      "name": "MigrationCheckpoint",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "migrationId",
+        "partition",
+        "sourceVersion",
+        "targetVersion",
+        "checkpoint",
+        "status"
       ],
-      "notes": "Versioned policy controlling Secure multi-tier web application authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "Secure multi-tier web application projection",
-      "fields": [
-        "secureMultiTierWebApplicationId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
-      ],
-      "notes": "Rebuildable Secure multi-tier web application projection with observedAt and freshness metadata."
+      "notes": "Replayable secure multi tier web application migration or recovery progress."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/secure-multi-tier-web-application",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { secureMultiTierWebApplicationId, status, version }",
-      "notes": "Create or submit Secure multi-tier web application with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/secure-multi-tier-web-application/{secureMultiTierWebApplicationId}",
-      "contract": "{ secureMultiTierWebApplicationId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Secure multi-tier web application state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/secure-multi-tier-web-application?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Secure multi-tier web application records with cursor pagination and eligibility filters."
+      "path": "/v1/sessions",
+      "contract": "{ credentials, device } -> { sessionId, roles, expiresAt }",
+      "notes": "Create a short-lived authenticated secure multi tier web application session."
     },
     {
       "method": "POST",
-      "path": "/v1/secure-multi-tier-web-application/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Secure multi-tier web application rebuild or repair operation and return job status."
+      "path": "/v1/resources",
+      "contract": "{ input, idempotencyKey } -> { recordId, version }",
+      "notes": "Create secure multi tier web application state after authorization and validation."
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/resources/{recordId}",
+      "contract": "{ expectedVersion, changes } -> { version, status }",
+      "notes": "Update secure multi tier web application state with optimistic concurrency."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/audit?cursor=",
+      "contract": "{ events[], nextCursor, retention }",
+      "notes": "Read authorized secure multi tier web application audit evidence for operators or compliance."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Implement network isolation",
-      "description": "The Secure multi-tier web application gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Protect ingress and authenticate",
+      "description": "The secure multi tier web application edge validates transport, identity, roles, quotas, and network-zone policy before routing the request."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Secure multi-tier web application service records the accepted state and version before acknowledging the client."
+      "title": "Authorize and commit private state",
+      "description": "The application enforces resource policy and conditionally commits secure multi tier web application state before returning a durable version."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Secure multi-tier web application events; consumers deduplicate by event ID and track offsets."
+      "title": "Publish audit and domain events",
+      "description": "An outbox emits secure multi tier web application changes, access evidence, and migration work only after the private store commit."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Secure multi-tier web application events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Run migrations and side effects asynchronously",
+      "description": "Partitioned workers process secure multi tier web application exports, notifications, migrations, backups, and repairs with checkpoints and bounded retries."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Secure multi-tier web application projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Fail over and restore safely",
+      "description": "Health checks, backups, restore tests, replay, and audit evidence recover secure multi tier web application after a tier or zone failure."
     }
   ],
   "architecture": {
-    "title": "Design a secure web application architecture with network isolation, protection against common web attacks, auto-scaling capabilities, and secure database access. reference architecture",
-    "summary": "The authoritative state records Implement network isolation; asynchronous workers build serving projections while VPC with public and private subnets, Application Load Balancer for traffic, Auto Scaling Group for web tier stays isolated from the request path.",
+    "title": "Secure Multi Tier Web Application domain architecture",
+    "summary": "A defense-in-depth, multi-tier design for secure multi tier web application. Requests cross explicit ingress and identity boundaries, authoritative state stays private and durable, and asynchronous effects remain replayable.",
     "layers": [
       {
-        "id": "experience",
-        "label": "Secure multi-tier web application request boundary",
-        "description": "Clients submit and read Secure multi-tier web application requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "id": "edge",
+        "label": "Client and ingress zones",
+        "description": "Public clients reach versioned assets and protected APIs through explicit edge controls.",
+        "componentIds": ["client", "edge", "gateway"]
       },
       {
-        "id": "source",
-        "label": "Secure multi-tier web application authoritative state",
-        "description": "Durable Secure multi-tier web application state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "identity",
+        "label": "Identity and application zones",
+        "description": "Authentication and stateless application services are isolated from private data.",
+        "componentIds": ["identity", "app"]
       },
       {
-        "id": "processing",
-        "label": "Secure multi-tier web application processing and serving",
-        "description": "Partitioned Secure multi-tier web application workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
-      },
-      {
-        "id": "operations",
-        "label": "Secure multi-tier web application operations",
-        "description": "Secure multi-tier web application signals expose lag, failures, repair, correctness, and capacity.",
-        "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Secure multi-tier web application write path",
-        "description": "Client -> Secure multi-tier web application gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "data",
+        "label": "Private data and event zones",
+        "description": "Authoritative data is private, backed up, and published through durable events.",
+        "componentIds": ["cache", "store", "events"]
       },
       {
         "id": "async",
-        "label": "Secure multi-tier web application projection path",
-        "description": "Authoritative Secure multi-tier web application state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "label": "Async and audit zones",
+        "description": "Slow work, migrations, and security evidence are independently retryable.",
+        "componentIds": ["workers", "audit"]
+      },
+      {
+        "id": "operations",
+        "label": "Reliability and recovery operations",
+        "description": "Availability, security, and restore signals protect the service contract.",
+        "componentIds": ["monitoring"]
       }
     ],
     "components": [
@@ -194,274 +185,335 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Secure multi-tier web application clients",
-        "description": "Clients use the Implement network isolation workflow and receive explicit status, freshness, or progress.",
+        "label": "Secure Multi Tier Web Application clients",
+        "description": "Browser and mobile clients use the application through versioned APIs and edge delivery.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
+      },
+      {
+        "id": "edge",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Global edge and static delivery",
+        "description": "Serves versioned assets and safe cacheable responses close to users.",
+        "position": {
+          "x": 300,
+          "y": 80
+        },
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Secure multi-tier web application gateway",
-        "description": "Authenticates Secure multi-tier web application requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Protected ingress gateway",
+        "description": "Terminates public ingress, identity, and network policy before requests reach application tiers.",
         "position": {
-          "x": 360,
+          "x": 650,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "WAF, mTLS, auth, quotas, and zone policy"
         }
       },
       {
-        "id": "service",
+        "id": "identity",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Secure multi-tier web application service",
-        "description": "Owns the Implement network isolation command, authorization policy, lifecycle state, and client contract.",
+        "label": "Identity and session service",
+        "description": "Issues short-lived sessions, evaluates roles, and supports key or certificate rotation.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 1010,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "app",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Stateless application tier",
+        "description": "Owns secure multi tier web application commands, authorization, and the synchronous user contract without retaining local session state.",
+        "position": {
+          "x": 1010,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read and session cache",
+        "description": "Caches safe derived reads and session metadata with explicit TTL and invalidation.",
+        "position": {
+          "x": 1360,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "store",
         "type": "database",
         "componentId": "database",
-        "label": "Secure multi-tier web application state",
-        "description": "Stores Implement network isolation; Protect against common web attacks and supports the primary access patterns.",
+        "label": "Private primary data store",
+        "description": "Stores authoritative secure multi tier web application state behind private network and backup boundaries.",
         "position": {
-          "x": 1080,
-          "y": 260
+          "x": 1360,
+          "y": 440
         },
-        "properties": {
-          "storage": "Design a Secure Multi-Tier Web Application"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
+        "id": "events",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Secure multi-tier web application event backbone",
-        "description": "Publishes versioned events for VPC with public and private subnets, Application Load Balancer for traffic, Auto Scaling Group for web tier after durable commits.",
+        "label": "Domain event bus",
+        "description": "Publishes committed changes for asynchronous work, audit, and replay.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 1710,
+          "y": 260
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
         "id": "workers",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Secure multi-tier web application workers",
-        "description": "Workers process VPC with public and private subnets, Application Load Balancer for traffic, Auto Scaling Group for web tier independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Async jobs and migrations",
+        "description": "Processes notifications, exports, migrations, backups, and repair with bounded retries.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Secure multi-tier web application projection",
-        "description": "Serves low-latency views for Design a Secure Multi-Tier Web Application with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 2060,
           "y": 260
         },
-        "properties": {
-          "latency": "No direct internet access to database"
-        }
+        "properties": {}
+      },
+      {
+        "id": "audit",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Audit and security evidence",
+        "description": "Retains access, policy, deployment, and recovery evidence for investigation.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Secure multi-tier web application monitoring",
-        "description": "Tracks Secure multi-tier web application latency, backlog, freshness, correctness, and saturation.",
+        "label": "Application reliability operations",
+        "description": "Tracks zone health, authentication, latency, saturation, queue lag, and restore readiness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-edge-0",
         "source": "client",
+        "target": "edge",
+        "type": "http",
+        "label": "Asset or application request",
+        "description": "Clients request versioned assets or dynamic application operations."
+      },
+      {
+        "id": "edge-gateway-1",
+        "source": "edge",
         "target": "gateway",
         "type": "http",
-        "label": "Start Secure multi-tier web application",
-        "description": "Client submits Implement network isolation through the authenticated request boundary."
+        "label": "Protected API request",
+        "description": "The edge forwards only allowed traffic to the protected ingress boundary."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-identity-2",
         "source": "gateway",
-        "target": "service",
+        "target": "identity",
         "type": "api-call",
-        "label": "Validated Secure multi-tier web application operation",
-        "description": "The gateway forwards a validated Secure multi-tier web application operation after authentication, quota, and idempotency checks."
+        "label": "Identity and role check",
+        "description": "Ingress validates tokens, roles, certificates, quotas, and zone policy."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "gateway-app-3",
+        "source": "gateway",
+        "target": "app",
+        "type": "api-call",
+        "label": "Authorized operation",
+        "description": "Only authenticated, authorized requests reach the stateless application tier."
+      },
+      {
+        "id": "app-cache-4",
+        "source": "app",
+        "target": "cache",
         "type": "database-connection",
-        "label": "Secure multi-tier web application state commit",
-        "description": "Commits Implement network isolation; Protect against common web attacks before downstream asynchronous work."
+        "label": "Safe read or invalidation",
+        "description": "The application uses cache only for data whose staleness and invalidation policy is explicit."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "app-store-5",
+        "source": "app",
+        "target": "store",
+        "type": "database-connection",
+        "label": "Private state commit",
+        "description": "The application conditionally commits authoritative secure multi tier web application state before acknowledging a write."
+      },
+      {
+        "id": "store-events-6",
+        "source": "store",
+        "target": "events",
         "type": "event-stream",
-        "label": "Secure multi-tier web application event",
-        "description": "An outbox or change stream publishes committed Secure multi-tier web application transitions with replayable ordering."
+        "label": "Committed domain event",
+        "description": "An outbox publishes a replayable event after the private data commit."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
+        "id": "events-workers-7",
+        "source": "events",
         "target": "workers",
         "type": "message-queue",
-        "label": "Secure multi-tier web application background work",
-        "description": "Workers handle VPC with public and private subnets, Application Load Balancer for traffic, Auto Scaling Group for web tier with bounded retries and idempotent updates."
+        "label": "Async work",
+        "description": "Workers process migrations, notifications, exports, and repairs with leases and dead letters."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "events-audit-8",
+        "source": "events",
+        "target": "audit",
         "type": "data-flow",
-        "label": "Secure multi-tier web application serving update",
-        "description": "Workers update the Secure multi-tier web application projection and expose a freshness watermark."
+        "label": "Security and audit evidence",
+        "description": "Access, policy, deployment, and recovery evidence is retained for investigation."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Secure multi-tier web application projection read",
-        "description": "The Secure multi-tier web application service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Secure multi-tier web application result",
-        "description": "Returns the latest acceptable result within No direct internet access to database."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "store-monitoring-9",
+        "source": "store",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Secure multi-tier web application pipeline health",
-        "description": "Monitors Secure multi-tier web application consumer lag, processing health, freshness, and projection correctness."
+        "label": "Data and backup telemetry",
+        "description": "Operations observes latency, saturation, backup age, and restore readiness."
+      },
+      {
+        "id": "gateway-monitoring-10",
+        "source": "gateway",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Ingress telemetry",
+        "description": "Operations observes authentication failures, rate limits, zone errors, and edge latency."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "request",
+        "label": "Protected request path",
+        "description": "Client -> edge/gateway -> identity -> application -> private store.",
+        "componentIds": [
+          "client",
+          "edge",
+          "gateway",
+          "identity",
+          "app",
+          "store"
+        ]
+      },
+      {
+        "id": "write",
+        "label": "Durable write and audit path",
+        "description": "Application -> private store -> event bus -> audit and workers.",
+        "componentIds": ["app", "store", "events", "audit", "workers"]
+      },
+      {
+        "id": "recovery",
+        "label": "Recovery path",
+        "description": "Backups, audit evidence, health signals, and replay restore a failed tier safely.",
+        "componentIds": ["store", "audit", "events", "workers", "monitoring"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Network isolation and identity",
       "points": [
-        "Keep the Secure multi-tier web application commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Secure multi-tier web application writes, event IDs, and versions so retries and replay are safe.",
-        "Return Secure multi-tier web application version and observedAt so clients can reason about freshness."
+        "Place secure multi tier web application data stores in private zones and expose only narrow service-to-service paths.",
+        "Use short-lived credentials, role checks, secret or certificate rotation, and deny-by-default policies.",
+        "Log policy decisions without putting tokens or sensitive payloads into traces."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Safe migrations and concurrency",
       "points": [
-        "Partition Secure multi-tier web application by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Secure multi-tier web application work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Secure multi-tier web application projection drift and partial failures."
+        "Version secure multi tier web application records and use expand-migrate-contract for schema changes.",
+        "Checkpoint large migrations by partition and make retries idempotent.",
+        "Reject stale writes rather than allowing a slower tier to overwrite newer state."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Backups, restore, and degraded reads",
       "points": [
-        "Serve the last acceptable Secure multi-tier web application projection or an explicit degraded response when workers fail.",
-        "Retain durable Secure multi-tier web application records for replay and make each downstream effect independently retryable.",
-        "Measure Secure multi-tier web application latency, backlog, freshness, error rate, and correctness drift."
+        "Test secure multi tier web application restore procedures, not just backup creation, with measured recovery objectives.",
+        "Keep caches and projections rebuildable from private authoritative state.",
+        "Expose degraded or read-only mode when a write dependency or zone is unavailable."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Global active-active versus regional ownership",
+      "recommendation": "Keep secure multi tier web application writes regionally owned or partitioned and replicate derived reads globally.",
+      "caution": "Cross-region active-active writes increase conflict, identity, and recovery complexity."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous versus asynchronous side effects",
+      "recommendation": "Commit the protected business state synchronously and queue audit exports, notifications, and migrations.",
+      "caution": "Making every side effect synchronous widens the failure domain and leaks provider latency into user requests."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Cache availability versus data freshness",
+      "recommendation": "Cache only safe reads with TTL and invalidation metadata, and fall back to the private store for critical decisions.",
+      "caution": "A stale cache must never bypass authorization or become the only copy of data."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Putting a private database directly on the public network.",
+    "Treating authentication as authorization or skipping service-to-service identity.",
+    "Running large migrations inside user requests without checkpoints.",
+    "Relying on cache state during restore without a source-of-truth replay path.",
+    "Claiming disaster recovery without restore tests, RPO, RTO, and failover telemetry."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you isolate a compromised secure multi tier web application tier?",
+      "answer": "Use network zones, short-lived identity, deny-by-default policy, scoped credentials, circuit breakers, and an audited read-only or failover mode."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you roll out a schema migration safely?",
+      "answer": "Add compatible fields, dual-read or dual-write, backfill checkpointed partitions, validate parity, then remove the old path after a measured rollback window."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What proves disaster recovery works?",
+      "answer": "Scheduled restore and failover exercises with measured recovery time, recovered versions, missing-event checks, and documented operator steps."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Implement network isolation workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses secure multi tier web application ingress, identity, private data, scale, failover, migration, and audit requirements."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a secure web application architecture with network isolation, protection against common web attacks, auto-scaling capabilities, and secure database access., authorization, privacy, and lifecycle changes."
-    },
-    {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Security",
+      "description": "The answer separates network zones, authentication, authorization, secrets, audit evidence, and compromise containment."
     },
     {
       "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+      "description": "The answer defines durable writes, retry-safe events, backups, restore tests, degraded modes, and recovery objectives."
     },
     {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Secure multi-tier web application consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer measures secure multi tier web application latency, auth failures, saturation, queue lag, backup age, and restore readiness."
     }
   ]
 }

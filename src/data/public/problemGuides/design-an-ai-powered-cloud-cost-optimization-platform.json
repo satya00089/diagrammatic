@@ -80,7 +80,7 @@
         "effectiveFrom",
         "effectiveTo"
       ],
-      "notes": "Versioned mapping used for showback and chargeback; an unknown or conflicting owner is surfaced as unallocated rather than silently assigned."
+      "notes": "Versioned mapping used for showback and chargeback; unknown ownership is surfaced as unallocated."
     },
     {
       "name": "CostSnapshot",
@@ -95,7 +95,7 @@
         "allocationVersion",
         "sourceWatermark"
       ],
-      "notes": "Serving and reconciliation aggregate keyed by account and time period; it carries allocation coverage and the provider watermark used to build it."
+      "notes": "Serving aggregate keyed by account and period with allocation coverage and provider watermark."
     },
     {
       "name": "OptimizationRecommendation",
@@ -113,7 +113,7 @@
         "approvalExpiresAt",
         "actionId"
       ],
-      "notes": "A versioned, explainable candidate for idle cleanup, rightsizing, or commitment purchase; approval and execution state are separate from the model output."
+      "notes": "Versioned explainable candidate for idle cleanup, rightsizing, or commitment purchase."
     }
   ],
   "apis": [
@@ -121,47 +121,47 @@
       "method": "POST",
       "path": "/v1/providers/connections",
       "contract": "{ provider, accountId, credentialsRef, billingSource, ownerMapping } -> { connectionId, status, firstImportJobId }",
-      "notes": "Create a tenant-scoped connector without storing provider secrets in the application; validate permissions and start an asynchronous backfill."
+      "notes": "Create a tenant-scoped connector without storing provider secrets in the application and start asynchronous backfill."
     },
     {
       "method": "GET",
       "path": "/v1/costs?accountId=&from=&to=&groupBy=",
       "contract": "{ totals[], trends[], allocationCoverage, sourceWatermark, projectionWatermark, freshness }",
-      "notes": "Return tenant-authorized allocated cost and unallocated cost for a bounded time range; never imply that a stale or incomplete provider period is final."
+      "notes": "Return authorized allocated and unallocated cost without implying stale data is final."
     },
     {
       "method": "GET",
       "path": "/v1/recommendations?status=&owner=&cursor=",
       "contract": "{ items: [{ id, type, evidence, savings, confidence, status }], nextCursor, generatedAt }",
-      "notes": "Filter explainable recommendations by owner, provider, account, type, and lifecycle status using the serving index."
+      "notes": "Filter explainable recommendations by owner, provider, account, type, and lifecycle status."
     },
     {
       "method": "POST",
       "path": "/v1/recommendations/{recommendationId}/approve",
       "contract": "{ recommendationVersion, decision, actorId, idempotencyKey } -> { actionId, status, expiresAt }",
-      "notes": "Recheck freshness, policy, role, savings evidence, and provider preconditions; an approval for a changed recommendation is rejected."
+      "notes": "Recheck freshness, policy, role, savings evidence, and provider preconditions; reject stale approvals."
     }
   ],
   "dataFlow": [
     {
       "title": "Connect cloud accounts and collect evidence",
-      "description": "Provider adapters use scoped credentials and provider cursors to land billing exports, usage, rates, credits, and resource inventory while respecting each provider's quotas and retry semantics."
+      "description": "Provider adapters use scoped credentials and provider cursors to land billing exports, usage, rates, credits, and resource inventory while respecting provider quotas."
     },
     {
       "title": "Preserve raw billing and reconcile invoices",
-      "description": "The billing lake keeps immutable provider-native partitions. Reconciliation compares invoice totals, credits, taxes, and exchange-rate inputs before a period is marked complete or exposes a discrepancy."
+      "description": "The billing lake keeps immutable provider-native partitions; reconciliation compares invoice totals, credits, taxes, and exchange-rate inputs before a period is marked complete."
     },
     {
       "title": "Normalize and allocate cost",
-      "description": "Workers convert provider line items into a canonical cost model, apply amortization and currency rules, join effective resource ownership, and publish explicit unallocated amounts for missing tags or shared resources."
+      "description": "Workers convert line items to a canonical model, apply amortization and currency rules, join effective ownership, and publish explicit unallocated spend for missing metadata."
     },
     {
       "title": "Detect waste and generate explainable recommendations",
-      "description": "Feature workers build utilization and spend windows; forecasting, anomaly, idle-resource, rightsizing, and commitment models produce candidates with evidence, confidence, model version, and savings assumptions."
+      "description": "Feature workers build utilization and spend windows; forecasting, anomaly, idle-resource, rightsizing, and commitment models produce evidence-backed candidates."
     },
     {
       "title": "Review, execute, and measure savings",
-      "description": "The policy engine applies budgets and risk rules, users approve eligible mutations, and the executor performs guarded provider actions. Actual usage and billing later feed back into realized-savings and recommendation-quality metrics."
+      "description": "Policy rules and user approval gate mutations; the executor performs guarded provider actions and later compares billing and usage with the baseline."
     }
   ],
   "architecture": {
@@ -678,86 +678,86 @@
     {
       "title": "Billing correctness and late data",
       "points": [
-        "Treat provider-native exports and invoice totals as evidence; keep raw partitions immutable so normalization and allocation can be replayed when a provider revises a period.",
-        "Use provider cursors, source versions, manifest deduplication, and watermark comparisons so a late line item cannot be silently dropped or overwrite newer data.",
-        "Expose billing completeness, reconciliation differences, allocation coverage, and source timestamps in every dashboard and recommendation response."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Design for the failure case where late billing, missing ownership, stale utilization, or an unsafe approval must not create a false saving or outage; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
       "title": "Multi-cloud allocation and feature history",
       "points": [
-        "Normalize provider service, resource, SKU, region, currency, credits, taxes, and amortization into a canonical line item while preserving the original dimensions.",
-        "Apply effective-dated tag and ownership rules to direct and shared costs; report unallocated spend instead of fabricating an owner when metadata is missing.",
-        "Partition by tenant, provider, account, and billing period, then build hourly or daily features for utilization, seasonality, commitment coverage, and realized savings."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
       "title": "Recommendation safety and feedback",
       "points": [
-        "Keep forecast intervals, anomaly evidence, utilization windows, savings assumptions, and model versions attached to each recommendation so a user can challenge the result.",
-        "Require approval for destructive cleanup, rightsizing, or commitment purchases; revalidate current resource state, policy, and recommendation version immediately before execution.",
-        "Join subsequent provider usage and billing with the action ledger to measure realized savings, false positives, rollback needs, and model drift."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
       "title": "Raw lake plus serving index versus one database",
-      "recommendation": "Keep immutable provider evidence and canonical aggregates in durable analytical storage, then use a separate tenant-filtered index for interactive dashboards.",
-      "caution": "Two representations require watermarks, reconciliation, replay, and an explicit stale-data contract; a single database is simpler only at lower volume."
+      "recommendation": "Keep immutable provider evidence and canonical aggregates in durable analytical storage, with a separate tenant-filtered index for dashboards.",
+      "caution": "Two representations require watermarks and reconciliation, but a single database cannot serve billion-line-item history cheaply."
     },
     {
       "title": "Scheduled batch versus continuous analysis",
-      "recommendation": "Use provider-aligned batch ingestion for invoice-grade cost and a smaller streaming path for budget anomalies or newly completed actions.",
-      "caution": "Continuous polling can hit provider quotas and create false precision when billing data itself is delayed."
+      "recommendation": "Use provider-aligned batch ingestion for invoice-grade cost and a smaller streaming path for budget anomalies and action results.",
+      "caution": "Continuous polling hits provider quotas and creates false precision when billing data itself is delayed."
     },
     {
       "title": "Automatic remediation versus human approval",
-      "recommendation": "Automatically notify and create low-risk recommendations, but require scoped approval plus a dry run for mutations that affect production capacity or commitments.",
-      "caution": "Automation can create outages or financial commitments when utilization, tags, or provider prices are stale; safety policy must fail closed for mutations."
+      "recommendation": "Automate low-risk detection and notification, but require policy, dry run, and scoped approval for production mutations or commitments.",
+      "caution": "Stale utilization, tags, or provider prices can turn automation into an outage or financial commitment."
     }
   ],
   "commonMistakes": [
-    "Treating provider billing APIs as a real-time source of truth when exports arrive late or are revised.",
-    "Dropping credits, taxes, currency conversion, amortization, shared-resource allocation, or invoice reconciliation from the canonical cost model.",
-    "Generating a savings recommendation without utilization evidence, confidence, model version, price assumptions, or a freshness timestamp.",
-    "Allowing an ML worker to mutate provider resources directly without approval, dry run, current-state checks, idempotency, and an audit trail.",
-    "Making every dashboard query scan raw line items or allowing one large account, export, or tenant to starve other ingestion and serving work."
+    "Treating provider APIs as a real-time invoice source.",
+    "Dropping credits, taxes, currency, amortization, shared costs, or reconciliation.",
+    "Generating recommendations without utilization evidence, confidence, model version, or freshness.",
+    "Letting an ML worker mutate resources without approval, dry run, and audit.",
+    "Scanning raw line items for every dashboard query or letting one account starve ingestion."
   ],
   "followUps": [
     {
-      "question": "What happens when a cloud provider revises a closed billing period?",
-      "answer": "Land the revised export as a new source version, reconcile it against the prior invoice, replay normalization and allocation for the affected partitions, and update projections with a visible correction watermark."
+      "question": "What happens when a provider revises a closed period?",
+      "answer": "Land a new source version, reconcile it with the prior invoice, replay affected normalization and allocation partitions, and expose a correction watermark."
     },
     {
-      "question": "How do you prevent a rightsizing recommendation from causing an outage?",
-      "answer": "Require a confidence threshold and utilization window, exclude protected production resources by policy, run a provider dry run, require an authorized approval, recheck current state, and support rollback or immediate pause where the provider allows it."
+      "question": "How do you prevent rightsizing from causing an outage?",
+      "answer": "Require a confidence and utilization window, exclude protected resources, run a dry run, require approval, and recheck current state before mutation."
     },
     {
-      "question": "How do you verify that reported savings are real?",
-      "answer": "Record the baseline, action, price and utilization assumptions, then compare later provider usage and billing against a time-matched baseline; report realized savings separately from model-estimated savings."
+      "question": "How do you verify savings are real?",
+      "answer": "Record baseline and assumptions, then compare later provider usage and billing against a time-matched baseline and report realized savings separately."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines multi-cloud ingestion, normalized cost and allocation semantics, freshness, scale, recommendation safety, and the contract for incomplete or revised billing."
+      "description": "The answer defines multi-cloud ingestion, invoice reconciliation, canonical allocation, explainable recommendations, approval safety, and realized savings, scale, latency, durability, authorization, and failure behavior."
     },
     {
       "criterion": "Data model",
-      "description": "Line items, ownership mappings, cost snapshots, and recommendations preserve provider lineage, effective dates, evidence, confidence, versions, approvals, and realized-savings status."
+      "description": "Entities and keys make the multi-cloud FinOps platform state, versions, lifecycle, and derived projections explicit."
     },
     {
       "criterion": "Scalability",
-      "description": "Provider/account/billing-period partitioning, bounded exports, asynchronous normalization, backpressure, and indexed dashboard reads handle billions of line items."
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
       "criterion": "Reliability",
-      "description": "Immutable raw evidence, source watermarks, reconciliation, replayable transforms, stale-data banners, provider isolation, and audited action outcomes protect financial correctness."
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain lake versus serving index, batch versus continuous analysis, and why provider mutations require policy and human approval."
+      "description": "The candidate can explain the the multi-cloud FinOps platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

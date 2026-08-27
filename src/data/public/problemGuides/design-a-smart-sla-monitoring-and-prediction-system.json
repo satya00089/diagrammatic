@@ -50,143 +50,135 @@
   },
   "entities": [
     {
-      "name": "SLA intelligence platform",
+      "name": "SliWindow",
       "fields": [
-        "tenantId",
-        "slaIntelligencePlatformId",
-        "status",
-        "version",
-        "createdAt",
-        "updatedAt"
+        "serviceId",
+        "window",
+        "requestCount",
+        "errorCount",
+        "latencyQuantiles",
+        "watermark"
       ],
-      "notes": "Authoritative SLA intelligence platform record keyed for its primary command and read paths."
+      "notes": "Event-time SLI evidence for smart sla monitoring and prediction system."
     },
     {
-      "name": "SLA intelligence platform event",
+      "name": "SloVersion",
       "fields": [
-        "eventId",
-        "slaIntelligencePlatformId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
+        "sloId",
+        "serviceIds",
+        "objective",
+        "windowPolicy",
+        "budget",
+        "version"
       ],
-      "notes": "Immutable SLA intelligence platform event with an idempotency key and version for replay."
+      "notes": "Versioned objective and error-budget policy for a service or dependency chain."
     },
     {
-      "name": "SLA intelligence platform policy",
+      "name": "BreachForecast",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "forecastId",
+        "sloId",
+        "horizon",
+        "probability",
+        "confidence",
+        "modelVersion"
       ],
-      "notes": "Versioned policy controlling SLA intelligence platform authorization, routing, or eligibility decisions."
+      "notes": "Reproducible prediction of a future SLO breach with evidence references."
     },
     {
-      "name": "SLA intelligence platform projection",
+      "name": "MitigationRecommendation",
       "fields": [
-        "slaIntelligencePlatformId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "recommendationId",
+        "forecastId",
+        "action",
+        "evidenceRefs",
+        "approval",
+        "status"
       ],
-      "notes": "Rebuildable SLA intelligence platform projection with observedAt and freshness metadata."
+      "notes": "Policy-gated recommendation that does not silently mutate production."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/sla-intelligence-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { slaIntelligencePlatformId, status, version }",
-      "notes": "Create or submit SLA intelligence platform with idempotency and return an accepted state/version."
+      "path": "/v1/telemetry",
+      "contract": "{ serviceId, occurredAt, latency, outcome, dependencyRefs } -> { accepted, eventId }",
+      "notes": "Ingest smart sla monitoring and prediction system telemetry with source identity and event-time validation."
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/slos/{sloId}",
+      "contract": "{ objective, windows, dependencies, expectedVersion } -> { version }",
+      "notes": "Version SLO policy and dependency scope without rewriting historical calculations."
     },
     {
       "method": "GET",
-      "path": "/v1/sla-intelligence-platform/{slaIntelligencePlatformId}",
-      "contract": "{ slaIntelligencePlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest SLA intelligence platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/sla-intelligence-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped SLA intelligence platform records with cursor pagination and eligibility filters."
+      "path": "/v1/slos/{sloId}/health?window=",
+      "contract": "{ sli, burnRate, budgetRemaining, forecast, freshness, evidence }",
+      "notes": "Return current SLO health, forecast confidence, and drill-down evidence."
     },
     {
       "method": "POST",
-      "path": "/v1/sla-intelligence-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a SLA intelligence platform rebuild or repair operation and return job status."
+      "path": "/v1/recommendations/{id}/approve",
+      "contract": "{ actor, action, expiresAt } -> { status, auditId }",
+      "notes": "Approve a bounded mitigation with policy and audit evidence."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Monitor SLIs and SLOs in real-time",
-      "description": "The SLA intelligence platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Ingest request and dependency evidence",
+      "description": "The smart sla monitoring and prediction system gateway validates service ownership, event time, outcome, latency, trace links, and telemetry schema."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The SLA intelligence platform service records the accepted state and version before acknowledging the client."
+      "title": "Compute SLIs and error budgets",
+      "description": "Window workers calculate availability, latency, burn rate, and composite dependency health with watermarks."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed SLA intelligence platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Predict future SLO breaches",
+      "description": "The predictor joins versioned SLI windows, topology, seasonality, and current burn to produce confidence-scored forecasts."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume SLA intelligence platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Recommend and route mitigation",
+      "description": "Policy checks turn a forecast into an evidence-backed recommendation, approval request, or deduplicated alert."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the SLA intelligence platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Explain, replay, and improve",
+      "description": "Operators inspect smart sla monitoring and prediction system evidence, correct telemetry gaps, replay windows, and evaluate forecast calibration over time."
     }
   ],
   "architecture": {
-    "title": "Design a system that monitors SLA compliance in real-time, predicts SLA breaches before they happen, calculates error budgets, and triggers proactive mitigation actions. reference architecture",
-    "summary": "The authoritative state records Monitor SLIs and SLOs in real-time; asynchronous workers build serving projections while Use burn-rate based alerting for SLO monitoring, Implement time-series forecasting for breach prediction, Use exponential smoothing for error budget projections stays isolated from the request path.",
+    "title": "Smart Sla Monitoring And Prediction System domain architecture",
+    "summary": "A service-level intelligence design for smart sla monitoring and prediction system. Telemetry becomes replayable SLI windows, dependency-aware forecasts, and policy-gated recommendations with visible evidence and freshness.",
     "layers": [
       {
         "id": "experience",
-        "label": "SLA intelligence platform request boundary",
-        "description": "Clients submit and read SLA intelligence platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "SLO query and policy plane",
+        "description": "Operators manage SLO definitions and inspect evidence-backed health through authenticated APIs.",
+        "componentIds": ["client", "gateway", "topology"]
       },
       {
-        "id": "source",
-        "label": "SLA intelligence platform authoritative state",
-        "description": "Durable SLA intelligence platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Telemetry and dependency evidence",
+        "description": "Request, error, latency, and topology evidence remains timestamped and replayable.",
+        "componentIds": ["telemetry", "topology"]
       },
       {
-        "id": "processing",
-        "label": "SLA intelligence platform processing and serving",
-        "description": "Partitioned SLA intelligence platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "calculation",
+        "label": "SLI calculation and prediction",
+        "description": "Window engines compute budgets while predictors model future breach risk.",
+        "componentIds": ["window-engine", "slo-store", "predictor"]
+      },
+      {
+        "id": "response",
+        "label": "Mitigation and notification plane",
+        "description": "Recommendations and alerts are policy-gated and independently retryable.",
+        "componentIds": ["mitigation", "notifications"]
       },
       {
         "id": "operations",
-        "label": "SLA intelligence platform operations",
-        "description": "SLA intelligence platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "SLO reliability operations",
+        "description": "Freshness, evidence gaps, forecast quality, and action safety protect decisions.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "SLA intelligence platform write path",
-        "description": "Client -> SLA intelligence platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "SLA intelligence platform projection path",
-        "description": "Authoritative SLA intelligence platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +186,314 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "SLA intelligence platform clients",
-        "description": "Clients use the Monitor SLIs and SLOs in real-time workflow and receive explicit status, freshness, or progress.",
+        "label": "SLO operator console",
+        "description": "Operators inspect SLI windows, dependency chains, error budgets, forecasts, and mitigation recommendations.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "SLA intelligence platform gateway",
-        "description": "Authenticates SLA intelligence platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "SLO intelligence API",
+        "description": "Authenticates telemetry producers and operators, validates service scope, and applies query quotas.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "SLA intelligence platform service",
-        "description": "Owns the Monitor SLIs and SLOs in real-time command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "SLA intelligence platform state",
-        "description": "Stores Monitor SLIs and SLOs in real-time; Calculate remaining error budget continuously and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design a Smart SLA Monitoring and Prediction System"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "telemetry",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "SLA intelligence platform event backbone",
-        "description": "Publishes versioned events for Use burn-rate based alerting for SLO monitoring, Implement time-series forecasting for breach prediction, Use exponential smoothing for error budget projections after durable commits.",
+        "label": "Request and dependency telemetry",
+        "description": "Carries latency, error, availability, trace, and dependency events with event-time metadata.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "topology",
+        "type": "database",
+        "componentId": "database",
+        "label": "Service dependency graph",
+        "description": "Stores service ownership, dependency edges, SLO policies, and topology versions.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "window-engine",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "SLA intelligence platform workers",
-        "description": "Workers process Use burn-rate based alerting for SLO monitoring, Implement time-series forecasting for breach prediction, Use exponential smoothing for error budget projections independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "SLI window engine",
+        "description": "Computes windowed SLIs, burn rates, error budgets, and composite dependency measures.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "SLA intelligence platform projection",
-        "description": "Serves low-latency views for Design a Smart SLA Monitoring and Prediction System with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "latency": "SLA monitoring latency under 1 minute"
-        }
+        "properties": {}
+      },
+      {
+        "id": "slo-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "SLO and evidence store",
+        "description": "Stores versioned SLI windows, SLO calculations, evidence links, and freshness watermarks.",
+        "position": {
+          "x": 1360,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "predictor",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Breach prediction engine",
+        "description": "Forecasts SLO breach probability across dependency chains with model version and confidence.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "mitigation",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Mitigation recommendation service",
+        "description": "Turns predicted breaches into evidence-backed, policy-gated recommendations rather than unreviewed changes.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "SLO alert delivery",
+        "description": "Sends deduplicated burn-rate, forecast, and approval notifications with receipts.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "SLA intelligence platform monitoring",
-        "description": "Tracks SLA intelligence platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "SLO intelligence operations",
+        "description": "Tracks telemetry gaps, calculation freshness, forecast quality, notification lag, and policy safety.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start SLA intelligence platform",
-        "description": "Client submits Monitor SLIs and SLOs in real-time through the authenticated request boundary."
+        "label": "SLO query or policy command",
+        "description": "Operators query SLI evidence, edit SLO policy, acknowledge alerts, or approve recommendations."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-topology-1",
         "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated SLA intelligence platform operation",
-        "description": "The gateway forwards a validated SLA intelligence platform operation after authentication, quota, and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "target": "topology",
         "type": "database-connection",
-        "label": "SLA intelligence platform state commit",
-        "description": "Commits Monitor SLIs and SLOs in real-time; Calculate remaining error budget continuously before downstream asynchronous work."
+        "label": "Service and dependency context",
+        "description": "The API reads ownership, dependency, SLO, and policy versions."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "SLA intelligence platform event",
-        "description": "An outbox or change stream publishes committed SLA intelligence platform transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "telemetry-window-engine-2",
+        "source": "telemetry",
+        "target": "window-engine",
         "type": "message-queue",
-        "label": "SLA intelligence platform background work",
-        "description": "Workers handle Use burn-rate based alerting for SLO monitoring, Implement time-series forecasting for breach prediction, Use exponential smoothing for error budget projections with bounded retries and idempotent updates."
+        "label": "SLI input event",
+        "description": "Window workers consume latency, error, availability, and dependency events with event time."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "topology-window-engine-3",
+        "source": "topology",
+        "target": "window-engine",
         "type": "data-flow",
-        "label": "SLA intelligence platform serving update",
-        "description": "Workers update the SLA intelligence platform projection and expose a freshness watermark."
+        "label": "Composite-SLO context",
+        "description": "The calculation engine joins dependency edges and service ownership to compute chain health."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "window-engine-slo-store-4",
+        "source": "window-engine",
+        "target": "slo-store",
         "type": "database-connection",
-        "label": "SLA intelligence platform projection read",
-        "description": "The SLA intelligence platform service reads the latest acceptable projection or authoritative state."
+        "label": "Versioned SLI window",
+        "description": "SLIs, burn rates, error budgets, evidence links, and watermarks are stored durably."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "slo-store-predictor-5",
+        "source": "slo-store",
+        "target": "predictor",
+        "type": "data-flow",
+        "label": "Historical SLO evidence",
+        "description": "The predictor consumes versioned windows and dependency context to estimate breach risk."
+      },
+      {
+        "id": "predictor-mitigation-6",
+        "source": "predictor",
+        "target": "mitigation",
+        "type": "message-queue",
+        "label": "Breach forecast",
+        "description": "Recommendations are created with confidence, evidence, policy, and blast-radius metadata."
+      },
+      {
+        "id": "mitigation-notifications-7",
+        "source": "mitigation",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Alert or approval request",
+        "description": "Notifications deliver deduplicated forecast and mitigation status."
+      },
+      {
+        "id": "slo-store-client-8",
+        "source": "slo-store",
         "target": "client",
-        "type": "http",
-        "label": "SLA intelligence platform result",
-        "description": "Returns the latest acceptable result within SLA monitoring latency under 1 minute."
+        "type": "api-call",
+        "label": "SLO dashboard evidence",
+        "description": "Operators see current window, freshness, forecast confidence, and drill-down evidence."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "window-engine-monitoring-9",
+        "source": "window-engine",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "SLA intelligence platform pipeline health",
-        "description": "Monitors SLA intelligence platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Calculation telemetry",
+        "description": "Operations observes input gaps, window lag, burn-rate correctness, and stale SLOs."
+      },
+      {
+        "id": "predictor-monitoring-10",
+        "source": "predictor",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Forecast quality telemetry",
+        "description": "Operations observes forecast calibration, false positives, and dependency coverage."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "calculate",
+        "label": "Telemetry to SLO path",
+        "description": "Telemetry -> window engine -> SLO store -> operator dashboard.",
+        "componentIds": ["telemetry", "window-engine", "slo-store", "client"]
+      },
+      {
+        "id": "predict",
+        "label": "Dependency-aware prediction path",
+        "description": "Topology and SLI windows -> predictor -> mitigation recommendation.",
+        "componentIds": ["topology", "slo-store", "predictor", "mitigation"]
+      },
+      {
+        "id": "alert",
+        "label": "Alert and approval path",
+        "description": "Evidence-backed breach -> notification -> operator decision.",
+        "componentIds": ["predictor", "mitigation", "notifications", "client"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "SLI and error-budget correctness",
       "points": [
-        "Keep the SLA intelligence platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional SLA intelligence platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return SLA intelligence platform version and observedAt so clients can reason about freshness."
+        "Define request population, good-event rules, latency buckets, aggregation windows, and exclusion policy explicitly.",
+        "Keep event-time watermarks and late-data correction separate from dashboard freshness.",
+        "Version SLO changes so historical budget burn is not recomputed under a new objective."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Dependency-chain prediction",
       "points": [
-        "Partition SLA intelligence platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound SLA intelligence platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for SLA intelligence platform projection drift and partial failures."
+        "Model ownership and dependency edges as versioned evidence, not an unbounded graph lookup at alert time.",
+        "Calibrate forecast confidence by service, horizon, incident class, and missing telemetry.",
+        "Distinguish a predicted breach from a confirmed SLO violation and show the evidence behind both."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Safe proactive mitigation",
       "points": [
-        "Serve the last acceptable SLA intelligence platform projection or an explicit degraded response when workers fail.",
-        "Retain durable SLA intelligence platform records for replay and make each downstream effect independently retryable.",
-        "Measure SLA intelligence platform latency, backlog, freshness, error rate, and correctness drift."
+        "Require policy, blast-radius, cooldown, and approval gates before any operational action.",
+        "Keep notification delivery and recommendation state independent from the SLI calculation commit.",
+        "Measure false positives, missed breaches, acknowledgement latency, and mitigation outcome."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Exact windows versus approximate streaming",
+      "recommendation": "Use exact calculations for contractual SLOs and bounded approximations only for early warning or exploratory views.",
+      "caution": "An approximate burn rate must expose its error and cannot silently drive a contractual violation decision."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Prediction versus threshold alerts",
+      "recommendation": "Keep threshold alerts authoritative and use forecasts to prioritize investigation or approved prevention.",
+      "caution": "A forecast should not page or mutate production without confidence, evidence, and policy gates."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Central topology versus local ownership",
+      "recommendation": "Centralize dependency discovery and freshness while letting service owners define SLI and SLO contracts.",
+      "caution": "A stale dependency graph can produce confident but incorrect chain forecasts."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Calculating SLIs from dashboard aggregates without preserving raw event-time evidence.",
+    "Changing SLO policy in place and invalidating historical error-budget comparisons.",
+    "Treating a forecast as a confirmed breach or as permission for automatic remediation.",
+    "Ignoring missing telemetry and dependency-graph freshness in confidence scores.",
+    "Measuring alert volume without calibration, missed breaches, and mitigation outcomes."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle telemetry gaps?",
+      "answer": "Mark affected windows incomplete, lower forecast confidence, backfill or replay from raw evidence, and avoid declaring a healthy SLO from missing data."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you prevent mitigation loops?",
+      "answer": "Use recommendation and operation IDs, cooldowns, policy versions, blast-radius limits, expiry, and explicit approval for risky actions."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you prove a forecast was useful?",
+      "answer": "Track calibrated probability, lead time, false positives, missed breaches, segment behavior, and whether approved mitigations changed the outcome."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Monitor SLIs and SLOs in real-time workflow, scale, latency, durability, and failure contract."
+      "description": "The answer covers smart sla monitoring and prediction system telemetry, SLI/SLO windows, error budgets, dependencies, prediction, mitigation, and replay."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a system that monitors SLA compliance in real-time, predicts SLA breaches before they happen, calculates error budgets, and triggers proactive mitigation actions., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer separates event-time evidence, contractual SLO state, forecast confidence, and recommendation approval."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Safety",
+      "description": "The answer makes mitigation policy-gated, auditable, bounded, and reversible where possible."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain SLA intelligence platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer measures telemetry gaps, freshness, calibration, page latency, and recovery after replay."
     }
   ]
 }

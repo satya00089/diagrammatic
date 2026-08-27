@@ -50,143 +50,129 @@
   },
   "entities": [
     {
-      "name": "Experimentation platform",
+      "name": "ExperimentDefinition",
       "fields": [
-        "tenantId",
-        "experimentationPlatformId",
-        "status",
+        "experimentId",
         "version",
-        "createdAt",
-        "updatedAt"
+        "variants",
+        "eligibility",
+        "allocation",
+        "status"
       ],
-      "notes": "Authoritative Experimentation platform record keyed for its primary command and read paths."
+      "notes": "Versioned a b testing system hypothesis and assignment contract."
     },
     {
-      "name": "Experimentation platform event",
+      "name": "Assignment",
+      "fields": [
+        "subjectId",
+        "experimentId",
+        "variant",
+        "definitionVersion",
+        "assignedAt",
+        "override"
+      ],
+      "notes": "Deterministic, sticky assignment with exposure metadata."
+    },
+    {
+      "name": "ExposureEvent",
       "fields": [
         "eventId",
-        "experimentationPlatformId",
-        "eventType",
-        "version",
+        "subjectId",
+        "experimentId",
+        "variant",
         "occurredAt",
-        "payload"
+        "schemaVersion"
       ],
-      "notes": "Immutable Experimentation platform event with an idempotency key and version for replay."
+      "notes": "Deduplicated evidence that a subject actually saw a a b testing system variant."
     },
     {
-      "name": "Experimentation platform policy",
+      "name": "MetricSnapshot",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "experimentId",
+        "cohort",
+        "metric",
+        "window",
+        "estimate",
+        "guardrailStatus"
       ],
-      "notes": "Versioned policy controlling Experimentation platform authorization, routing, or eligibility decisions."
-    },
-    {
-      "name": "Experimentation platform projection",
-      "fields": [
-        "experimentationPlatformId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
-      ],
-      "notes": "Rebuildable Experimentation platform projection with observedAt and freshness metadata."
+      "notes": "Reproducible metric and guardrail result for decision-making."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/experimentation-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { experimentationPlatformId, status, version }",
-      "notes": "Create or submit Experimentation platform with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/experimentation-platform/{experimentationPlatformId}",
-      "contract": "{ experimentationPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Experimentation platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/experimentation-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Experimentation platform records with cursor pagination and eligibility filters."
+      "path": "/v1/experiments",
+      "contract": "{ hypothesis, variants, eligibility, metrics } -> { experimentId, version }",
+      "notes": "Create a governed a b testing system experiment definition."
     },
     {
       "method": "POST",
-      "path": "/v1/experimentation-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Experimentation platform rebuild or repair operation and return job status."
+      "path": "/v1/assignments",
+      "contract": "{ experimentId, subjectId, context } -> { variant, definitionVersion }",
+      "notes": "Return a deterministic assignment with eligibility and allocation metadata."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/events/exposure",
+      "contract": "{ eventId, experimentId, subjectId, variant, occurredAt } -> { accepted }",
+      "notes": "Record a privacy-scoped exposure event idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/experiments/{experimentId}/results",
+      "contract": "{ metrics[], sampleRatio, freshness, decision }",
+      "notes": "Return a b testing system metrics, uncertainty, and guardrail status."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Create and manage experiments",
-      "description": "The Experimentation platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Version the experiment contract",
+      "description": "The a b testing system catalog records hypothesis, variants, eligibility, allocation, metric definitions, and approval state."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Experimentation platform service records the accepted state and version before acknowledging the client."
+      "title": "Assign consistently",
+      "description": "The assignment service hashes the subject and experiment version, applies overrides, and emits exposure metadata."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Experimentation platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Collect real exposure and outcomes",
+      "description": "Events are deduplicated and joined by cohort, definition version, and event time rather than assignment alone."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Experimentation platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Compute metrics and guardrails",
+      "description": "Workers calculate lift, uncertainty, sample-ratio mismatch, and safety metrics into a reproducible snapshot."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Experimentation platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Roll out or stop safely",
+      "description": "Operators use evidence and guardrails to advance, pause, or roll back the a b testing system definition with an audit trail."
     }
   ],
   "architecture": {
-    "title": "Design a platform to run experiments and A/B tests to compare different versions of features. reference architecture",
-    "summary": "The authoritative state records Create and manage experiments; asynchronous workers build serving projections while Deterministic hash function for assignment, Feature flag system integration, Data pipeline for metrics collection stays isolated from the request path.",
+    "title": "A B Testing System domain architecture",
+    "summary": "Design an experimentation platform that assigns users consistently to variants, captures exposure and outcome events, detects sample-ratio or data-quality issues, and produces decision-ready analyses. The design makes a b testing system decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experimentation platform request boundary",
-        "description": "Clients submit and read Experimentation platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Assignment and decision plane",
+        "description": "Products receive deterministic assignments and operators manage lifecycle state.",
+        "componentIds": ["client", "gateway", "assignment", "dashboard"]
       },
       {
-        "id": "source",
-        "label": "Experimentation platform authoritative state",
-        "description": "Durable Experimentation platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "truth",
+        "label": "Experiment definition truth",
+        "description": "Eligibility, variants, allocation, and metric contracts are versioned.",
+        "componentIds": ["catalog"]
       },
       {
-        "id": "processing",
-        "label": "Experimentation platform processing and serving",
-        "description": "Partitioned Experimentation platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "measurement",
+        "label": "Exposure and outcome measurement",
+        "description": "Events become quality-gated cohorts and reproducible analysis datasets.",
+        "componentIds": ["collector", "compute", "warehouse"]
       },
       {
         "id": "operations",
-        "label": "Experimentation platform operations",
-        "description": "Experimentation platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Experiment reliability operations",
+        "description": "Assignment, data quality, and guardrail signals protect decisions.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Experimentation platform write path",
-        "description": "Client -> Experimentation platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Experimentation platform projection path",
-        "description": "Authoritative Experimentation platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -194,274 +180,286 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Experimentation platform clients",
-        "description": "Clients use the Create and manage experiments workflow and receive explicit status, freshness, or progress.",
+        "label": "Product clients",
+        "description": "Applications request experiment assignments and emit exposure or outcome events.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Experimentation platform gateway",
-        "description": "Authenticates Experimentation platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Experiment API gateway",
+        "description": "Authenticates callers, validates experiment scope, and applies assignment and event quotas.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Experimentation platform service",
-        "description": "Owns the Create and manage experiments command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
+        "id": "catalog",
         "type": "database",
         "componentId": "database",
-        "label": "Experimentation platform state",
-        "description": "Stores Create and manage experiments; Randomly assign users to variants and supports the primary access patterns.",
+        "label": "Experiment catalog",
+        "description": "Stores hypotheses, variants, eligibility, allocation, metric definitions, and lifecycle state.",
         "position": {
-          "x": 1080,
-          "y": 260
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "storage": "Design an A/B Testing System"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Experimentation platform event backbone",
-        "description": "Publishes versioned events for Deterministic hash function for assignment, Feature flag system integration, Data pipeline for metrics collection after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "assignment",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Experimentation platform workers",
-        "description": "Workers process Deterministic hash function for assignment, Feature flag system integration, Data pipeline for metrics collection independently from the user-facing command and retry transient failures.",
+        "label": "Assignment service",
+        "description": "Produces sticky, deterministic assignments with exposure and override metadata.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Experimentation platform projection",
-        "description": "Serves low-latency views for Design an A/B Testing System with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "latency": "Consistent variant assignment per user"
-        }
+        "properties": {}
+      },
+      {
+        "id": "collector",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Exposure and outcome stream",
+        "description": "Collects deduplicated experiment events with schema and privacy controls.",
+        "position": {
+          "x": 1360,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "compute",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Metric computation workers",
+        "description": "Builds windows, cohorts, guardrail metrics, and sequential analysis inputs.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "warehouse",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Experiment analysis store",
+        "description": "Retains curated event and metric data for reproducible analysis.",
+        "position": {
+          "x": 2060,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "dashboard",
+        "type": "web-server",
+        "componentId": "backend-server",
+        "label": "Decision dashboard",
+        "description": "Shows allocation, sample ratio mismatch, lift, confidence, and guardrail state.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Experimentation platform monitoring",
-        "description": "Tracks Experimentation platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "Experiment reliability operations",
+        "description": "Tracks assignment latency, exposure loss, metric freshness, and safety violations.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Experimentation platform",
-        "description": "Client submits Create and manage experiments through the authenticated request boundary."
+        "label": "Assignment or event request",
+        "description": "Applications request an assignment or emit exposure and outcome events."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-catalog-1",
         "source": "gateway",
-        "target": "service",
+        "target": "catalog",
+        "type": "database-connection",
+        "label": "Experiment definition",
+        "description": "The API reads the active, versioned eligibility and metric contract."
+      },
+      {
+        "id": "gateway-assignment-2",
+        "source": "gateway",
+        "target": "assignment",
         "type": "api-call",
-        "label": "Validated Experimentation platform operation",
-        "description": "The gateway forwards a validated Experimentation platform operation after authentication, quota, and idempotency checks."
+        "label": "Deterministic assignment",
+        "description": "Assignments use stable subject keys, allocation versions, and overrides."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Experimentation platform state commit",
-        "description": "Commits Create and manage experiments; Randomly assign users to variants before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "client-collector-3",
+        "source": "client",
+        "target": "collector",
         "type": "event-stream",
-        "label": "Experimentation platform event",
-        "description": "An outbox or change stream publishes committed Experimentation platform transitions with replayable ordering."
+        "label": "Exposure and outcome",
+        "description": "Client events are buffered and delivered with event IDs and schema versions."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "collector-compute-4",
+        "source": "collector",
+        "target": "compute",
         "type": "message-queue",
-        "label": "Experimentation platform background work",
-        "description": "Workers handle Deterministic hash function for assignment, Feature flag system integration, Data pipeline for metrics collection with bounded retries and idempotent updates."
+        "label": "Measurement event",
+        "description": "Workers deduplicate, join cohorts, and compute metrics or guardrails."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "compute-warehouse-5",
+        "source": "compute",
+        "target": "warehouse",
         "type": "data-flow",
-        "label": "Experimentation platform serving update",
-        "description": "Workers update the Experimentation platform projection and expose a freshness watermark."
+        "label": "Curated experiment metric",
+        "description": "Curated metrics retain definition, allocation, cohort, and freshness metadata."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Experimentation platform projection read",
-        "description": "The Experimentation platform service reads the latest acceptable projection or authoritative state."
+        "id": "warehouse-dashboard-6",
+        "source": "warehouse",
+        "target": "dashboard",
+        "type": "api-call",
+        "label": "Decision evidence",
+        "description": "Operators see sample ratio mismatch, lift, uncertainty, and guardrail state."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Experimentation platform result",
-        "description": "Returns the latest acceptable result within Consistent variant assignment per user."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "assignment-monitoring-7",
+        "source": "assignment",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Experimentation platform pipeline health",
-        "description": "Monitors Experimentation platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Assignment telemetry",
+        "description": "Operations tracks latency, exposure mismatch, and assignment errors."
+      },
+      {
+        "id": "collector-monitoring-8",
+        "source": "collector",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Measurement telemetry",
+        "description": "Operations tracks event loss, schema failures, metric freshness, and privacy violations."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "assign",
+        "label": "Assignment path",
+        "description": "Client -> gateway -> catalog -> assignment -> client.",
+        "componentIds": ["client", "gateway", "catalog", "assignment"]
+      },
+      {
+        "id": "measure",
+        "label": "Measurement path",
+        "description": "Client exposure/outcome -> event stream -> metric workers -> analysis store.",
+        "componentIds": ["client", "collector", "compute", "warehouse"]
+      },
+      {
+        "id": "decide",
+        "label": "Decision path",
+        "description": "Analysis store -> dashboard -> lifecycle command.",
+        "componentIds": ["warehouse", "dashboard", "catalog"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Assignment correctness",
       "points": [
-        "Keep the Experimentation platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Experimentation platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Experimentation platform version and observedAt so clients can reason about freshness."
+        "Hash on a stable subject key and experiment version so allocation remains sticky across devices where policy permits.",
+        "Record exposure only when the subject could actually see the variant.",
+        "Keep overrides, exclusion rules, and allocation changes explicit and auditable."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Metric integrity",
       "points": [
-        "Partition Experimentation platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Experimentation platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Experimentation platform projection drift and partial failures."
+        "Use event-time windows, deduplication, late-event policy, and cohort definitions that match the hypothesis.",
+        "Alert on sample-ratio mismatch, missing exposure, instrumentation changes, and metric freshness.",
+        "Analyze guardrails and segments alongside the primary metric."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Safe decisions",
       "points": [
-        "Serve the last acceptable Experimentation platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Experimentation platform records for replay and make each downstream effect independently retryable.",
-        "Measure Experimentation platform latency, backlog, freshness, error rate, and correctness drift."
+        "Require approval and lifecycle state transitions for a b testing system rollout, pause, and rollback.",
+        "Keep definition, assignment, event, and analysis versions linked for replay.",
+        "Do not let a dashboard with stale or incomplete data imply statistical certainty."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Sticky assignment versus dynamic targeting",
+      "recommendation": "Prefer sticky assignment for causal interpretation and make targeting changes a new version.",
+      "caution": "Changing eligibility or allocation in place contaminates cohort analysis."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Client versus server event collection",
+      "recommendation": "Collect exposure close to the rendering decision and supplement with server events for durable outcomes.",
+      "caution": "A client-only pipeline loses events under blockers, offline use, or app termination."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Fast decision versus statistical certainty",
+      "recommendation": "Use sequential monitoring with declared stopping rules and guardrails.",
+      "caution": "Repeatedly checking noisy metrics until a desired result appears creates false confidence."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Counting assignment as exposure when the variant was never rendered.",
+    "Changing allocation or eligibility without versioning the experiment.",
+    "Ignoring sample-ratio mismatch, delayed events, and missing cohorts.",
+    "Optimizing a primary metric while omitting safety guardrails.",
+    "Allowing stale dashboards to drive irreversible rollout decisions."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you detect instrumentation loss?",
+      "answer": "Compare assignment, exposure, and outcome funnels by client version, segment, and time window; alert on unexpected ratios."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you roll back a bad experiment?",
+      "answer": "Pause the definition, restore the prior allocation or control, preserve evidence, and record the decision and reason."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you handle a user changing devices?",
+      "answer": "Define the subject identity and privacy policy explicitly; either preserve assignment through a trusted account key or treat devices as separate units."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Create and manage experiments workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the a b testing system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a platform to run experiments and A/B tests to compare different versions of features., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative a b testing system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions a b testing system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Experimentation platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the a b testing system user experience."
     }
   ]
 }

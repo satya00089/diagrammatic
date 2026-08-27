@@ -50,136 +50,135 @@
   },
   "entities": [
     {
-      "name": "room inventory and reservation ledger",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for inventory and confirmed reservations; design keys around the main reads and writes."
-    },
-    {
-      "name": "hotel-booking event",
+      "name": "ReservationIntent",
       "fields": [
-        "eventId",
-        "roomInventorySearchReservationHoldsPaymeId",
-        "eventType",
-        "version",
-        "occurredAt",
-        "payload"
-      ],
-      "notes": "Versioned Room inventory, search, reservation holds, payme records preserve ownership, lifecycle, audit, and replay semantics."
-    },
-    {
-      "name": "Room inventory, search, reservation holds, payme policy",
-      "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
-      ],
-      "notes": "Versioned Room inventory, search, reservation holds, payme records preserve ownership, lifecycle, audit, and replay semantics."
-    },
-    {
-      "name": "Room inventory, search, reservation holds, payme projection",
-      "fields": [
-        "roomInventorySearchReservationHoldsPaymeId",
+        "intentId",
+        "customerId",
+        "offerId",
         "status",
         "version",
-        "observedAt",
-        "freshness",
+        "idempotencyKey"
+      ],
+      "notes": "Idempotent hotel booking system reservation intent with an explicit lifecycle."
+    },
+    {
+      "name": "InventoryClaim",
+      "fields": [
+        "claimId",
+        "itemId",
+        "quantity",
+        "expiresAt",
+        "status",
+        "version"
+      ],
+      "notes": "Short-lived conditional claim that protects scarce availability."
+    },
+    {
+      "name": "PaymentAttempt",
+      "fields": [
+        "attemptId",
+        "intentId",
+        "provider",
+        "requestHash",
+        "status",
+        "providerRef"
+      ],
+      "notes": "Retry-safe payment attempt with unknown-outcome reconciliation."
+    },
+    {
+      "name": "FulfillmentState",
+      "fields": [
+        "intentId",
+        "stage",
+        "owner",
+        "lastEventId",
+        "status",
         "updatedAt"
       ],
-      "notes": "Versioned Room inventory, search, reservation holds, payme records preserve ownership, lifecycle, audit, and replay semantics."
+      "notes": "Durable downstream reservation fulfillment progress."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/room-inventory-search-reservation-holds-pa",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { roomInventorySearchReservationHoldsPaymeId, status, version }",
-      "notes": "Create or submit Room inventory, search, reservation holds, payme with idempotency and return an accepted state/version."
-    },
-    {
       "method": "GET",
-      "path": "/v1/room-inventory-search-reservation-holds-pa/{roomInventorySearchReservationHoldsPaymeId}",
-      "contract": "{ roomInventorySearchReservationHoldsPaymeId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Room inventory, search, reservation holds, payme state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/room-inventory-search-reservation-holds-pa?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Room inventory, search, reservation holds, payme records with cursor pagination and eligibility filters."
+      "path": "/v1/catalog/search?q=&filters=",
+      "contract": "{ items[], offers[], availabilityVersion, nextCursor }",
+      "notes": "Search hotel booking system candidates with current price, eligibility, and availability metadata."
     },
     {
       "method": "POST",
-      "path": "/v1/room-inventory-search-reservation-holds-pa/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Room inventory, search, reservation holds, payme rebuild or repair operation and return job status."
+      "path": "/v1/reservations",
+      "contract": "{ offerId, quantity, customerId, idempotencyKey } -> { intentId, status, version }",
+      "notes": "Create an idempotent hotel booking system reservation intent."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/reservations/{intentId}/confirm",
+      "contract": "{ expectedVersion, paymentToken } -> { status, confirmation }",
+      "notes": "Confirm the hotel booking system reservation only after the inventory claim and payment policy pass."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/reservations/{intentId}",
+      "contract": "{ status, claim, paymentStatus, fulfillment, freshness }",
+      "notes": "Return hotel booking system status with explicit pending, expired, or failed state."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept reserve an available room",
-      "description": "The Room inventory, search, reservation holds, payme gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Search and price current candidates",
+      "description": "The hotel booking system query path combines catalog, eligibility, price, and current availability without treating a stale index as a final claim."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Room inventory, search, reservation holds, payme service records the accepted state and version before acknowledging the client."
+      "title": "Claim scarce inventory",
+      "description": "The hotel booking system service creates a short-lived conditional claim keyed by item and request idempotency before charging or confirming."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Room inventory, search, reservation holds, payme events; consumers deduplicate by event ID and track offsets."
+      "title": "Confirm the reservation safely",
+      "description": "Payment, policy, and inventory transitions are versioned; unknown provider outcomes are reconciled before retry."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Room inventory, search, reservation holds, payme events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish fulfillment work",
+      "description": "The committed hotel booking system intent emits an event for partner, packing, delivery, or campaign dispatch workers."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Room inventory, search, reservation holds, payme projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Expire, cancel, and reconcile",
+      "description": "Expiry and cancellation release claims idempotently while reconciliation compares internal state with external providers or partners."
     }
   ],
   "architecture": {
-    "title": "Room inventory, search, reservation holds, payment, and cancellation reference architecture",
-    "summary": "The authoritative state records reserve an available room; asynchronous workers build serving projections while search indexing, expiration, payment callbacks, and notifications stays isolated from the request path.",
+    "title": "Hotel Booking System domain architecture",
+    "summary": "Design room inventory, search, reservation holds, payment, and cancellation so users can reserve an available room reliably at scale. The design makes hotel booking system decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Room inventory, search, reservation holds, payme request boundary",
-        "description": "Clients submit and read Room inventory, search, reservation holds, payme requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Booking experience and search",
+        "description": "Search and reservation commands enter through a protected API boundary.",
+        "componentIds": ["client", "gateway", "catalog", "search"]
       },
       {
-        "id": "source",
-        "label": "Room inventory, search, reservation holds, payme authoritative state",
-        "description": "Durable Room inventory, search, reservation holds, payme state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "inventory",
+        "label": "Availability and reservation truth",
+        "description": "Inventory holds and reservation state use conditional, versioned writes.",
+        "componentIds": ["availability", "booking"]
       },
       {
-        "id": "processing",
-        "label": "Room inventory, search, reservation holds, payme processing and serving",
-        "description": "Partitioned Room inventory, search, reservation holds, payme workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "effects",
+        "label": "Payment and partner effects",
+        "description": "External payment and partner operations are reconciled asynchronously.",
+        "componentIds": ["payments", "event-bus", "partner-sync"]
+      },
+      {
+        "id": "delivery",
+        "label": "Customer communication",
+        "description": "Confirmations and changes are independently retryable.",
+        "componentIds": ["notifications"]
       },
       {
         "id": "operations",
-        "label": "Room inventory, search, reservation holds, payme operations",
-        "description": "Room inventory, search, reservation holds, payme signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Booking reliability operations",
+        "description": "Oversell, freshness, lag, and uncertain payment signals protect correctness.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Room inventory, search, reservation holds, payme write path",
-        "description": "Client -> Room inventory, search, reservation holds, payme gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Room inventory, search, reservation holds, payme projection path",
-        "description": "Authoritative Room inventory, search, reservation holds, payme state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -187,274 +186,340 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Design room inventory, search, reservation holds clients",
-        "description": "Clients use the reserve an available room workflow and receive explicit status, freshness, or progress.",
+        "label": "Traveler and partner clients",
+        "description": "Search, hold, book, cancel, and manage reservation clients.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Design room inventory, search, reservation holds gateway",
-        "description": "Authenticates Design room inventory, search, reservation holds requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Booking API gateway",
+        "description": "Authenticates users and partners, applies quotas, validates idempotency, and protects payment flows.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
+        "id": "catalog",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Design room inventory, search, reservation holds service",
-        "description": "Owns the reserve an available room command, authorization policy, lifecycle state, and client contract.",
+        "label": "Property and rate catalog",
+        "description": "Owns normalized property, room, rate, policy, and partner mapping data.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "search",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Availability search index",
+        "description": "Serves geo, date-range, occupancy, and amenity candidate searches from derived inventory.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "availability",
         "type": "database",
         "componentId": "database",
-        "label": "Design room inventory, search, reservation holds state",
-        "description": "Stores inventory and confirmed reservations and supports the primary access patterns.",
+        "label": "Inventory and hold store",
+        "description": "Authoritative room or seat inventory with short-lived holds and conditional decrement.",
         "position": {
-          "x": 1080,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "storage": "room inventory and reservation ledger"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Design room inventory, search, reservation holds event backbone",
-        "description": "Publishes versioned events for search indexing, expiration, payment callbacks, and notifications after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "booking",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Design room inventory, search, reservation holds workers",
-        "description": "Workers process search indexing, expiration, payment callbacks, and notifications independently from the user-facing command and retry transient failures.",
+        "label": "Reservation service",
+        "description": "Owns booking state, cancellation policy, confirmation numbers, and partner reconciliation.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Design room inventory, search, reservation holds projection",
-        "description": "Serves low-latency views for room inventory and reservation ledger with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "availability search p95 <=300ms"
-        }
+        "properties": {}
+      },
+      {
+        "id": "payments",
+        "type": "external-api",
+        "componentId": "external-api",
+        "label": "Payment provider adapter",
+        "description": "Tokenized authorization and capture boundary with unknown-outcome reconciliation.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "event-bus",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Reservation event bus",
+        "description": "Publishes holds, bookings, cancellations, and inventory changes for asynchronous work.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "partner-sync",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Partner sync workers",
+        "description": "Reconcile rate and inventory feeds, confirmations, cancellations, and late partner responses.",
+        "position": {
+          "x": 2060,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Confirmation delivery",
+        "description": "Sends confirmation, change, cancellation, and support messages with delivery audit.",
+        "position": {
+          "x": 2060,
+          "y": 80
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Design room inventory, search, reservation holds monitoring",
-        "description": "Tracks Design room inventory, search, reservation holds latency, backlog, freshness, correctness, and saturation.",
+        "label": "Booking reliability operations",
+        "description": "Tracks oversells, hold expiry, payment uncertainty, partner lag, and search freshness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Design room inventory, search, reservation holds",
-        "description": "Client submits reserve an available room through the authenticated request boundary."
+        "label": "Search or booking request",
+        "description": "Clients submit date, occupancy, hold, booking, and cancellation requests."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-catalog-1",
         "source": "gateway",
-        "target": "service",
+        "target": "catalog",
         "type": "api-call",
-        "label": "Validated Design room inventory, search, reservation holds operation",
-        "description": "The gateway forwards a validated Design room inventory, search, reservation holds operation after authentication, quota, and idempotency checks."
+        "label": "Catalog lookup",
+        "description": "The gateway retrieves normalized property, rate, and policy facts."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "gateway-search-2",
+        "source": "gateway",
+        "target": "search",
+        "type": "api-call",
+        "label": "Candidate availability query",
+        "description": "Search applies geo, date, occupancy, and policy filters within a latency budget."
+      },
+      {
+        "id": "search-availability-3",
+        "source": "search",
+        "target": "availability",
         "type": "database-connection",
-        "label": "Design room inventory, search, reservation holds state commit",
-        "description": "Commits inventory and confirmed reservations before downstream asynchronous work."
+        "label": "Authoritative availability check",
+        "description": "Candidates are checked against current inventory before a hold or booking."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "gateway-booking-4",
+        "source": "gateway",
+        "target": "booking",
+        "type": "api-call",
+        "label": "Reservation command",
+        "description": "The reservation service validates policy and binds the idempotency key."
+      },
+      {
+        "id": "booking-availability-5",
+        "source": "booking",
+        "target": "availability",
+        "type": "database-connection",
+        "label": "Conditional hold or decrement",
+        "description": "Inventory is held or committed conditionally to prevent oversell."
+      },
+      {
+        "id": "booking-payments-6",
+        "source": "booking",
+        "target": "payments",
+        "type": "api-call",
+        "label": "Tokenized authorization",
+        "description": "Payment is authorized through an adapter and unknown results are reconciled."
+      },
+      {
+        "id": "booking-event-bus-7",
+        "source": "booking",
+        "target": "event-bus",
         "type": "event-stream",
-        "label": "Design room inventory, search, reservation holds event",
-        "description": "An outbox or change stream publishes committed Design room inventory, search, reservation holds transitions with replayable ordering."
+        "label": "Committed reservation event",
+        "description": "An outbox publishes hold, booking, cancellation, and inventory events."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "event-bus-partner-sync-8",
+        "source": "event-bus",
+        "target": "partner-sync",
         "type": "message-queue",
-        "label": "Design room inventory, search, reservation holds background work",
-        "description": "Workers handle search indexing, expiration, payment callbacks, and notifications with bounded retries and idempotent updates."
+        "label": "Partner reconciliation",
+        "description": "Workers process confirmations and inventory changes with bounded retries."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Design room inventory, search, reservation holds serving update",
-        "description": "Workers update the Design room inventory, search, reservation holds projection and expose a freshness watermark."
+        "id": "event-bus-notifications-9",
+        "source": "event-bus",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Confirmation or change",
+        "description": "Customers receive deduplicated status updates without blocking the booking commit."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Design room inventory, search, reservation holds projection read",
-        "description": "The Design room inventory, search, reservation holds service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Design room inventory, search, reservation holds result",
-        "description": "Returns the latest acceptable result within availability search p95 <=300ms."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "booking-monitoring-10",
+        "source": "booking",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Design room inventory, search, reservation holds pipeline health",
-        "description": "Monitors Design room inventory, search, reservation holds consumer lag, processing health, freshness, and projection correctness."
+        "label": "Reservation telemetry",
+        "description": "Operations observes policy conflicts, latency, and duplicate commands."
+      },
+      {
+        "id": "event-bus-monitoring-11",
+        "source": "event-bus",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Partner and hold telemetry",
+        "description": "Operations observes feed lag, hold expiry, oversell risk, and reconciliation backlog."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "search",
+        "label": "Search path",
+        "description": "Client -> gateway -> search index -> availability details.",
+        "componentIds": ["client", "gateway", "search", "availability"]
+      },
+      {
+        "id": "book",
+        "label": "Hold and booking path",
+        "description": "Client -> reservation service -> inventory hold -> payment -> confirmed reservation.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "booking",
+          "availability",
+          "payments"
+        ]
+      },
+      {
+        "id": "reconcile",
+        "label": "Partner reconciliation path",
+        "description": "Reservation events -> partner sync -> inventory and booking correction.",
+        "componentIds": ["booking", "event-bus", "partner-sync", "availability"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Inventory claims and oversell control",
       "points": [
-        "Keep the Room inventory, search, reservation holds, payme commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Room inventory, search, reservation holds, payme writes, event IDs, and versions so retries and replay are safe.",
-        "Return Room inventory, search, reservation holds, payme version and observedAt so clients can reason about freshness."
+        "Use conditional writes or a serialized inventory partition for hotel booking system scarce capacity.",
+        "Give holds an expiry and reaper, but never release a confirmed claim from a stale worker.",
+        "Separate searchable availability from the authoritative claim path."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Payment and unknown outcomes",
       "points": [
-        "Partition Room inventory, search, reservation holds, payme by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Room inventory, search, reservation holds, payme work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Room inventory, search, reservation holds, payme projection drift and partial failures."
+        "Bind hotel booking system payment attempts to the intent and request hash, not just the customer session.",
+        "Treat timeout as unknown, query or reconcile provider state, and avoid a blind second charge.",
+        "Keep sensitive payment tokens outside business records and logs."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Fulfillment and partner recovery",
       "points": [
-        "Serve the last acceptable Room inventory, search, reservation holds, payme projection or an explicit degraded response when workers fail.",
-        "Retain durable Room inventory, search, reservation holds, payme records for replay and make each downstream effect independently retryable.",
-        "Measure Room inventory, search, reservation holds, payme latency, backlog, freshness, error rate, and correctness drift."
+        "Publish hotel booking system events after commit, consume at least once, and track per-stage progress.",
+        "Use reconciliation against partner feeds or delivery evidence instead of assuming a callback arrives.",
+        "Expose pending and expired status so the client can explain what happened."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Reservation versus oversell tolerance",
+      "recommendation": "Prefer a short-lived hotel booking system claim for scarce inventory and state the consistency scope explicitly.",
+      "caution": "A cache or search index cannot safely decrement the final room count."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous checkout versus asynchronous fulfillment",
+      "recommendation": "Commit the reservation intent synchronously and move partner or delivery work behind events.",
+      "caution": "Waiting for downstream fulfillment makes retries ambiguous and increases checkout tail latency."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Precompute availability versus compute at read time",
+      "recommendation": "Precompute common search dimensions but validate the final claim against authoritative state.",
+      "caution": "Serving only a precomputed hotel booking system availability view creates oversell or stale-price failures."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Charging before a hotel booking system inventory claim is durable.",
+    "Retrying a timed-out payment without resolving the first attempt.",
+    "Letting stale search results act as the final availability decision.",
+    "Making cancellation and hold expiry non-idempotent.",
+    "Failing to reconcile late partner confirmations, refunds, or delivery failures."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid double reservations?",
+      "answer": "Persist the hotel booking system request idempotency key, condition the intent transition, and make inventory, payment, and fulfillment consumers deduplicate the same command."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What if inventory changes between search and checkout?",
+      "answer": "Recheck authoritative availability, return an explicit unavailable or repriced result, and do not silently convert a failed claim into a confirmed one."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you repair a stuck fulfillment?",
+      "answer": "Use an operation timeline, provider evidence, retry-safe transitions, and an operator-approved compensating action or cancellation."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the reserve an available room workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the hotel booking system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support room inventory, search, reservation holds, payment, and cancellation, authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative hotel booking system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions hotel booking system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Room inventory, search, reservation holds, payme consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the hotel booking system user experience."
     }
   ]
 }

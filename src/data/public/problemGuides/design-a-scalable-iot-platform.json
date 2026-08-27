@@ -50,143 +50,149 @@
   },
   "entities": [
     {
-      "name": "Multi-tenant IoT platform",
+      "name": "SourcePartition",
       "fields": [
-        "tenantId",
-        "multiTenantIotPlatformId",
-        "status",
-        "version",
-        "createdAt",
-        "updatedAt"
+        "sourceId",
+        "partitionId",
+        "cursor",
+        "schemaVersion",
+        "watermark",
+        "status"
       ],
-      "notes": "Authoritative Multi-tenant IoT platform record keyed for its primary command and read paths."
+      "notes": "Replayable scalable iot platform source evidence and ingestion cursor."
     },
     {
-      "name": "Multi-tenant IoT platform event",
+      "name": "SchemaVersion",
       "fields": [
-        "eventId",
-        "multiTenantIotPlatformId",
-        "eventType",
+        "datasetId",
         "version",
-        "occurredAt",
-        "payload"
+        "compatibility",
+        "owner",
+        "effectiveAt",
+        "status"
       ],
-      "notes": "Immutable Multi-tenant IoT platform event with an idempotency key and version for replay."
+      "notes": "Governed scalable iot platform contract used to validate producers and consumers."
     },
     {
-      "name": "Multi-tenant IoT platform policy",
+      "name": "ProcessingRun",
       "fields": [
-        "policyId",
-        "tenantId",
-        "scope",
-        "version",
-        "rules",
-        "updatedAt"
+        "runId",
+        "inputWatermark",
+        "checkpoint",
+        "qualityStatus",
+        "codeVersion",
+        "status"
       ],
-      "notes": "Versioned policy controlling Multi-tenant IoT platform authorization, routing, or eligibility decisions."
+      "notes": "Checkpointed scalable iot platform processing attempt with quality and lineage metadata."
     },
     {
-      "name": "Multi-tenant IoT platform projection",
+      "name": "AnalyticalDataset",
       "fields": [
-        "multiTenantIotPlatformId",
-        "status",
-        "version",
-        "observedAt",
-        "freshness",
-        "updatedAt"
+        "datasetId",
+        "partition",
+        "watermark",
+        "schemaVersion",
+        "qualityStatus",
+        "location"
       ],
-      "notes": "Rebuildable Multi-tenant IoT platform projection with observedAt and freshness metadata."
+      "notes": "Curated scalable iot platform serving partition with freshness and quality state."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/multi-tenant-iot-platform",
-      "contract": "{ requestId, actorId, input, idempotencyKey } -> { multiTenantIotPlatformId, status, version }",
-      "notes": "Create or submit Multi-tenant IoT platform with idempotency and return an accepted state/version."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/multi-tenant-iot-platform/{multiTenantIotPlatformId}",
-      "contract": "{ multiTenantIotPlatformId, status, version, observedAt, freshness }",
-      "notes": "Return the latest Multi-tenant IoT platform state with version, observedAt, and freshness metadata."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/multi-tenant-iot-platform?tenantId=&cursor=&limit=",
-      "contract": "{ items[], nextCursor, projectionVersion }",
-      "notes": "List tenant-scoped Multi-tenant IoT platform records with cursor pagination and eligibility filters."
+      "path": "/v1/datasets",
+      "contract": "{ source, schema, owner, idempotencyKey } -> { datasetId, version }",
+      "notes": "Register a governed scalable iot platform dataset and source contract."
     },
     {
       "method": "POST",
-      "path": "/v1/multi-tenant-iot-platform/rebuild",
-      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
-      "notes": "Start a Multi-tenant IoT platform rebuild or repair operation and return job status."
+      "path": "/v1/partitions/{partitionId}/ingest",
+      "contract": "{ cursor, records, schemaVersion } -> { accepted, nextCursor, watermark }",
+      "notes": "Ingest a bounded scalable iot platform partition with backpressure and schema validation."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/datasets/{datasetId}/freshness",
+      "contract": "{ watermark, qualityStatus, lastSuccessfulRun, lag }",
+      "notes": "Expose scalable iot platform freshness, quality, and last successful checkpoint."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/runs/{runId}/replay",
+      "contract": "{ fromWatermark, toWatermark, reason } -> { replayJobId, status }",
+      "notes": "Start an auditable scalable iot platform replay or repair without mutating source evidence."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Connect millions of IoT devices",
-      "description": "The Multi-tenant IoT platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
+      "title": "Register sources and contracts",
+      "description": "The scalable iot platform catalog records owners, schemas, compatibility rules, retention, lineage, and partitioning before data is accepted."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The Multi-tenant IoT platform service records the accepted state and version before acknowledging the client."
+      "title": "Ingest with backpressure",
+      "description": "Connectors checkpoint scalable iot platform source cursors, validate schema and deduplication keys, and slow producers when downstream capacity is exhausted."
     },
     {
-      "title": "Publish the domain event",
-      "description": "A durable outbox publishes committed Multi-tenant IoT platform events; consumers deduplicate by event ID and track offsets."
+      "title": "Process event time with checkpoints",
+      "description": "Stream or batch engines compute scalable iot platform transformations using watermarks, late-data policy, state checkpoints, and deterministic code versions."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers consume Multi-tenant IoT platform events, update the serving projection, and expose lag or watermark metadata."
+      "title": "Publish quality-gated datasets",
+      "description": "Only scalable iot platform outputs that pass completeness, freshness, validity, and privacy checks become visible to analytical consumers."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Serving reads use the Multi-tenant IoT platform projection; replay, repair, export, and slow work remain off the request path."
+      "title": "Serve, replay, and reconcile",
+      "description": "Consumers read bounded partitions with freshness metadata while operators replay failed scalable iot platform ranges and compare output checksums."
     }
   ],
   "architecture": {
-    "title": "Design an IoT platform that connects millions of devices, ingests sensor data at scale, processes streams in real-time, and detects anomalies. reference architecture",
-    "summary": "The authoritative state records Connect millions of IoT devices; asynchronous workers build serving projections while IoT Hub for device connectivity, Stream Analytics for real-time processing, Cosmos DB for device metadata stays isolated from the request path.",
+    "title": "Scalable Iot Platform data platform architecture",
+    "summary": "Design a multi-tenant IoT platform that securely onboards millions of devices, ingests telemetry, supports commands, processes streams, and exposes anomaly-aware device operations. The design preserves immutable source evidence and contracts, processes partitions with checkpointed batch or streaming jobs, and serves curated results with freshness and quality metadata.",
     "layers": [
       {
         "id": "experience",
-        "label": "Multi-tenant IoT platform request boundary",
-        "description": "Clients submit and read Multi-tenant IoT platform requests through an authenticated boundary.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Producer and analyst access plane",
+        "description": "Publishing, querying, and exports have separate authorization, quotas, and latency budgets.",
+        "componentIds": ["client", "gateway", "sources"]
       },
       {
-        "id": "source",
-        "label": "Multi-tenant IoT platform authoritative state",
-        "description": "Durable Multi-tenant IoT platform state supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Raw data and governance plane",
+        "description": "Immutable source partitions and catalog metadata support replay, lineage, quality, and policy enforcement.",
+        "componentIds": ["raw", "catalog"]
       },
       {
         "id": "processing",
-        "label": "Multi-tenant IoT platform processing and serving",
-        "description": "Partitioned Multi-tenant IoT platform workers build serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "label": "Batch and streaming compute plane",
+        "description": "Checkpointed workers handle partitions, late data, deduplication, and backpressure.",
+        "componentIds": ["compute"]
+      },
+      {
+        "id": "serving",
+        "label": "Curated and query serving plane",
+        "description": "Analytical storage and query projections serve bounded reads with version and freshness metadata.",
+        "componentIds": ["warehouse", "serving"]
       },
       {
         "id": "operations",
-        "label": "Multi-tenant IoT platform operations",
-        "description": "Multi-tenant IoT platform signals expose lag, failures, repair, correctness, and capacity.",
+        "label": "Data quality and cost operations",
+        "description": "Freshness, completeness, schema, lag, query, and pipeline-cost signals are actionable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Multi-tenant IoT platform write path",
-        "description": "Client -> Multi-tenant IoT platform gateway -> service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "ingestion",
+        "label": "Ingestion and contract path",
+        "description": "Source -> immutable lake and catalog -> checkpointed processing.",
+        "componentIds": ["sources", "raw", "catalog", "compute"]
       },
       {
-        "id": "async",
-        "label": "Multi-tenant IoT platform projection path",
-        "description": "Authoritative Multi-tenant IoT platform state -> event backbone -> workers -> serving projection.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "serving",
+        "label": "Analytical serving path",
+        "description": "Processed facts -> curated store and serving index -> bounded analyst query.",
+        "componentIds": ["compute", "warehouse", "serving", "client"]
       }
     ],
     "components": [
@@ -194,112 +200,126 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Multi-tenant IoT platform clients",
-        "description": "Clients use the Connect millions of IoT devices workflow and receive explicit status, freshness, or progress.",
+        "label": "Data producers and analysts",
+        "description": "Producers publish source data while analysts and applications query bounded, freshness-aware datasets and aggregates.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "Connectors, HTTPS, SQL, and dashboard clients"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Multi-tenant IoT platform gateway",
-        "description": "Authenticates Multi-tenant IoT platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
+        "label": "Data platform gateway",
+        "description": "Authenticates producers and analysts, validates contracts, applies query/export quotas, and routes batch and streaming operations.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Tenant, dataset, query, and export controls"
         }
       },
       {
-        "id": "service",
+        "id": "sources",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Multi-tenant IoT platform service",
-        "description": "Owns the Connect millions of IoT devices command, authorization policy, lifecycle state, and client contract.",
+        "label": "Source connectors and ingestion",
+        "description": "Collects files, APIs, events, or database changes with cursors, schema validation, replay-safe manifests, and backpressure.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "guarantee": "Source offsets, contracts, and idempotent ingestion"
         }
       },
       {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Multi-tenant IoT platform state",
-        "description": "Stores Connect millions of IoT devices; Ingest sensor data at scale and supports the primary access patterns.",
+        "id": "raw",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Raw immutable data lake",
+        "description": "Retains source data, failed records, manifests, and schema versions for replay, audit, and reprocessing.",
         "position": {
           "x": 1080,
-          "y": 260
+          "y": 80
         },
         "properties": {
-          "storage": "Design a Scalable IoT Platform"
+          "partitioning": "Tenant, source, event/batch time, and schema version"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Multi-tenant IoT platform event backbone",
-        "description": "Publishes versioned events for IoT Hub for device connectivity, Stream Analytics for real-time processing, Cosmos DB for device metadata after durable commits.",
+        "id": "catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Schema, lineage, and quality catalog",
+        "description": "Records datasets, schemas, ownership, retention, lineage, quality results, and access policy for each published version.",
+        "position": {
+          "x": 1080,
+          "y": 440
+        },
+        "properties": {
+          "governance": "Versioned contracts, lineage, quality, and access policy"
+        }
+      },
+      {
+        "id": "compute",
+        "type": "microservice",
+        "componentId": "stream-processor",
+        "label": "Batch and stream processing",
+        "description": "Runs windowed stream jobs and bounded batch transforms with checkpointing, late-data policy, deduplication, and dead-letter handling.",
         "position": {
           "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Multi-tenant IoT platform workers",
-        "description": "Workers process IoT Hub for device connectivity, Stream Analytics for real-time processing, Cosmos DB for device metadata independently from the user-facing command and retry transient failures.",
-        "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Multi-tenant IoT platform projection",
-        "description": "Serves low-latency views for Design a Scalable IoT Platform with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Support 10M+ connected devices"
+          "scaling": "Partitioned compute with checkpoints and backpressure"
+        }
+      },
+      {
+        "id": "warehouse",
+        "type": "database",
+        "componentId": "data-warehouse",
+        "label": "Curated analytical store",
+        "description": "Stores canonical facts, dimensions, aggregates, and correction versions optimized for historical analysis and reconciliation.",
+        "position": {
+          "x": 1800,
+          "y": 80
+        },
+        "properties": {
+          "storage": "Columnar partitions with compaction and retention"
+        }
+      },
+      {
+        "id": "serving",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Serving and query index",
+        "description": "Provides low-latency filtered views, recent aggregates, or search-oriented projections with dataset version and freshness metadata.",
+        "position": {
+          "x": 1800,
+          "y": 440
+        },
+        "properties": {
+          "latency": "Bounded queries with freshness and completeness markers"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Multi-tenant IoT platform monitoring",
-        "description": "Tracks Multi-tenant IoT platform latency, backlog, freshness, correctness, and saturation.",
+        "label": "Data quality and pipeline operations",
+        "description": "Tracks source freshness, schema drift, completeness, duplicates, late data, checkpoint lag, query latency, cost, and lineage gaps.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Stale sources, quality failures, lag, and schema regressions"
         }
       }
     ],
@@ -309,159 +329,171 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Start Multi-tenant IoT platform",
-        "description": "Client submits Connect millions of IoT devices through the authenticated request boundary."
+        "label": "Publish, query, or export request",
+        "description": "Producers and analysts submit dataset, query, export, and contract requests through the authenticated boundary."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-sources",
         "source": "gateway",
-        "target": "service",
+        "target": "sources",
         "type": "api-call",
-        "label": "Validated Multi-tenant IoT platform operation",
-        "description": "The gateway forwards a validated Multi-tenant IoT platform operation after authentication, quota, and idempotency checks."
+        "label": "Validated ingestion command",
+        "description": "The gateway checks dataset ownership, schema contract, quota, and idempotency before starting ingestion work."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Multi-tenant IoT platform state commit",
-        "description": "Commits Connect millions of IoT devices; Ingest sensor data at scale before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Multi-tenant IoT platform event",
-        "description": "An outbox or change stream publishes committed Multi-tenant IoT platform transitions with replayable ordering."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Multi-tenant IoT platform background work",
-        "description": "Workers handle IoT Hub for device connectivity, Stream Analytics for real-time processing, Cosmos DB for device metadata with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "sources-raw",
+        "source": "sources",
+        "target": "raw",
         "type": "data-flow",
-        "label": "Multi-tenant IoT platform serving update",
-        "description": "Workers update the Multi-tenant IoT platform projection and expose a freshness watermark."
+        "label": "Immutable source batch",
+        "description": "Connectors write source bytes, offsets, manifests, and rejected records before downstream transformation."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "sources-catalog",
+        "source": "sources",
+        "target": "catalog",
         "type": "database-connection",
-        "label": "Multi-tenant IoT platform projection read",
-        "description": "The Multi-tenant IoT platform service reads the latest acceptable projection or authoritative state."
+        "label": "Schema and lineage update",
+        "description": "Ingestion records source schema, ownership, quality contract, and effective dataset version."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "raw-compute",
+        "source": "raw",
+        "target": "compute",
+        "type": "message-queue",
+        "label": "Batch or stream work",
+        "description": "Checkpointed processors consume source manifests or partitions with deduplication, bounded retries, and explicit late-data behavior."
+      },
+      {
+        "id": "catalog-compute",
+        "source": "catalog",
+        "target": "compute",
+        "type": "database-connection",
+        "label": "Contract and quality rules",
+        "description": "Processing loads the schema, lineage, policy, and quality gates associated with the dataset version."
+      },
+      {
+        "id": "compute-warehouse",
+        "source": "compute",
+        "target": "warehouse",
+        "type": "database-connection",
+        "label": "Curated facts and aggregates",
+        "description": "Transforms write canonical facts and corrections with source lineage and processing watermark."
+      },
+      {
+        "id": "compute-serving",
+        "source": "compute",
+        "target": "serving",
+        "type": "data-flow",
+        "label": "Serving projection",
+        "description": "Recent or query-shaped projections are refreshed asynchronously and expose completeness and freshness metadata."
+      },
+      {
+        "id": "serving-client",
+        "source": "serving",
         "target": "client",
         "type": "http",
-        "label": "Multi-tenant IoT platform result",
-        "description": "Returns the latest acceptable result within Support 10M+ connected devices."
+        "label": "Fresh analytical result",
+        "description": "The client receives bounded results, a cursor, dataset version, and a stale or incomplete indicator when applicable."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "compute-monitoring",
+        "source": "compute",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Multi-tenant IoT platform pipeline health",
-        "description": "Monitors Multi-tenant IoT platform consumer lag, processing health, freshness, and projection correctness."
+        "label": "Pipeline quality telemetry",
+        "description": "Operations observes checkpoint lag, retries, dead letters, late data, data quality, cost, and schema drift."
+      },
+      {
+        "id": "serving-monitoring",
+        "source": "serving",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Query and freshness telemetry",
+        "description": "Serving reports query tail latency, index freshness, completeness, and access-control failures."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Schema evolution and data quality",
       "points": [
-        "Keep the Multi-tenant IoT platform commit authoritative; let derived projections converge with visible version and freshness.",
-        "Use idempotency keys, conditional Multi-tenant IoT platform writes, event IDs, and versions so retries and replay are safe.",
-        "Return Multi-tenant IoT platform version and observedAt so clients can reason about freshness."
+        "Version scalable iot platform contracts and make compatibility rules explicit for every producer and consumer.",
+        "Quarantine malformed partitions instead of poisoning the whole dataset.",
+        "Track row counts, null rates, duplicates, distribution changes, and policy violations by partition."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Watermarks, late data, and exactly-once effects",
       "points": [
-        "Partition Multi-tenant IoT platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
-        "Bound Multi-tenant IoT platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
-        "Keep a replay or reconciliation path for Multi-tenant IoT platform projection drift and partial failures."
+        "Use source cursors and event-time watermarks for scalable iot platform progress, not wall-clock assumptions.",
+        "Make checkpoints, output keys, and sink commits retry-safe under at-least-once delivery.",
+        "Document how late events revise windows, aggregates, or snapshots."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Replay, lineage, and cost",
       "points": [
-        "Serve the last acceptable Multi-tenant IoT platform projection or an explicit degraded response when workers fail.",
-        "Retain durable Multi-tenant IoT platform records for replay and make each downstream effect independently retryable.",
-        "Measure Multi-tenant IoT platform latency, backlog, freshness, error rate, and correctness drift."
+        "Keep immutable scalable iot platform raw evidence and code or schema versions so failed outputs can be reproduced.",
+        "Separate hot serving storage from cold retention and cap replay concurrency.",
+        "Measure freshness, backlog, compute cost, storage growth, and quality-gate failure rate."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Streaming versus batch",
+      "recommendation": "Use streaming for freshness-critical scalable iot platform paths and batch for backfills, compaction, and expensive recomputation.",
+      "caution": "Forcing every workload into streaming makes state, replay, and cost harder to operate."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Raw retention versus curated-only storage",
+      "recommendation": "Retain enough immutable raw evidence for replay, audit, and correction, then tier or expire it according to policy.",
+      "caution": "Without raw evidence, a bad transformation can require an unreproducible emergency fix."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Central warehouse versus domain-owned datasets",
+      "recommendation": "Centralize governance and discovery while letting domain owners own contracts and quality signals.",
+      "caution": "A single team owning every transformation becomes a delivery bottleneck and hides data ownership."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating scalable iot platform ingestion success as proof that downstream data is complete or correct.",
+    "Dropping late events or schema failures without a quarantine and replay path.",
+    "Using wall-clock processing time where event-time windows and watermarks are required.",
+    "Overwriting curated data in place without run, code, schema, or input lineage.",
+    "Ignoring backlog, freshness, quality, storage, and compute-cost signals until consumers report stale data."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you replay a failed scalable iot platform partition?",
+      "answer": "Retain source cursor and watermark, rerun a versioned transformation into an isolated output, validate quality, then atomically publish the replacement."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you handle schema changes?",
+      "answer": "Register a new version, validate compatibility, dual-read or dual-write when needed, and expose the active contract to consumers."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What does exactly once mean here?",
+      "answer": "It means the combination of durable checkpoints, deterministic output identities, and idempotent sinks prevents duplicate business effects; transport alone remains at least once."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Connect millions of IoT devices workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the scalable iot platform workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design an IoT platform that connects millions of devices, ingests sensor data at scale, processes streams in real-time, and detects anomalies., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative scalable iot platform state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions scalable iot platform traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain Multi-tenant IoT platform consistency, push/pull, managed services, and the scale boundary."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the scalable iot platform user experience."
     }
   ]
 }
