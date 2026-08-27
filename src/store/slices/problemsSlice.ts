@@ -28,6 +28,9 @@ interface ProblemsState {
   error: string | null;
   // Cache timestamp
   lastFetched: number | null;
+  nextCursor: string | null;
+  hasMore: boolean;
+  loadingMore: boolean;
 }
 
 const initialState: ProblemsState = {
@@ -41,9 +44,24 @@ const initialState: ProblemsState = {
   loading: false,
   error: null,
   lastFetched: null,
+  nextCursor: null,
+  hasMore: true,
+  loadingMore: false,
 };
 
-// Fetch all problems from API
+interface ProblemPageResponse {
+  items: SystemDesignProblem[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
+const getProblemsUrl = (apiUrl: string, cursor?: string | null) => {
+  const params = new URLSearchParams({ limit: "24" });
+  if (cursor) params.set("cursor", cursor);
+  return `${apiUrl}/api/v1/all-problems?${params.toString()}`;
+};
+
+// Fetch the first page of problems from the API.
 export const fetchProblems = createAsyncThunk(
   "problems/fetchAll",
   async (_, { getState }) => {
@@ -56,7 +74,12 @@ export const fetchProblems = createAsyncThunk(
       state.problems.lastFetched &&
       now - state.problems.lastFetched < cacheExpiry
     ) {
-      return { problems: state.problems.problems, fromCache: true };
+      return {
+        problems: state.problems.problems,
+        next_cursor: state.problems.nextCursor,
+        has_more: state.problems.hasMore,
+        fromCache: true,
+      };
     }
 
     const apiUrl = getApiBaseUrl(
@@ -65,11 +88,11 @@ export const fetchProblems = createAsyncThunk(
     );
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/all-problems`);
+      const response = await fetch(getProblemsUrl(apiUrl));
       if (!response.ok)
         throw new Error(`Problem catalog returned ${response.status}`);
-      const data: SystemDesignProblem[] = await response.json();
-      return { problems: data, fromCache: false };
+      const data: ProblemPageResponse = await response.json();
+      return { ...data, fromCache: false };
     } catch {
       const fallback = featuredProblems.map((problem) => ({
         ...problem,
@@ -79,8 +102,36 @@ export const fetchProblems = createAsyncThunk(
         constraints: [],
         hints: [],
       })) as SystemDesignProblem[];
-      return { problems: fallback, fromCache: false };
+      return {
+        problems: fallback,
+        items: fallback,
+        next_cursor: null,
+        has_more: false,
+        fromCache: false,
+      };
     }
+  },
+);
+
+// Fetch and append the next page using the API cursor.
+export const fetchMoreProblems = createAsyncThunk(
+  "problems/fetchMore",
+  async (_, { getState }) => {
+    const state = getState() as { problems: ProblemsState };
+    const apiUrl = getApiBaseUrl(
+      import.meta.env.VITE_API_URL,
+      import.meta.env.VITE_ASSESSMENT_API_URL,
+    );
+    const response = await fetch(getProblemsUrl(apiUrl, state.problems.nextCursor));
+    if (!response.ok)
+      throw new Error(`Problem catalog returned ${response.status}`);
+    return (await response.json()) as ProblemPageResponse;
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState() as { problems: ProblemsState };
+      return state.problems.hasMore && !state.problems.loadingMore;
+    },
   },
 );
 
@@ -135,10 +186,14 @@ const problemsSlice = createSlice({
       })
       .addCase(fetchProblems.fulfilled, (state, action) => {
         state.loading = false;
-        const { problems, fromCache } = action.payload;
+        const { items, problems, next_cursor, has_more, fromCache } =
+          action.payload;
+        const firstPage = items ?? problems;
 
-        state.problems = problems;
-        state.filteredProblems = problems;
+        state.problems = firstPage;
+        state.filteredProblems = firstPage;
+        state.nextCursor = next_cursor ?? null;
+        state.hasMore = has_more ?? false;
 
         if (!fromCache) {
           state.lastFetched = Date.now();
@@ -147,6 +202,25 @@ const problemsSlice = createSlice({
       .addCase(fetchProblems.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch problems";
+      })
+      .addCase(fetchMoreProblems.pending, (state) => {
+        state.loadingMore = true;
+        state.error = null;
+      })
+      .addCase(fetchMoreProblems.fulfilled, (state, action) => {
+        state.loadingMore = false;
+        const knownIds = new Set(state.problems.map((problem) => problem.id));
+        const newProblems = action.payload.items.filter(
+          (problem) => !knownIds.has(problem.id),
+        );
+        state.problems.push(...newProblems);
+        state.filteredProblems = state.problems;
+        state.nextCursor = action.payload.next_cursor;
+        state.hasMore = action.payload.has_more;
+      })
+      .addCase(fetchMoreProblems.rejected, (state, action) => {
+        state.loadingMore = false;
+        state.error = action.error.message || "Failed to load more problems";
       })
       // Fetch attempted problems
       .addCase(fetchAttemptedProblems.fulfilled, (state, action) => {
