@@ -1,0 +1,1 @@
+import{_ as t}from"./index-D2cU_Xln.js";const a=new Map(t.map(e=>[e.title,e.slug])),s=e=>e.toLowerCase().replaceAll("&"," and ").replace(/[’']/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-/,"").replace(/-$/,""),g=e=>a.get(e.title)||e.slug||s(e.title),c=e=>t.find(l=>l.slug===e);export{c as a,g};
