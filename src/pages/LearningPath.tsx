@@ -90,8 +90,8 @@ const LearningPath: React.FC = () => {
         }
         url={
           slug
-            ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}`
-            : "https://diagrammatic.next-zen.dev/learning-paths"
+            ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}/`
+            : "https://diagrammatic.next-zen.dev/learning-paths/"
         }
       />
 
@@ -137,7 +137,7 @@ const LearningPath: React.FC = () => {
                 <button
                   type="button"
                   data-tooltip="Back to all paths"
-                  onClick={() => navigate("/learning-paths")}
+                  onClick={() => navigate("/learning-paths/")}
                   className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
                 >
                   <MdHelpOutline className="h-4 w-4" />
@@ -254,7 +254,7 @@ const LearningPath: React.FC = () => {
                   <div className="flex items-center gap-4 flex-wrap">
                     <button
                       type="button"
-                      onClick={() => navigate("/learning-paths")}
+                      onClick={() => navigate("/learning-paths/")}
                       className="px-3 py-2 text-sm rounded-md border border-theme/15 text-theme hover:bg-[var(--bg-hover)] transition-colors inline-flex items-center gap-1 cursor-pointer"
                     >
                       <IoChevronBackOutline /> Back to Learning Paths
@@ -381,7 +381,7 @@ const LearningPath: React.FC = () => {
                               );
                             } else {
                               // No more modules — return to paths overview
-                              navigate("/learning-paths");
+                              navigate("/learning-paths/");
                             }
                           };
 

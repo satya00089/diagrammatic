@@ -549,7 +549,7 @@ const Home: React.FC = () => {
       description:
         "Build system design fundamentals step by step with structured modules and hands-on lessons.",
       action: "Browse learning paths",
-      route: "/learning-paths",
+      route: "/learning-paths/",
       requiresAuth: false,
     },
     {
@@ -707,7 +707,7 @@ const Home: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleNavigate("/learning-paths", false)}
+                  onClick={() => handleNavigate("/learning-paths/", false)}
                   className="hidden lg:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand)]"
                 >
                   Learning Paths
@@ -922,7 +922,7 @@ const Home: React.FC = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={() => handleNavigate("/learning-paths", false)}
+                  onClick={() => handleNavigate("/learning-paths/", false)}
                   className="mt-3 inline-flex items-center justify-center text-sm font-medium text-white/85 underline decoration-white/35 underline-offset-4 transition-colors hover:text-white hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--brand)]"
                 >
                   New to system design? Browse learning paths →

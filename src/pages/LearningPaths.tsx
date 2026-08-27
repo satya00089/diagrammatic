@@ -328,7 +328,7 @@ const LearningPaths: React.FC = () => {
         keywords="system design learning path, system design tutorial, learning path"
         image="https://diagrammatic.next-zen.dev/og/learning-paths.png"
         imageAlt="Diagrammatic learning paths preview"
-        url="https://diagrammatic.next-zen.dev/learning-paths"
+        url="https://diagrammatic.next-zen.dev/learning-paths/"
       />
 
       <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">

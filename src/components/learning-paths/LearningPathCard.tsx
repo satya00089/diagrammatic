@@ -63,7 +63,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
         <div className="min-w-0">
           <h3 className="text-xl font-semibold">
             <Link
-              to={`/learning-paths/${path.slug}`}
+              to={`/learning-paths/${path.slug}/`}
               className="text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4 decoration-[1.5px]"
             >
               {path.title}
@@ -92,7 +92,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
             {previewLessons.map((pl) => (
               <Link
                 key={pl.lessonId}
-                to={`/learning-paths/${path.slug}?module=${encodeURIComponent(pl.moduleId)}`}
+                to={`/learning-paths/${path.slug}/?module=${encodeURIComponent(pl.moduleId)}`}
                 className="flex-1 min-w-0 p-3 rounded-md border border-theme/10 bg-[var(--bg)] hover:bg-[var(--bg-hover)] hover:shadow-sm transition-colors flex items-center justify-between"
               >
                 <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">
@@ -117,7 +117,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
             {path.modules.slice(0, 3).map((m) => (
               <Link
                 key={m.id}
-                to={`/learning-paths/${path.slug}?module=${encodeURIComponent(m.id)}`}
+                to={`/learning-paths/${path.slug}/?module=${encodeURIComponent(m.id)}`}
                 className="break-words text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
               >
                 {m.title}
@@ -125,7 +125,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
             ))}
             {path.modules.length > 3 && (
               <Link
-                to={`/learning-paths/${path.slug}`}
+                to={`/learning-paths/${path.slug}/`}
                 className="text-xs px-2 py-1 rounded-full border border-theme/10 bg-[var(--bg)] text-theme/90 font-medium hover:bg-[var(--bg-hover)]"
               >
                 View all
