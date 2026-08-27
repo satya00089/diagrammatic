@@ -52,7 +52,7 @@ const ANNOUNCEMENTS: Announcement[] = [
     description:
       "New curated modules are added to Learning Paths every week — stay current with focused modules.",
     ctaLabel: "Browse Learning Paths",
-    ctaHref: "/learning-paths",
+    ctaHref: "/learning-paths/",
     featureFlag: FeatureFlags.LEARNING_PATH_WEEKLY_MODULES,
   },
 ];

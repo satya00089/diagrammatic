@@ -312,6 +312,94 @@ function itemMarkup(item) {
   return `<li>${title}<span>${escapeHtml(item.description)}</span></li>`;
 }
 
+function guideListMarkup(items, className = "static-route-list") {
+  return `<ul class="${className}">${items
+    .map((item) => `<li>${escapeHtml(item)}</li>`)
+    .join("")}</ul>`;
+}
+
+function guideSectionMarkup(id, title, content) {
+  return `<section class="static-route-section static-route-guide-section" id="${id}">
+    <h2>${escapeHtml(title)}</h2>
+    ${content}
+  </section>`;
+}
+
+function renderGuideContent(guide) {
+  if (!guide) return "";
+
+  const requirements = [
+    ...(guide.requirements?.functional || []),
+    ...(guide.requirements?.nonFunctional || []),
+    ...(guide.requirements?.scaleAssumptions || []),
+  ];
+  const metrics = (guide.requirements?.metrics || []).map(
+    (metric) => `${metric.label}: ${metric.value} — ${metric.description}`,
+  );
+  const entities = (guide.entities || [])
+    .map(
+      (entity) =>
+        `<li><strong>${escapeHtml(entity.name)}</strong><span>${escapeHtml(
+          entity.fields.join(", "),
+        )}</span><p>${escapeHtml(entity.notes)}</p></li>`,
+    )
+    .join("");
+  const dataFlow = (guide.dataFlow || [])
+    .map(
+      (step, index) =>
+        `<li><strong>${index + 1}. ${escapeHtml(
+          step.title,
+        )}</strong><span>${escapeHtml(step.description)}</span></li>`,
+    )
+    .join("");
+  const deepDives = (guide.deepDives || [])
+    .map(
+      (dive) =>
+        `<li><strong>${escapeHtml(dive.title)}</strong><span>${escapeHtml(
+          dive.points.join(" "),
+        )}</span></li>`,
+    )
+    .join("");
+  const tradeoffs = (guide.tradeoffs || [])
+    .map(
+      (tradeoff) =>
+        `<li><strong>${escapeHtml(tradeoff.title)}</strong><span>${escapeHtml(
+          tradeoff.recommendation,
+        )} ${escapeHtml(tradeoff.caution)}</span></li>`,
+    )
+    .join("");
+
+  return `<div class="static-route-guide" aria-label="System design guide">
+    ${guideSectionMarkup(
+      "guide-prompt",
+      "Interview prompt",
+      `<p>${escapeHtml(guide.prompt?.brief || "")}</p>${guideListMarkup(
+        guide.prompt?.successSignals || [],
+      )}`,
+    )}
+    ${guideSectionMarkup(
+      "guide-requirements",
+      "Requirements and scale assumptions",
+      `${guideListMarkup(requirements)}${guideListMarkup(metrics)}`,
+    )}
+    ${guideSectionMarkup(
+      "guide-entities",
+      "Key entities",
+      `<ul class="static-route-list">${entities}</ul>`,
+    )}
+    ${guideSectionMarkup(
+      "guide-data-flow",
+      "Data flow",
+      `<ol class="static-route-list">${dataFlow}</ol>`,
+    )}
+    ${guideSectionMarkup(
+      "guide-deep-dives",
+      "Deep dives and trade-offs",
+      `<ul class="static-route-list">${deepDives}${tradeoffs}</ul>`,
+    )}
+  </div>`;
+}
+
 function renderStaticRoute(data) {
   const actions = data.actions
     .map(
@@ -343,6 +431,7 @@ function renderStaticRoute(data) {
           <h2>${escapeHtml(data.sectionTitle)}</h2>
           <ul class="static-route-list">${items}</ul>
         </section>
+        ${renderGuideContent(data.guide)}
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.
@@ -397,6 +486,7 @@ function routeStructuredData(route, data) {
         url: `${siteUrl}/`,
         name: "Diagrammatic",
       },
+      mainEntityOfPage: canonicalUrl(route),
     },
   ];
   const crumbs = breadcrumbsFor(route, data.title);
@@ -421,6 +511,8 @@ function routeStructuredData(route, data) {
       url: canonicalUrl(route),
       educationalLevel: data.problem?.difficulty,
       teaches: Array.isArray(data.problem?.tags) ? data.problem.tags : [],
+      timeRequired: data.problem?.estimated_time,
+      dateModified: data.lastmod,
       provider: {
         "@type": "Organization",
         name: "Diagrammatic",
@@ -544,6 +636,58 @@ function fallbackProblemSlug(title = "") {
     .replace(/-$/, "");
 }
 
+function loadGuideCatalog() {
+  const files = ["src/data/problemGuides.ts", "src/data/materializedProblemGuides.ts"];
+  const imports = new Map();
+  const aliases = new Map();
+  const guides = new Map();
+
+  for (const relativePath of files) {
+    const source = fs.readFileSync(path.join(__dirname, relativePath), "utf-8");
+    for (const match of source.matchAll(
+      /import\s+(\w+)\s+from\s+"\.\/public\/problemGuides\/([^\"]+)"/g,
+    )) imports.set(match[1], match[2]);
+    for (const match of source.matchAll(
+      /const\s+(\w+)\s*=\s*(\w+)\s+as\s+ProblemGuide/g,
+    )) aliases.set(match[1], match[2]);
+
+    const objectStart = source.indexOf(
+      relativePath.includes("materialized")
+        ? "materializedProblemGuides ="
+        : "PROBLEM_GUIDES:",
+    );
+    const objectSource = objectStart >= 0 ? source.slice(objectStart) : source;
+    for (const match of objectSource.matchAll(/"([^"]+)"\s*:\s*(\w+)/g)) {
+      const importedName = aliases.get(match[2]) || match[2];
+      const fileName = imports.get(importedName);
+      if (!fileName) continue;
+      const guidePath = path.join(
+        __dirname,
+        "src",
+        "data",
+        "public",
+        "problemGuides",
+        fileName,
+      );
+      if (fs.existsSync(guidePath)) {
+        guides.set(match[1], JSON.parse(fs.readFileSync(guidePath, "utf-8")));
+      }
+    }
+  }
+  return guides;
+}
+
+function problemSeoTitle(title) {
+  const suffix = " | System Design Guide";
+  const available = 60 - suffix.length;
+  const candidate = title.trim().slice(0, available);
+  const shortened =
+    candidate.length < title.trim().length
+      ? candidate.slice(0, candidate.lastIndexOf(" "))
+      : candidate;
+  return `${shortened}${suffix}`;
+}
+
 async function loadLiveProblems() {
   const apiUrl =
     process.env.VITE_API_URL || process.env.VITE_ASSESSMENT_API_URL;
@@ -605,7 +749,7 @@ function mergeProblemCatalogs(featured, live) {
   ];
 }
 
-function addProblemRoutes(problems) {
+function addProblemRoutes(problems, guideCatalog) {
   routes["/problems"].items = problems.map((problem) => ({
     title: problem.title,
     description: `${problem.difficulty || "All levels"} · ${problem.estimated_time || "Self-paced"}`,
@@ -650,7 +794,9 @@ function addProblemRoutes(problems) {
       indexable: true,
       kind: "learning-resource",
       problem,
+      guide: guideCatalog.get(problem.slug),
     };
+    routes[route].title = problemSeoTitle(problem.title);
   }
 }
 
@@ -764,7 +910,7 @@ addLearningPathRoutes(learningPaths);
 const featuredProblems = loadFeaturedProblems();
 const liveProblems = await loadLiveProblems();
 const publicProblems = mergeProblemCatalogs(featuredProblems, liveProblems);
-addProblemRoutes(publicProblems);
+addProblemRoutes(publicProblems, loadGuideCatalog());
 const baseHtml = fs.readFileSync(indexPath, "utf-8");
 
 for (const [route, data] of Object.entries(routes)) {
