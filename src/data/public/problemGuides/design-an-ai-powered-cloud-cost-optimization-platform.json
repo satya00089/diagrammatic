@@ -22,7 +22,7 @@
     ],
     "scaleAssumptions": [
       "1B billing line items/month across 10k accounts and 3 cloud providers",
-      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
+      "Partition raw and normalized data by tenant, provider, account, and billing period; shard large accounts and hot shared services.",
       "Keep serving state bounded; retain raw events or durable records for replay and auditing."
     ],
     "metrics": [
@@ -33,8 +33,8 @@
       },
       {
         "label": "Latency target",
-        "value": "billing freshness < 24h; savings evidence tracked",
-        "description": "User-facing budget for the primary request or read path."
+        "value": "dashboard p95 < 2s; billing freshness < 24h",
+        "description": "Interactive spend and recommendation reads are served from projections; every result carries its source and projection watermark."
       },
       {
         "label": "Durable boundary",
@@ -43,122 +43,222 @@
       },
       {
         "label": "Async boundary",
-        "value": "At-least-once workers",
-        "description": "Keep Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification off the synchronous path."
+        "value": "At-least-once batch and stream workers",
+        "description": "Keep billing ingestion, allocation, forecasting, anomaly detection, rightsizing, commitment analysis, and index refresh off the synchronous path."
       }
     ]
   },
   "entities": [
     {
-      "name": "Design an AI-Powered Cloud Cost Optimization Platform",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Analyze cloud spending across providers; Detect idle and underutilized resources; design keys around the main reads and writes."
+      "name": "BillingLineItem",
+      "fields": [
+        "lineItemId",
+        "tenantId",
+        "provider",
+        "accountId",
+        "service",
+        "resourceId",
+        "usageStart",
+        "usageEnd",
+        "netCost",
+        "currency",
+        "sourceVersion"
+      ],
+      "notes": "Immutable provider evidence kept with source identifiers, credits, taxes, rate context, and collection watermark so invoice totals can be reconciled."
     },
     {
-      "name": "design-an-ai-powered-cloud-cost-optimization event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ResourceOwnership",
+      "fields": [
+        "tenantId",
+        "provider",
+        "resourceId",
+        "ownerId",
+        "team",
+        "businessUnit",
+        "tags",
+        "region",
+        "effectiveFrom",
+        "effectiveTo"
+      ],
+      "notes": "Versioned mapping used for showback and chargeback; unknown ownership is surfaced as unallocated."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "CostSnapshot",
+      "fields": [
+        "snapshotId",
+        "tenantId",
+        "accountId",
+        "period",
+        "grouping",
+        "allocatedCost",
+        "unallocatedCost",
+        "allocationVersion",
+        "sourceWatermark"
+      ],
+      "notes": "Serving aggregate keyed by account and period with allocation coverage and provider watermark."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "OptimizationRecommendation",
+      "fields": [
+        "recommendationId",
+        "tenantId",
+        "resourceId",
+        "recommendationType",
+        "evidenceRefs",
+        "estimatedMonthlySavings",
+        "confidence",
+        "modelVersion",
+        "policyVersion",
+        "status",
+        "approvalExpiresAt",
+        "actionId"
+      ],
+      "notes": "Versioned explainable candidate for idle cleanup, rightsizing, or commitment purchase."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Analyze cloud spending across providers command, then commit it idempotently."
+      "path": "/v1/providers/connections",
+      "contract": "{ provider, accountId, credentialsRef, billingSource, ownerMapping } -> { connectionId, status, firstImportJobId }",
+      "notes": "Create a tenant-scoped connector without storing provider secrets in the application and start asynchronous backfill."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/costs?accountId=&from=&to=&groupBy=",
+      "contract": "{ totals[], trends[], allocationCoverage, sourceWatermark, projectionWatermark, freshness }",
+      "notes": "Return authorized allocated and unallocated cost without implying stale data is final."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/recommendations?status=&owner=&cursor=",
+      "contract": "{ items: [{ id, type, evidence, savings, confidence, status }], nextCursor, generatedAt }",
+      "notes": "Filter explainable recommendations by owner, provider, account, type, and lifecycle status."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/recommendations/{recommendationId}/approve",
+      "contract": "{ recommendationVersion, decision, actorId, idempotencyKey } -> { actionId, status, expiresAt }",
+      "notes": "Recheck freshness, policy, role, savings evidence, and provider preconditions; reject stale approvals."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Analyze cloud spending across providers",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Connect cloud accounts and collect evidence",
+      "description": "Provider adapters use scoped credentials and provider cursors to land billing exports, usage, rates, credits, and resource inventory while respecting provider quotas."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Analyze cloud spending across providers; Detect idle and underutilized resources before acknowledging the client."
+      "title": "Preserve raw billing and reconcile invoices",
+      "description": "The billing lake keeps immutable provider-native partitions; reconciliation compares invoice totals, credits, taxes, and exchange-rate inputs before a period is marked complete."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Normalize and allocate cost",
+      "description": "Workers convert line items to a canonical model, apply amortization and currency rules, join effective ownership, and publish explicit unallocated spend for missing metadata."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification, update projections, and expose lag or watermark metadata."
+      "title": "Detect waste and generate explainable recommendations",
+      "description": "Feature workers build utilization and spend windows; forecasting, anomaly, idle-resource, rightsizing, and commitment models produce evidence-backed candidates."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Review, execute, and measure savings",
+      "description": "Policy rules and user approval gate mutations; the executor performs guarded provider actions and later compares billing and usage with the baseline."
     }
   ],
   "architecture": {
-    "title": "Design a platform that uses ML to analyze cloud spending patterns, identify waste, recommend rightsizing, optimize reserved capacity purchases, and forecast future costs across multi-cloud environments. reference architecture",
-    "summary": "The authoritative state records Analyze cloud spending across providers; asynchronous workers build serving projections while Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification stays isolated from the request path.",
+    "title": "Multi-cloud FinOps and cost intelligence reference architecture",
+    "summary": "Provider billing exports and resource inventories are retained as immutable, tenant-partitioned evidence. A normalization pipeline joins usage, rates, tags, and ownership; forecasting, anomaly detection, rightsizing, and commitment analysis produce explainable recommendations. A policy and approval boundary keeps risky provider actions human-controlled while the serving index exposes current spend, savings evidence, and forecast freshness quickly.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "FinOps user and control plane",
+        "description": "FinOps teams query spend, configure allocation and savings policies, review recommendations, and approve provider changes through an authenticated API.",
+        "componentIds": ["client", "gateway", "cost-api"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Analyze cloud spending across providers; Detect idle and underutilized resources supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "ingestion",
+        "label": "Multi-cloud billing and inventory ingestion",
+        "description": "Provider adapters pull billing exports, usage details, rates, and resource metadata without allowing one provider's throttling to block the rest of the platform.",
+        "componentIds": [
+          "provider-adapters",
+          "billing-lake",
+          "resource-catalog",
+          "event-bus"
+        ]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "intelligence",
+        "label": "Cost intelligence and recommendation plane",
+        "description": "Normalized line items are allocated to owners, enriched with utilization history, and evaluated by forecasting, anomaly, waste, rightsizing, and commitment models under versioned policy.",
+        "componentIds": [
+          "cost-normalizer",
+          "usage-features",
+          "optimization-engine",
+          "policy-engine"
+        ]
+      },
+      {
+        "id": "serving",
+        "label": "Recommendation, approval, and action plane",
+        "description": "Durable recommendation decisions are indexed for dashboards and can become idempotent, auditable actions only after approval and provider-specific safety checks.",
+        "componentIds": [
+          "recommendation-store",
+          "serving-index",
+          "action-executor",
+          "notification-service"
+        ]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "FinOps data quality and safety operations",
+        "description": "Freshness, allocation coverage, forecast error, savings realization, model drift, provider failures, approval safety, and replay parity are monitored per tenant and account.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "spend-query",
+        "label": "Spend and recommendation query path",
+        "description": "FinOps console -> gateway -> cost API -> serving index, returning account, service, tag, forecast, and recommendation freshness metadata.",
+        "componentIds": ["client", "gateway", "cost-api", "serving-index"]
       },
       {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "provider-ingestion",
+        "label": "Provider data ingestion path",
+        "description": "Cloud provider adapters -> billing lake and resource catalog -> event bus -> cost normalizer, with provider cursors, rate limits, and late-data handling.",
+        "componentIds": [
+          "provider-adapters",
+          "billing-lake",
+          "resource-catalog",
+          "event-bus",
+          "cost-normalizer"
+        ]
+      },
+      {
+        "id": "recommendation-generation",
+        "label": "Explainable recommendation path",
+        "description": "Normalized usage -> feature history -> optimization engine -> policy engine -> recommendation store -> serving index.",
+        "componentIds": [
+          "cost-normalizer",
+          "usage-features",
+          "optimization-engine",
+          "policy-engine",
+          "recommendation-store",
+          "serving-index"
+        ]
+      },
+      {
+        "id": "approved-action",
+        "label": "Approved savings action path",
+        "description": "FinOps approval -> policy engine -> action executor -> provider adapter, with an audit record, dry-run result, rollback guard, and notification for every attempted change.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "cost-api",
+          "policy-engine",
+          "action-executor",
+          "provider-adapters",
+          "notification-service"
+        ]
       }
     ],
     "components": [
@@ -166,112 +266,224 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Analyze cloud spending across providers workflow and receive explicit status, freshness, or progress.",
+        "label": "FinOps console and integrations",
+        "description": "Cloud finance, platform, and engineering users inspect spend by account, service, owner, tag, and time window; review evidence and approve recommendations.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS dashboard, webhook, and export clients"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Tenant and account API gateway",
+        "description": "Authenticates users and cloud connectors, isolates tenants and accounts, enforces query and export quotas, and validates approval idempotency keys.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Tenant/account authorization, quotas, and idempotent approvals"
         }
       },
       {
-        "id": "service",
+        "id": "cost-api",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Analyze cloud spending across providers command, authorization policy, lifecycle state, and client contract.",
+        "label": "Spend and recommendation API",
+        "description": "Serves spend rollups, forecasts, anomalies, recommendation evidence, and freshness metadata; routes policy changes and approval requests to the control plane.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "contract": "Tenant-scoped spend, forecast, recommendation, and approval APIs"
         }
       },
       {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Analyze cloud spending across providers; Detect idle and underutilized resources and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design an AI-Powered Cloud Cost Optimization Platform"
-        }
-      },
-      {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "provider-adapters",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification independently from the user-facing command and retry transient failures.",
+        "label": "Cloud provider adapters",
+        "description": "Isolates AWS, Azure, and GCP credentials and API semantics; fetches billing exports, usage, rates, resource inventory, and executes only approved provider changes.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 720,
+          "y": -40
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "providers": "AWS CUR, Azure Cost Management, GCP Billing export, provider APIs"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design an AI-Powered Cloud Cost Optimization Platform with explicit freshness and fallback behavior.",
+        "id": "billing-lake",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Raw billing and usage lake",
+        "description": "Retains immutable provider line items, credits, taxes, rates, exchange-rate inputs, collection cursors, and source timestamps for replay and reconciliation.",
+        "position": {
+          "x": 1080,
+          "y": -40
+        },
+        "properties": {
+          "partitioning": "Tenant, provider, account, billing period, and ingestion date"
+        }
+      },
+      {
+        "id": "resource-catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Resource, tag, and ownership catalog",
+        "description": "Maps provider resource IDs to services, environments, teams, business units, tags, regions, and lifecycle state so costs can be allocated consistently.",
+        "position": {
+          "x": 1080,
+          "y": 420
+        },
+        "properties": {
+          "consistency": "Versioned account/resource mappings with effective timestamps"
+        }
+      },
+      {
+        "id": "event-bus",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Cost data event bus",
+        "description": "Publishes billing batch accepted, inventory updated, normalized cost ready, recommendation created, approval recorded, and action completed events with replayable offsets.",
+        "position": {
+          "x": 1440,
+          "y": 180
+        },
+        "properties": {
+          "delivery": "At least once; partition by tenant/account and deduplicate by source event"
+        }
+      },
+      {
+        "id": "cost-normalizer",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Cost normalization and allocation",
+        "description": "Converts provider-specific line items into a canonical cost model, applies currency and amortization rules, joins resource ownership, and marks unallocated or late data explicitly.",
+        "position": {
+          "x": 1800,
+          "y": 180
+        },
+        "properties": {
+          "guarantee": "Deterministic, replayable transforms with source lineage and allocation coverage"
+        }
+      },
+      {
+        "id": "usage-features",
+        "type": "database",
+        "componentId": "database",
+        "label": "Usage history and feature store",
+        "description": "Stores time-windowed spend, utilization, seasonality, commitment coverage, idle-resource signals, and feature snapshots keyed by account and resource.",
         "position": {
           "x": 2160,
+          "y": -40
+        },
+        "properties": {
+          "retention": "Daily and hourly history with model-versioned feature snapshots"
+        }
+      },
+      {
+        "id": "optimization-engine",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Forecast, anomaly, and savings engine",
+        "description": "Runs spend forecasts and anomaly detection, identifies idle resources and rightsizing candidates, and evaluates reserved-instance or savings-plan scenarios with confidence and evidence.",
+        "position": {
+          "x": 2160,
+          "y": 360
+        },
+        "properties": {
+          "outputs": "Forecast bands, anomaly scores, utilization evidence, savings estimate, and model version"
+        }
+      },
+      {
+        "id": "policy-engine",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Savings policy and approval engine",
+        "description": "Applies tenant budgets, minimum confidence, savings thresholds, environment exclusions, commitment risk limits, approval roles, and fail-safe action rules.",
+        "position": {
+          "x": 2520,
           "y": 260
         },
         "properties": {
-          "latency": "Cost savings recommendations accuracy above 90%"
+          "safety": "Human approval for mutations; dry-run and rollback checks before provider execution"
+        }
+      },
+      {
+        "id": "recommendation-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Recommendation and audit store",
+        "description": "Stores versioned recommendations, evidence references, savings estimates, confidence, policy decision, approval history, action status, and immutable audit records.",
+        "position": {
+          "x": 2880,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Optimistic versioning and idempotent recommendation/action transitions"
+        }
+      },
+      {
+        "id": "serving-index",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Spend and recommendation serving index",
+        "description": "Indexes allocated spend, trends, forecasts, anomalies, recommendation status, savings evidence, and freshness by tenant, account, resource, owner, and time range.",
+        "position": {
+          "x": 3240,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Interactive FinOps dashboard queries with projection watermark and stale-data banner"
+        }
+      },
+      {
+        "id": "action-executor",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Approved action executor",
+        "description": "Revalidates policy and provider state, performs dry runs, executes rightsizing or commitment changes with bounded retries, and records idempotent outcomes for rollback review.",
+        "position": {
+          "x": 3240,
+          "y": -40
+        },
+        "properties": {
+          "guarantee": "No mutation without approval, current policy, provider precondition, and audit record"
+        }
+      },
+      {
+        "id": "notification-service",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "FinOps notification service",
+        "description": "Notifies owners about anomalies, budget risk, recommendation expiry, approval requests, and completed or failed actions through configured channels.",
+        "position": {
+          "x": 3600,
+          "y": -40
+        },
+        "properties": {
+          "delivery": "Deduplicated email, chat, webhook, and ticket notifications"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "FinOps quality and safety observability",
+        "description": "Tracks provider ingestion freshness, missing accounts, allocation coverage, unallocated spend, forecast error, savings realization, model drift, queue lag, action failures, and approval bypass attempts.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 2520,
+          "y": -260
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Stale billing, reconciliation gaps, quality regressions, provider throttling, and unsafe action signals"
         }
       }
     ],
@@ -281,159 +493,271 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Analyze cloud spending across providers through the authenticated request boundary."
+        "label": "Spend query or approval request",
+        "description": "The console submits tenant-scoped spend queries, connector setup, recommendation reviews, and approval decisions over authenticated HTTPS."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-cost-api",
         "source": "gateway",
-        "target": "service",
+        "target": "cost-api",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Authorized FinOps request",
+        "description": "The gateway validates tenant, account, role, time range, export quota, and approval idempotency before routing the request."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "cost-api-serving-index",
+        "source": "cost-api",
+        "target": "serving-index",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Analyze cloud spending across providers; Detect idle and underutilized resources before downstream asynchronous work."
+        "label": "Spend and recommendation read",
+        "description": "The API reads pre-aggregated spend, forecasts, anomalies, and recommendation evidence with projection watermark and source freshness."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "id": "cost-api-policy-engine",
+        "source": "cost-api",
+        "target": "policy-engine",
+        "type": "api-call",
+        "label": "Recommendation review or approval",
+        "description": "A user review or approval is checked against the current recommendation version and sent to policy evaluation; stale approvals are rejected."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "provider-adapters-billing-lake",
+        "source": "provider-adapters",
+        "target": "billing-lake",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Raw billing and usage export",
+        "description": "Adapters land provider-native line items, credits, rates, and collection metadata before any normalization, preserving source lineage for reconciliation."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "provider-adapters-resource-catalog",
+        "source": "provider-adapters",
+        "target": "resource-catalog",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Resource inventory sync",
+        "description": "Adapters upsert provider resources, tags, accounts, regions, and lifecycle state with effective timestamps and a provider cursor."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "billing-lake-event-bus",
+        "source": "billing-lake",
+        "target": "event-bus",
+        "type": "event-stream",
+        "label": "Billing batch accepted",
+        "description": "A durable manifest event announces each accepted billing partition and source watermark so downstream consumers can replay or backfill it."
+      },
+      {
+        "id": "resource-catalog-event-bus",
+        "source": "resource-catalog",
+        "target": "event-bus",
+        "type": "event-stream",
+        "label": "Inventory mapping updated",
+        "description": "Versioned ownership and tag changes are published for allocation recomputation without rewriting the raw provider export."
+      },
+      {
+        "id": "event-bus-cost-normalizer",
+        "source": "event-bus",
+        "target": "cost-normalizer",
+        "type": "message-queue",
+        "label": "Normalize and allocate work",
+        "description": "Partitioned workers consume billing and inventory events at least once, deduplicate source manifests, and retry provider-independent transforms safely."
+      },
+      {
+        "id": "resource-catalog-cost-normalizer",
+        "source": "resource-catalog",
+        "target": "cost-normalizer",
+        "type": "database-connection",
+        "label": "Effective ownership mapping",
+        "description": "Normalization joins each line item to the resource and tag mapping valid at the usage timestamp, marking unknown ownership instead of guessing."
+      },
+      {
+        "id": "cost-normalizer-usage-features",
+        "source": "cost-normalizer",
+        "target": "usage-features",
+        "type": "database-connection",
+        "label": "Canonical cost history",
+        "description": "Canonical spend, utilization, allocation, and rate features are written with source lineage, currency, amortization mode, and processing watermark."
+      },
+      {
+        "id": "usage-features-optimization-engine",
+        "source": "usage-features",
+        "target": "optimization-engine",
+        "type": "data-flow",
+        "label": "Time-windowed features",
+        "description": "The intelligence workers read bounded history and feature snapshots to forecast spend, detect spikes, identify waste, and model rightsizing or commitment scenarios."
+      },
+      {
+        "id": "optimization-engine-policy-engine",
+        "source": "optimization-engine",
+        "target": "policy-engine",
+        "type": "api-call",
+        "label": "Explainable savings candidate",
+        "description": "The engine submits a candidate with evidence, confidence, forecast interval, estimated savings, risk, model version, and provider preconditions."
+      },
+      {
+        "id": "policy-engine-recommendation-store",
+        "source": "policy-engine",
+        "target": "recommendation-store",
+        "type": "database-connection",
+        "label": "Policy decision and audit",
+        "description": "Policy records recommend, defer, suppress, or require-approval decisions with the rule version and immutable evidence references."
+      },
+      {
+        "id": "recommendation-store-serving-index",
+        "source": "recommendation-store",
+        "target": "serving-index",
+        "type": "data-flow",
+        "label": "Dashboard projection",
+        "description": "Projection workers index recommendation lifecycle, savings evidence, action status, and freshness alongside allocated spend for fast filtering."
+      },
+      {
+        "id": "policy-engine-action-executor",
+        "source": "policy-engine",
+        "target": "action-executor",
+        "type": "message-queue",
+        "label": "Approved action intent",
+        "description": "Only a current, approved, policy-compliant recommendation creates an idempotent action intent; rejected or expired recommendations never reach a provider."
+      },
+      {
+        "id": "action-executor-provider-adapters",
+        "source": "action-executor",
+        "target": "provider-adapters",
+        "type": "api-call",
+        "label": "Dry-run or provider mutation",
+        "description": "The executor rechecks provider state and preconditions, then invokes the correct adapter with an idempotency key and records the response for rollback review."
+      },
+      {
+        "id": "policy-engine-notification-service",
+        "source": "policy-engine",
+        "target": "notification-service",
+        "type": "message-queue",
+        "label": "Budget or recommendation notification",
+        "description": "Policy emits deduplicated notification intents for anomalies, budget risk, approval requests, and recommendation decisions without blocking ingestion."
+      },
+      {
+        "id": "action-executor-notification-service",
+        "source": "action-executor",
+        "target": "notification-service",
+        "type": "message-queue",
+        "label": "Action result",
+        "description": "Completed, failed, or partially applied provider actions generate an auditable notification and update the recommendation lifecycle."
+      },
+      {
+        "id": "notification-service-client",
+        "source": "notification-service",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Cost savings recommendations accuracy above 90%."
+        "label": "FinOps alert or approval prompt",
+        "description": "The notification service delivers configured email, chat, webhook, or ticket messages with provider response and deduplication status."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "event-bus-monitoring",
+        "source": "event-bus",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Freshness and lag telemetry",
+        "description": "Monitoring compares provider watermarks with normalization and projection watermarks and alerts on missing accounts, lag, and replay gaps."
+      },
+      {
+        "id": "optimization-engine-monitoring",
+        "source": "optimization-engine",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Forecast and savings quality",
+        "description": "The engine reports forecast error, anomaly precision, recommendation acceptance, realized savings, model drift, and evidence completeness."
+      },
+      {
+        "id": "action-executor-monitoring",
+        "source": "action-executor",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Action safety telemetry",
+        "description": "Operations tracks approval bypass attempts, dry-run mismatches, provider throttling, mutation failures, rollback needs, and idempotency conflicts."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Billing correctness and late data",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Design for the failure case where late billing, missing ownership, stale utilization, or an unsafe approval must not create a false saving or outage; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Multi-cloud allocation and feature history",
       "points": [
-        "Partition by the access pattern implied by Design a platform that uses ML to analyze cloud spending patterns, identify waste, recommend rightsizing, optimize reserved capacity purchases, and forecast future costs across multi-cloud environments., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Recommendation safety and feedback",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use time-series analysis for usage-based rightsizing, Implement optimization algorithms for RI/SP purchasing, Use anomaly detection for cost spike identification as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Raw lake plus serving index versus one database",
+      "recommendation": "Keep immutable provider evidence and canonical aggregates in durable analytical storage, with a separate tenant-filtered index for dashboards.",
+      "caution": "Two representations require watermarks and reconciliation, but a single database cannot serve billion-line-item history cheaply."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Scheduled batch versus continuous analysis",
+      "recommendation": "Use provider-aligned batch ingestion for invoice-grade cost and a smaller streaming path for budget anomalies and action results.",
+      "caution": "Continuous polling hits provider quotas and creates false precision when billing data itself is delayed."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Automatic remediation versus human approval",
+      "recommendation": "Automate low-risk detection and notification, but require policy, dry run, and scoped approval for production mutations or commitments.",
+      "caution": "Stale utilization, tags, or provider prices can turn automation into an outage or financial commitment."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating provider APIs as a real-time invoice source.",
+    "Dropping credits, taxes, currency, amortization, shared costs, or reconciliation.",
+    "Generating recommendations without utilization evidence, confidence, model version, or freshness.",
+    "Letting an ML worker mutate resources without approval, dry run, and audit.",
+    "Scanning raw line items for every dashboard query or letting one account starve ingestion."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "What happens when a provider revises a closed period?",
+      "answer": "Land a new source version, reconcile it with the prior invoice, replay affected normalization and allocation partitions, and expose a correction watermark."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you prevent rightsizing from causing an outage?",
+      "answer": "Require a confidence and utilization window, exclude protected resources, run a dry run, require approval, and recheck current state before mutation."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you verify savings are real?",
+      "answer": "Record baseline and assumptions, then compare later provider usage and billing against a time-matched baseline and report realized savings separately."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Analyze cloud spending across providers workflow, scale, latency, durability, and failure contract."
+      "description": "The answer defines multi-cloud ingestion, invoice reconciliation, canonical allocation, explainable recommendations, approval safety, and realized savings, scale, latency, durability, authorization, and failure behavior."
     },
     {
       "criterion": "Data model",
-      "description": "Entities and keys support Design a platform that uses ML to analyze cloud spending patterns, identify waste, recommend rightsizing, optimize reserved capacity purchases, and forecast future costs across multi-cloud environments., authorization, privacy, and lifecycle changes."
+      "description": "Entities and keys make the multi-cloud FinOps platform state, versions, lifecycle, and derived projections explicit."
     },
     {
       "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
       "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain the the multi-cloud FinOps platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

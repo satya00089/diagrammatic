@@ -54,54 +54,55 @@
   },
   "entities": [
     {
-      "name": "Product / Offer",
+      "name": "ProductOffer",
       "fields": [
-        "product_id",
+        "offerId",
         "provider",
-        "seller_id",
+        "productId",
+        "sellerId",
         "variant",
         "currency",
         "availability"
       ],
-      "notes": "Normalize identity and offer dimensions before comparing prices; a product page may have many sellers and variants."
+      "notes": "Normalized offer identity across provider and seller dimensions."
     },
     {
       "name": "AlertRule",
       "fields": [
-        "rule_id",
-        "user_id",
-        "product_id",
+        "ruleId",
+        "userId",
+        "offerId",
         "condition",
         "threshold",
-        "cooldown_until",
+        "cooldownUntil",
         "status"
       ],
-      "notes": "Index active rules by product_id and status so one observation finds only relevant rules."
+      "notes": "Indexed user rule evaluated against accepted observations."
     },
     {
       "name": "PriceObservation",
       "fields": [
-        "observation_id",
-        "offer_id",
+        "observationId",
+        "offerId",
         "price",
         "shipping",
         "tax",
-        "observed_at",
-        "source_version"
+        "observedAt",
+        "sourceVersion"
       ],
-      "notes": "Persist provider timestamp and freshness; never silently overwrite a newer observation with a late response."
+      "notes": "Versioned provider observation with freshness and pricing semantics."
     },
     {
       "name": "NotificationLedger",
       "fields": [
-        "dedupe_key",
-        "rule_id",
+        "dedupeKey",
+        "ruleId",
         "channel",
         "attempts",
-        "provider_id",
+        "providerId",
         "status"
       ],
-      "notes": "The dedupe key makes retries safe and lets users see whether a triggered alert was delivered."
+      "notes": "Idempotent delivery record for one alert transition."
     }
   ],
   "apis": [
@@ -109,47 +110,47 @@
       "method": "POST",
       "path": "/v1/alerts",
       "contract": "{ productId, condition, threshold, channels, cooldown } -> { ruleId, status }",
-      "notes": "Authenticate, normalize the product/offer, validate thresholds and consent, then write idempotently."
+      "notes": "Normalize the offer, validate thresholds and consent, then write the rule idempotently."
     },
     {
       "method": "GET",
       "path": "/v1/products/{productId}/price",
       "contract": "{ current, observedAt, freshness, providerStatus, history }",
-      "notes": "Return the latest accepted observation with explicit freshness and currency/offer semantics."
+      "notes": "Return the latest accepted observation with currency/offer semantics."
     },
     {
       "method": "PATCH",
       "path": "/v1/alerts/{ruleId}",
       "contract": "{ threshold?, cadence?, channels?, status? } -> updated rule",
-      "notes": "Authorize the owner and version the rule so an in-flight evaluation uses a known snapshot."
+      "notes": "Authorize the owner and version the rule for in-flight evaluation."
     },
     {
       "method": "POST",
       "path": "/internal/price-observations",
       "contract": "{ offer, price, observedAt, sourceVersion, requestId } -> { accepted, eventId }",
-      "notes": "Provider adapters authenticate internally; reject late or malformed observations and dedupe requestId."
+      "notes": "Authenticate provider adapters, reject late/malformed data, and deduplicate requestId."
     }
   ],
   "dataFlow": [
     {
       "title": "Create the alert",
-      "description": "The API validates the rule, resolves the product identity, stores the rule and preferences, and returns immediately without waiting for a price fetch."
+      "description": "The API validates the rule, resolves product and offer identity, stores preferences, and returns without waiting for a provider fetch."
     },
     {
       "title": "Schedule collection",
-      "description": "A scheduler chooses due products using cadence, demand, freshness, provider quotas, and exponential backoff, then dispatches bounded collection jobs."
+      "description": "A scheduler chooses due offers from cadence, demand, freshness, provider quota, and exponential backoff, then dispatches bounded jobs."
     },
     {
       "title": "Accept a price observation",
-      "description": "A provider adapter normalizes currency, variant, seller, shipping, and availability; it rejects late data, stores the latest version, and publishes a durable price event."
+      "description": "Adapters normalize currency, variant, seller, shipping, and availability; late observations are rejected or marked and durable price events are published."
     },
     {
       "title": "Evaluate the rule",
-      "description": "The evaluator loads only active rules for the product, compares the previous accepted state, applies cooldowns, and records a deduplicated notification decision."
+      "description": "The evaluator loads only active rules for the offer, compares the previous accepted state, applies cooldowns, and writes one notification decision."
     },
     {
       "title": "Deliver asynchronously",
-      "description": "Channel workers send notifications with provider retries, record attempts in the ledger, and expose failure or opt-out status without blocking collection."
+      "description": "Channel workers retry provider delivery, record attempts in the ledger, and expose opt-out or failure status without blocking collection."
     }
   ],
   "architecture": {
@@ -224,7 +225,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Service where users watch products gateway",
         "description": "Authenticates users, validates product identifiers and applies quotas.",
         "position": {
           "x": 420,
@@ -253,7 +254,7 @@
         "type": "database",
         "componentId": "database",
         "label": "Alert Catalog",
-        "description": "Durable source of truth for users, products, rules, preferences, and alert state.",
+        "description": "Authoritative alert state for users, products, rules, preferences, and notification history.",
         "position": {
           "x": 1260,
           "y": 240
@@ -476,100 +477,88 @@
   },
   "deepDives": [
     {
-      "title": "Collection under provider limits",
+      "title": "Provider freshness and adaptive polling",
       "points": [
-        "Treat each provider as a quota domain with concurrency, request, and retry budgets.",
-        "Use adaptive cadence: prioritize active alerts and recently viewed products, but cap per-user and per-provider cost.",
-        "Back off on 429s and outages, preserve next_due_at, and surface freshness rather than fabricating a current price."
+        "For the multi-marketplace price-alert service, one qualifying price transition produces at most one notification per rule/cooldown window.",
+        "Design for the failure case where provider throttling, stale variants, late observations, and retries must not spam users or show false prices; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Correct price semantics",
+      "title": "Offer identity and rule evaluation",
       "points": [
-        "Define whether the threshold uses item price, delivered price, or total price including shipping and tax.",
-        "Normalize currency with the observation timestamp and keep seller, variant, and availability dimensions in the identity.",
-        "Reject out-of-order observations using provider timestamps and a monotonic source version where available."
+        "For the multi-marketplace price-alert service, one qualifying price transition produces at most one notification per rule/cooldown window.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-marketplace price-alert service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Exactly-once user experience",
+      "title": "Cooldowns and notification idempotency",
       "points": [
-        "The pipeline can be at-least-once, but the notification ledger must make the user-visible effect idempotent.",
-        "Build dedupe_key from rule, qualifying price version, and channel; write it conditionally before sending.",
-        "Use an outbox or transactional handoff when a rule state change and notification decision must be committed together."
-      ]
-    },
-    {
-      "title": "Freshness and failure handling",
-      "points": [
-        "Measure freshness by provider, product, and alert population; stale data should be visible in the API and UI.",
-        "Keep CRUD on separate capacity from collectors and notification workers.",
-        "After recovery, drain by priority with jitter so a provider outage does not create a thundering herd."
+        "For the multi-marketplace price-alert service, one qualifying price transition produces at most one notification per rule/cooldown window.",
+        "Keep this concern off unrelated request paths and partition it by the the multi-marketplace price-alert service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Polling vs provider webhooks",
-      "recommendation": "Use webhooks where a provider offers trustworthy price events, with polling as a reconciliation and fallback path.",
-      "caution": "Polling is broadly compatible but expensive and bounded by provider quotas; webhooks introduce delivery, authenticity, and coverage gaps."
+      "title": "Polling freshness versus provider limits",
+      "recommendation": "Use demand-aware cadence, provider quotas, adaptive backoff, and explicit stale indicators.",
+      "caution": "Polling every alert uniformly overloads providers and still cannot guarantee fresh data."
     },
     {
-      "title": "Evaluate on every observation vs pre-index rules",
-      "recommendation": "Index active rules by normalized product/offer key and evaluate only the affected rules.",
-      "caution": "A broad product identity can create hot partitions; shard hot keys or use a two-stage product-to-rule index."
+      "title": "Observed price versus landed price",
+      "recommendation": "Model price, shipping, tax, currency, seller, and variant explicitly and let users choose comparison semantics.",
+      "caution": "Comparing only sticker price produces misleading alerts across marketplaces."
     },
     {
-      "title": "Immediate vs digest notifications",
-      "recommendation": "Offer immediate alerts for high-value thresholds and digests for noisy percentage or inventory changes.",
-      "caution": "Immediate delivery increases provider cost and spam risk; digests add latency and require a clear pending-state model."
+      "title": "Immediate notification versus cooldown",
+      "recommendation": "Emit on a rule transition with a cooldown and a durable notification ledger.",
+      "caution": "Notifying on every observation creates alert fatigue and duplicate delivery."
     }
   ],
   "commonMistakes": [
-    "Scanning all 50M rules for every price update.",
-    "Ignoring variant, seller, currency, shipping, tax, and availability semantics.",
-    "Retrying collection forever without honoring provider quotas or backoff.",
-    "Sending before recording a dedupe key, causing duplicate notifications on retries.",
-    "Showing a stale observation as current or hiding provider outage state."
+    "Scanning every user rule for every provider observation.",
+    "Overwriting a newer observation with a late response.",
+    "Ignoring seller, variant, currency, shipping, or tax dimensions.",
+    "Retrying notifications without a dedupe key and cooldown.",
+    "Showing stale provider data as current."
   ],
   "followUps": [
     {
-      "question": "What if a sale causes millions of alerts at once?",
-      "answer": "Partition evaluations, apply per-user and channel quotas, enqueue notifications durably, prioritize users with immediate delivery, and fall back to digest or delayed status when provider capacity is exhausted."
+      "question": "What if a provider is throttling?",
+      "answer": "Use a quota-aware scheduler, exponential backoff, cached last observation with freshness, and lower-priority collection for cold offers."
     },
     {
-      "question": "How would you support a product with many offers?",
-      "answer": "Model product identity separately from offer identity, define the user's seller/variant policy, and evaluate the cheapest qualifying offer only after currency and delivered-price normalization."
+      "question": "What if price drops and rises during retries?",
+      "answer": "Order observations by provider timestamp/source version, evaluate transitions from accepted state, and keep each notification decision idempotent."
     },
     {
-      "question": "How do you handle a provider changing its page format?",
-      "answer": "Version adapters, validate parsed fields, quarantine suspicious changes, monitor extraction quality, and keep the last known observation labeled stale until the adapter is repaired."
-    },
-    {
-      "question": "How would you guarantee users can delete their data?",
-      "answer": "Separate operational identifiers from notification payloads, delete or anonymize user-owned rules and delivery history through a tracked workflow, and honor provider retention limits."
+      "question": "How do you handle unsubscribe during delivery?",
+      "answer": "Recheck consent before sending, record the skipped attempt, and prevent future intents from using the revoked channel."
     }
   ],
   "rubric": [
     {
-      "criterion": "Product semantics",
-      "description": "Clarifies what is watched, what price qualifies, freshness, variants, sellers, currencies, and notification behavior."
+      "criterion": "Requirements",
+      "description": "The answer defines provider-aware collection, normalized offers, freshness, indexed rule evaluation, cooldowns, and idempotent notification delivery, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Collection design",
-      "description": "Handles provider quotas, adaptive polling, retries, backoff, parser failures, and stale data explicitly."
+      "criterion": "Data model",
+      "description": "Entities and keys make the multi-marketplace price-alert service state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Event processing",
-      "description": "Uses durable events, indexed rule lookup, out-of-order protection, cooldowns, and bounded partitions."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "User-visible correctness",
-      "description": "Makes notification decisions idempotent, records delivery state, and prevents duplicate or opt-out violations."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
-      "criterion": "Operations and scale",
-      "description": "Separates capacity domains and measures freshness, queue lag, provider health, evaluation throughput, and delivery success."
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the multi-marketplace price-alert service consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

@@ -50,115 +50,150 @@
   },
   "entities": [
     {
-      "name": "Design Web Crawler",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Crawl billions of web pages; Respect robots.txt and crawl rate limits; design keys around the main reads and writes."
+      "name": "DocumentVersion",
+      "fields": [
+        "documentId",
+        "sourceVersion",
+        "contentHash",
+        "aclVersion",
+        "language",
+        "updatedAt"
+      ],
+      "notes": "Canonical web crawler content and access-policy version used for indexing."
     },
     {
-      "name": "design-web-crawler event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "IndexGeneration",
+      "fields": [
+        "generationId",
+        "sourceWatermark",
+        "schemaVersion",
+        "status",
+        "alias",
+        "createdAt"
+      ],
+      "notes": "Rebuildable web crawler index generation that can be validated before an atomic alias swap."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "QuerySession",
+      "fields": [
+        "queryId",
+        "tenantId",
+        "normalizedQuery",
+        "filters",
+        "generationId",
+        "nextCursor"
+      ],
+      "notes": "Auditable web crawler query context with filters, cursor, and the generation used to answer it."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "RankingFeedback",
+      "fields": [
+        "queryId",
+        "documentId",
+        "position",
+        "action",
+        "modelVersion",
+        "occurredAt"
+      ],
+      "notes": "Privacy-scoped web crawler relevance signal for offline evaluation and ranking improvement."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Crawl billions of web pages command, then commit it idempotently."
+      "method": "PUT",
+      "path": "/v1/documents/{documentId}",
+      "contract": "{ content, acl, sourceVersion, idempotencyKey } -> { documentVersion, indexingStatus }",
+      "notes": "Accept a versioned web crawler document and enqueue indexing after authorization checks."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/search?q=&cursor=&filter=",
+      "contract": "{ results[], facets, nextCursor, generationId, freshness }",
+      "notes": "Apply tenant, ACL, and query filters before ranking web crawler candidates."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/index-generations",
+      "contract": "{ sourceWatermark, schemaVersion } -> { generationId, buildJobId }",
+      "notes": "Build and validate a web crawler generation without exposing partial index state."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/search/feedback",
+      "contract": "{ queryId, documentId, action, position } -> { accepted }",
+      "notes": "Record deduplicated web crawler relevance feedback with privacy and retention controls."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Crawl billions of web pages",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Accept and authorize source changes",
+      "description": "The web crawler ingestion boundary validates content, tenant ownership, ACLs, versions, and idempotency before publishing a document change."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Crawl billions of web pages; Respect robots.txt and crawl rate limits before acknowledging the client."
+      "title": "Retrieve and rank candidates",
+      "description": "The query service applies authorization filters, retrieves from the active web crawler generation, ranks within the latency budget, and returns generation freshness."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Build a safe index generation",
+      "description": "Partitioned workers transform web crawler documents, checkpoint progress, validate counts and ACL parity, then atomically swap the serving alias."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution, update projections, and expose lag or watermark metadata."
+      "title": "Handle freshness and deletes",
+      "description": "Tombstones and ACL changes propagate through the same pipeline so deleted or newly restricted web crawler content is not left searchable."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Measure relevance and recover",
+      "description": "Feedback, query traces, lag, and failed partitions drive web crawler ranking evaluation, replay, and bounded degraded behavior."
     }
   ],
   "architecture": {
-    "title": "Design a web crawler that can discover and download billions of web pages efficiently. reference architecture",
-    "summary": "The authoritative state records Crawl billions of web pages; asynchronous workers build serving projections while URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution stays isolated from the request path.",
+    "title": "Web Crawler search architecture",
+    "summary": "Design a polite, distributed web crawler that discovers and fetches billions of pages, respects robots and host limits, avoids duplicates and traps, and produces replayable crawl data. The design keeps canonical source versions and ACLs separate from versioned lexical/vector indexes, then uses bounded retrieval, explainable ranking, and generation-aware caching for low-latency results.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Search request plane",
+        "description": "Authenticated clients receive bounded, tenant-authorized query and suggestion responses.",
+        "componentIds": ["client", "gateway", "query"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Crawl billions of web pages; Respect robots.txt and crawl rate limits supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "sources",
+        "label": "Source and indexing plane",
+        "description": "Canonical documents, source versions, and index generations support replay and atomic rebuilds.",
+        "componentIds": ["ingest", "documents", "index"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "relevance",
+        "label": "Retrieval and relevance plane",
+        "description": "Candidate retrieval and ranking combine lexical, vector, freshness, and product-specific signals.",
+        "componentIds": ["ranker", "cache"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Search quality and operations",
+        "description": "Freshness, relevance, latency, and access-control correctness are measured continuously.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "query",
+        "label": "Query serving path",
+        "description": "Client -> gateway -> query understanding -> index -> ranker -> ACL-aware cache -> client.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "query",
+          "index",
+          "ranker",
+          "cache"
+        ]
       },
       {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "indexing",
+        "label": "Source indexing path",
+        "description": "Source -> ingestion -> canonical document store -> versioned index generation.",
+        "componentIds": ["ingest", "documents", "index"]
       }
     ],
     "components": [
@@ -166,112 +201,126 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Crawl billions of web pages workflow and receive explicit status, freshness, or progress.",
+        "label": "Search and suggestion clients",
+        "description": "Users submit queries, typeahead prefixes, filters, and pagination requests and receive relevance and freshness metadata.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS and streaming suggestions"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Search API gateway",
+        "description": "Authenticates callers, applies tenant and query quotas, normalizes language and filters, and routes reads separately from indexing.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, rate limits, query validation"
         }
       },
       {
-        "id": "service",
+        "id": "query",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Crawl billions of web pages command, authorization policy, lifecycle state, and client contract.",
+        "label": "Query understanding service",
+        "description": "Tokenizes and expands queries, applies spelling or semantic interpretation, validates filters, and creates a bounded retrieval plan.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "latency": "Bounded query plan and timeout budget"
         }
       },
       {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Crawl billions of web pages; Respect robots.txt and crawl rate limits and supports the primary access patterns.",
+        "id": "ingest",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Document and source ingestion",
+        "description": "Fetches or accepts source changes, extracts searchable fields, applies ACLs and deduplication, and emits versioned index work.",
+        "position": {
+          "x": 720,
+          "y": -40
+        },
+        "properties": {
+          "guarantee": "Source version and ACL validation before indexing"
+        }
+      },
+      {
+        "id": "documents",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Document and source store",
+        "description": "Retains canonical documents, crawl/import metadata, ACL snapshots, and source versions for reindexing and audit.",
         "position": {
           "x": 1080,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "storage": "Design Web Crawler"
+          "retention": "Immutable versions with source and access policy lineage"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution after durable commits.",
+        "id": "index",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Inverted and vector index",
+        "description": "Indexes token, field, facet, and embedding representations with tenant and ACL filters and atomic generation aliases.",
+        "position": {
+          "x": 1080,
+          "y": 420
+        },
+        "properties": {
+          "indexing": "Versioned shards and atomic alias swap"
+        }
+      },
+      {
+        "id": "ranker",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Relevance and ranking service",
+        "description": "Combines lexical, semantic, freshness, popularity, personalization, and business rules while recording explainable ranking features.",
         "position": {
           "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution independently from the user-facing command and retry transient failures.",
-        "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design Web Crawler with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Avoid infinite loops and spider traps"
+          "ranking": "Timeout-bounded ranking with safe lexical fallback"
+        }
+      },
+      {
+        "id": "cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Query and suggestion cache",
+        "description": "Caches normalized query results and prefixes with ACL-aware keys, short TTLs, and generation invalidation after index updates.",
+        "position": {
+          "x": 1800,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Tenant/ACL-scoped TTL and index-generation keys"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Search quality and operations",
+        "description": "Tracks indexing lag, freshness, zero-result rate, relevance quality, ACL leaks, shard health, cache hit rate, and query tail latency.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Stale index, query tail, quality, and authorization failures"
         }
       }
     ],
@@ -281,159 +330,163 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Crawl billions of web pages through the authenticated request boundary."
+        "label": "Query or suggestion",
+        "description": "Clients send a bounded query, filters, cursor, locale, and caller context through the authenticated API."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-query",
         "source": "gateway",
-        "target": "service",
+        "target": "query",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Normalized retrieval plan",
+        "description": "The gateway validates ACL context, quota, and query size before query understanding selects the retrieval strategy."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "query-index",
+        "source": "query",
+        "target": "index",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Crawl billions of web pages; Respect robots.txt and crawl rate limits before downstream asynchronous work."
+        "label": "Lexical or vector retrieval",
+        "description": "The query service retrieves tenant-authorized candidates with a timeout and index-generation watermark."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "index-ranker",
+        "source": "index",
+        "target": "ranker",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Candidate documents",
+        "description": "The ranker receives bounded candidates, fields, facets, and retrieval scores for final ordering."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "ranker-cache",
+        "source": "ranker",
+        "target": "cache",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Ranked result",
+        "description": "Ranked pages or suggestions are cached only with tenant, ACL, query normalization, and index generation in the key."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "cache-client",
+        "source": "cache",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Avoid infinite loops and spider traps."
+        "label": "Search response",
+        "description": "The client receives results, facets, cursors, relevance metadata, and a freshness indicator or explicit timeout fallback."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "ingest-documents",
+        "source": "ingest",
+        "target": "documents",
+        "type": "data-flow",
+        "label": "Canonical source version",
+        "description": "Ingestion writes the source document and import metadata before creating an indexable version."
+      },
+      {
+        "id": "documents-index",
+        "source": "documents",
+        "target": "index",
+        "type": "message-queue",
+        "label": "Indexing work",
+        "description": "Workers extract fields and embeddings, deduplicate versions, and publish changes for partition-local indexing."
+      },
+      {
+        "id": "index-monitoring",
+        "source": "index",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Index freshness and health",
+        "description": "Operations observes ingestion-to-index delay, shard failures, ACL filtering, generation swaps, and reindex progress."
+      },
+      {
+        "id": "query-monitoring",
+        "source": "query",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Query quality and latency",
+        "description": "Query telemetry reports tail latency, zero results, cache behavior, ranking outcomes, and privacy-safe quality samples."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "ACL correctness and index generations",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Filter web crawler results by tenant and effective ACL, or prove the active generation contains the same policy snapshot.",
+        "Build shadow generations and swap aliases atomically so partial reindexes are never visible.",
+        "Keep source versions and ACL snapshots for replay when permissions or content change."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Latency, cursors, and graceful degradation",
       "points": [
-        "Partition by the access pattern implied by Design a web crawler that can discover and download billions of web pages efficiently., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Use bounded candidate retrieval, stable sort keys, and generation-aware cursors for web crawler pagination.",
+        "Serve the last healthy generation when a new build is incomplete, but expose freshness and avoid silently violating authorization.",
+        "Protect the query path with timeouts, circuit breakers, and per-tenant quotas."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Relevance feedback without leakage",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat URL frontier with priority queue, Bloom filter for duplicate detection, Consistent hashing for URL distribution as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Separate web crawler click or conversion signals from personally identifying data and honor retention or deletion requests.",
+        "Evaluate ranking by query class and tail latency, not only aggregate click-through.",
+        "Use replayable query sets and staged model or synonym changes before production rollout."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Synchronous indexing versus queued indexing",
+      "recommendation": "Commit the source version synchronously and index asynchronously with a visible freshness contract.",
+      "caution": "Waiting for index mutation makes writes fragile and cannot guarantee immediate consistency at scale."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Denormalized ACL fields versus filter-time checks",
+      "recommendation": "Denormalize safe, versioned authorization facts when it meets the policy model, while retaining a source-of-truth check for sensitive results.",
+      "caution": "Stale permissions can become a data-leak path if index updates are treated as authoritative."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Lexical, vector, or hybrid retrieval",
+      "recommendation": "Start with the retrieval method that matches the corpus and latency budget, then add hybrid ranking behind an experiment and rollback boundary.",
+      "caution": "Adding embeddings without freshness, explainability, or access-control design increases cost without improving user trust."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Returning web crawler results from an index generation whose ACL snapshot is stale.",
+    "Mutating the live index in place and exposing partially reindexed data.",
+    "Using offset pagination so inserts and deletes reorder later result pages.",
+    "Ignoring tombstones, deletes, or source-version gaps during replay.",
+    "Optimizing click-through while omitting tail latency, zero-result rate, and abusive-query controls."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you prevent a stale web crawler index from leaking data?",
+      "answer": "Carry ACL or tenant versions through the document and query path, reject unsafe generations, and fail closed for sensitive filters."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you rebuild without downtime?",
+      "answer": "Build a shadow generation from a source watermark, validate counts and permissions, then swap an alias atomically and retain the previous generation for rollback."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you debug an irrelevant result?",
+      "answer": "Persist the query normalization, candidate set, rank features, model version, generation, and privacy-safe feedback trace."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Crawl billions of web pages workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the web crawler workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a web crawler that can discover and download billions of web pages efficiently., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative web crawler state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions web crawler traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the web crawler user experience."
     }
   ]
 }

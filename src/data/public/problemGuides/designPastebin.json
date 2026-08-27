@@ -54,110 +54,92 @@
     {
       "name": "Paste",
       "fields": [
-        "paste_id",
-        "owner_id",
-        "content_key",
+        "pasteId",
+        "ownerId",
+        "contentHash",
         "visibility",
-        "password_hash",
-        "expires_at",
-        "state"
+        "expiresAt",
+        "createdAt",
+        "status"
       ],
-      "notes": "Metadata is the authority; immutable content is stored separately under a versioned key."
+      "notes": "Immutable or versioned text content with ownership and expiry."
     },
     {
-      "name": "PasteContent",
+      "name": "ShortAlias",
+      "fields": ["alias", "pasteId", "createdAt", "status"],
+      "notes": "Unique lookup key mapped to a paste without exposing database identifiers."
+    },
+    {
+      "name": "AccessPolicy",
       "fields": [
-        "content_key",
-        "body",
-        "language",
-        "byte_length",
-        "checksum",
-        "created_at"
+        "pasteId",
+        "visibility",
+        "passwordHash",
+        "allowedUsers",
+        "expiresAt",
+        "version"
       ],
-      "notes": "Store the body as immutable data so retries and cache reads are safe."
+      "notes": "Versioned access and retention policy."
     },
     {
-      "name": "RateLimitBucket",
-      "fields": ["subject_id", "window", "count", "limit", "reset_at"],
-      "notes": "Apply separate limits by account, IP, token, and destination risk."
-    },
-    {
-      "name": "Report",
+      "name": "AbuseScan",
       "fields": [
-        "report_id",
-        "paste_id",
-        "reporter_id",
-        "reason",
-        "state",
-        "created_at"
+        "scanId",
+        "pasteId",
+        "scannerVersion",
+        "findings",
+        "status",
+        "completedAt"
       ],
-      "notes": "Reports enter a moderation queue and do not directly mutate content without policy checks."
-    },
-    {
-      "name": "AuditEvent",
-      "fields": [
-        "event_id",
-        "actor_id",
-        "action",
-        "paste_id",
-        "request_id",
-        "created_at"
-      ],
-      "notes": "Append-only security evidence for deletes, password changes, and moderator actions."
+      "notes": "Asynchronous moderation and malware/secret scan result."
     }
   ],
   "apis": [
     {
       "method": "POST",
       "path": "/v1/pastes",
-      "contract": "{ body, language, visibility, password, expiresIn, requestId } -> { pasteId, url, expiresAt }",
-      "notes": "Validate size and policy, write content and metadata idempotently, then return the identifier."
+      "contract": "{ content, visibility, expiresAt, password?, idempotencyKey } -> { pasteId, alias, status }",
+      "notes": "Validate size, retention, content policy, and ownership before storing the paste."
     },
     {
       "method": "GET",
+      "path": "/p/{alias}",
+      "contract": "{ content, visibility, expiresAt, cacheStatus }",
+      "notes": "Resolve a short alias with expiry and access checks on every miss."
+    },
+    {
+      "method": "PATCH",
       "path": "/v1/pastes/{pasteId}",
-      "contract": "{ password? } -> { pasteId, body, language, createdAt, expiresAt }",
-      "notes": "Check state, expiry, and password authorization before returning content or a cacheable response."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/pastes/{pasteId}/raw",
-      "contract": "text/plain body",
-      "notes": "Use a streaming response and content-disposition rules to prevent unsafe browser interpretation."
+      "contract": "{ visibility?, expiresAt?, expectedVersion } -> { status, version }",
+      "notes": "Allow only authorized policy changes and invalidate cached reads."
     },
     {
       "method": "DELETE",
       "path": "/v1/pastes/{pasteId}",
-      "contract": "{ requestId } -> { deleted, version }",
-      "notes": "Authorize the owner or moderator, write a tombstone, and publish invalidation work."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/pastes/{pasteId}/reports",
-      "contract": "{ reason, requestId } -> { reportId, state }",
-      "notes": "Rate-limit reports and enqueue review without exposing reporter identity."
+      "contract": "{ expectedVersion, idempotencyKey } -> { status }",
+      "notes": "Write a tombstone and asynchronously remove content replicas and search/abuse indexes."
     }
   ],
   "dataFlow": [
     {
-      "title": "Validate and reserve the paste",
-      "description": "The gateway authenticates the caller, applies abuse and size limits, normalizes language metadata, and creates an idempotency record."
+      "title": "Create and validate a paste",
+      "description": "The API checks size, expiry, visibility, abuse policy, and idempotency, then stores content and alias metadata durably."
     },
     {
-      "title": "Commit immutable content",
-      "description": "The service writes the body under a content key and commits the metadata record only after storage confirms the checksum."
+      "title": "Resolve a short alias",
+      "description": "Edge and cache look up the alias; cache misses read metadata and content, recheck expiry and access policy, and return a bounded response."
     },
     {
-      "title": "Return the short URL",
-      "description": "A collision-safe ID generator allocates the paste ID; the response is returned only after the durable transaction succeeds."
+      "title": "Scan and moderate asynchronously",
+      "description": "A queue sends content to secret, malware, and abuse scanners; a policy result can hide a paste without deleting audit evidence."
     },
     {
-      "title": "Serve through cache",
-      "description": "Reads check authorization and lifecycle state, then fetch immutable content from regional cache, CDN, or blob storage."
+      "title": "Expire and delete safely",
+      "description": "Expiry workers write tombstones, evict aliases, and delete content by lifecycle policy while preserving ownership and deletion audit."
     },
     {
-      "title": "Invalidate and expire asynchronously",
-      "description": "Delete, moderation, and expiry events purge caches, tombstone metadata, remove blobs, and feed audit and analytics consumers."
+      "title": "Measure reads without hurting redirects",
+      "description": "Click/read events leave the serving path and are aggregated asynchronously with privacy and retention controls."
     }
   ],
   "architecture": {
@@ -222,17 +204,27 @@
         "componentId": "web-app",
         "label": "Web and API clients",
         "description": "Create, share, and read pastes.",
-        "position": { "x": 0, "y": 260 },
-        "properties": { "protocol": "HTTPS" }
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS"
+        }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Pastebin-like service where users create text pa gateway",
         "description": "Authenticates users, limits abuse, and routes read and write traffic.",
-        "position": { "x": 360, "y": 260 },
-        "properties": { "controls": "Auth, WAF, quotas" }
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "controls": "Auth, WAF, quotas"
+        }
       },
       {
         "id": "cache",
@@ -240,8 +232,13 @@
         "componentId": "cache",
         "label": "Regional cache",
         "description": "Caches authorized public metadata and immutable body responses with bounded TTLs.",
-        "position": { "x": 720, "y": 80 },
-        "properties": { "eviction": "Version and purge events" }
+        "position": {
+          "x": 720,
+          "y": 80
+        },
+        "properties": {
+          "eviction": "Version and purge events"
+        }
       },
       {
         "id": "cdn",
@@ -249,8 +246,13 @@
         "componentId": "cdn",
         "label": "Content CDN",
         "description": "Serves public immutable bodies close to readers.",
-        "position": { "x": 1080, "y": 80 },
-        "properties": { "delivery": "Edge cache" }
+        "position": {
+          "x": 1080,
+          "y": 80
+        },
+        "properties": {
+          "delivery": "Edge cache"
+        }
       },
       {
         "id": "paste-service",
@@ -258,8 +260,13 @@
         "componentId": "backend-server",
         "label": "Paste service",
         "description": "Owns IDs, validation, authorization, metadata, and lifecycle state.",
-        "position": { "x": 720, "y": 360 },
-        "properties": { "consistency": "Durable idempotent writes" }
+        "position": {
+          "x": 720,
+          "y": 360
+        },
+        "properties": {
+          "consistency": "Durable idempotent writes"
+        }
       },
       {
         "id": "metadata-db",
@@ -267,8 +274,13 @@
         "componentId": "database",
         "label": "Metadata store",
         "description": "Stores paste metadata, ownership, hashes, expiry, and tombstones.",
-        "position": { "x": 1080, "y": 360 },
-        "properties": { "partition": "paste_id" }
+        "position": {
+          "x": 1080,
+          "y": 360
+        },
+        "properties": {
+          "partition": "paste_id"
+        }
       },
       {
         "id": "blob-store",
@@ -276,8 +288,13 @@
         "componentId": "file-storage",
         "label": "Immutable blob store",
         "description": "Stores paste bodies under checksummed, versioned content keys.",
-        "position": { "x": 1080, "y": 600 },
-        "properties": { "retention": "Lifecycle tiers" }
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "properties": {
+          "retention": "Lifecycle tiers"
+        }
       },
       {
         "id": "events",
@@ -285,8 +302,13 @@
         "componentId": "message-broker",
         "label": "Lifecycle event stream",
         "description": "Publishes create, delete, expiry, report, and moderation events for replay.",
-        "position": { "x": 1440, "y": 360 },
-        "properties": { "delivery": "At least once" }
+        "position": {
+          "x": 1440,
+          "y": 360
+        },
+        "properties": {
+          "delivery": "At least once"
+        }
       },
       {
         "id": "lifecycle",
@@ -294,8 +316,13 @@
         "componentId": "backend-server",
         "label": "Expiry and purge workers",
         "description": "Tombstone expired records, purge caches, and delete eligible blobs.",
-        "position": { "x": 1800, "y": 160 },
-        "properties": { "scaling": "Due-time queue" }
+        "position": {
+          "x": 1800,
+          "y": 160
+        },
+        "properties": {
+          "scaling": "Due-time queue"
+        }
       },
       {
         "id": "moderation",
@@ -303,8 +330,13 @@
         "componentId": "backend-server",
         "label": "Moderation service",
         "description": "Processes abuse reports and applies quarantine or removal decisions.",
-        "position": { "x": 1800, "y": 400 },
-        "properties": { "path": "Queue and review" }
+        "position": {
+          "x": 1800,
+          "y": 400
+        },
+        "properties": {
+          "path": "Queue and review"
+        }
       },
       {
         "id": "analytics",
@@ -312,8 +344,13 @@
         "componentId": "analytics",
         "label": "Audit and analytics",
         "description": "Consumes sampled reads and security events without blocking requests.",
-        "position": { "x": 1800, "y": 640 },
-        "properties": { "path": "Async" }
+        "position": {
+          "x": 1800,
+          "y": 640
+        },
+        "properties": {
+          "path": "Async"
+        }
       }
     ],
     "connections": [
@@ -401,96 +438,88 @@
   },
   "deepDives": [
     {
-      "title": "Short ID generation",
+      "title": "Alias resolution and cache safety",
       "points": [
-        "Use random or time-sortable IDs encoded in a URL-safe alphabet.",
-        "Reserve IDs with conditional writes so retries cannot create duplicate mappings.",
-        "Do not expose sequential database keys that enable enumeration."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Design for the failure case where a hot alias, abuse burst, or cleanup lag must not expose content or take down reads; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Caching private content",
+      "title": "Expiry, deletion, and lifecycle",
       "points": [
-        "Never share password-protected responses across users without a safe authorization-aware key.",
-        "Cache public immutable bodies aggressively but keep lifecycle state authoritative.",
-        "Purge by paste ID and version when moderation or deletion changes access."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Expiration and deletion",
+      "title": "Abuse scanning without blocking reads",
       "points": [
-        "Check expires_at and state before every serve, including cache revalidation.",
-        "Write a tombstone first, then asynchronously purge caches and blobs.",
-        "Use a due-time index plus periodic sweeps to repair missed expiry events."
-      ]
-    },
-    {
-      "title": "Abuse controls",
-      "points": [
-        "Limit create rate, body size, suspicious destinations, and repeated reads by risk score.",
-        "Scan links and content asynchronously, with quarantine available before public indexing.",
-        "Keep moderation and audit paths independent from the hot read path."
+        "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
+        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Database body versus blob storage",
-      "recommendation": "Keep metadata in a low-latency database and bodies in immutable blob storage.",
-      "caution": "The two-step write needs a pending state and repair worker."
+      "title": "Mutable paste versus immutable versions",
+      "recommendation": "Prefer immutable content versions and an explicit latest pointer when editing is required.",
+      "caution": "In-place edits complicate cache invalidation, audit, and link consistency."
     },
     {
-      "title": "Random versus sequential IDs",
-      "recommendation": "Use random, compact IDs to reduce enumeration and hot partitions.",
-      "caution": "Random IDs need collision handling and may be less index-friendly."
+      "title": "Synchronous scan versus fast creation",
+      "recommendation": "Accept within size/policy limits and quarantine or label content while deep scanning asynchronously.",
+      "caution": "Blocking every create on scanners raises tail latency and couples availability to third parties."
     },
     {
-      "title": "Cache TTL versus purge",
-      "recommendation": "Use both short lifecycle-aware TTLs and explicit purge events.",
-      "caution": "Purge is at-least-once, so the origin must still reject deleted content."
+      "title": "Long cache TTL versus revocation",
+      "recommendation": "Use short policy-aware TTLs and targeted invalidation for password, delete, and abuse changes.",
+      "caution": "A long TTL improves hot reads but can serve revoked or expired content."
     }
   ],
   "commonMistakes": [
-    "Returning a URL before the paste body and metadata are durable.",
-    "Using predictable sequential IDs that make enumeration trivial.",
-    "Caching password-protected responses under only the paste ID.",
-    "Relying exclusively on cache expiry for deletes and expiration.",
-    "Allowing unbounded paste size or create rate without abuse controls."
+    "Caching private or expired pastes under an alias-only key.",
+    "Generating aliases without collision and idempotency handling.",
+    "Deleting content without tombstoning aliases and replicas.",
+    "Running unbounded scanners on the create or read path.",
+    "Collecting raw paste content in analytics logs."
   ],
   "followUps": [
     {
-      "question": "How do you handle a paste that suddenly goes viral?",
-      "answer": "Promote its immutable public response to CDN and regional caches, use request coalescing on misses, and protect the origin with per-key limits."
+      "question": "What if a paste becomes abusive after it is cached?",
+      "answer": "Mark it blocked in the policy store, invalidate the alias cache, and let reads recheck policy before serving stale content."
     },
     {
-      "question": "What if blob storage succeeds but metadata commit fails?",
-      "answer": "Keep the object under a pending key, retry the metadata transaction idempotently, and garbage-collect abandoned objects after a safety window."
+      "question": "How do you handle an alias hot spot?",
+      "answer": "Use edge caching with policy-aware keys, rate limits, and origin shielding while keeping invalidation targeted."
     },
     {
-      "question": "How do you prevent deleted content from remaining at the edge?",
-      "answer": "Write the tombstone first, publish purge events, use short revalidation windows, and make the origin return a hard denial for deleted IDs."
-    },
-    {
-      "question": "How would you support permanent pastes?",
-      "answer": "Use an explicit retention class, legal and abuse takedown overrides, and lifecycle policies that preserve the body while metadata remains authoritative."
+      "question": "How do you guarantee expiry?",
+      "answer": "Store expiry with the alias, reject it on every origin read, and use asynchronous deletion only as physical cleanup."
     }
   ],
   "rubric": [
     {
-      "criterion": "Durable write path",
-      "description": "The design commits paste metadata and immutable content safely before returning a URL."
+      "criterion": "Requirements",
+      "description": "The answer defines short-link resolution, privacy, expiry, deletion, abuse quarantine, cache invalidation, and bounded content handling, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Read scalability",
-      "description": "The design uses CDN or cache layers, hot-key protection, and independent read scaling."
+      "criterion": "Data model",
+      "description": "Entities and keys make the Pastebin-like paste service state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Lifecycle correctness",
-      "description": "Expiration, deletion, tombstones, invalidation, and repair work are explicit."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Security and abuse",
-      "description": "Authentication, password handling, enumeration resistance, quotas, moderation, and auditability are covered."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the Pastebin-like paste service consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

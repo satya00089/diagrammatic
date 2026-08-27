@@ -50,115 +50,150 @@
   },
   "entities": [
     {
-      "name": "Design a Video Processing and Transcoding Pipeline",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Upload videos at scale; Transcode to multiple formats; design keys around the main reads and writes."
+      "name": "MediaAsset",
+      "fields": [
+        "assetId",
+        "ownerId",
+        "sourceUri",
+        "checksum",
+        "privacy",
+        "status"
+      ],
+      "notes": "Canonical uploaded video processing and transcoding pipeline asset and lifecycle state."
     },
     {
-      "name": "design-a-video-processing-and-transcoding event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "MediaRendition",
+      "fields": ["assetId", "profile", "codec", "uri", "checksum", "status"],
+      "notes": "Derived video processing and transcoding pipeline output identified by a deterministic profile and content hash."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "PlaybackSession",
+      "fields": [
+        "sessionId",
+        "assetId",
+        "viewerId",
+        "entitlementVersion",
+        "edgeRegion",
+        "expiresAt"
+      ],
+      "notes": "Short-lived video processing and transcoding pipeline access session that binds authorization to delivery."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ProcessingJob",
+      "fields": [
+        "jobId",
+        "assetId",
+        "operation",
+        "attempt",
+        "checkpoint",
+        "status"
+      ],
+      "notes": "Retry-safe video processing and transcoding pipeline processing job with checkpoints and per-rendition progress."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Upload videos at scale command, then commit it idempotently."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/assets/uploads",
+      "contract": "{ contentType, size, checksum } -> { assetId, uploadUrl }",
+      "notes": "Issue a scoped video processing and transcoding pipeline upload URL and register the source before transfer."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/assets/{assetId}/process",
+      "contract": "{ profiles[], priority, idempotencyKey } -> { jobId, status }",
+      "notes": "Start idempotent video processing and transcoding pipeline processing for requested output profiles."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/assets/{assetId}/manifest",
+      "contract": "{ renditions[], policy, freshness }",
+      "notes": "Return available video processing and transcoding pipeline renditions only after entitlement and integrity checks."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/playback-sessions",
+      "contract": "{ assetId, viewerId, device, entitlement } -> { sessionId, manifestUrl, expiresAt }",
+      "notes": "Create a short-lived authorized video processing and transcoding pipeline delivery session."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Upload videos at scale",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Reserve a resumable upload",
+      "description": "The video processing and transcoding pipeline gateway authenticates the owner, reserves metadata, validates size and checksum, and returns a scoped upload URL."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Upload videos at scale; Transcode to multiple formats before acknowledging the client."
+      "title": "Commit and verify the source",
+      "description": "A completion callback verifies the video processing and transcoding pipeline object, records an immutable checksum, and publishes a processing job only once."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Process renditions asynchronously",
+      "description": "Workers execute video processing and transcoding pipeline transforms with deterministic profiles, checkpointing, bounded retries, and a dead-letter path for corrupt inputs."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing, update projections, and expose lag or watermark metadata."
+      "title": "Publish an entitlement-aware manifest",
+      "description": "A manifest projection exposes only completed video processing and transcoding pipeline renditions and carries policy, checksum, and freshness metadata."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Deliver, invalidate, and recover",
+      "description": "CDN delivery is protected by expiring URLs and revocation signals; failed video processing and transcoding pipeline jobs and stale manifests are replayable without duplicating outputs."
     }
   ],
   "architecture": {
-    "title": "Design a video transcoding and processing pipeline that uploads videos, transcodes to multiple formats, generates thumbnails, and delivers content via CDN. reference architecture",
-    "summary": "The authoritative state records Upload videos at scale; asynchronous workers build serving projections while Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing stays isolated from the request path.",
+    "title": "Video Processing And Transcoding Pipeline media architecture",
+    "summary": "Design a durable video media pipeline for resumable uploads, validation, transcoding into adaptive-bitrate renditions, thumbnails, moderation hooks, and CDN delivery. The design keeps originals durable and private, turns processing into idempotent queue work, publishes only verified renditions, and serves playback through entitlement-scoped CDN manifests.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Media client and access plane",
+        "description": "Upload, status, metadata, entitlement, and playback requests are authenticated and quota-protected.",
+        "componentIds": ["client", "upload"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Upload videos at scale; Transcode to multiple formats supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "label": "Original media and metadata plane",
+        "description": "Original bytes and ownership state remain durable sources for replay, processing, and deletion.",
+        "componentIds": ["object-store", "metadata"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "label": "Media processing plane",
+        "description": "Durable prioritized jobs produce verified renditions and manifests asynchronously.",
+        "componentIds": ["queue", "processor", "catalog"]
+      },
+      {
+        "id": "delivery",
+        "label": "Playback and download plane",
+        "description": "The CDN serves signed segments and downloads from complete, policy-approved renditions.",
+        "componentIds": ["cdn"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Media lifecycle operations",
+        "description": "Pipeline, delivery, abuse, storage, and deletion correctness are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "upload",
+        "label": "Upload and processing path",
+        "description": "Client -> gateway -> object store and metadata -> processing queue -> rendition catalog.",
+        "componentIds": [
+          "client",
+          "upload",
+          "object-store",
+          "metadata",
+          "queue",
+          "processor",
+          "catalog"
+        ]
       },
       {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "playback",
+        "label": "Playback path",
+        "description": "Client -> gateway -> entitlement -> rendition catalog -> signed CDN manifest -> client.",
+        "componentIds": ["client", "upload", "metadata", "catalog", "cdn"]
       }
     ],
     "components": [
@@ -166,274 +201,292 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Upload videos at scale workflow and receive explicit status, freshness, or progress.",
+        "label": "Media upload and playback clients",
+        "description": "Users upload media, inspect processing status, browse metadata, and request adaptive playback or downloads.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS upload, signed URLs, and adaptive streaming"
         }
       },
       {
-        "id": "gateway",
+        "id": "upload",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Upload and playback gateway",
+        "description": "Authenticates users, issues scoped upload/download URLs, validates metadata, and protects playback and upload quotas.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Auth, signed URLs, quotas, and abuse controls"
         }
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Upload videos at scale command, authorization policy, lifecycle state, and client contract.",
+        "id": "object-store",
+        "type": "file-storage",
+        "componentId": "object-storage",
+        "label": "Original media object store",
+        "description": "Stores immutable originals and intermediate assets with checksum, encryption, lifecycle, and tenant ownership metadata.",
         "position": {
           "x": 720,
-          "y": 260
+          "y": -40
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "storage": "Content-addressed objects and lifecycle tiers"
         }
       },
       {
-        "id": "source",
+        "id": "metadata",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Upload videos at scale; Transcode to multiple formats and supports the primary access patterns.",
+        "label": "Media metadata and entitlement store",
+        "description": "Stores ownership, privacy, captions, renditions, processing state, playback policy, and deletion tombstones.",
+        "position": {
+          "x": 720,
+          "y": 420
+        },
+        "properties": {
+          "consistency": "Versioned metadata and entitlement checks"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Media processing queue",
+        "description": "Buffers thumbnail, waveform, caption, transcode, moderation, and packaging work with priority and retry isolation.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Design a Video Processing and Transcoding Pipeline"
+          "delivery": "Durable jobs, visibility timeout, and dead-letter handling"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing after durable commits.",
+        "id": "processor",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Transcoding and media processing",
+        "description": "Generates codec/bitrate renditions, thumbnails, captions, and manifests while reporting progress and content safety results.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scaling": "CPU/GPU pools partitioned by media size and priority"
         }
       },
       {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing independently from the user-facing command and retry transient failures.",
+        "id": "catalog",
+        "type": "database",
+        "componentId": "database",
+        "label": "Rendition and playback catalog",
+        "description": "Records available renditions, codecs, bitrates, segment manifests, captions, checksums, and processing versions.",
         "position": {
           "x": 1800,
-          "y": 100
+          "y": 260
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "consistency": "Publish only complete, checksum-verified renditions"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design a Video Processing and Transcoding Pipeline with explicit freshness and fallback behavior.",
+        "id": "cdn",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Playback and download CDN",
+        "description": "Serves signed, cacheable media segments and downloads from the rendition catalog while enforcing entitlement and expiry.",
         "position": {
           "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Process 1000+ hours of video daily"
+          "caching": "Signed URLs, cache keys, and regional origins"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Media pipeline and delivery operations",
+        "description": "Tracks upload success, processing backlog, rendition failures, storage growth, CDN errors, playback startup, abuse, and deletion completion.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Backlog, processing quality, CDN, and lifecycle failures"
         }
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-upload",
         "source": "client",
-        "target": "gateway",
+        "target": "upload",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Upload videos at scale through the authenticated request boundary."
+        "label": "Upload or playback request",
+        "description": "Clients request a scoped upload URL, metadata change, processing status, or playback entitlement."
       },
       {
-        "id": "gateway-service",
-        "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Upload videos at scale; Transcode to multiple formats before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing with bounded retries and idempotent updates."
-      },
-      {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "upload-object-store",
+        "source": "upload",
+        "target": "object-store",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Original media upload",
+        "description": "The client uploads directly to object storage using a short-lived signed URL; checksum and size are verified before acceptance."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "upload-metadata",
+        "source": "upload",
+        "target": "metadata",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Media registration",
+        "description": "The gateway records owner, privacy, content type, checksum, and entitlement state before scheduling processing."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "metadata-queue",
+        "source": "metadata",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Processing job",
+        "description": "A durable job describes the source object, requested renditions, policy version, and idempotency key."
+      },
+      {
+        "id": "queue-processor",
+        "source": "queue",
+        "target": "processor",
+        "type": "message-queue",
+        "label": "Transcode or moderation work",
+        "description": "Workers claim bounded jobs, retry transient failures, and isolate large or expensive media from interactive status reads."
+      },
+      {
+        "id": "processor-catalog",
+        "source": "processor",
+        "target": "catalog",
+        "type": "database-connection",
+        "label": "Verified rendition",
+        "description": "A rendition is published only after checksum, duration, codec, moderation, and completeness checks pass."
+      },
+      {
+        "id": "catalog-cdn",
+        "source": "catalog",
+        "target": "cdn",
+        "type": "data-flow",
+        "label": "Signed playback manifest",
+        "description": "The CDN obtains an entitlement-scoped manifest and serves segments from the correct rendition origin."
+      },
+      {
+        "id": "cdn-client",
+        "source": "cdn",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Process 1000+ hours of video daily."
+        "label": "Media playback or download",
+        "description": "Clients receive signed manifests or downloads with expiry and an explicit unavailable-rendition fallback."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "processor-monitoring",
+        "source": "processor",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Processing progress and quality",
+        "description": "Operations observes queue age, worker saturation, transcode failures, moderation outcomes, and completion time."
+      },
+      {
+        "id": "cdn-monitoring",
+        "source": "cdn",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Playback and delivery telemetry",
+        "description": "Delivery metrics report startup latency, rebuffering, cache misses, signed URL failures, and regional errors."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Integrity and idempotent processing",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Use checksums and immutable source objects for video processing and transcoding pipeline deduplication and audit.",
+        "Derive output keys from asset, profile, and transform version so retries cannot corrupt a completed rendition.",
+        "Make completion callbacks and worker claims conditional on job version and attempt."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Authorization at the edge",
       "points": [
-        "Partition by the access pattern implied by Design a video transcoding and processing pipeline that uploads videos, transcodes to multiple formats, generates thumbnails, and delivers content via CDN., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Bind video processing and transcoding pipeline manifests and signed URLs to the viewer, entitlement version, and expiry.",
+        "Propagate takedown, privacy, and subscription changes to edge caches with bounded revocation delay.",
+        "Never let a cache hit bypass the policy decision for private or paid content."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Cost, hot assets, and backpressure",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Cloud Storage for video storage, Transcoder API for encoding, Cloud Run for custom processing as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Separate interactive manifest latency from expensive video processing and transcoding pipeline processing and encode work.",
+        "Use queue priority, concurrency limits, and lifecycle policies for source and rendition storage.",
+        "Measure cache hit rate, startup latency, processing backlog, failed bytes, and egress cost by profile."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Process on upload versus on demand",
+      "recommendation": "Precompute common video processing and transcoding pipeline profiles and generate rare profiles on demand with a durable job state.",
+      "caution": "Generating every possible profile up front wastes storage and processing budget."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Origin storage versus CDN caching",
+      "recommendation": "Keep the origin authoritative and use CDN caching for immutable or versioned outputs with explicit invalidation.",
+      "caution": "A cache cannot be the only copy of a video processing and transcoding pipeline rendition or the recovery path becomes undefined."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Quality versus delivery cost",
+      "recommendation": "Choose profiles from device, bandwidth, and business requirements, then measure quality and egress by cohort.",
+      "caution": "Maximal bitrate or resolution can make tail startup and cost unacceptable without improving viewing outcomes."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Letting video processing and transcoding pipeline processing run synchronously in the upload request.",
+    "Treating an upload-complete callback as trustworthy without checksum or size verification.",
+    "Using non-deterministic output paths so retries create duplicate or mismatched renditions.",
+    "Caching private or revoked content without an entitlement-aware invalidation plan.",
+    "Ignoring storage lifecycle, egress, queue backlog, and corrupt-input observability."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you make video processing and transcoding pipeline processing retry-safe?",
+      "answer": "Use deterministic output identities, conditional job transitions, per-stage checkpoints, and a manifest that publishes only verified outputs."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What happens when an asset is deleted while processing?",
+      "answer": "Write a tombstone, cancel or quarantine pending work, revoke delivery, and let cleanup workers delete derived outputs idempotently."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you control media cost?",
+      "answer": "Track bytes by source, profile, cache, and region; apply lifecycle tiers and queue policies while preserving the outputs required by the product contract."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Upload videos at scale workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the video processing and transcoding pipeline workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a video transcoding and processing pipeline that uploads videos, transcodes to multiple formats, generates thumbnails, and delivers content via CDN., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative video processing and transcoding pipeline state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions video processing and transcoding pipeline traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the video processing and transcoding pipeline user experience."
     }
   ]
 }

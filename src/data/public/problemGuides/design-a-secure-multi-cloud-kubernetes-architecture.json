@@ -50,228 +50,297 @@
   },
   "entities": [
     {
-      "name": "Design a Secure Multi-Cloud Kubernetes Architecture",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Manage Kubernetes across clouds; Implement consistent policies; design keys around the main reads and writes."
+      "name": "ResourceSpec",
+      "fields": [
+        "resourceId",
+        "tenantId",
+        "desiredState",
+        "version",
+        "policyVersion",
+        "updatedAt"
+      ],
+      "notes": "Versioned desired state for a secure multi cloud kubernetes architecture managed resource."
     },
     {
-      "name": "design-a-secure-multi-cloud-kubernetes-architecture event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Operation",
+      "fields": [
+        "operationId",
+        "resourceId",
+        "requestHash",
+        "step",
+        "attempt",
+        "status"
+      ],
+      "notes": "Durable secure multi cloud kubernetes architecture reconciliation operation with per-step progress."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "PolicyVersion",
+      "fields": [
+        "policyId",
+        "scope",
+        "version",
+        "rules",
+        "effectiveAt",
+        "status"
+      ],
+      "notes": "Auditable secure multi cloud kubernetes architecture policy evaluated before provisioning or mutation."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ReconciliationCheckpoint",
+      "fields": [
+        "resourceId",
+        "provider",
+        "observedVersion",
+        "cursor",
+        "lastError",
+        "updatedAt"
+      ],
+      "notes": "Provider-specific secure multi cloud kubernetes architecture observation and recovery cursor."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Manage Kubernetes across clouds command, then commit it idempotently."
+      "method": "PUT",
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, expectedVersion, idempotencyKey } -> { version, operationId }",
+      "notes": "Update secure multi cloud kubernetes architecture desired state with optimistic concurrency."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/resources/{resourceId}",
+      "contract": "{ desiredState, observedState, version, health, operationStatus }",
+      "notes": "Return secure multi cloud kubernetes architecture desired and observed state with reconciliation freshness."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/operations/{operationId}/cancel",
+      "contract": "{ reason, expectedVersion } -> { status }",
+      "notes": "Request a safe cancellation or rollback of an in-flight secure multi cloud kubernetes architecture operation."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/resources/{resourceId}/reconcile",
+      "contract": "{ provider, observedState, idempotencyKey } -> { operationId, status }",
+      "notes": "Trigger an auditable secure multi cloud kubernetes architecture reconciliation or repair."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Manage Kubernetes across clouds",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Accept a desired-state command",
+      "description": "The secure multi cloud kubernetes architecture control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Manage Kubernetes across clouds; Implement consistent policies before acknowledging the client."
+      "title": "Plan a safe operation",
+      "description": "A planner turns secure multi cloud kubernetes architecture desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Reconcile providers asynchronously",
+      "description": "Workers apply secure multi cloud kubernetes architecture operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking, update projections, and expose lag or watermark metadata."
+      "title": "Publish observed health",
+      "description": "The serving projection joins desired and observed secure multi cloud kubernetes architecture state with operation status, policy version, freshness, and actionable errors."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Recover and audit",
+      "description": "Retries, dead letters, drift detection, and operator approvals repair secure multi cloud kubernetes architecture resources without losing the original command or provider evidence."
     }
   ],
   "architecture": {
-    "title": "Design a multi-cloud Kubernetes platform that manages workloads across multiple cloud providers with consistent policies, service mesh, and centralized configuration. reference architecture",
-    "summary": "The authoritative state records Manage Kubernetes across clouds; asynchronous workers build serving projections while Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking stays isolated from the request path.",
+    "title": "Secure Multi Cloud Kubernetes Architecture control-plane architecture",
+    "summary": "Design a multi-cloud Kubernetes control plane that applies consistent policy and configuration across providers while preserving local autonomy, connectivity, and workload availability. The design separates versioned desired state from leased reconciliation work and provider mutations, making drift, retries, approvals, and audit history explicit while keeping operators responsive during execution backlogs.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Operator and automation plane",
+        "description": "Authenticated clients submit desired state and inspect versioned status and audit outcomes.",
+        "componentIds": ["client", "gateway", "control"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Manage Kubernetes across clouds; Implement consistent policies supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "control",
+        "label": "Desired state and planning plane",
+        "description": "Versioned state, planning, leases, and policy determine safe execution order.",
+        "componentIds": ["state", "scheduler"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "execution",
+        "label": "Reconciliation and provider plane",
+        "description": "Durable queues and partitioned workers apply idempotent provider operations.",
+        "componentIds": ["queue", "workers", "providers"]
+      },
+      {
+        "id": "events",
+        "label": "Audit and integration plane",
+        "description": "Replayable events feed status, audit, and external integrations.",
+        "componentIds": ["events"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Infrastructure safety operations",
+        "description": "Drift, lag, failed actions, provider limits, and rollout risk are observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
+        "id": "control",
+        "label": "Desired state path",
+        "description": "Client -> gateway -> control plane -> versioned state -> plan and lease.",
+        "componentIds": ["client", "gateway", "control", "state", "scheduler"]
       },
       {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
+        "id": "execute",
+        "label": "Reconciliation path",
+        "description": "Plan -> queue -> worker -> provider adapter -> observed state and audit event.",
+        "componentIds": [
+          "scheduler",
+          "queue",
+          "workers",
+          "providers",
+          "state",
+          "events"
+        ]
       }
     ],
     "components": [
       {
         "id": "client",
         "type": "client",
-        "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Manage Kubernetes across clouds workflow and receive explicit status, freshness, or progress.",
+        "componentId": "admin-console",
+        "label": "Operators and automation clients",
+        "description": "Operators and automation submit desired state, inspect status, approve changes, and consume audit events.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, CLI, and automation API"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Infrastructure control gateway",
+        "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
         "position": {
           "x": 360,
           "y": 260
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "RBAC, tenant isolation, quotas, and admission policy"
         }
       },
       {
-        "id": "service",
+        "id": "control",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Manage Kubernetes across clouds command, authorization policy, lifecycle state, and client contract.",
+        "label": "Domain control plane",
+        "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
         "position": {
           "x": 720,
           "y": 260
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "consistency": "Versioned desired state and idempotent reconciliation"
         }
       },
       {
-        "id": "source",
+        "id": "state",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Manage Kubernetes across clouds; Implement consistent policies and supports the primary access patterns.",
+        "label": "Desired state and audit store",
+        "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
         "position": {
           "x": 1080,
           "y": 260
         },
         "properties": {
-          "storage": "Design a Secure Multi-Cloud Kubernetes Architecture"
+          "storage": "Versioned state with optimistic concurrency and audit retention"
         }
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking after durable commits.",
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Placement and work scheduler",
+        "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
         "position": {
           "x": 1440,
-          "y": 100
+          "y": 80
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "scheduling": "Leases, fairness, dependency ordering, and backpressure"
+        }
+      },
+      {
+        "id": "queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Reconciliation and execution queue",
+        "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
+        "position": {
+          "x": 1440,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "Durable jobs with bounded retries and dead letters"
         }
       },
       {
         "id": "workers",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Partitioned execution workers",
+        "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
         "position": {
           "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design a Secure Multi-Cloud Kubernetes Architecture with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
           "y": 260
         },
         "properties": {
-          "latency": "Unified management interface"
+          "scaling": "Partitioned workers with leases and idempotency"
+        }
+      },
+      {
+        "id": "providers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Infrastructure provider adapters",
+        "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
+        "position": {
+          "x": 2160,
+          "y": 80
+        },
+        "properties": {
+          "providers": "Provider-qualified credentials and capability adapters"
+        }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Control-plane event stream",
+        "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
+        "position": {
+          "x": 2160,
+          "y": 440
+        },
+        "properties": {
+          "delivery": "At least once with ordering keys and replay"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Control-plane operations",
+        "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1440,
+          "y": -140
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Drift, queue lag, failed actions, and unsafe changes"
         }
       }
     ],
@@ -281,159 +350,179 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Manage Kubernetes across clouds through the authenticated request boundary."
+        "label": "Desired-state or status request",
+        "description": "Operators and automation submit a versioned desired state or inspect a tenant-scoped operation and audit history."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-control",
         "source": "gateway",
-        "target": "service",
+        "target": "control",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Authorized control command",
+        "description": "The gateway applies RBAC, admission policy, quotas, and idempotency before creating a plan."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "control-state",
+        "source": "control",
+        "target": "state",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Manage Kubernetes across clouds; Implement consistent policies before downstream asynchronous work."
+        "label": "Desired state commit",
+        "description": "The control plane stores the accepted version and lifecycle state before scheduling reconciliation."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "id": "state-scheduler",
+        "source": "state",
+        "target": "scheduler",
+        "type": "message-queue",
+        "label": "Reconciliation intent",
+        "description": "A durable event or lease makes new, changed, or drifted resources eligible for partition-local planning."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
+        "id": "scheduler-queue",
+        "source": "scheduler",
+        "target": "queue",
+        "type": "message-queue",
+        "label": "Execution plan",
+        "description": "The scheduler emits dependency-ordered work with a lease, policy version, retry budget, and provider target."
+      },
+      {
+        "id": "queue-workers",
+        "source": "queue",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking with bounded retries and idempotent updates."
+        "label": "Partitioned work item",
+        "description": "Workers claim jobs idempotently, report progress, and isolate provider or tenant failures with dead letters."
       },
       {
-        "id": "workers-read-model",
+        "id": "workers-providers",
         "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "target": "providers",
+        "type": "api-call",
+        "label": "Provider operation",
+        "description": "Adapters perform a capability-checked operation with a provider idempotency token and observed-state precondition."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "workers-state",
+        "source": "workers",
+        "target": "state",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Observed state and result",
+        "description": "Execution records observed state, drift, errors, and operation version without overwriting a newer desired state."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "state-events",
+        "source": "state",
+        "target": "events",
+        "type": "event-stream",
+        "label": "Control-plane event",
+        "description": "An outbox publishes desired-state, execution, drift, and audit events for replayable consumers."
+      },
+      {
+        "id": "events-client",
+        "source": "events",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Unified management interface."
+        "label": "Status or audit update",
+        "description": "Operators and automation receive versioned status, drift, and audit results through polling, webhook, or subscription APIs."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "queue-monitoring",
+        "source": "queue",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Execution health telemetry",
+        "description": "Operations measures queue age, lease expiry, retry storms, dead letters, worker capacity, and provider throttling."
+      },
+      {
+        "id": "events-monitoring",
+        "source": "events",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Drift and audit telemetry",
+        "description": "Monitoring checks event gaps, reconciliation parity, rollout safety, and audit completeness."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Desired versus observed state",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep secure multi cloud kubernetes architecture desired state separate from provider-observed state and show both to operators.",
+        "Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects.",
+        "Version policy and resource state so old operations cannot overwrite newer intent."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Provider failures and unknown outcomes",
       "points": [
-        "Partition by the access pattern implied by Design a multi-cloud Kubernetes platform that manages workloads across multiple cloud providers with consistent policies, service mesh, and centralized configuration., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Use provider-specific idempotency tokens and query-after-timeout behavior for secure multi cloud kubernetes architecture operations.",
+        "Bound retries with exponential backoff, circuit breakers, and per-provider quotas.",
+        "Route irreconcilable drift to an approval or quarantine path instead of retrying forever."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Blast radius and operations",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Anthos for multi-cloud management, GKE for Google Cloud clusters, Anthos Service Mesh for networking as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Partition secure multi cloud kubernetes architecture work by tenant, region, cluster, or resource class and cap concurrent mutations.",
+        "Audit who changed desired state, which policy allowed it, and what provider evidence was observed.",
+        "Alert on drift age, operation backlog, failed steps, policy denials, and stale observations."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Push versus pull reconciliation",
+      "recommendation": "Use event triggers for fast response and periodic scans for missed events, drift, and recovery.",
+      "caution": "A push-only secure multi cloud kubernetes architecture controller silently misses changes when a provider event is lost."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Central control plane versus provider-native controllers",
+      "recommendation": "Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters.",
+      "caution": "A monolithic controller becomes hard to scale and couples unrelated provider failure domains."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Automatic repair versus approval",
+      "recommendation": "Automate low-risk, reversible secure multi cloud kubernetes architecture changes and require approval for destructive or high-blast-radius operations.",
+      "caution": "Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating a secure multi cloud kubernetes architecture API response as proof that the provider has reached the desired state.",
+    "Overwriting desired state with stale observed state after an out-of-order worker response.",
+    "Retrying timed-out provider mutations without an idempotency token or status lookup.",
+    "Running every tenant or region through one queue and allowing a hot failure domain to block all work.",
+    "Omitting policy version, operator identity, provider evidence, and drift age from the audit trail."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a secure multi cloud kubernetes architecture provider timeout?",
+      "answer": "Persist the operation as unknown, query provider state using the idempotency token, and only retry or compensate after the result is known."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you stop a bad rollout?",
+      "answer": "Use policy gates, concurrency limits, canary scopes, operation cancellation, and a versioned last-known-good desired state."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you detect drift?",
+      "answer": "Compare periodic provider observations with desired state, record the observed version and age, and route policy-compliant repair separately from manual exceptions."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Manage Kubernetes across clouds workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the secure multi cloud kubernetes architecture workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a multi-cloud Kubernetes platform that manages workloads across multiple cloud providers with consistent policies, service mesh, and centralized configuration., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative secure multi cloud kubernetes architecture state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions secure multi cloud kubernetes architecture traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the secure multi cloud kubernetes architecture user experience."
     }
   ]
 }

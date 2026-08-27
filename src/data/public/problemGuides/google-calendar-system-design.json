@@ -50,161 +50,119 @@
   },
   "entities": [
     {
-      "name": "calendar events and participant access",
+      "name": "CalendarEvent",
       "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
+        "eventId",
+        "calendarId",
+        "organizerId",
+        "startAt",
+        "endAt",
+        "timezone",
+        "version"
       ],
-      "notes": "Durable model for event versions and attendee responses; design keys around the main reads and writes."
+      "notes": "Versioned event with recurrence, attendee, and timezone semantics for google calendar."
     },
     {
-      "name": "google-calendar event",
-      "fields": [
-        "id",
-        "source_id",
-        "version",
-        "occurred_at",
-        "status"
-      ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "RecurrenceRule",
+      "fields": ["eventId", "rrule", "timezone", "exceptions", "effectiveAt"],
+      "notes": "Expansion rule and exceptions used to derive recurring google calendar instances."
     },
     {
-      "name": "Policy and configuration",
-      "fields": [
-        "id",
-        "source_id",
-        "version",
-        "occurred_at",
-        "status"
-      ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "AttendeeResponse",
+      "fields": ["eventId", "attendeeId", "response", "sequence", "updatedAt"],
+      "notes": "Idempotent attendee invitation and RSVP state."
     },
     {
-      "name": "Read model",
-      "fields": [
-        "id",
-        "source_id",
-        "version",
-        "occurred_at",
-        "status"
-      ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "SyncCursor",
+      "fields": ["principalId", "calendarId", "token", "version", "expiresAt"],
+      "notes": "Incremental sync position for reconnecting clients."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the create or update a calendar event command, then commit it idempotently."
+      "path": "/v1/calendars/{calendarId}/events",
+      "contract": "{ event, recurrence, attendees, idempotencyKey } -> { eventId, version }",
+      "notes": "Create a google calendar event with timezone and optimistic concurrency semantics."
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/events/{eventId}",
+      "contract": "{ expectedVersion, changes, scope } -> { version, conflicts[] }",
+      "notes": "Update or cancel an event without losing concurrent edits."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/calendars/{calendarId}/range?from=&to=",
+      "contract": "{ events[], freeBusy[], projectionVersion }",
+      "notes": "Serve a bounded google calendar range or free/busy view."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/sync?cursor=",
+      "contract": "{ changes[], nextCursor, snapshotRequired }",
+      "notes": "Resume google calendar changes after reconnect or offline edits."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept create or update a calendar event",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Validate timezone and calendar policy",
+      "description": "The API checks google calendar ACLs, recurrence limits, attendee permissions, timezone rules, and idempotency before writing."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records event versions and attendee responses before acknowledging the client."
+      "title": "Commit an event version",
+      "description": "The calendar service conditionally writes the event, recurrence exceptions, attendee sequence, and tombstones."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Expand ranges and reminders",
+      "description": "Workers materialize bounded google calendar instances, free/busy intervals, and reminder jobs from committed versions."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process reminders, recurrence expansion, sync, and search indexing, update projections, and expose lag or watermark metadata."
+      "title": "Fan out invitations and sync deltas",
+      "description": "Invitation, RSVP, and incremental sync consumers process the event with deduplication and cursor ordering."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Recover missed jobs and conflicts",
+      "description": "Repair workers replay events, report stale projections, and preserve conflict evidence rather than overwriting edits."
     }
   ],
   "architecture": {
-    "title": "Events, recurring schedules, invitations, reminders, and shared calendars reference architecture",
-    "summary": "The authoritative state records create or update a calendar event; asynchronous workers build serving projections while reminders, recurrence expansion, sync, and search indexing stays isolated from the request path.",
+    "title": "Google Calendar domain architecture",
+    "summary": "Design events, recurring schedules, invitations, reminders, and shared calendars so users can create or update a calendar event reliably at scale. The design makes google calendar decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Calendar experience and API plane",
+        "description": "Commands, range reads, invitations, and sync enter through authenticated contracts.",
+        "componentIds": ["client", "gateway", "calendar-service"]
+      },
+      {
+        "id": "truth",
+        "label": "Versioned calendar truth",
+        "description": "Events, attendees, ACLs, recurrence rules, and tombstones are authoritative and replayable.",
+        "componentIds": ["calendar-store", "event-bus"]
+      },
+      {
+        "id": "derived",
+        "label": "Availability and reminder projections",
+        "description": "Range indexes, recurrence expansions, reminders, and sync deltas are rebuildable derived state.",
         "componentIds": [
-          "client",
-          "gateway",
-          "service"
+          "availability-index",
+          "recurrence-worker",
+          "sync-gateway"
         ]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for event versions and attendee responses supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
-      },
-      {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "id": "delivery",
+        "label": "Invitation and reminder delivery",
+        "description": "External notifications remain retryable and independently observable.",
+        "componentIds": ["notifications"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
-      },
-      {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Calendar reliability operations",
+        "description": "Conflict, freshness, lag, privacy, and recovery signals protect the calendar contract.",
+        "componentIds": ["monitoring"]
       }
     ],
     "components": [
@@ -212,274 +170,359 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the create or update a calendar event workflow and receive explicit status, freshness, or progress.",
+        "label": "Calendar clients",
+        "description": "Web, mobile, and sync clients issue event, availability, and invitation commands.",
         "position": {
           "x": 0,
-          "y": 260
+          "y": 240
         },
         "properties": {
-          "protocol": "HTTPS or streaming API"
+          "protocol": "HTTPS, CalDAV-like sync, and push"
         }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Calendar API gateway",
+        "description": "Authenticates users, enforces calendar ACLs, validates time zones, and binds idempotency keys.",
         "position": {
-          "x": 360,
-          "y": 260
+          "x": 320,
+          "y": 240
         },
         "properties": {
-          "protection": "Auth, validation, rate limits"
+          "protection": "Identity, ACLs, quotas, and idempotency"
         }
       },
       {
-        "id": "service",
+        "id": "calendar-service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the create or update a calendar event command, authorization policy, lifecycle state, and client contract.",
+        "label": "Event and calendar service",
+        "description": "Owns event versions, recurrence exceptions, attendee state, sharing, and conflict rules.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 660,
+          "y": 240
         },
         "properties": {
-          "consistency": "Idempotent command handling"
+          "consistency": "Conditional writes by calendar and event version"
         }
       },
       {
-        "id": "source",
+        "id": "calendar-store",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores event versions and attendee responses and supports the primary access patterns.",
+        "label": "Calendar and ACL store",
+        "description": "Stores calendars, events, recurrence rules, attendees, permissions, and tombstones.",
         "position": {
-          "x": 1080,
-          "y": 260
+          "x": 1000,
+          "y": 240
         },
         "properties": {
-          "storage": "calendar events and participant access"
+          "indexes": "Owner, attendee, time range, and sync token"
         }
       },
       {
-        "id": "stream",
+        "id": "availability-index",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Time-range and free/busy index",
+        "description": "Derived interval index optimized for range reads and free/busy lookup.",
+        "position": {
+          "x": 1360,
+          "y": 80
+        },
+        "properties": {
+          "freshness": "Versioned interval projection"
+        }
+      },
+      {
+        "id": "event-bus",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for reminders, recurrence expansion, sync, and search indexing after durable commits.",
+        "label": "Calendar event bus",
+        "description": "Carries committed event changes, ACL updates, reminder jobs, and replay offsets.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 1360,
+          "y": 400
         },
         "properties": {
-          "delivery": "At least once with dedupe"
+          "delivery": "At least once, partitioned by calendar"
         }
       },
       {
-        "id": "workers",
+        "id": "recurrence-worker",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process reminders, recurrence expansion, sync, and search indexing independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Recurrence and reminder workers",
+        "description": "Expands recurring events, materializes exceptions, schedules reminders, and retries fan-out.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1710,
+          "y": 80
         },
         "properties": {
-          "scaling": "Partitioned workers"
+          "scaling": "Partitioned jobs with leases and dead letters"
         }
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for calendar events and participant access with explicit freshness and fallback behavior.",
+        "id": "sync-gateway",
+        "type": "web-server",
+        "componentId": "backend-server",
+        "label": "Incremental sync service",
+        "description": "Serves sync tokens and reconnect deltas without forcing clients to reload an entire calendar.",
         "position": {
-          "x": 2160,
-          "y": 260
+          "x": 1710,
+          "y": 400
         },
         "properties": {
-          "latency": "p95 <=150ms event reads"
+          "protocol": "Versioned cursor and snapshot fallback"
+        }
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Invite and reminder delivery",
+        "description": "Delivers invitation, RSVP, reminder, and change notifications with deduplication and audit.",
+        "position": {
+          "x": 2060,
+          "y": 240
+        },
+        "properties": {
+          "delivery": "Provider-aware retry and delivery receipts"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Calendar correctness operations",
+        "description": "Tracks conflicts, freshness, reminder lag, notification duplicates, and sync recovery.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -160
         },
         "properties": {
-          "alerts": "Errors, lag, drift"
+          "alerts": "Stale projections, missed reminders, and invariant failures"
         }
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits create or update a calendar event through the authenticated request boundary."
+        "label": "Calendar command or range read",
+        "description": "The client submits a versioned event, availability, invitation, or sync request."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-calendar-service-1",
         "source": "gateway",
-        "target": "service",
+        "target": "calendar-service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated calendar operation",
+        "description": "The gateway applies identity, ACL, quota, timezone, and idempotency checks."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "calendar-service-calendar-store-2",
+        "source": "calendar-service",
+        "target": "calendar-store",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits event versions and attendee responses before downstream asynchronous work."
+        "label": "Conditional event commit",
+        "description": "The service commits event and attendee versions before acknowledging the command."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "calendar-store-event-bus-3",
+        "source": "calendar-store",
+        "target": "event-bus",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Committed calendar change",
+        "description": "An outbox publishes the durable change with calendar key and sequence."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "event-bus-availability-index-4",
+        "source": "event-bus",
+        "target": "availability-index",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle reminders, recurrence expansion, sync, and search indexing with bounded retries and idempotent updates."
+        "label": "Interval projection update",
+        "description": "Workers update free/busy and range indexes with event version and freshness."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
+        "id": "event-bus-recurrence-worker-5",
+        "source": "event-bus",
+        "target": "recurrence-worker",
+        "type": "message-queue",
+        "label": "Recurrence and reminder job",
+        "description": "Partitioned workers expand instances and schedule reminder or attendee work."
+      },
+      {
+        "id": "event-bus-sync-gateway-6",
+        "source": "event-bus",
+        "target": "sync-gateway",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Sync delta",
+        "description": "Committed changes become cursor-addressable deltas for reconnecting clients."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "recurrence-worker-notifications-7",
+        "source": "recurrence-worker",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Invite or reminder delivery",
+        "description": "Notifications are deduplicated, retried, and audited independently of the event commit."
+      },
+      {
+        "id": "availability-index-calendar-service-8",
+        "source": "availability-index",
+        "target": "calendar-service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Range and free/busy read",
+        "description": "The service reads a bounded projection and reports freshness or falls back safely."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "sync-gateway-client-9",
+        "source": "sync-gateway",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within p95 <=150ms event reads."
+        "label": "Sync response or push",
+        "description": "The client receives deltas, a resume token, or an explicit snapshot-required state."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "calendar-service-monitoring-10",
+        "source": "calendar-service",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Conflict and request telemetry",
+        "description": "Operations observes version conflicts, ACL failures, and latency."
+      },
+      {
+        "id": "event-bus-monitoring-11",
+        "source": "event-bus",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and freshness telemetry",
+        "description": "Operations observes consumer lag, missed reminders, projection age, and replay parity."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "write",
+        "label": "Event write and invitation path",
+        "description": "Client -> gateway -> event service -> calendar store -> event bus.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "calendar-service",
+          "calendar-store",
+          "event-bus"
+        ]
+      },
+      {
+        "id": "range",
+        "label": "Range and free/busy read path",
+        "description": "Calendar store events -> interval index -> sync or range response.",
+        "componentIds": [
+          "calendar-store",
+          "event-bus",
+          "availability-index",
+          "sync-gateway",
+          "client"
+        ]
+      },
+      {
+        "id": "reminder",
+        "label": "Reminder and attendee fan-out path",
+        "description": "Committed event -> recurrence worker -> notification provider with deduplicated delivery.",
+        "componentIds": [
+          "event-bus",
+          "recurrence-worker",
+          "notifications",
+          "client"
+        ]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Timezone, recurrence, and exceptions",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Store UTC instants plus the original timezone and recurrence rule; expand with a pinned timezone database version.",
+        "Model exception and cancellation instances explicitly so a single edit does not rewrite the series ambiguously.",
+        "Bound expansion windows and schedule future reminders from durable recurrence state."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Concurrent edits and invitations",
       "points": [
-        "Partition by the access pattern implied by events, recurring schedules, invitations, reminders, and shared calendars, then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Use event version and attendee sequence checks to reject or merge stale edits deterministically.",
+        "Separate organizer truth from attendee response state and make notification jobs idempotent.",
+        "Return conflicts and current version so offline clients can reconcile instead of silently losing changes."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Sync and reminder reliability",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat reminders, recurrence expansion, sync, and search indexing as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Issue versioned sync cursors with snapshot fallback when a client is too far behind.",
+        "Track reminder schedule, delivery attempts, and provider receipt independently from event commit.",
+        "Measure range freshness, conflict rate, missed reminders, and duplicate notifications."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Materialized recurrence versus query-time expansion",
+      "recommendation": "Materialize bounded near-term instances and expand long-range views asynchronously from the rule.",
+      "caution": "Expanding every recurring series on every read creates unpredictable latency and duplicate reminder risk."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Strong range reads versus projection freshness",
+      "recommendation": "Serve indexed ranges with a visible version and fall back to authoritative state for narrow critical reads.",
+      "caution": "Hiding stale free/busy data can cause double booking or missed meeting conflicts."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Push sync versus cursor pull",
+      "recommendation": "Use push as a wake-up signal and cursor pull as the correctness path for offline and reconnect recovery.",
+      "caution": "Push-only sync loses changes when a device sleeps or changes networks."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Storing only local time and losing DST or timezone intent.",
+    "Updating a recurring series without modeling exceptions and cancelled instances.",
+    "Sending duplicate invitations or reminders after at-least-once retries.",
+    "Using last-write-wins for concurrent attendee or organizer edits.",
+    "Making sync depend on a live connection with no cursor or snapshot recovery."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a DST change in google calendar?",
+      "answer": "Persist the timezone and local recurrence rule, expand with a versioned timezone database, and retain the original event intent for audit."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you prevent duplicate reminders?",
+      "answer": "Give each occurrence and reminder schedule a deterministic identity, claim it conditionally, and store provider delivery receipts."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "What happens when a client is offline?",
+      "answer": "Queue mutations with client idempotency, return version conflicts, and reconcile against a cursor or snapshot on reconnect."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the create or update a calendar event workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the google calendar workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support events, recurring schedules, invitations, reminders, and shared calendars, authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative google calendar state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions google calendar traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the google calendar user experience."
     }
   ]
 }

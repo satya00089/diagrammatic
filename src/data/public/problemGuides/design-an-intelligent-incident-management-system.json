@@ -50,115 +50,135 @@
   },
   "entities": [
     {
-      "name": "Design an Intelligent Incident Management System",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Automatically detect incidents from monitoring signals; Correlate related alerts into unified incidents; design keys around the main reads and writes."
+      "name": "OperationalSignal",
+      "fields": [
+        "signalId",
+        "source",
+        "serviceId",
+        "severity",
+        "fingerprint",
+        "occurredAt"
+      ],
+      "notes": "Deduplicated signal used by intelligent incident management system grouping and policy."
     },
     {
-      "name": "design-an-intelligent-incident-management event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Incident",
+      "fields": [
+        "incidentId",
+        "serviceIds",
+        "severity",
+        "status",
+        "owner",
+        "version"
+      ],
+      "notes": "Versioned incident or operational case."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ResponsePolicy",
+      "fields": [
+        "policyId",
+        "scope",
+        "schedule",
+        "suppression",
+        "escalation",
+        "version"
+      ],
+      "notes": "Auditable routing, suppression, or capacity policy."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "DecisionRecord",
+      "fields": [
+        "decisionId",
+        "incidentId",
+        "actor",
+        "evidenceRefs",
+        "action",
+        "createdAt"
+      ],
+      "notes": "Timeline entry for an escalation, capacity decision, or remediation."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Automatically detect incidents from monitoring signals command, then commit it idempotently."
+      "path": "/v1/signals",
+      "contract": "{ source, serviceId, severity, fingerprint, payload } -> { signalId, accepted }",
+      "notes": "Ingest a normalized intelligent incident management system signal idempotently."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/incidents/{incidentId}",
+      "contract": "{ incident, evidence[], timeline[], freshness }",
+      "notes": "Return grouped intelligent incident management system state and its evidence."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/incidents/{incidentId}/ack",
+      "contract": "{ actor, note, expectedVersion } -> { version, status }",
+      "notes": "Acknowledge or update operational state with optimistic concurrency."
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/policies/{policyId}",
+      "contract": "{ schedule, suppression, escalation, expectedVersion } -> { version }",
+      "notes": "Update intelligent incident management system response policy with an audit trail."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Automatically detect incidents from monitoring signals",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Ingest and normalize signals",
+      "description": "The intelligent incident management system gateway validates source, service, ownership, fingerprint, severity, and deduplication before publishing a signal."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Automatically detect incidents from monitoring signals; Correlate related alerts into unified incidents before acknowledging the client."
+      "title": "Group with topology and policy",
+      "description": "Correlation uses dependency, owner, schedule, and suppression policy to create an explainable incident or capacity case."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Commit operational state",
+      "description": "The incident service conditionally commits severity, ownership, acknowledgements, and timeline evidence."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions, update projections, and expose lag or watermark metadata."
+      "title": "Escalate and notify asynchronously",
+      "description": "Workers schedule responders, reminders, and capacity actions with leases, quiet hours, and deduplicated delivery."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Learn and repair",
+      "description": "Analytics measures noise, response, SLO, and capacity outcomes while replay workers repair missed events or stale policy."
     }
   ],
   "architecture": {
-    "title": "Design an AIOps-powered incident management system that automatically detects incidents, correlates alerts, identifies affected services, suggests remediation, and learns from past incident resolutions. reference architecture",
-    "summary": "The authoritative state records Automatically detect incidents from monitoring signals; asynchronous workers build serving projections while Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions stays isolated from the request path.",
+    "title": "Intelligent Incident Management System domain architecture",
+    "summary": "Design an incident-management platform that detects and correlates signals into actionable incidents, maps blast radius, recommends evidence-backed remediation, coordinates responders, and learns from outcomes. The design makes intelligent incident management system decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Operator and signal plane",
+        "description": "Signals, incident views, acknowledgements, and controls enter through scoped APIs.",
+        "componentIds": ["client", "gateway", "signals"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Automatically detect incidents from monitoring signals; Correlate related alerts into unified incidents supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "context",
+        "label": "Topology and policy context",
+        "description": "Ownership, dependencies, schedules, runbooks, and suppression rules shape decisions.",
+        "componentIds": ["topology", "incident"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "workflow",
+        "label": "Escalation and decision workflow",
+        "description": "Incident, capacity, and response work is durable, resumable, and auditable.",
+        "componentIds": ["planner", "timeline"]
+      },
+      {
+        "id": "delivery",
+        "label": "Responder and analytics delivery",
+        "description": "Notifications and analysis remain independent from incident state commits.",
+        "componentIds": ["notifications", "analytics"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Reliability operations",
+        "description": "Signal quality, response, backlog, and policy metrics protect the operational contract.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -166,274 +186,306 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Automatically detect incidents from monitoring signals workflow and receive explicit status, freshness, or progress.",
+        "label": "Operator and service clients",
+        "description": "Services emit signals and operators inspect incidents, policies, and capacity decisions.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Operations API gateway",
+        "description": "Authenticates services and operators, validates signal schemas, and scopes tenants.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Automatically detect incidents from monitoring signals command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Automatically detect incidents from monitoring signals; Correlate related alerts into unified incidents and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design an Intelligent Incident Management System"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "signals",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions after durable commits.",
+        "label": "Signal intake stream",
+        "description": "Carries alerts, incidents, service health, demand, and policy events with deduplication identity.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "topology",
+        "type": "database",
+        "componentId": "database",
+        "label": "Service and dependency graph",
+        "description": "Stores ownership, dependencies, runbooks, schedules, and capacity relationships.",
+        "position": {
+          "x": 1010,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "incident",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions independently from the user-facing command and retry transient failures.",
+        "label": "Incident and policy service",
+        "description": "Groups signals, applies severity and suppression policy, and owns incident lifecycle.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1010,
+          "y": 440
         },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
+        "properties": {}
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design an Intelligent Incident Management System with explicit freshness and fallback behavior.",
+        "id": "planner",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Escalation and capacity planner",
+        "description": "Schedules responders, forecasts demand, and creates bounded actions or recommendations.",
         "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "Incident detection within 2 minutes"
-        }
+        "properties": {}
+      },
+      {
+        "id": "timeline",
+        "type": "database",
+        "componentId": "database",
+        "label": "Incident and decision timeline",
+        "description": "Stores durable state, evidence, acknowledgements, and capacity decisions for audit.",
+        "position": {
+          "x": 1710,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Escalation and status delivery",
+        "description": "Delivers pages, updates, and reminders with quiet hours and deduplication.",
+        "position": {
+          "x": 2060,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Reliability analytics",
+        "description": "Computes alert quality, response time, SLO, capacity, and post-incident metrics.",
+        "position": {
+          "x": 2060,
+          "y": 440
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Operations of operations",
+        "description": "Tracks intake loss, grouping quality, escalation lag, planner backlog, and action failures.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Automatically detect incidents from monitoring signals through the authenticated request boundary."
+        "label": "Operator command or signal",
+        "description": "Operators and services submit signals, acknowledgements, and policy commands."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-signals-1",
         "source": "gateway",
-        "target": "service",
+        "target": "signals",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated signal",
+        "description": "Signals are authenticated, normalized, scoped, and assigned an idempotency identity."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Automatically detect incidents from monitoring signals; Correlate related alerts into unified incidents before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "signals-incident-2",
+        "source": "signals",
+        "target": "incident",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions with bounded retries and idempotent updates."
+        "label": "Alert or demand event",
+        "description": "Incident service consumes events at least once and applies grouping or suppression policy."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
-      },
-      {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "topology-incident-3",
+        "source": "topology",
+        "target": "incident",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Ownership and dependency context",
+        "description": "Grouping and severity use current topology, owner, runbook, and schedule facts."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Incident detection within 2 minutes."
+        "id": "incident-timeline-4",
+        "source": "incident",
+        "target": "timeline",
+        "type": "database-connection",
+        "label": "Incident state commit",
+        "description": "Incident state and evidence are versioned before downstream escalation."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "incident-planner-5",
+        "source": "incident",
+        "target": "planner",
+        "type": "message-queue",
+        "label": "Escalation or capacity work",
+        "description": "Planner work is partitioned, leased, and retry-safe."
+      },
+      {
+        "id": "planner-notifications-6",
+        "source": "planner",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Page or status update",
+        "description": "Responders receive deduplicated notifications with acknowledgement state."
+      },
+      {
+        "id": "timeline-analytics-7",
+        "source": "timeline",
+        "target": "analytics",
+        "type": "data-flow",
+        "label": "Reliability evidence",
+        "description": "Analytics computes response, alert quality, SLO, and capacity measures."
+      },
+      {
+        "id": "incident-monitoring-8",
+        "source": "incident",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Workflow telemetry",
+        "description": "Operations observes grouping, suppression, state conflicts, and response lag."
+      },
+      {
+        "id": "planner-monitoring-9",
+        "source": "planner",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Planner telemetry",
+        "description": "Operations observes schedule, capacity, notification, and action backlog."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "incident",
+        "label": "Signal to incident path",
+        "description": "Signal -> context and policy -> incident state -> timeline.",
+        "componentIds": ["signals", "topology", "incident", "timeline"]
+      },
+      {
+        "id": "escalate",
+        "label": "Escalation path",
+        "description": "Incident or capacity decision -> planner -> notification -> operator acknowledgement.",
+        "componentIds": ["incident", "planner", "notifications", "client"]
+      },
+      {
+        "id": "learn",
+        "label": "Reliability learning path",
+        "description": "Timeline and signals -> analytics -> policy or capacity improvement.",
+        "componentIds": ["timeline", "analytics", "topology", "incident"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Grouping without hiding risk",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Use topology, fingerprints, time windows, and causal hints to group related intelligent incident management system signals.",
+        "Keep raw signals and evidence links so operators can split an incorrect group.",
+        "Never let suppression remove critical severity or prevent an audit trail."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Escalation and schedules",
       "points": [
-        "Partition by the access pattern implied by Design an AIOps-powered incident management system that automatically detects incidents, correlates alerts, identifies affected services, suggests remediation, and learns from past incident resolutions., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Version policies, schedules, quiet hours, and fallback responders; make transitions idempotent.",
+        "Track acknowledgement and notification receipts separately from incident state.",
+        "Bound retries and use a dead-letter or manual escalation path for provider failures."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Noise and capacity quality",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use clustering algorithms for alert correlation, Implement service dependency graph for blast radius, Use NLP to match incidents with historical resolutions as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Measure alert-to-incident ratio, duplicate rate, missed critical signals, acknowledgement latency, and action success.",
+        "Use feedback and post-incident review to tune policies without silently changing historical decisions.",
+        "Keep capacity forecasts and recommendations distinct from autonomous production changes."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Suppression versus visibility",
+      "recommendation": "Suppress duplicate delivery but preserve raw signals, evidence, and a reason for grouping.",
+      "caution": "Deleting noisy signals makes it impossible to prove that a critical event was missed."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous page versus queued delivery",
+      "recommendation": "Commit incident state first and queue pages or reminders with delivery receipts.",
+      "caution": "Blocking incident creation on a notification provider turns provider outages into incident loss."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Automatic remediation versus human control",
+      "recommendation": "Automate bounded, reversible actions and require approval for high-blast-radius changes.",
+      "caution": "An incorrect correlation can make automatic remediation amplify an outage."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Correlating alerts without service ownership or dependency context.",
+    "Suppressing raw evidence along with duplicate notifications.",
+    "Making acknowledgement or escalation non-idempotent.",
+    "Failing to model quiet hours, fallback responders, and provider outages.",
+    "Optimizing noise reduction without measuring missed critical signals."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you know correlation is safe?",
+      "answer": "Show the evidence and policy reason, preserve individual signals, measure false merges and splits, and allow operators to correct groups."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What if the notification provider is down?",
+      "answer": "Persist incident state, retry with backoff, use a fallback channel, and make delivery status explicit to operators."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you prevent remediation loops?",
+      "answer": "Use operation IDs, cooldowns, policy and blast-radius gates, and an explicit maximum retry or approval boundary."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Automatically detect incidents from monitoring signals workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the intelligent incident management system workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design an AIOps-powered incident management system that automatically detects incidents, correlates alerts, identifies affected services, suggests remediation, and learns from past incident resolutions., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative intelligent incident management system state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions intelligent incident management system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the intelligent incident management system user experience."
     }
   ]
 }

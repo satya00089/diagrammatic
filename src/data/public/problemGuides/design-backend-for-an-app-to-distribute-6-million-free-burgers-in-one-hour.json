@@ -50,115 +50,135 @@
   },
   "entities": [
     {
-      "name": "Design Backend for an App to Distribute 6 Million Free Burgers in One Hour",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Handle millions of concurrent requests; Fair distribution (first-come-first-served); design keys around the main reads and writes."
+      "name": "RedemptionIntent",
+      "fields": [
+        "intentId",
+        "customerId",
+        "offerId",
+        "status",
+        "version",
+        "idempotencyKey"
+      ],
+      "notes": "Idempotent backend reservation intent with an explicit lifecycle."
     },
     {
-      "name": "design-backend-for-an-app-to-distribute-6-million-free-burgers-in-one-hour event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "InventoryClaim",
+      "fields": [
+        "claimId",
+        "itemId",
+        "quantity",
+        "expiresAt",
+        "status",
+        "version"
+      ],
+      "notes": "Short-lived conditional claim that protects scarce availability."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "PaymentAttempt",
+      "fields": [
+        "attemptId",
+        "intentId",
+        "provider",
+        "requestHash",
+        "status",
+        "providerRef"
+      ],
+      "notes": "Retry-safe payment attempt with unknown-outcome reconciliation."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "FulfillmentState",
+      "fields": [
+        "intentId",
+        "stage",
+        "owner",
+        "lastEventId",
+        "status",
+        "updatedAt"
+      ],
+      "notes": "Durable downstream reservation fulfillment progress."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Handle millions of concurrent requests command, then commit it idempotently."
-    },
-    {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/catalog/search?q=&filters=",
+      "contract": "{ items[], offers[], availabilityVersion, nextCursor }",
+      "notes": "Search backend candidates with current price, eligibility, and availability metadata."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/reservations",
+      "contract": "{ offerId, quantity, customerId, idempotencyKey } -> { intentId, status, version }",
+      "notes": "Create an idempotent backend reservation intent."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/reservations/{intentId}/confirm",
+      "contract": "{ expectedVersion, paymentToken } -> { status, confirmation }",
+      "notes": "Confirm the backend reservation only after the inventory claim and payment policy pass."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/reservations/{intentId}",
+      "contract": "{ status, claim, paymentStatus, fulfillment, freshness }",
+      "notes": "Return backend status with explicit pending, expired, or failed state."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Handle millions of concurrent requests",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Search and price current candidates",
+      "description": "The backend query path combines catalog, eligibility, price, and current availability without treating a stale index as a final claim."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Handle millions of concurrent requests; Fair distribution (first-come-first-served) before acknowledging the client."
+      "title": "Claim scarce inventory",
+      "description": "The backend service creates a short-lived conditional claim keyed by item and request idempotency before charging or confirming."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Confirm the redemption safely",
+      "description": "Payment, policy, and inventory transitions are versioned; unknown provider outcomes are reconciled before retry."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user, update projections, and expose lag or watermark metadata."
+      "title": "Publish fulfillment work",
+      "description": "The committed backend intent emits an event for partner, packing, delivery, or campaign dispatch workers."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Expire, cancel, and reconcile",
+      "description": "Expiry and cancellation release claims idempotently while reconciliation compares internal state with external providers or partners."
     }
   ],
   "architecture": {
-    "title": "Design a system to handle flash distribution of limited items with high concurrency and fairness. reference architecture",
-    "summary": "The authoritative state records Handle millions of concurrent requests; asynchronous workers build serving projections while Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user stays isolated from the request path.",
+    "title": "Backend domain architecture",
+    "summary": "Design a fair, abuse-resistant flash-distribution system that gives away six million vouchers or burgers in one hour while keeping inventory, eligibility, and redemption correct under extreme concurrency. The design makes backend decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Booking experience and search",
+        "description": "Search and reservation commands enter through a protected API boundary.",
+        "componentIds": ["client", "gateway", "catalog", "search"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Handle millions of concurrent requests; Fair distribution (first-come-first-served) supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "inventory",
+        "label": "Availability and reservation truth",
+        "description": "Inventory holds and reservation state use conditional, versioned writes.",
+        "componentIds": ["availability", "booking"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "effects",
+        "label": "Payment and partner effects",
+        "description": "External payment and partner operations are reconciled asynchronously.",
+        "componentIds": ["payments", "event-bus", "partner-sync"]
+      },
+      {
+        "id": "delivery",
+        "label": "Customer communication",
+        "description": "Confirmations and changes are independently retryable.",
+        "componentIds": ["notifications"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Booking reliability operations",
+        "description": "Oversell, freshness, lag, and uncertain payment signals protect correctness.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -166,274 +186,340 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Handle millions of concurrent requests workflow and receive explicit status, freshness, or progress.",
+        "label": "Traveler and partner clients",
+        "description": "Search, hold, book, cancel, and manage reservation clients.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Booking API gateway",
+        "description": "Authenticates users and partners, applies quotas, validates idempotency, and protects payment flows.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
+        "id": "catalog",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Handle millions of concurrent requests command, authorization policy, lifecycle state, and client contract.",
+        "label": "Property and rate catalog",
+        "description": "Owns normalized property, room, rate, policy, and partner mapping data.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "search",
+        "type": "search-engine",
+        "componentId": "search-engine",
+        "label": "Availability search index",
+        "description": "Serves geo, date-range, occupancy, and amenity candidate searches from derived inventory.",
+        "position": {
+          "x": 650,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "availability",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Handle millions of concurrent requests; Fair distribution (first-come-first-served) and supports the primary access patterns.",
+        "label": "Inventory and hold store",
+        "description": "Authoritative room or seat inventory with short-lived holds and conditional decrement.",
         "position": {
-          "x": 1080,
+          "x": 1010,
           "y": 260
         },
-        "properties": {
-          "storage": "Design Backend for an App to Distribute 6 Million Free Burgers in One Hour"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
+        "id": "booking",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user independently from the user-facing command and retry transient failures.",
+        "label": "Reservation service",
+        "description": "Owns booking state, cancellation policy, confirmation numbers, and partner reconciliation.",
         "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design Backend for an App to Distribute 6 Million Free Burgers in One Hour with explicit freshness and fallback behavior.",
-        "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "Extreme traffic spike (millions in minutes)"
-        }
+        "properties": {}
+      },
+      {
+        "id": "payments",
+        "type": "external-api",
+        "componentId": "external-api",
+        "label": "Payment provider adapter",
+        "description": "Tokenized authorization and capture boundary with unknown-outcome reconciliation.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "event-bus",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Reservation event bus",
+        "description": "Publishes holds, bookings, cancellations, and inventory changes for asynchronous work.",
+        "position": {
+          "x": 1710,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "partner-sync",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Partner sync workers",
+        "description": "Reconcile rate and inventory feeds, confirmations, cancellations, and late partner responses.",
+        "position": {
+          "x": 2060,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Confirmation delivery",
+        "description": "Sends confirmation, change, cancellation, and support messages with delivery audit.",
+        "position": {
+          "x": 2060,
+          "y": 80
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Booking reliability operations",
+        "description": "Tracks oversells, hold expiry, payment uncertainty, partner lag, and search freshness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Handle millions of concurrent requests through the authenticated request boundary."
+        "label": "Search or booking request",
+        "description": "Clients submit date, occupancy, hold, booking, and cancellation requests."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-catalog-1",
         "source": "gateway",
-        "target": "service",
+        "target": "catalog",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Catalog lookup",
+        "description": "The gateway retrieves normalized property, rate, and policy facts."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "gateway-search-2",
+        "source": "gateway",
+        "target": "search",
+        "type": "api-call",
+        "label": "Candidate availability query",
+        "description": "Search applies geo, date, occupancy, and policy filters within a latency budget."
+      },
+      {
+        "id": "search-availability-3",
+        "source": "search",
+        "target": "availability",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Handle millions of concurrent requests; Fair distribution (first-come-first-served) before downstream asynchronous work."
+        "label": "Authoritative availability check",
+        "description": "Candidates are checked against current inventory before a hold or booking."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "gateway-booking-4",
+        "source": "gateway",
+        "target": "booking",
+        "type": "api-call",
+        "label": "Reservation command",
+        "description": "The reservation service validates policy and binds the idempotency key."
+      },
+      {
+        "id": "booking-availability-5",
+        "source": "booking",
+        "target": "availability",
+        "type": "database-connection",
+        "label": "Conditional hold or decrement",
+        "description": "Inventory is held or committed conditionally to prevent oversell."
+      },
+      {
+        "id": "booking-payments-6",
+        "source": "booking",
+        "target": "payments",
+        "type": "api-call",
+        "label": "Tokenized authorization",
+        "description": "Payment is authorized through an adapter and unknown results are reconciled."
+      },
+      {
+        "id": "booking-event-bus-7",
+        "source": "booking",
+        "target": "event-bus",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Committed reservation event",
+        "description": "An outbox publishes hold, booking, cancellation, and inventory events."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "event-bus-partner-sync-8",
+        "source": "event-bus",
+        "target": "partner-sync",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user with bounded retries and idempotent updates."
+        "label": "Partner reconciliation",
+        "description": "Workers process confirmations and inventory changes with bounded retries."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "id": "event-bus-notifications-9",
+        "source": "event-bus",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Confirmation or change",
+        "description": "Customers receive deduplicated status updates without blocking the booking commit."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
-      },
-      {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Extreme traffic spike (millions in minutes)."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "booking-monitoring-10",
+        "source": "booking",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Reservation telemetry",
+        "description": "Operations observes policy conflicts, latency, and duplicate commands."
+      },
+      {
+        "id": "event-bus-monitoring-11",
+        "source": "event-bus",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Partner and hold telemetry",
+        "description": "Operations observes feed lag, hold expiry, oversell risk, and reconciliation backlog."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "search",
+        "label": "Search path",
+        "description": "Client -> gateway -> search index -> availability details.",
+        "componentIds": ["client", "gateway", "search", "availability"]
+      },
+      {
+        "id": "book",
+        "label": "Hold and booking path",
+        "description": "Client -> reservation service -> inventory hold -> payment -> confirmed reservation.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "booking",
+          "availability",
+          "payments"
+        ]
+      },
+      {
+        "id": "reconcile",
+        "label": "Partner reconciliation path",
+        "description": "Reservation events -> partner sync -> inventory and booking correction.",
+        "componentIds": ["booking", "event-bus", "partner-sync", "availability"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Inventory claims and oversell control",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Use conditional writes or a serialized inventory partition for backend scarce capacity.",
+        "Give holds an expiry and reaper, but never release a confirmed claim from a stale worker.",
+        "Separate searchable availability from the authoritative claim path."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Payment and unknown outcomes",
       "points": [
-        "Partition by the access pattern implied by Design a system to handle flash distribution of limited items with high concurrency and fairness., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Bind backend payment attempts to the intent and request hash, not just the customer session.",
+        "Treat timeout as unknown, query or reconcile provider state, and avoid a blind second charge.",
+        "Keep sensitive payment tokens outside business records and logs."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Fulfillment and partner recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Publish backend events after commit, consume at least once, and track per-stage progress.",
+        "Use reconciliation against partner feeds or delivery evidence instead of assuming a callback arrives.",
+        "Expose pending and expired status so the client can explain what happened."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Reservation versus oversell tolerance",
+      "recommendation": "Prefer a short-lived backend claim for scarce inventory and state the consistency scope explicitly.",
+      "caution": "A cache or search index cannot safely decrement the final room count."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Synchronous checkout versus asynchronous fulfillment",
+      "recommendation": "Commit the reservation intent synchronously and move partner or delivery work behind events.",
+      "caution": "Waiting for downstream fulfillment makes retries ambiguous and increases checkout tail latency."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Precompute availability versus compute at read time",
+      "recommendation": "Precompute common search dimensions but validate the final claim against authoritative state.",
+      "caution": "Serving only a precomputed backend availability view creates oversell or stale-price failures."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Charging before a backend inventory claim is durable.",
+    "Retrying a timed-out payment without resolving the first attempt.",
+    "Letting stale search results act as the final availability decision.",
+    "Making cancellation and hold expiry non-idempotent.",
+    "Failing to reconcile late partner confirmations, refunds, or delivery failures."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid double reservations?",
+      "answer": "Persist the backend request idempotency key, condition the intent transition, and make inventory, payment, and fulfillment consumers deduplicate the same command."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "What if inventory changes between search and checkout?",
+      "answer": "Recheck authoritative availability, return an explicit unavailable or repriced result, and do not silently convert a failed claim into a confirmed one."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you repair a stuck fulfillment?",
+      "answer": "Use an operation timeline, provider evidence, retry-safe transitions, and an operator-approved compensating action or cancellation."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Handle millions of concurrent requests workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the backend workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a system to handle flash distribution of limited items with high concurrency and fairness., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative backend state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions backend traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the backend user experience."
     }
   ]
 }

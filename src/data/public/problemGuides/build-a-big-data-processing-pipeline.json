@@ -52,120 +52,101 @@
   },
   "entities": [
     {
-      "name": "PipelineDefinition",
+      "name": "SourcePartition",
       "fields": [
-        "pipeline_id",
-        "owner_id",
-        "schema_version",
-        "transform_graph",
-        "sink_configs",
-        "state"
-      ],
-      "notes": "Version definitions immutably so in-flight jobs retain their original contract."
-    },
-    {
-      "name": "RawEvent",
-      "fields": [
-        "event_id",
-        "source_id",
-        "tenant_id",
-        "event_time",
-        "ingest_time",
-        "schema_version",
-        "payload"
-      ],
-      "notes": "Append-only raw data is the replay authority and carries both event and ingestion timestamps."
-    },
-    {
-      "name": "StreamCheckpoint",
-      "fields": [
-        "pipeline_id",
-        "partition_id",
-        "offset",
+        "sourceId",
+        "partitionId",
+        "cursor",
+        "schemaVersion",
         "watermark",
-        "state_snapshot_uri",
-        "updated_at"
+        "status"
       ],
-      "notes": "Offsets and state snapshots advance together through a checkpoint protocol."
+      "notes": "Replayable source partition with the last accepted offset and schema contract."
     },
     {
-      "name": "QualityFinding",
+      "name": "StreamJob",
       "fields": [
-        "finding_id",
-        "pipeline_id",
-        "run_id",
-        "rule_id",
-        "severity",
-        "state"
+        "jobId",
+        "operatorGraph",
+        "partitionKey",
+        "checkpointId",
+        "parallelism",
+        "status"
       ],
-      "notes": "Quality failures are queryable and policy decides whether they block publication."
+      "notes": "Versioned streaming computation and its checkpoint lineage."
     },
     {
-      "name": "DatasetManifest",
+      "name": "Checkpoint",
       "fields": [
-        "dataset_id",
-        "run_id",
-        "partitions",
-        "schema_version",
-        "row_count",
+        "checkpointId",
+        "jobId",
+        "inputOffsets",
+        "stateUri",
+        "createdAt",
+        "status"
+      ],
+      "notes": "Atomic recovery point used to resume stateful operators without duplicating output."
+    },
+    {
+      "name": "OutputWindow",
+      "fields": [
+        "windowId",
+        "jobId",
+        "windowStart",
+        "windowEnd",
         "watermark",
-        "committed_at"
+        "completeness",
+        "resultUri"
       ],
-      "notes": "Consumers pin an atomic manifest for a consistent batch or table snapshot."
+      "notes": "Window result that distinguishes final, late, and incomplete data."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/pipelines",
-      "contract": "{ name, sources, schema, transforms, sinks, requestId } -> { pipelineId, version, state }",
-      "notes": "Validate DAG, connector credentials, schema compatibility, quotas, and sink permissions."
+      "path": "/v1/sources",
+      "contract": "{ source, schema, partitioning, idempotencyKey } -> { sourceId, status }",
+      "notes": "Register a source contract and begin connector validation."
     },
     {
       "method": "POST",
-      "path": "/v1/events:ingest",
-      "contract": "{ pipelineId, events[], requestId } -> { accepted, rejected, partitionOffsets }",
-      "notes": "Deduplicate by source event ID and acknowledge only after broker durability."
+      "path": "/v1/jobs",
+      "contract": "{ graph, sources, sinks, checkpointPolicy } -> { jobId, version, status }",
+      "notes": "Create a versioned stream or batch graph without executing it inline."
     },
     {
       "method": "GET",
-      "path": "/v1/pipelines/{pipelineId}/status",
-      "contract": "{ state, partitionLag[], watermark, quality, lastCheckpoint }",
-      "notes": "Expose event-time progress and per-partition lag rather than one misleading percentage."
+      "path": "/v1/jobs/{jobId}/watermarks",
+      "contract": "{ inputWatermarks, outputWatermark, lag, incompleteWindows }",
+      "notes": "Expose event-time progress and late-data state to operators."
     },
     {
       "method": "POST",
-      "path": "/v1/pipelines/{pipelineId}/backfills",
-      "contract": "{ start, end, sinkSnapshot, requestId } -> { runId, state }",
-      "notes": "Write an isolated output version and atomically promote it after comparison."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/pipelines/{pipelineId}/replay",
-      "contract": "{ partitions, fromOffsets, reason, requestId } -> { runId, state }",
-      "notes": "Authorize and rate-limit replay; keep it separate from the live output."
+      "path": "/v1/jobs/{jobId}/replay",
+      "contract": "{ fromOffsets, toTime, idempotencyKey } -> { replayId, status }",
+      "notes": "Start a bounded replay or checkpoint restore operation."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept and validate source records",
-      "description": "Connectors authenticate, validate schema versions, attach tenant and time metadata, and quarantine malformed records."
+      "title": "Register sources and contracts",
+      "description": "Connectors authenticate each source, validate schema compatibility and partition ownership, and persist a source manifest before ingestion."
     },
     {
-      "title": "Commit the raw event log",
-      "description": "The ingestion tier writes partitioned replicated records; the response contains accepted offsets and rejection reasons."
+      "title": "Ingest with backpressure",
+      "description": "Events enter partitioned durable buffers; producers receive bounded backpressure while failed records go to a replayable dead-letter path."
     },
     {
-      "title": "Process by event time",
-      "description": "Stream workers checkpoint state, advance watermarks, deduplicate, and close windows according to lateness policy."
+      "title": "Process event time",
+      "description": "Stream operators use checkpoints, watermarks, deduplication, and explicit late-data policy to produce windowed patterns and aggregates."
     },
     {
-      "title": "Publish quality-gated datasets",
-      "description": "Sinks write immutable fragments, run quality rules, and advance a dataset manifest only when policy passes."
+      "title": "Publish analytical outputs",
+      "description": "Batch and streaming sinks write versioned results and action intents only after the corresponding checkpoint and quality gates succeed."
     },
     {
-      "title": "Replay, backfill, and observe asynchronously",
-      "description": "A control plane schedules repair and historical runs while dashboards consume lag, cost, quality, and lineage events."
+      "title": "Recover and reconcile",
+      "description": "A failed worker resumes from a checkpoint, replays affected partitions, and compares sink counts and watermarks before declaring recovery."
     }
   ],
   "architecture": {
@@ -248,8 +229,13 @@
         "componentId": "web-app",
         "label": "Source clients",
         "description": "Applications and connectors submit events or configure pipelines.",
-        "position": { "x": 0, "y": 280 },
-        "properties": { "protocol": "HTTPS, CDC, files" }
+        "position": {
+          "x": 0,
+          "y": 280
+        },
+        "properties": {
+          "protocol": "HTTPS, CDC, files"
+        }
       },
       {
         "id": "gateway",
@@ -257,8 +243,13 @@
         "componentId": "api-gateway",
         "label": "Ingestion gateway",
         "description": "Authenticates producers, validates envelopes, and enforces quotas.",
-        "position": { "x": 360, "y": 280 },
-        "properties": { "controls": "Auth, schema, quotas" }
+        "position": {
+          "x": 360,
+          "y": 280
+        },
+        "properties": {
+          "controls": "Auth, schema, quotas"
+        }
       },
       {
         "id": "connectors",
@@ -266,8 +257,13 @@
         "componentId": "backend-server",
         "label": "Source connectors",
         "description": "Reads APIs, CDC logs, queues, and files with source checkpoints.",
-        "position": { "x": 720, "y": 100 },
-        "properties": { "delivery": "Resumable" }
+        "position": {
+          "x": 720,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "Resumable"
+        }
       },
       {
         "id": "broker",
@@ -275,8 +271,13 @@
         "componentId": "message-broker",
         "label": "Durable event broker",
         "description": "Buffers bursts, preserves partition order, and exposes replayable offsets.",
-        "position": { "x": 1080, "y": 280 },
-        "properties": { "delivery": "Replicated at least once" }
+        "position": {
+          "x": 1080,
+          "y": 280
+        },
+        "properties": {
+          "delivery": "Replicated at least once"
+        }
       },
       {
         "id": "raw-store",
@@ -284,8 +285,13 @@
         "componentId": "file-storage",
         "label": "Raw object store",
         "description": "Stores compressed immutable events and replay manifests.",
-        "position": { "x": 1080, "y": 600 },
-        "properties": { "retention": "90 days plus archive" }
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "properties": {
+          "retention": "90 days plus archive"
+        }
       },
       {
         "id": "metadata",
@@ -293,8 +299,13 @@
         "componentId": "database",
         "label": "Pipeline catalog",
         "description": "Stores definitions, schemas, runs, lineage, and manifests.",
-        "position": { "x": 1440, "y": 80 },
-        "properties": { "consistency": "Versioned" }
+        "position": {
+          "x": 1440,
+          "y": 80
+        },
+        "properties": {
+          "consistency": "Versioned"
+        }
       },
       {
         "id": "checkpoint",
@@ -302,8 +313,13 @@
         "componentId": "database",
         "label": "Checkpoint store",
         "description": "Stores offsets, watermarks, state snapshots, and worker leases.",
-        "position": { "x": 1440, "y": 600 },
-        "properties": { "partition": "pipeline and partition" }
+        "position": {
+          "x": 1440,
+          "y": 600
+        },
+        "properties": {
+          "partition": "pipeline and partition"
+        }
       },
       {
         "id": "scheduler",
@@ -311,8 +327,13 @@
         "componentId": "backend-server",
         "label": "Job scheduler",
         "description": "Schedules streaming jobs, batch stages, retries, and quotas.",
-        "position": { "x": 1800, "y": 280 },
-        "properties": { "scaling": "Lag and bytes" }
+        "position": {
+          "x": 1800,
+          "y": 280
+        },
+        "properties": {
+          "scaling": "Lag and bytes"
+        }
       },
       {
         "id": "stream-engine",
@@ -320,8 +341,13 @@
         "componentId": "backend-server",
         "label": "Stateful stream engine",
         "description": "Runs keyed transforms, windows, joins, and checkpointed state.",
-        "position": { "x": 2160, "y": 80 },
-        "properties": { "semantics": "Event time" }
+        "position": {
+          "x": 2160,
+          "y": 80
+        },
+        "properties": {
+          "semantics": "Event time"
+        }
       },
       {
         "id": "batch-engine",
@@ -329,8 +355,13 @@
         "componentId": "backend-server",
         "label": "Batch execution engine",
         "description": "Runs historical transforms and writes isolated fragments.",
-        "position": { "x": 2160, "y": 520 },
-        "properties": { "scaling": "Parallel stages" }
+        "position": {
+          "x": 2160,
+          "y": 520
+        },
+        "properties": {
+          "scaling": "Parallel stages"
+        }
       },
       {
         "id": "quality",
@@ -338,8 +369,13 @@
         "componentId": "backend-server",
         "label": "Quality and policy gates",
         "description": "Checks schema, completeness, duplicates, privacy, and lineage.",
-        "position": { "x": 2520, "y": 280 },
-        "properties": { "policy": "Block, quarantine, warn" }
+        "position": {
+          "x": 2520,
+          "y": 280
+        },
+        "properties": {
+          "policy": "Block, quarantine, warn"
+        }
       },
       {
         "id": "warehouse",
@@ -347,8 +383,13 @@
         "componentId": "database",
         "label": "Curated analytical store",
         "description": "Serves partitioned columnar tables and snapshots.",
-        "position": { "x": 2880, "y": 280 },
-        "properties": { "storage": "Columnar" }
+        "position": {
+          "x": 2880,
+          "y": 280
+        },
+        "properties": {
+          "storage": "Columnar"
+        }
       },
       {
         "id": "query",
@@ -356,8 +397,13 @@
         "componentId": "backend-server",
         "label": "Query and export service",
         "description": "Provides bounded dashboard queries and asynchronous exports.",
-        "position": { "x": 3240, "y": 280 },
-        "properties": { "latency": "Cached or async" }
+        "position": {
+          "x": 3240,
+          "y": 280
+        },
+        "properties": {
+          "latency": "Cached or async"
+        }
       },
       {
         "id": "control",
@@ -365,8 +411,13 @@
         "componentId": "backend-server",
         "label": "Replay and control plane",
         "description": "Authorizes backfills, compares runs, and promotes manifests safely.",
-        "position": { "x": 2520, "y": 600 },
-        "properties": { "safety": "Fenced isolated runs" }
+        "position": {
+          "x": 2520,
+          "y": 600
+        },
+        "properties": {
+          "safety": "Fenced isolated runs"
+        }
       },
       {
         "id": "monitoring",
@@ -374,8 +425,13 @@
         "componentId": "monitoring",
         "label": "Pipeline observability",
         "description": "Tracks throughput, lag, watermarks, quality, cost, lineage, and retries.",
-        "position": { "x": 3240, "y": 600 },
-        "properties": { "alerts": "Freshness and quality" }
+        "position": {
+          "x": 3240,
+          "y": 600
+        },
+        "properties": {
+          "alerts": "Freshness and quality"
+        }
       }
     ],
     "connections": [
@@ -519,102 +575,88 @@
   },
   "deepDives": [
     {
-      "title": "Event time and late data",
+      "title": "Exactly-once effects and checkpoints",
       "points": [
-        "Use event_time for business windows and ingestion time for operational lag.",
-        "Advance watermarks from partition progress and define allowed lateness.",
-        "Route very late records to correction tables instead of silently mutating closed aggregates."
+        "For the batch and streaming analytics platform, accepted offsets, checkpoint state, and sink writes must advance together.",
+        "Design for the failure case where a slow partition or failed worker must not silently advance a window or lose an event; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Exactly-once effects",
+      "title": "Watermarks, late data, and backpressure",
       "points": [
-        "Assume at-least-once delivery and make sinks idempotent with event IDs or window versions.",
-        "Checkpoint offsets with state snapshots and fence old workers.",
-        "Use an outbox or idempotency key for external APIs."
+        "For the batch and streaming analytics platform, accepted offsets, checkpoint state, and sink writes must advance together.",
+        "Keep this concern off unrelated request paths and partition it by the the batch and streaming analytics platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Schema and quality",
+      "title": "Sink correctness and replay",
       "points": [
-        "Keep compatible schema versions and quarantine incompatible records with reasons.",
-        "Run completeness, uniqueness, range, referential, and privacy checks.",
-        "Publish quality and lineage with the dataset manifest."
-      ]
-    },
-    {
-      "title": "Backfills and replay",
-      "points": [
-        "Read immutable raw data into isolated output versions.",
-        "Compare counts, distributions, and samples before promotion.",
-        "Throttle historical work so it cannot starve streaming freshness."
+        "For the batch and streaming analytics platform, accepted offsets, checkpoint state, and sink writes must advance together.",
+        "Keep this concern off unrelated request paths and partition it by the the batch and streaming analytics platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Unified versus separate engines",
-      "recommendation": "Use a common programming model while isolating streaming and batch resources.",
-      "caution": "A shared engine can let backfills compete with freshness-critical work."
+      "title": "Event-time correctness versus latency",
+      "recommendation": "Use watermarks and bounded lateness for correct windows, then expose provisional results while waiting for late events.",
+      "caution": "Waiting indefinitely for stragglers makes the dashboard unusable; dropping them silently makes aggregates untrustworthy."
     },
     {
-      "title": "Broker versus object retention",
-      "recommendation": "Keep short replay windows in the broker and archive compressed raw data in objects.",
-      "caution": "Object replay is cheaper but slower and needs manifest discipline."
+      "title": "Shared stream engine versus isolated jobs",
+      "recommendation": "Share the platform control plane but isolate hot or high-value jobs with independent queues and checkpoints.",
+      "caution": "One overloaded topology should not delay unrelated tenants or sinks."
     },
     {
-      "title": "Strict versus warning quality gates",
-      "recommendation": "Block security, schema, and key failures; warn on non-critical quality issues.",
-      "caution": "Overly strict gates freeze consumers while weak gates hide corruption."
-    },
-    {
-      "title": "Precompute versus raw queries",
-      "recommendation": "Precompute common aggregates and retain curated detail for flexible queries.",
-      "caution": "Each projection adds compute and freshness obligations."
+      "title": "Reprocessing versus deduplicated sinks",
+      "recommendation": "Make replay a first-class operation and require sink idempotency keys or transactional commits.",
+      "caution": "Replaying compute without sink deduplication creates duplicate actions and aggregates."
     }
   ],
   "commonMistakes": [
-    "Treating ingestion acknowledgement as proof every sink is updated.",
-    "Using processing time for event-time windows without a late-data policy.",
-    "Claiming broker exactly-once solves duplicate external side effects.",
-    "Letting a historical backfill consume all streaming capacity.",
-    "Dropping invalid records without quarantine or replay.",
-    "Overwriting a live table from a partial backfill."
+    "Advancing offsets before durable checkpoint and sink commit.",
+    "Treating processing time as event time for out-of-order data.",
+    "Allowing one hot partition to starve all jobs.",
+    "Hiding incomplete windows and late-event corrections.",
+    "Making replay an ad hoc manual database operation."
   ],
   "followUps": [
     {
-      "question": "What if one tenant creates a hot partition?",
-      "answer": "Apply quotas, salt or split the key when ordering permits, isolate its workers, and preserve ordering only where required."
+      "question": "What happens when a worker fails after processing but before checkpointing?",
+      "answer": "The worker resumes from the prior checkpoint and reprocesses the bounded interval; deduplicated sinks make the retry safe."
     },
     {
-      "question": "How do you recover after state loss?",
-      "answer": "Restore the latest checkpoint and replay broker or raw offsets from a safe boundary, then compare before promotion."
+      "question": "How do you handle a hot key?",
+      "answer": "Detect skew, repartition or salt the key where semantics allow it, isolate the affected job, and expose lag instead of dropping events."
     },
     {
-      "question": "How do you handle a breaking schema?",
-      "answer": "Quarantine the incompatible version, alert the owner, retain the payload, and activate a compatible parser after review."
-    },
-    {
-      "question": "How do consumers get a consistent result?",
-      "answer": "Expose a manifest and watermark; consumers pin a version instead of reading while fragments are promoted."
+      "question": "How do you prove output correctness?",
+      "answer": "Compare source counts, checkpoint offsets, sink counts, watermarks, and replay results on sampled windows before promoting a result."
     }
   ],
   "rubric": [
     {
-      "criterion": "Ingestion and durability",
-      "description": "The design has durable acceptance, replayable raw data, partitioning, quotas, and clear acknowledgement semantics."
+      "criterion": "Requirements",
+      "description": "The answer defines source contracts, event-time semantics, checkpoints, backpressure, replay, and sink correctness, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Stream and batch semantics",
-      "description": "Event time, watermarks, late data, checkpoints, backfills, and isolated execution are addressed."
+      "criterion": "Data model",
+      "description": "Entities and keys make the batch and streaming analytics platform state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Quality and governance",
-      "description": "Schema evolution, quarantine, quality gates, privacy, lineage, and atomic publication are explicit."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Reliability and operations",
-      "description": "Retries, fencing, lag, freshness, cost, recovery, and replay are observable and actionable."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the batch and streaming analytics platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

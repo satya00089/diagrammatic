@@ -60,146 +60,91 @@
     {
       "name": "Document",
       "fields": [
-        "document_id",
-        "workspace_id",
-        "parent_id",
+        "documentId",
+        "workspaceId",
+        "headVersion",
         "title",
-        "current_snapshot_id",
-        "current_sequence",
-        "status",
-        "created_by",
-        "updated_at"
+        "aclVersion",
+        "deletedAt"
       ],
-      "notes": "Keep the current materialized state and a monotonic sequence for fast opens; use the operation log and immutable versions for history and replay."
+      "notes": "Document identity, current head, and access-policy reference."
     },
     {
-      "name": "DocumentOperation",
+      "name": "Operation",
       "fields": [
-        "operation_id",
-        "document_id",
-        "client_id",
-        "base_sequence",
-        "operation_payload",
-        "assigned_sequence",
-        "actor_id",
-        "created_at"
+        "opId",
+        "documentId",
+        "actorId",
+        "baseVersion",
+        "operation",
+        "lamport",
+        "createdAt"
       ],
-      "notes": "The operation ID makes retries idempotent. Partition by document and retain enough history for reconnect and audit requirements."
+      "notes": "Append-only edit operation used for convergence and audit."
     },
     {
-      "name": "DocumentVersion",
+      "name": "Snapshot",
       "fields": [
-        "version_id",
-        "document_id",
-        "sequence_start",
-        "sequence_end",
-        "snapshot_uri",
-        "created_by",
-        "created_at",
-        "restore_source_version"
+        "documentId",
+        "version",
+        "blobUri",
+        "contentHash",
+        "createdAt"
       ],
-      "notes": "Immutable checkpoints make history and restore predictable; a restore creates a new head rather than deleting later versions."
+      "notes": "Compacted document state that bounds reconnect and replay cost."
     },
     {
-      "name": "PermissionGrant",
-      "fields": [
-        "document_id",
-        "principal_id",
-        "principal_type",
-        "role",
-        "inherited_from",
-        "expires_at",
-        "revoked_at"
-      ],
-      "notes": "Resolve workspace, folder, direct, group, and link permissions into an authorization decision that can be invalidated on revocation."
-    },
-    {
-      "name": "PresenceSession",
-      "fields": [
-        "document_id",
-        "user_id",
-        "connection_id",
-        "cursor_position",
-        "last_heartbeat",
-        "client_version"
-      ],
-      "notes": "Presence is ephemeral state with TTLs. It should disappear after a disconnect and never be required to reconstruct document content."
-    },
-    {
-      "name": "FolderEntry",
-      "fields": [
-        "workspace_id",
-        "parent_id",
-        "child_id",
-        "display_name",
-        "sort_key",
-        "created_at"
-      ],
-      "notes": "Use a stable parent-child index for listing and moving documents; guard against cycles and enforce workspace boundaries."
+      "name": "DocumentMembership",
+      "fields": ["documentId", "principalId", "role", "status", "updatedAt"],
+      "notes": "Versioned access membership for read and edit authorization."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/workspaces/{workspaceId}/documents",
-      "contract": "{ title, parentId?, format, initialContent? } -> { documentId, currentSequence }",
-      "notes": "Authorize workspace membership, validate content size and parent ownership, and make retries safe with an idempotency key."
+      "path": "/v1/documents",
+      "contract": "{ workspaceId, title, initialContent, idempotencyKey } -> { documentId, version }",
+      "notes": "Create a document and initial snapshot under workspace policy."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/documents/{documentId}/operations",
+      "contract": "{ baseVersion, operations[], clientId, idempotencyKey } -> { acceptedVersion, missingOps }",
+      "notes": "Append edits conditionally and return conflicts or missing operations for convergence."
     },
     {
       "method": "GET",
-      "path": "/v1/documents/{documentId}",
-      "contract": "{ cursor? } -> { snapshot, currentSequence, permissions, activeEditors }",
-      "notes": "Check ACLs before serving a versioned snapshot, then return a sequence cursor so the client can request missed operations."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/documents/{documentId}/collaborate",
-      "contract": "WebSocket upgrade with { clientId, lastSeenSequence } -> ack, operation, presence, and resync messages",
-      "notes": "Authenticate during upgrade, cap message size, deduplicate operation IDs, preserve per-document ordering, and close or downgrade stale clients."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/documents/{documentId}/versions?cursor=...",
-      "contract": "Paginated immutable versions with author, time, sequence range, and preview metadata",
-      "notes": "Apply the same read permission check as the document itself; version metadata can be indexed separately from snapshot bytes."
+      "path": "/v1/documents/{documentId}/sync?cursor=",
+      "contract": "{ snapshot?, operations[], nextCursor, headVersion }",
+      "notes": "Synchronize a reconnecting client from a snapshot and operation cursor."
     },
     {
       "method": "POST",
       "path": "/v1/documents/{documentId}/restore",
-      "contract": "{ versionId, idempotencyKey } -> { newVersionId, currentSequence }",
-      "notes": "Create a new head from the selected version, append an auditable restore operation, and broadcast the new state to active sessions."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/search?q=...&workspaceId=...",
-      "contract": "Ranked document hits with title, snippet, version, and permission-safe metadata",
-      "notes": "Filter by tenant and effective ACL fields in the index, then recheck authorization before returning sensitive snippets."
+      "contract": "{ snapshotVersion, actorId, idempotencyKey } -> { restoreVersion, status }",
+      "notes": "Create a new restore operation without deleting version history."
     }
   ],
   "dataFlow": [
     {
       "title": "Open a document",
-      "description": "The client authenticates, the gateway authorizes the workspace and document, and the collaboration service loads a versioned snapshot plus its current sequence from cache or durable storage."
+      "description": "The gateway checks workspace membership and returns the latest snapshot plus a cursor for subsequent operations."
     },
     {
-      "title": "Join the collaboration session",
-      "description": "The client upgrades to a WebSocket, sends its client ID and last acknowledged sequence, then receives missed operations before live presence and broadcasts begin."
+      "title": "Append concurrent edits",
+      "description": "Clients send operations against a known version; the collaboration service orders or transforms them and appends accepted operations."
     },
     {
-      "title": "Accept and fan out an edit",
-      "description": "The service validates the operation against the caller's role, deduplicates retries, assigns the next per-document sequence, appends it durably, acknowledges the sender, and broadcasts the canonical operation."
+      "title": "Broadcast changes",
+      "description": "Change events update connected sessions and caches; reconnecting clients use cursors and never rely on live delivery as the source of truth."
     },
     {
-      "title": "Buffer asynchronous work",
-      "description": "After the durable append, publish a change event for snapshots, search, notifications, and analytics. Queue lag must not block the active editing session."
+      "title": "Compact and index versions",
+      "description": "Snapshot workers periodically materialize the head, retain operation history by policy, and update search indexes from committed versions."
     },
     {
-      "title": "Compact versions",
-      "description": "Snapshot workers fold a bounded operation range into a compressed immutable revision and update the materialized current document so future opens do not replay the entire history."
-    },
-    {
-      "title": "Recover from disconnects",
-      "description": "A reconnecting client presents its last acknowledged sequence; the service replays retained operations or sends a newer snapshot plus a delta, then resumes live delivery without duplicating edits."
+      "title": "Recover conflicts and deletes",
+      "description": "The service resolves stale clients, ACL revocations, and restore requests through versioned operations and an auditable tombstone."
     }
   ],
   "architecture": {
@@ -300,7 +245,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Collaborative document platform where many users gateway",
         "description": "Authenticates users, applies workspace quotas, validates request envelopes, and routes REST and WebSocket traffic.",
         "position": {
           "x": 880,
@@ -645,123 +590,88 @@
   },
   "deepDives": [
     {
-      "title": "Concurrency control: OT, CRDT, and ordering",
+      "title": "Convergence and operation ordering",
       "points": [
-        "Choose an operation-based CRDT when offline edits and peer-independent merging matter; choose OT when the editor has a centralized transform pipeline and simpler payloads are more important.",
-        "Even with CRDT semantics, assign a canonical per-document sequence so acknowledgements, replay, snapshots, and audit logs have a stable order.",
-        "Every operation needs a client-generated ID, base or causal metadata, a bounded payload, and an idempotent append path so retries cannot duplicate text changes.",
-        "Presence and cursor updates should be lossy and ephemeral; document operations are durable and must be replayable."
+        "For the collaborative document platform, all accepted edits must converge to one versioned head without losing authorship or access policy.",
+        "Design for the failure case where offline edits, reconnect storms, hot documents, and permission revocation must be recoverable; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Durability, snapshots, and restore",
+      "title": "Snapshots, reconnects, and hot documents",
       "points": [
-        "Treat the append-only operation log as the recovery boundary for acknowledged edits and the materialized document as a performance optimization.",
-        "Create snapshots every fixed operation count or time interval, cap replay work, and compact old operations only after retention and audit requirements are satisfied.",
-        "A restore should append a new head that references the source version. Never delete the intervening history just because the visible content moved backward.",
-        "Use immutable compressed objects for large revisions and keep transactional metadataâ€”ownership, sequence pointers, and ACLsâ€”in the document store."
+        "For the collaborative document platform, all accepted edits must converge to one versioned head without losing authorship or access policy.",
+        "Keep this concern off unrelated request paths and partition it by the the collaborative document platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Permissions and revocation",
+      "title": "ACLs, history, and safe restore",
       "points": [
-        "Resolve direct, group, inherited folder, workspace, and link permissions before an operation is accepted; read and export paths need the same policy enforcement.",
-        "Cache authorization decisions with short TTLs and explicit invalidation on share changes. A permission revocation must close or downgrade active sessions quickly.",
-        "Do not rely on search-index filtering alone. Recheck authorization before returning a document, version, attachment, or snippet that may have become stale.",
-        "Keep audit events for share, restore, export, and deletion actions separate from user-visible document content."
-      ]
-    },
-    {
-      "title": "Search and large documents",
-      "points": [
-        "Index asynchronously from the canonical change stream and store the document version in each index record so stale updates cannot overwrite newer content.",
-        "Use tenant and ACL fields in the index to narrow candidates, then perform a final authorization check for sensitive workspaces or rapidly changing permissions.",
-        "For very large documents, paginate blocks or sections, load only the visible range, and keep attachments in object storage with short-lived signed URLs.",
-        "Expose index freshness and queue lag so product behavior can explain why a just-typed phrase is not searchable immediately."
-      ]
-    },
-    {
-      "title": "Connection scale and failure recovery",
-      "points": [
-        "Shard collaboration workers by document ID and keep connection ownership separate from durable storage; a session can move when a worker fails.",
-        "Use heartbeats, backpressure, per-session operation limits, and a reconnect token containing the last acknowledged sequence.",
-        "If the queue or search tier is degraded, keep acknowledged edits and active fan-out working while reporting stale search or delayed notifications.",
-        "Measure acknowledgement latency, broadcast lag, reconnect success, replay depth, conflict rate, snapshot age, permission failures, and queue lag."
+        "For the collaborative document platform, all accepted edits must converge to one versioned head without losing authorship or access policy.",
+        "Keep this concern off unrelated request paths and partition it by the the collaborative document platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "CRDT vs OT",
-      "recommendation": "Use a well-scoped operation-based CRDT when offline editing and multi-device merges are core requirements; use OT when a centralized editor pipeline and smaller operations simplify the product.",
-      "caution": "CRDT metadata and garbage collection can grow substantially. OT requires careful transform rules and a reliable server ordering path."
+      "title": "OT versus CRDT",
+      "recommendation": "Choose one convergence model and make operation identity, ordering, and compaction explicit; use CRDTs when offline multi-writer behavior dominates.",
+      "caution": "Mixing models or hiding conflict semantics makes restores and audits unpredictable."
     },
     {
-      "title": "Every operation vs periodic snapshots",
-      "recommendation": "Durably append every accepted operation, then create periodic compressed snapshots for bounded replay and fast opens.",
-      "caution": "Snapshotting every keystroke increases write amplification; snapshotting too rarely makes reconnects, restores, and audits expensive."
+      "title": "Full operation history versus snapshots",
+      "recommendation": "Keep an append log for audit and replay, with periodic snapshots to bound sync and storage cost.",
+      "caution": "Only storing snapshots loses fine-grained recovery; never compacting makes reconnects expensive."
     },
     {
-      "title": "Relational metadata vs document database",
-      "recommendation": "Keep workspaces, folders, ACLs, and document pointers in a transactional relational model while storing large snapshots and attachments as immutable objects.",
-      "caution": "A single database may need partitioning as tenants grow. A document database can simplify content reads but does not remove ACL, uniqueness, or transaction concerns."
-    },
-    {
-      "title": "Synchronous vs asynchronous search",
-      "recommendation": "Index after the durable document change and expose freshness metadata; keep the edit path independent from search availability.",
-      "caution": "Users may not find a just-created or just-edited document immediately, so the UI needs a clear eventual-consistency expectation."
+      "title": "Live broadcast versus pull sync",
+      "recommendation": "Broadcast changes for responsiveness but make cursor-based pull the correctness and recovery path.",
+      "caution": "Treating WebSocket delivery as guaranteed loses edits during disconnects."
     }
   ],
   "commonMistakes": [
-    "Broadcasting client edits before the operation is durably accepted or without an idempotency key.",
-    "Using a single mutable document blob as the only source of truth, making history, conflict recovery, and auditability fragile.",
-    "Treating cursor presence as durable content or allowing stale presence to block a document session.",
-    "Checking permissions only when a WebSocket opens and allowing a revoked editor to keep sending operations.",
-    "Putting full-text indexing, email notifications, or attachment bytes on the edit acknowledgement path.",
-    "Ignoring reconnect cursors, queue replay, large-document limits, tenant isolation, and cycle detection in folder moves."
+    "Overwriting the document head without a version or conflict rule.",
+    "Using a cache as the source of truth for edits.",
+    "Sending the full document on every keystroke.",
+    "Ignoring offline reconnect, ACL changes, and tombstones.",
+    "Compacting away the evidence needed for audit or restore."
   ],
   "followUps": [
     {
-      "question": "How would offline editing work for a user who reconnects after a day?",
-      "answer": "Keep a durable local operation queue with client IDs and causal metadata, retain enough server history or a checkpoint to compare against the last known sequence, merge with the chosen CRDT or transform pipeline, and require authorization again before applying the offline batch."
+      "question": "How do you handle two offline users editing the same paragraph?",
+      "answer": "Persist operation identity and base version, transform or merge through the chosen convergence model, and surface an explicit conflict only when policy cannot resolve it."
     },
     {
-      "question": "What if one public document has thousands of viewers?",
-      "answer": "Separate viewers from editors, fan out a compact snapshot or block delta through a read-optimized channel, coalesce bursts, and cap per-document broadcast work so one hot document cannot starve other sessions."
+      "question": "What if a hot document has thousands of viewers?",
+      "answer": "Partition subscriptions, coalesce updates, send snapshots to lagging clients, and isolate presence from operation correctness."
     },
     {
-      "question": "What happens when an editor loses permission while connected?",
-      "answer": "Publish an ACL invalidation, close or downgrade the session, reject any in-flight operation that no longer passes authorization, and invalidate cached permission decisions and signed attachment URLs."
-    },
-    {
-      "question": "How would you support comments and mentions?",
-      "answer": "Model comments as anchored, permission-checked entities referencing a document version or block, emit comment and mention events through the same durable change stream, and deliver notifications asynchronously."
-    },
-    {
-      "question": "How would you support data residency or hard deletion?",
-      "answer": "Assign a region and deletion policy at the workspace level, route sessions and object writes accordingly, record a deletion tombstone, remove searchable and cached copies, and run verified object-store erasure workflows with an audit trail."
+      "question": "How do you restore an old version?",
+      "answer": "Materialize the selected snapshot as a new head operation, preserve later history, recheck ACLs, and notify active clients to resync."
     }
   ],
   "rubric": [
     {
-      "criterion": "Core collaboration path",
-      "description": "Separates WebSocket session handling, operation validation, durable acknowledgement, canonical ordering, and live fan-out from slower background work."
+      "criterion": "Requirements",
+      "description": "The answer defines versioned edits, convergence, reconnect cursors, snapshots, access control, history, and safe restore, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Consistency and recovery",
-      "description": "Explains OT or CRDT behavior, deduplication, sequence cursors, reconnect replay, snapshots, and the failure boundary for acknowledged edits."
+      "criterion": "Data model",
+      "description": "Entities and keys make the collaborative document platform state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Data and permissions",
-      "description": "Models documents, operations, versions, folders, presence, and ACLs around real access patterns and handles revocation on active sessions."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Scale and reliability",
-      "description": "Uses explicit traffic and storage assumptions, shards connections by document, bounds replay, handles hot documents, and monitors queue/index lag."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
-      "criterion": "Product judgment",
-      "description": "Covers search freshness, restore semantics, attachments, offline edits, deletion, tenant isolation, and graceful degradation when optional services fail."
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the collaborative document platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

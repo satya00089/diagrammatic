@@ -50,115 +50,135 @@
   },
   "entities": [
     {
-      "name": "Design a Distributed Botnet",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Command and control architecture; Distributed node communication; design keys around the main reads and writes."
+      "name": "EvidenceRecord",
+      "fields": [
+        "evidenceId",
+        "source",
+        "indicator",
+        "observedAt",
+        "confidence",
+        "retentionClass"
+      ],
+      "notes": "Attributed defensive evidence for distributed botnet analysis."
     },
     {
-      "name": "design-a-distributed-botnet event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Indicator",
+      "fields": [
+        "indicatorId",
+        "kind",
+        "valueHash",
+        "firstSeen",
+        "lastSeen",
+        "confidence"
+      ],
+      "notes": "Normalized hash, domain, IP, or behavior indicator."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "CampaignCluster",
+      "fields": [
+        "clusterId",
+        "indicatorIds",
+        "hypotheses",
+        "score",
+        "status",
+        "updatedAt"
+      ],
+      "notes": "Explainable cluster of related defensive observations."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ContainmentAction",
+      "fields": [
+        "actionId",
+        "scope",
+        "policyVersion",
+        "approval",
+        "providerRef",
+        "status"
+      ],
+      "notes": "Audited and scoped defensive response."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Command and control architecture command, then commit it idempotently."
+      "path": "/v1/evidence",
+      "contract": "{ source, observations, provenance } -> { evidenceId, accepted }",
+      "notes": "Ingest defensive distributed botnet evidence with provenance."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/campaigns?indicator=",
+      "contract": "{ clusters[], evidenceRefs[], freshness }",
+      "notes": "Query explainable correlated activity."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/containment-actions",
+      "contract": "{ scope, action, reason, approvalToken } -> { actionId, status }",
+      "notes": "Create a reviewed defensive containment action."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/evidence/{evidenceId}/timeline",
+      "contract": "{ records[], gaps, confidence }",
+      "notes": "Return a replayable evidence timeline."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Command and control architecture",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Ingest attributed defensive evidence",
+      "description": "The distributed botnet gateway validates source, provenance, timestamp, tenant, and retention before accepting observations."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Command and control architecture; Distributed node communication before acknowledging the client."
+      "title": "Normalize and correlate indicators",
+      "description": "Workers deduplicate indicators, link relationships, and preserve confidence rather than collapsing uncertain evidence."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Analyze suspicious samples safely",
+      "description": "Sandbox jobs run in an isolated environment and publish behavior evidence without uncontrolled external actions."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels, update projections, and expose lag or watermark metadata."
+      "title": "Review and contain",
+      "description": "Analysts inspect evidence and approve scoped, reversible defensive actions through integration adapters."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Measure false positives and recover",
+      "description": "Operations evaluates evidence gaps, detection quality, containment latency, and action rollback or replay."
     }
   ],
   "architecture": {
-    "title": "Design a distributed system architecture similar to a botnet (for educational/security research purposes). reference architecture",
-    "summary": "The authoritative state records Command and control architecture; asynchronous workers build serving projections while Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels stays isolated from the request path.",
+    "title": "Distributed Botnet domain architecture",
+    "summary": "For defensive security research, design a controlled botnet-emulation lab and detection platform that models distributed command patterns safely, without providing deployable malware or unauthorized control mechanisms. The design makes distributed botnet decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Defensive analyst plane",
+        "description": "Analysts investigate and approve scoped defensive actions through an authenticated console.",
+        "componentIds": ["client", "gateway"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Command and control architecture; Distributed node communication supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "evidence",
+        "label": "Evidence and normalization plane",
+        "description": "Endpoint and sandbox evidence remains attributable, deduplicated, and replayable.",
+        "componentIds": ["telemetry", "normalizer", "sandbox"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "intelligence",
+        "label": "Correlation and detection plane",
+        "description": "Indicators and observations become explainable campaign and detection state.",
+        "componentIds": ["graph", "detector"]
+      },
+      {
+        "id": "response",
+        "label": "Reviewed containment plane",
+        "description": "Actions are approved, reversible where possible, and audited through integrations.",
+        "componentIds": ["actions", "notifications"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Security operations",
+        "description": "Evidence, false-positive, and response signals protect defensive correctness.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -166,274 +186,320 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Command and control architecture workflow and receive explicit status, freshness, or progress.",
+        "label": "Security analyst console",
+        "description": "Analysts submit indicators, inspect campaigns, and approve containment actions.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Threat-intelligence gateway",
+        "description": "Authenticates analysts, scopes tenants, validates evidence, and requires approval for actions.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Command and control architecture command, authorization policy, lifecycle state, and client contract.",
-        "position": {
-          "x": 720,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
-      },
-      {
-        "id": "source",
-        "type": "database",
-        "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Command and control architecture; Distributed node communication and supports the primary access patterns.",
-        "position": {
-          "x": 1080,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Design a Distributed Botnet"
-        }
-      },
-      {
-        "id": "stream",
+        "id": "telemetry",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels after durable commits.",
+        "label": "Endpoint telemetry stream",
+        "description": "Ingests defensive endpoint, DNS, network, and sandbox observations with provenance.",
         "position": {
-          "x": 1440,
-          "y": 100
+          "x": 650,
+          "y": 80
         },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
+        "properties": {}
       },
       {
-        "id": "workers",
+        "id": "normalizer",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels independently from the user-facing command and retry transient failures.",
+        "componentId": "processing-worker",
+        "label": "Indicator normalizer",
+        "description": "Deduplicates and normalizes hashes, domains, IPs, behaviors, and evidence references.",
         "position": {
-          "x": 1800,
-          "y": 100
+          "x": 1010,
+          "y": 80
         },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
+        "properties": {}
       },
       {
-        "id": "read-model",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design a Distributed Botnet with explicit freshness and fallback behavior.",
+        "id": "graph",
+        "type": "database",
+        "componentId": "database",
+        "label": "Threat relationship graph",
+        "description": "Links indicators, samples, infrastructure, sightings, and confidence over time.",
         "position": {
-          "x": 2160,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "latency": "Resilient to takedown attempts"
-        }
+        "properties": {}
+      },
+      {
+        "id": "detector",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Correlation and detection service",
+        "description": "Groups observations into campaigns and produces explainable defensive detections.",
+        "position": {
+          "x": 1710,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "sandbox",
+        "type": "processing-worker",
+        "componentId": "processing-worker",
+        "label": "Isolated malware sandbox",
+        "description": "Analyzes suspicious samples in a contained environment with no uncontrolled external actions.",
+        "position": {
+          "x": 1360,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "actions",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Containment workflow",
+        "description": "Creates reviewed block, quarantine, or investigation actions through approved integrations.",
+        "position": {
+          "x": 2060,
+          "y": 260
+        },
+        "properties": {}
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Analyst notifications",
+        "description": "Delivers high-confidence campaign and containment updates with audit references.",
+        "position": {
+          "x": 2410,
+          "y": 260
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Security operations",
+        "description": "Tracks evidence quality, false positives, containment latency, and workflow authorization.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1360,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Command and control architecture through the authenticated request boundary."
+        "label": "Investigation or approval",
+        "description": "Analysts submit evidence queries and approve scoped defensive actions."
       },
       {
-        "id": "gateway-service",
-        "source": "gateway",
-        "target": "service",
-        "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
-      },
-      {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
-        "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Command and control architecture; Distributed node communication before downstream asynchronous work."
-      },
-      {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
-        "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
-      },
-      {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "telemetry-normalizer-1",
+        "source": "telemetry",
+        "target": "normalizer",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels with bounded retries and idempotent updates."
+        "label": "Endpoint evidence",
+        "description": "Defensive telemetry is normalized with source, timestamp, and provenance."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
-      },
-      {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
+        "id": "normalizer-graph-2",
+        "source": "normalizer",
+        "target": "graph",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Indicator relationship",
+        "description": "Normalized indicators and sightings become versioned graph facts."
       },
       {
-        "id": "service-client",
-        "source": "service",
+        "id": "telemetry-sandbox-3",
+        "source": "telemetry",
+        "target": "sandbox",
+        "type": "message-queue",
+        "label": "Suspicious sample",
+        "description": "Samples are analyzed in an isolated sandbox with bounded resource and network policy."
+      },
+      {
+        "id": "sandbox-graph-4",
+        "source": "sandbox",
+        "target": "graph",
+        "type": "data-flow",
+        "label": "Behavioral evidence",
+        "description": "Sandbox observations link behavior to indicators and confidence."
+      },
+      {
+        "id": "graph-detector-5",
+        "source": "graph",
+        "target": "detector",
+        "type": "api-call",
+        "label": "Correlation candidates",
+        "description": "The detector groups evidence and produces explainable defensive findings."
+      },
+      {
+        "id": "detector-client-6",
+        "source": "detector",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Resilient to takedown attempts."
+        "label": "Analyst finding",
+        "description": "Analysts see evidence, confidence, scope, and recommended containment."
       },
       {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "client-actions-7",
+        "source": "client",
+        "target": "actions",
+        "type": "api-call",
+        "label": "Approved containment",
+        "description": "Only an authorized approval creates a block, quarantine, or investigation action."
+      },
+      {
+        "id": "actions-notifications-8",
+        "source": "actions",
+        "target": "notifications",
+        "type": "message-queue",
+        "label": "Response status",
+        "description": "Analysts receive integration results and audit references."
+      },
+      {
+        "id": "detector-monitoring-9",
+        "source": "detector",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Detection quality telemetry",
+        "description": "Operations observes false positives, confidence, and evidence gaps."
+      },
+      {
+        "id": "actions-monitoring-10",
+        "source": "actions",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Containment telemetry",
+        "description": "Operations observes authorization, latency, failures, and rollback state."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "evidence",
+        "label": "Evidence to intelligence",
+        "description": "Telemetry or samples -> normalization -> graph -> correlation and detection.",
+        "componentIds": [
+          "telemetry",
+          "normalizer",
+          "sandbox",
+          "graph",
+          "detector"
+        ]
+      },
+      {
+        "id": "response",
+        "label": "Reviewed defensive response",
+        "description": "Detection -> analyst review -> scoped containment action -> notification.",
+        "componentIds": ["detector", "client", "actions", "notifications"]
+      },
+      {
+        "id": "audit",
+        "label": "Evidence and action audit",
+        "description": "Every finding and action keeps provenance, confidence, actor, and integration response.",
+        "componentIds": ["gateway", "graph", "actions", "monitoring"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Evidence provenance and confidence",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Preserve source, collection time, transformation, and evidence references for every indicator.",
+        "Separate observed facts from hypotheses and make confidence or scoring explainable.",
+        "Use retention classes and tenant isolation for sensitive security data."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Safe correlation",
       "points": [
-        "Partition by the access pattern implied by Design a distributed system architecture similar to a botnet (for educational/security research purposes)., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Use a graph or relationship store for indicators, sightings, samples, and infrastructure links.",
+        "Keep correlation asynchronous and replayable so a detector change can be evaluated against historical evidence.",
+        "Quarantine low-confidence clusters from automatic containment."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Reviewed containment",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Require scoped authorization, approval, expiry, and provider acknowledgement for actions.",
+        "Make actions idempotent and reversible where possible, retaining the original evidence and decision.",
+        "Measure false positives, missed detections, action latency, and rollback failures."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Automatic versus analyst-approved response",
+      "recommendation": "Automate only high-confidence, low-blast-radius actions and require approval for disruptive changes.",
+      "caution": "A false positive can create a larger outage than the threat it was meant to contain."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Central graph versus stream-only detection",
+      "recommendation": "Keep a durable relationship graph for investigation and a stream path for fast detections.",
+      "caution": "A graph-only hot path creates latency and contention; stream-only analysis loses history."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Evidence retention versus privacy",
+      "recommendation": "Retain enough evidence for incident reconstruction and delete or hash sensitive payloads according to policy.",
+      "caution": "Unlimited raw security data increases breach impact and storage cost."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating a weak indicator as proof of a campaign.",
+    "Allowing detection logic to trigger unreviewed broad actions.",
+    "Dropping provenance or transformation history during normalization.",
+    "Running analysis with uncontrolled external network access.",
+    "Measuring detections without false-positive, containment, and rollback metrics."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you avoid a false-positive containment?",
+      "answer": "Require confidence and policy gates, scope the action, use approval for high blast radius, and retain a fast rollback path."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you replay a detector?",
+      "answer": "Keep normalized evidence and detector version, run against an isolated output, compare findings, and publish only after review."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you protect sensitive evidence?",
+      "answer": "Tenant-isolate data, minimize raw payloads, encrypt references, apply retention classes, and audit every access."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Command and control architecture workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the distributed botnet workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a distributed system architecture similar to a botnet (for educational/security research purposes)., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative distributed botnet state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions distributed botnet traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the distributed botnet user experience."
     }
   ]
 }

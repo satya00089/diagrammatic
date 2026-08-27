@@ -55,131 +55,99 @@
     {
       "name": "CompatibilityContext",
       "fields": [
-        "context_id",
-        "type",
-        "canonical_attributes",
-        "aliases",
-        "market",
-        "user_id"
+        "contextId",
+        "productType",
+        "make",
+        "model",
+        "year",
+        "deviceVersion",
+        "normalizedAt"
       ],
-      "notes": "Canonicalize equivalent identifiers; keep user-saved contexts separate from the global taxonomy."
+      "notes": "Normalized shopper or installed-product context."
     },
     {
-      "name": "Product",
+      "name": "CompatibilityRule",
       "fields": [
-        "product_id",
-        "seller_id",
-        "category",
-        "brand",
-        "sku",
+        "ruleId",
+        "catalogVersion",
+        "contextPredicate",
+        "partIds",
+        "confidence",
         "status"
       ],
-      "notes": "The product is the stable join key; SKU and seller data can change without rewriting every fitment query."
+      "notes": "Versioned rule or fitment mapping."
     },
     {
-      "name": "FitmentRule",
+      "name": "FitmentResult",
       "fields": [
-        "product_id",
-        "context_id",
+        "contextHash",
+        "partId",
         "result",
-        "reason_code",
-        "effective_from",
-        "effective_to",
-        "source"
+        "ruleVersion",
+        "explanations",
+        "computedAt"
       ],
-      "notes": "Store explicit include/exclude rules and their provenance; exclusions must override broad positive rules."
+      "notes": "Cacheable result with rule and catalog versions."
     },
     {
       "name": "CatalogVersion",
       "fields": [
-        "version_id",
-        "market",
-        "state",
-        "created_at",
-        "published_at",
-        "index_checkpoint"
-      ],
-      "notes": "A version makes results reproducible and permits blue/green index publication and rollback."
-    },
-    {
-      "name": "MismatchReport",
-      "fields": [
-        "report_id",
-        "product_id",
-        "context_id",
-        "order_id",
-        "version_id",
+        "catalogId",
+        "version",
+        "publishedAt",
+        "effectiveAt",
+        "sourceHash",
         "status"
       ],
-      "notes": "Keep reports append-only and access-controlled; aggregate them for data-quality operations."
+      "notes": "Atomic publication boundary for product and fitment data."
     }
   ],
   "apis": [
     {
-      "method": "GET",
-      "path": "/v1/contexts/search?q=2018%20civic",
-      "contract": "ContextSearchResult[]",
-      "notes": "Normalize and rank aliases; require bounded query length and market scope."
-    },
-    {
       "method": "POST",
-      "path": "/v1/compatibility/check",
-      "contract": "{ product_ids[], context_id } -> { results[], catalog_version }",
-      "notes": "Read cache/index, return compatible/incompatible/unknown plus reason codes; never infer unknown as compatible."
+      "path": "/v1/compatibility/context",
+      "contract": "{ vehicleOrDevice, attributes } -> { contextId, normalizedContext }",
+      "notes": "Normalize aliases and validate required fitment dimensions."
     },
     {
       "method": "GET",
-      "path": "/v1/products?context_id=ctx_123",
-      "contract": "ProductPage { items, next_cursor, context_id, version }",
-      "notes": "Use cursor pagination and filter in the index; authorize seller visibility before returning products."
+      "path": "/v1/fitment?contextId=&cursor=",
+      "contract": "{ items[], explanations[], catalogVersion, freshness }",
+      "notes": "Return compatible catalog items from a versioned fitment index."
     },
     {
       "method": "POST",
-      "path": "/v1/cart/items",
-      "contract": "{ product_id, quantity, context_id, compatibility_version }",
-      "notes": "Persist the context and version; synchronously recheck the item before accepting the cart mutation."
+      "path": "/v1/catalog/versions",
+      "contract": "{ products, rules, sourceVersion, idempotencyKey } -> { catalogVersion, status }",
+      "notes": "Validate and publish a new catalog/rule generation atomically."
     },
     {
       "method": "POST",
-      "path": "/v1/catalog/imports",
-      "contract": "{ source_uri, market } -> { import_id, status }",
-      "notes": "Admin-only, idempotent import; validate schema and quarantine ambiguous rows before publication."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/mismatch-reports",
-      "contract": "{ product_id, context_id, order_id?, evidence }",
-      "notes": "Rate-limit and redact evidence; enqueue review without blocking the shopper response."
+      "path": "/v1/fitment/rebuild",
+      "contract": "{ catalogVersion, scope, idempotencyKey } -> { jobId, status }",
+      "notes": "Rebuild affected compatibility projections without blocking shopper reads."
     }
   ],
   "dataFlow": [
     {
-      "title": "Capture the compatibility context",
-      "description": "The UI accepts a bounded selector or search result, resolves aliases to a canonical context_id, and stores the user's selected context."
+      "title": "Normalize shopper context",
+      "description": "The service resolves make/model/year, device versions, aliases, and missing dimensions into a canonical context with validation errors."
     },
     {
-      "title": "Check the cache and query index",
-      "description": "The service validates the product and context, checks a version-keyed cache, then queries the fitment index for explicit rules and exclusions."
+      "title": "Evaluate fitment",
+      "description": "The query path checks a context-hash cache and purpose-built index, then returns compatible parts with rule explanations and catalog version."
     },
     {
-      "title": "Return an explainable result",
-      "description": "The response distinguishes compatible, incompatible, and unknown; it includes a reason code, catalog version, and freshness metadata."
+      "title": "Publish catalog and rules",
+      "description": "Catalog admins validate rules, detect conflicts, and publish an immutable version before index workers receive a change event."
     },
     {
-      "title": "Carry context into cart",
-      "description": "The cart stores context_id and the observed catalog version so the system can explain what was checked and detect changed data."
+      "title": "Refresh compatibility indexes",
+      "description": "Workers recompute affected contexts or rule partitions asynchronously and expose index freshness and publication watermarks."
     },
     {
-      "title": "Revalidate before purchase",
-      "description": "Checkout performs a fresh authoritative or current-index check. A changed or unknown result pauses purchase for confirmation rather than silently allowing a mismatch."
-    },
-    {
-      "title": "Publish catalog changes asynchronously",
-      "description": "Approved changes commit to the catalog and outbox, flow through a durable queue, and are idempotently indexed before a new version is promoted."
-    },
-    {
-      "title": "Measure and correct quality",
-      "description": "Mismatch reports, rejected rules, stale-index alerts, and query metrics feed operator workflows without adding work to the user-facing path."
+      "title": "Protect checkout correctness",
+      "description": "The cart or order boundary rechecks fitment against the current catalog/rule version so a stale recommendation cannot create an invalid purchase."
     }
   ],
   "architecture": {
@@ -259,7 +227,7 @@
         "id": "parts-gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Parts compatibility feature gateway",
         "description": "Authenticates users, validates bounded query inputs, and applies rate limits.",
         "position": {
           "x": 480,
@@ -317,7 +285,7 @@
         "type": "database",
         "componentId": "database",
         "label": "Catalog and Fitment Store",
-        "description": "Durable source of truth for products, aliases, normalized contexts, rules, and publication versions.",
+        "description": "Authoritative catalog and fitment state for products, aliases, normalized contexts, rules, and publication versions.",
         "position": {
           "x": 1440,
           "y": 420
@@ -372,7 +340,7 @@
         "id": "observability",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Parts compatibility feature monitoring",
         "description": "Tracks lookup latency, stale index age, mismatch reports, queue lag, and publication failures.",
         "position": {
           "x": 1920,
@@ -513,113 +481,88 @@
   },
   "deepDives": [
     {
-      "title": "Fitment modeling and precedence",
+      "title": "Rule versioning and fitment correctness",
       "points": [
-        "Normalize context dimensions so equivalent representations map to one key.",
-        "Represent positive and negative rules explicitly; define precedence for product, model family, trim, and market overrides.",
-        "Keep provenance and effective dates so operators can explain and roll back a decision."
+        "For the parts compatibility and fitment feature, a fitment answer must identify the normalized context and catalog/rule versions that produced it.",
+        "Design for the failure case where ambiguous aliases, conflicting rules, catalog changes, and stale caches must not create unsafe recommendations; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Indexing and publication consistency",
+      "title": "Context normalization and cache keys",
       "points": [
-        "Use an outbox or change log so a committed catalog change cannot be lost before enqueueing.",
-        "Build affected documents idempotently, checkpoint batches, and promote a complete index version atomically.",
-        "Expose version and age in responses; stale data can be labeled while the system falls back or blocks high-risk checkout decisions."
+        "For the parts compatibility and fitment feature, a fitment answer must identify the normalized context and catalog/rule versions that produced it.",
+        "Keep this concern off unrelated request paths and partition it by the the parts compatibility and fitment feature access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Correctness at cart and checkout",
+      "title": "Catalog publication and checkout rechecks",
       "points": [
-        "A cached browse result is advisory; cart and checkout must revalidate against the latest acceptable version.",
-        "Persist the context and version used so a changed rule produces an understandable prompt.",
-        "Use an unknown state and manual confirmation path instead of guessing from category, brand, or text similarity."
-      ]
-    },
-    {
-      "title": "Search, cache, and hot keys",
-      "points": [
-        "Search the taxonomy separately from fitment evaluation; autocomplete should not scan the relationship corpus.",
-        "Cache popular product/context answers with versioned keys and bounded TTLs.",
-        "Protect against bots and celebrity products with quotas, request coalescing, and pagination limits."
-      ]
-    },
-    {
-      "title": "Data quality and operations",
-      "points": [
-        "Quarantine imports with invalid identifiers, overlaps, missing dimensions, or conflicting exclusions.",
-        "Monitor false-positive reports, unknown rates, publication lag, index divergence, and top mismatch products.",
-        "Support replay, partial rebuilds, blue/green index promotion, and rollback to the prior known-good version."
+        "For the parts compatibility and fitment feature, a fitment answer must identify the normalized context and catalog/rule versions that produced it.",
+        "Keep this concern off unrelated request paths and partition it by the the parts compatibility and fitment feature access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Relational rules vs search index",
-      "recommendation": "Keep the relational or document store authoritative and project a query-optimized index for high-volume reads.",
-      "caution": "A search index alone makes approvals, effective dates, and transactional correctness harder to audit."
+      "title": "Rule engine versus precomputed fitment index",
+      "recommendation": "Use precomputed/indexed results for high-volume reads and a rule engine for publication validation and bounded misses.",
+      "caution": "Evaluating every rule on the shopper path is predictable only at small catalog scale."
     },
     {
-      "title": "Precompute all pairs vs evaluate rules",
-      "recommendation": "Precompute common normalized relationships and evaluate narrow exceptions at read time.",
-      "caution": "Materializing every product-context pair can explode storage and makes broad taxonomy edits expensive."
+      "title": "Cache speed versus vehicle/device changes",
+      "recommendation": "Key caches by normalized context and catalog version with targeted invalidation on publication.",
+      "caution": "A context-insensitive cache can return a plausible but incorrect part."
     },
     {
-      "title": "Strong vs eventual browse consistency",
-      "recommendation": "Allow eventual consistency for browse, but require a fresh check at cart and checkout.",
-      "caution": "Do not describe an index result as guaranteed fit without stating its version and freshness."
-    },
-    {
-      "title": "Single global taxonomy vs market-specific catalogs",
-      "recommendation": "Share canonical identifiers where possible and layer market/seller overrides with explicit precedence.",
-      "caution": "Global normalization can hide regional differences in model years, regulations, or inventory."
+      "title": "Strict fitment versus useful uncertainty",
+      "recommendation": "Return compatible, incompatible, and unknown states with explanations instead of guessing when data is incomplete.",
+      "caution": "Overly strict unknown handling reduces recall; guessing can cause returns or safety issues."
     }
   ],
   "commonMistakes": [
-    "Using free-text matching as the source of truth for compatibility.",
-    "Returning only a boolean and omitting why a part fits or does not fit.",
-    "Treating a stale search index as authoritative during checkout.",
-    "Ignoring exclusions, aliases, market scope, effective dates, and catalog provenance.",
-    "Updating the index directly without an outbox, idempotency, replay, or rollback strategy."
+    "Matching on raw user text without normalization.",
+    "Publishing rules without conflict detection or versioning.",
+    "Caching results without catalog/context versions.",
+    "Treating a recommendation as a checkout guarantee.",
+    "Hiding unknown or incomplete fitment evidence."
   ],
   "followUps": [
     {
-      "question": "What changes if merchants upload millions of rows at once?",
-      "answer": "Quarantine and validate in batches, partition work by catalog/market, apply backpressure, and promote one complete version rather than exposing a partially rebuilt index."
+      "question": "What if two rules conflict?",
+      "answer": "Reject or quarantine the catalog version, report the conflicting predicates, and keep the last known-good version serving."
     },
     {
-      "question": "How do you support both vehicles and electronics?",
-      "answer": "Use a typed context taxonomy and shared rule/publishing interfaces; keep domain-specific normalization and precedence modules behind the compatibility service."
+      "question": "How do you handle a catalog update during checkout?",
+      "answer": "Carry the fitment version into the cart and recheck against the current version before accepting the order."
     },
     {
-      "question": "What if the index is unavailable during checkout?",
-      "answer": "Fail closed for high-risk compatibility claims, use the last known-good version only when policy allows, and make the degraded state visible to the user and operators."
-    },
-    {
-      "question": "How would you prove a bad fitment result?",
-      "answer": "Persist the catalog/index version, rule provenance, context normalization, and decision reason, then correlate mismatch reports with orders and publication changes."
+      "question": "How do you support a new vehicle or device alias?",
+      "answer": "Add a versioned normalization mapping, rebuild only affected contexts, and measure unknown/incorrect fitment rates."
     }
   ],
   "rubric": [
     {
-      "criterion": "Product boundary",
-      "description": "Clarifies context selection, fitment states, cart/checkout behavior, catalog operations, and non-goals."
+      "criterion": "Requirements",
+      "description": "The answer defines context normalization, versioned rules, explainable fitment, cache correctness, catalog publication, and checkout revalidation, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Data modeling",
-      "description": "Models canonical contexts, aliases, rules, exclusions, precedence, provenance, effective dates, and versions."
+      "criterion": "Data model",
+      "description": "Entities and keys make the parts compatibility and fitment feature state, versions, lifecycle, and derived projections explicit."
     },
     {
-      "criterion": "Serving path",
-      "description": "Uses bounded APIs, caching, an appropriate read index, pagination, explainable results, and a stated latency target."
+      "criterion": "Scalability",
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Correctness",
-      "description": "Separates browse eventual consistency from checkout revalidation and handles unknown or stale results safely."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
     },
     {
-      "criterion": "Publication and operations",
-      "description": "Includes validation, outbox/events, idempotent indexing, freshness SLOs, replay, rollback, mismatch feedback, and observability."
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the the parts compatibility and fitment feature consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

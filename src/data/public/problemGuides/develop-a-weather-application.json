@@ -50,115 +50,135 @@
   },
   "entities": [
     {
-      "name": "Develop a Weather Application",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Show current weather conditions; 7-day weather forecast; design keys around the main reads and writes."
+      "name": "Observation",
+      "fields": [
+        "locationId",
+        "provider",
+        "eventTime",
+        "temperature",
+        "conditions",
+        "quality"
+      ],
+      "notes": "Timestamped weather observation with provider provenance."
     },
     {
-      "name": "develop-a-weather-application event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ForecastVersion",
+      "fields": [
+        "locationId",
+        "provider",
+        "issuedAt",
+        "validFrom",
+        "validTo",
+        "modelVersion"
+      ],
+      "notes": "Versioned forecast used by weather application."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "LocationSubscription",
+      "fields": [
+        "subscriptionId",
+        "userId",
+        "locationId",
+        "thresholds",
+        "channels",
+        "status"
+      ],
+      "notes": "User alert policy and delivery preferences."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ForecastQuality",
+      "fields": [
+        "locationId",
+        "metric",
+        "window",
+        "provider",
+        "value",
+        "sampleCount"
+      ],
+      "notes": "Observed-versus-forecast quality evidence."
     }
   ],
   "apis": [
     {
-      "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Show current weather conditions command, then commit it idempotently."
-    },
-    {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/forecast?location=&from=&to=",
+      "contract": "{ observations[], forecasts[], freshness, quality }",
+      "notes": "Return a freshness-aware weather application forecast."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/providers/{provider}/observations",
+      "contract": "{ batch, cursor, signature } -> { accepted, nextCursor }",
+      "notes": "Ingest provider observations with provenance and deduplication."
+    },
+    {
+      "method": "PUT",
+      "path": "/v1/alert-subscriptions/{id}",
+      "contract": "{ location, thresholds, channels, idempotencyKey } -> { status, version }",
+      "notes": "Create or update a weather application alert subscription."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/quality?location=&window=",
+      "contract": "{ metrics[], providerCoverage, freshness }",
+      "notes": "Expose forecast quality and provider coverage."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept Show current weather conditions",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "title": "Collect provider observations",
+      "description": "Collectors fetch weather application feeds with cursors, signatures, quotas, and explicit provider failure state."
     },
     {
-      "title": "Commit the durable state",
-      "description": "The service validates and durably records Show current weather conditions; 7-day weather forecast before acknowledging the client."
+      "title": "Normalize and preserve versions",
+      "description": "Workers map provider-specific data into canonical observations and forecasts without discarding provenance."
     },
     {
-      "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "title": "Serve location and time-window reads",
+      "description": "The API reads freshness-aware cache or time-indexed storage and reports quality or gap state."
     },
     {
-      "title": "Build the read model",
-      "description": "Partitioned workers process Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location, update projections, and expose lag or watermark metadata."
+      "title": "Evaluate severe-weather alerts",
+      "description": "Alert workers compare new updates to subscription thresholds and send deduplicated notifications."
     },
     {
-      "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "title": "Measure and reconcile quality",
+      "description": "Quality jobs compare forecasts to later observations and flag provider gaps, bias, or stale coverage."
     }
   ],
   "architecture": {
-    "title": "Design a weather application that provides current conditions, forecasts, and weather alerts. reference architecture",
-    "summary": "The authoritative state records Show current weather conditions; asynchronous workers build serving projections while Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location stays isolated from the request path.",
+    "title": "Weather Application domain architecture",
+    "summary": "Design a weather service that aggregates provider observations and forecasts, serves current conditions and multi-day outlooks, and delivers timely location-aware alerts with freshness metadata. The design makes weather application decisions durable, isolates slow or external work behind replayable boundaries, and exposes freshness, authorization, and recovery state to operators and clients.",
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": ["client", "gateway", "service"]
+        "label": "Forecast query plane",
+        "description": "Clients receive location-aware forecasts and explicit freshness or quality state.",
+        "componentIds": ["client", "gateway", "cache"]
       },
       {
-        "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Show current weather conditions; 7-day weather forecast supports replay, repair, and consistency checks.",
-        "componentIds": ["source", "stream"]
+        "id": "ingestion",
+        "label": "Provider ingestion and normalization",
+        "description": "External feeds become canonical, versioned observations and forecasts.",
+        "componentIds": ["collectors", "normalizer", "events"]
       },
       {
-        "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": ["workers", "read-model"]
+        "id": "truth",
+        "label": "Time and spatial forecast truth",
+        "description": "Observations, forecasts, provider versions, and quality flags remain queryable and replayable.",
+        "componentIds": ["weather-store"]
+      },
+      {
+        "id": "effects",
+        "label": "Alerts and forecast quality",
+        "description": "Alerts and validation run asynchronously from the read path.",
+        "componentIds": ["alerts", "quality"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Weather reliability operations",
+        "description": "Feed gaps, freshness, and alert signals protect user trust.",
         "componentIds": ["monitoring"]
-      }
-    ],
-    "keyPaths": [
-      {
-        "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": ["client", "gateway", "service", "source"]
-      },
-      {
-        "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -166,274 +186,306 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Show current weather conditions workflow and receive explicit status, freshness, or progress.",
+        "label": "Weather clients",
+        "description": "Clients request current conditions, forecasts, maps, and alerts.",
         "position": {
           "x": 0,
           "y": 260
         },
-        "properties": {
-          "protocol": "HTTPS or streaming API"
-        }
+        "properties": {}
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Weather API gateway",
+        "description": "Authenticates callers, normalizes location, applies quotas, and serves freshness metadata.",
         "position": {
-          "x": 360,
+          "x": 300,
           "y": 260
         },
-        "properties": {
-          "protection": "Auth, validation, rate limits"
-        }
+        "properties": {}
       },
       {
-        "id": "service",
+        "id": "collectors",
+        "type": "external-api",
+        "componentId": "external-api",
+        "label": "Provider collectors",
+        "description": "Fetches forecast and observation feeds with provider cursors, signatures, and rate limits.",
+        "position": {
+          "x": 650,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "normalizer",
         "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Show current weather conditions command, authorization policy, lifecycle state, and client contract.",
+        "componentId": "processing-worker",
+        "label": "Forecast normalizer",
+        "description": "Maps provider-specific observations and forecasts into a versioned canonical model.",
         "position": {
-          "x": 720,
-          "y": 260
+          "x": 1010,
+          "y": 80
         },
-        "properties": {
-          "consistency": "Idempotent command handling"
-        }
+        "properties": {}
       },
       {
-        "id": "source",
+        "id": "weather-store",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Show current weather conditions; 7-day weather forecast and supports the primary access patterns.",
+        "label": "Forecast and observation store",
+        "description": "Stores spatial, time-indexed observations, forecasts, provider versions, and quality flags.",
         "position": {
-          "x": 1080,
+          "x": 1360,
           "y": 260
         },
-        "properties": {
-          "storage": "Develop a Weather Application"
-        }
+        "properties": {}
       },
       {
-        "id": "stream",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location after durable commits.",
-        "position": {
-          "x": 1440,
-          "y": 100
-        },
-        "properties": {
-          "delivery": "At least once with dedupe"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location independently from the user-facing command and retry transient failures.",
-        "position": {
-          "x": 1800,
-          "y": 100
-        },
-        "properties": {
-          "scaling": "Partitioned workers"
-        }
-      },
-      {
-        "id": "read-model",
+        "id": "cache",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Develop a Weather Application with explicit freshness and fallback behavior.",
+        "label": "Freshness-aware forecast cache",
+        "description": "Caches location and time-window responses with provider watermark and TTL.",
         "position": {
-          "x": 2160,
+          "x": 1710,
           "y": 260
         },
-        "properties": {
-          "latency": "Real-time weather updates"
-        }
+        "properties": {}
+      },
+      {
+        "id": "alerts",
+        "type": "microservice",
+        "componentId": "notification-service",
+        "label": "Weather alert service",
+        "description": "Evaluates severe-weather rules and sends deduplicated alerts.",
+        "position": {
+          "x": 1710,
+          "y": 80
+        },
+        "properties": {}
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Observation event stream",
+        "description": "Carries normalized updates, forecast revisions, alert decisions, and replay offsets.",
+        "position": {
+          "x": 1010,
+          "y": 440
+        },
+        "properties": {}
+      },
+      {
+        "id": "quality",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Forecast quality analytics",
+        "description": "Compares forecasts to observations and tracks provider gaps or bias.",
+        "position": {
+          "x": 1360,
+          "y": 440
+        },
+        "properties": {}
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Weather reliability operations",
+        "description": "Tracks feed freshness, spatial gaps, forecast revision, alert lag, and cache correctness.",
         "position": {
-          "x": 1800,
-          "y": -180
+          "x": 1010,
+          "y": -140
         },
-        "properties": {
-          "alerts": "Errors, lag, drift"
-        }
+        "properties": {}
       }
     ],
     "connections": [
       {
-        "id": "client-gateway",
+        "id": "client-gateway-0",
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Show current weather conditions through the authenticated request boundary."
+        "label": "Forecast query",
+        "description": "Clients request a location, time window, product, and freshness budget."
       },
       {
-        "id": "gateway-service",
+        "id": "gateway-cache-1",
         "source": "gateway",
-        "target": "service",
+        "target": "cache",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Freshness-aware lookup",
+        "description": "The gateway serves a cached result only when its provider watermark and TTL are acceptable."
       },
       {
-        "id": "service-source",
-        "source": "service",
-        "target": "source",
+        "id": "cache-weather-store-2",
+        "source": "cache",
+        "target": "weather-store",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Show current weather conditions; 7-day weather forecast before downstream asynchronous work."
+        "label": "Current forecast read",
+        "description": "Cache misses read the time-indexed forecast and quality state."
       },
       {
-        "id": "source-stream",
-        "source": "source",
-        "target": "stream",
+        "id": "collectors-normalizer-3",
+        "source": "collectors",
+        "target": "normalizer",
+        "type": "api-call",
+        "label": "Provider observation",
+        "description": "Collectors verify and normalize provider responses while tracking cursors and gaps."
+      },
+      {
+        "id": "normalizer-events-4",
+        "source": "normalizer",
+        "target": "events",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Canonical weather update",
+        "description": "Normalized updates carry location, event time, provider version, and quality flags."
       },
       {
-        "id": "stream-workers",
-        "source": "stream",
-        "target": "workers",
+        "id": "events-weather-store-5",
+        "source": "events",
+        "target": "weather-store",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location with bounded retries and idempotent updates."
+        "label": "Forecast persistence",
+        "description": "Workers write observations and forecast revisions idempotently."
       },
       {
-        "id": "workers-read-model",
-        "source": "workers",
-        "target": "read-model",
-        "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "id": "events-alerts-6",
+        "source": "events",
+        "target": "alerts",
+        "type": "message-queue",
+        "label": "Severe weather evaluation",
+        "description": "Alert rules evaluate updates asynchronously and deduplicate notifications."
       },
       {
-        "id": "read-service",
-        "source": "read-model",
-        "target": "service",
-        "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "id": "events-quality-7",
+        "source": "events",
+        "target": "quality",
+        "type": "message-queue",
+        "label": "Forecast validation",
+        "description": "Quality jobs compare forecasts, observations, and provider completeness."
       },
       {
-        "id": "service-client",
-        "source": "service",
-        "target": "client",
-        "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Real-time weather updates."
-      },
-      {
-        "id": "stream-monitoring",
-        "source": "stream",
+        "id": "collectors-monitoring-8",
+        "source": "collectors",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Provider health telemetry",
+        "description": "Operations observes provider latency, quota, gaps, and schema changes."
+      },
+      {
+        "id": "weather-store-monitoring-9",
+        "source": "weather-store",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Freshness and quality telemetry",
+        "description": "Operations observes spatial coverage, forecast age, and storage lag."
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "ingest",
+        "label": "Forecast ingestion path",
+        "description": "Provider -> collector -> normalizer -> event stream -> weather store.",
+        "componentIds": ["collectors", "normalizer", "events", "weather-store"]
+      },
+      {
+        "id": "read",
+        "label": "Forecast read path",
+        "description": "Client -> gateway -> freshness-aware cache -> weather store.",
+        "componentIds": ["client", "gateway", "cache", "weather-store"]
+      },
+      {
+        "id": "alert",
+        "label": "Alert and quality path",
+        "description": "Normalized event -> alert evaluation or forecast validation -> notification or analytics.",
+        "componentIds": ["events", "alerts", "quality"]
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Consistency and idempotency",
+      "title": "Provider freshness and gaps",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Carry provider issue time, valid time, fetch time, cursor, and signature through the model.",
+        "Expose spatial coverage and stale state instead of silently filling a missing provider feed.",
+        "Use provider adapters so schema or quota failures are isolated."
       ]
     },
     {
-      "title": "Partitioning and hot keys",
+      "title": "Time and spatial indexing",
       "points": [
-        "Partition by the access pattern implied by Design a weather application that provides current conditions, forecasts, and weather alerts., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition by geospatial cell and valid-time bucket for bounded forecast reads.",
+        "Keep forecast revisions separate from observations so consumers can compare what was known when.",
+        "Cache only with a provider watermark and expiry contract."
       ]
     },
     {
-      "title": "Failure and recovery",
+      "title": "Alert correctness",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Evaluate thresholds with hysteresis, deduplication, and subscription version to prevent alert storms.",
+        "Record the forecast or observation evidence behind each alert.",
+        "Track delivery latency, suppressed duplicates, and stale-policy behavior."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Strong consistency versus throughput",
-      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
-      "caution": "Making every derived read synchronous increases coordination and tail latency."
+      "title": "Provider redundancy versus cost",
+      "recommendation": "Use multiple providers for severe-weather or high-availability paths and a single source for lower-risk products.",
+      "caution": "Failover without normalization or confidence metadata can produce contradictory forecasts."
     },
     {
-      "title": "Push versus pull processing",
-      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
-      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+      "title": "Precompute tiles versus query on demand",
+      "recommendation": "Precompute common spatial/time products and compute rare views within a bounded budget.",
+      "caution": "Generating every resolution and time horizon is expensive and hard to invalidate."
     },
     {
-      "title": "Managed service versus custom control",
-      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
-      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+      "title": "Freshness versus stability",
+      "recommendation": "Expose issued and valid times and choose product-specific freshness budgets.",
+      "caution": "Aggressively refreshing can amplify provider rate limits without improving forecast quality."
     }
   ],
   "commonMistakes": [
-    "Putting all work on the synchronous request path.",
-    "Choosing a data store before writing the access patterns and consistency contract.",
-    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
-    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
-    "Allowing unbounded requests or exports to compete with normal traffic."
+    "Treating fetch success as forecast quality.",
+    "Mixing provider issue time with valid time and serving a revision as current without metadata.",
+    "Firing duplicate alerts for every forecast revision.",
+    "Ignoring spatial gaps, quota failures, and stale caches.",
+    "Dropping provider provenance so quality cannot be reconciled later."
   ],
   "followUps": [
     {
-      "question": "What happens when the primary worker is unavailable?",
-      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+      "question": "How do you handle a provider outage?",
+      "answer": "Serve the last acceptable version with explicit freshness, switch to a normalized fallback when policy allows, and alert on coverage gaps."
     },
     {
-      "question": "How would you support a tenfold traffic spike?",
-      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+      "question": "How do you avoid alert storms?",
+      "answer": "Version subscriptions, apply hysteresis and deduplication, and require a new evidence threshold before re-notifying."
     },
     {
-      "question": "How do you verify correctness?",
-      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+      "question": "How do you measure forecast quality?",
+      "answer": "Join forecast versions to later observations by location and valid time, then compute accuracy and coverage by provider and cohort."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer defines the Show current weather conditions workflow, scale, latency, durability, and failure contract."
+      "description": "The answer addresses the weather application workflow, scale, latency, durability, authorization, and failure contract."
     },
     {
-      "criterion": "Data model",
-      "description": "Entities and keys support Design a weather application that provides current conditions, forecasts, and weather alerts., authorization, privacy, and lifecycle changes."
+      "criterion": "Correctness",
+      "description": "The answer identifies the authoritative weather application state, versioning or deduplication boundary, and how derived views converge."
     },
     {
-      "criterion": "Scalability",
-      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+      "criterion": "Scale",
+      "description": "The answer partitions weather application traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
     },
     {
-      "criterion": "Reliability",
-      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
-    },
-    {
-      "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "criterion": "Operations",
+      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the weather application user experience."
     }
   ]
 }

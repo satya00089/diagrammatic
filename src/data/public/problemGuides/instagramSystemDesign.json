@@ -54,115 +54,91 @@
     {
       "name": "MediaAsset",
       "fields": [
-        "asset_id",
-        "owner_id",
-        "object_uri",
+        "mediaId",
+        "ownerId",
+        "objectUri",
         "renditions",
-        "checksum",
-        "state"
-      ],
-      "notes": "Store bytes in object storage and metadata separately; checksums and immutable versions make retries safe."
-    },
-    {
-      "name": "PostOrStory",
-      "fields": [
-        "content_id",
-        "author_id",
-        "asset_ids",
         "visibility",
-        "expires_at",
-        "moderation_state"
+        "status"
       ],
-      "notes": "A story is a content record with an expiry policy; visibility and moderation are rechecked at read time."
+      "notes": "Canonical uploaded photo/video and processing state."
     },
     {
       "name": "FollowEdge",
-      "fields": [
-        "follower_id",
-        "followee_id",
-        "state",
-        "created_at",
-        "version"
-      ],
-      "notes": "Maintain follower and following access paths to support feed fanout, profile views, blocks, and privacy checks."
+      "fields": ["followerId", "followeeId", "status", "version", "createdAt"],
+      "notes": "Versioned graph relationship used for feed fanout and authorization."
     },
     {
-      "name": "FeedEntry",
+      "name": "FeedItem",
       "fields": [
-        "user_id",
-        "content_id",
-        "author_id",
-        "rank_key",
-        "source",
-        "expires_at"
+        "viewerId",
+        "postId",
+        "rank",
+        "sourceVersion",
+        "createdAt",
+        "expiresAt"
       ],
-      "notes": "A rebuildable read projection with bounded retention; hot creators can be merged on read instead of pushed to every follower."
+      "notes": "Materialized home-feed item with generation metadata."
     },
     {
-      "name": "InteractionEvent",
+      "name": "Interaction",
       "fields": [
-        "event_id",
-        "content_id",
-        "actor_id",
+        "interactionId",
+        "mediaId",
+        "actorId",
         "type",
-        "occurred_at",
-        "version"
+        "version",
+        "occurredAt"
       ],
-      "notes": "At-least-once events drive counters, notifications, moderation signals, and analytics with consumer deduplication."
+      "notes": "Like/comment/save/report transition used by projections and moderation."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/media/uploads",
-      "contract": "{ contentType, size, checksum, requestId } -> { uploadId, partUrls }",
-      "notes": "Authorize ownership, issue signed resumable part URLs, and do not proxy large bytes through the API tier."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/posts",
-      "contract": "{ uploadId, caption, visibility, requestId } -> { postId, state }",
-      "notes": "Validate the completed asset, persist metadata idempotently, and enqueue processing and publication events."
+      "path": "/v1/media",
+      "contract": "{ uploadRef, caption, visibility, idempotencyKey } -> { mediaId, status }",
+      "notes": "Register an upload and enqueue rendition/moderation work."
     },
     {
       "method": "GET",
-      "path": "/v1/feed/home?cursor=&limit=",
-      "contract": "{ items[], nextCursor, generatedAt, lagMs }",
-      "notes": "Read a bounded projection, merge hot-author candidates when needed, and recheck visibility, block, and moderation state."
-    },
-    {
-      "method": "GET",
-      "path": "/v1/stories?userIds=",
-      "contract": "{ stories[], expiresAt, observedAt }",
-      "notes": "Return only unexpired, visible stories; cache short-lived manifests and invalidate on deletion or moderation."
+      "path": "/v1/feed?cursor=",
+      "contract": "{ items[], nextCursor, feedVersion, freshness }",
+      "notes": "Return a viewer-authorized feed page with cursor and generation metadata."
     },
     {
       "method": "PUT",
-      "path": "/v1/content/{contentId}/like",
-      "contract": "{ requestId } -> { liked, count, version }",
-      "notes": "Use a unique actor-content key and an idempotent event so repeated taps cannot duplicate interactions."
+      "path": "/v1/follows/{userId}",
+      "contract": "{ following, idempotencyKey } -> { status, version }",
+      "notes": "Conditionally update the graph edge and emit feed invalidation/fanout work."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/media/{mediaId}/interactions",
+      "contract": "{ type, clientEventId } -> { interactionId, version }",
+      "notes": "Record an idempotent like, comment, save, or report transition."
     }
   ],
   "dataFlow": [
     {
-      "title": "Reserve a resumable upload",
-      "description": "The client requests a signed multipart upload, sends bytes directly to object storage, and retries failed parts by checksum."
+      "title": "Upload and publish media",
+      "description": "The client uploads to object storage; metadata, ownership, visibility, checksum, and moderation state are committed before publication."
     },
     {
-      "title": "Commit content metadata",
-      "description": "After storage confirms the object, the API validates ownership and moderation policy, writes the post or story record, and returns a durable content ID."
+      "title": "Maintain the social graph",
+      "description": "Follow/unfollow edges are conditionally written and publish graph events that affect feed candidates and authorization."
     },
     {
-      "title": "Process media asynchronously",
-      "description": "Workers scan, resize, transcode, and create manifests and thumbnails; the content becomes playable when the required rendition set is ready."
+      "title": "Build home-feed candidates",
+      "description": "Fanout workers push ordinary posts to follower partitions, while high-follower accounts are pulled or hybrid-fanned out at read time."
     },
     {
-      "title": "Fan out eligible feed entries",
-      "description": "A publication event selects push fanout for normal authors and pull-on-read or hybrid delivery for high-follower creators, applying visibility and block rules."
+      "title": "Serve feed and stories",
+      "description": "Feed and story services merge ranked candidates, check visibility and expiry, and return cursor/freshness metadata."
     },
     {
-      "title": "Serve and invalidate asynchronously",
-      "description": "Feed and story reads use cursor projections, CDN media, and freshness metadata while counters, notifications, recommendations, analytics, and expiry cleanup consume events independently."
+      "title": "Process interactions and moderation",
+      "description": "Like/comment/report events update projections, notifications, discovery, and safety queues asynchronously with repairable state."
     }
   ],
   "architecture": {
@@ -257,17 +233,27 @@
         "componentId": "web-app",
         "label": "Mobile and web clients",
         "description": "Upload media, read feeds and stories, and submit likes, comments, and follows.",
-        "position": { "x": 0, "y": 280 },
-        "properties": { "protocol": "HTTPS plus CDN" }
+        "position": {
+          "x": 0,
+          "y": 280
+        },
+        "properties": {
+          "protocol": "HTTPS plus CDN"
+        }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Design Instagram gateway",
         "description": "Authenticates users, applies quotas, validates commands, and issues signed upload URLs.",
-        "position": { "x": 360, "y": 280 },
-        "properties": { "protection": "Auth, quotas, abuse controls" }
+        "position": {
+          "x": 360,
+          "y": 280
+        },
+        "properties": {
+          "protection": "Auth, quotas, abuse controls"
+        }
       },
       {
         "id": "object-store",
@@ -275,8 +261,13 @@
         "componentId": "file-storage",
         "label": "Media object store",
         "description": "Stores originals, renditions, thumbnails, manifests, and logs with checksums and lifecycle policy.",
-        "position": { "x": 720, "y": 80 },
-        "properties": { "retention": "Hot, cool, archive" }
+        "position": {
+          "x": 720,
+          "y": 80
+        },
+        "properties": {
+          "retention": "Hot, cool, archive"
+        }
       },
       {
         "id": "content-service",
@@ -284,8 +275,13 @@
         "componentId": "backend-server",
         "label": "Content service",
         "description": "Owns post and story metadata, visibility, expiry, deletion, and publication state.",
-        "position": { "x": 720, "y": 360 },
-        "properties": { "consistency": "Idempotent durable commit" }
+        "position": {
+          "x": 720,
+          "y": 360
+        },
+        "properties": {
+          "consistency": "Idempotent durable commit"
+        }
       },
       {
         "id": "content-store",
@@ -293,8 +289,13 @@
         "componentId": "database",
         "label": "Content metadata store",
         "description": "Durable records for media, posts, stories, ownership, moderation, and lifecycle state.",
-        "position": { "x": 1080, "y": 360 },
-        "properties": { "partition": "owner_id and content_id" }
+        "position": {
+          "x": 1080,
+          "y": 360
+        },
+        "properties": {
+          "partition": "owner_id and content_id"
+        }
       },
       {
         "id": "graph-service",
@@ -302,8 +303,13 @@
         "componentId": "backend-server",
         "label": "Social graph service",
         "description": "Manages follows, blocks, privacy, and recipient indexes.",
-        "position": { "x": 1080, "y": 600 },
-        "properties": { "access": "Follower and following paths" }
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "properties": {
+          "access": "Follower and following paths"
+        }
       },
       {
         "id": "graph-store",
@@ -311,8 +317,13 @@
         "componentId": "database",
         "label": "Social graph store",
         "description": "Durable adjacency lists optimized for follower enumeration and relationship checks.",
-        "position": { "x": 1440, "y": 600 },
-        "properties": { "partition": "followee_id and follower_id" }
+        "position": {
+          "x": 1440,
+          "y": 600
+        },
+        "properties": {
+          "partition": "followee_id and follower_id"
+        }
       },
       {
         "id": "media-workers",
@@ -320,8 +331,13 @@
         "componentId": "backend-server",
         "label": "Media processing workers",
         "description": "Scan, resize, transcode, moderate, and publish rendition manifests asynchronously.",
-        "position": { "x": 1440, "y": 80 },
-        "properties": { "scaling": "Queue and media duration" }
+        "position": {
+          "x": 1440,
+          "y": 80
+        },
+        "properties": {
+          "scaling": "Queue and media duration"
+        }
       },
       {
         "id": "event-stream",
@@ -329,8 +345,13 @@
         "componentId": "message-broker",
         "label": "Content event stream",
         "description": "Retains publication, interaction, deletion, and graph events for replayable consumers.",
-        "position": { "x": 1800, "y": 280 },
-        "properties": { "delivery": "At least once" }
+        "position": {
+          "x": 1800,
+          "y": 280
+        },
+        "properties": {
+          "delivery": "At least once"
+        }
       },
       {
         "id": "fanout",
@@ -338,8 +359,13 @@
         "componentId": "backend-server",
         "label": "Hybrid feed fanout",
         "description": "Uses push for ordinary authors and pull or hybrid delivery for celebrity accounts.",
-        "position": { "x": 2160, "y": 80 },
-        "properties": { "hotKeys": "Follower threshold and shard splitting" }
+        "position": {
+          "x": 2160,
+          "y": 80
+        },
+        "properties": {
+          "hotKeys": "Follower threshold and shard splitting"
+        }
       },
       {
         "id": "feed-store",
@@ -347,8 +373,13 @@
         "componentId": "database",
         "label": "Feed projections",
         "description": "Bounded, rebuildable entries keyed by recipient with cursor-friendly rank keys and story expiry.",
-        "position": { "x": 2520, "y": 280 },
-        "properties": { "retention": "Recent feed window" }
+        "position": {
+          "x": 2520,
+          "y": 280
+        },
+        "properties": {
+          "retention": "Recent feed window"
+        }
       },
       {
         "id": "feed-service",
@@ -356,8 +387,13 @@
         "componentId": "backend-server",
         "label": "Feed and story service",
         "description": "Reads projections, merges hot-author candidates, applies policy filters, and returns cursors.",
-        "position": { "x": 2880, "y": 280 },
-        "properties": { "latency": "Bounded parallel reads" }
+        "position": {
+          "x": 2880,
+          "y": 280
+        },
+        "properties": {
+          "latency": "Bounded parallel reads"
+        }
       },
       {
         "id": "cdn",
@@ -365,8 +401,13 @@
         "componentId": "cdn",
         "label": "Global media CDN",
         "description": "Caches authorized renditions close to viewers using signed URLs and invalidation for deletion.",
-        "position": { "x": 3240, "y": 280 },
-        "properties": { "delivery": "Signed URLs and edge cache" }
+        "position": {
+          "x": 3240,
+          "y": 280
+        },
+        "properties": {
+          "delivery": "Signed URLs and edge cache"
+        }
       },
       {
         "id": "interaction-service",
@@ -374,8 +415,13 @@
         "componentId": "backend-server",
         "label": "Interaction service",
         "description": "Commits likes, comments, and shares with actor-content uniqueness and event idempotency.",
-        "position": { "x": 2160, "y": 600 },
-        "properties": { "consistency": "Conditional interaction writes" }
+        "position": {
+          "x": 2160,
+          "y": 600
+        },
+        "properties": {
+          "consistency": "Conditional interaction writes"
+        }
       },
       {
         "id": "notifications",
@@ -383,8 +429,13 @@
         "componentId": "notification-service",
         "label": "Notification service",
         "description": "Delivers selected interaction and follow notifications with preferences and retries.",
-        "position": { "x": 2520, "y": -180 },
-        "properties": { "delivery": "Async and deduplicated" }
+        "position": {
+          "x": 2520,
+          "y": -180
+        },
+        "properties": {
+          "delivery": "Async and deduplicated"
+        }
       },
       {
         "id": "moderation",
@@ -392,8 +443,13 @@
         "componentId": "backend-server",
         "label": "Moderation service",
         "description": "Scans content and interactions, updates policy state, and emits takedown or appeal events.",
-        "position": { "x": 2880, "y": -180 },
-        "properties": { "path": "Async with serving recheck" }
+        "position": {
+          "x": 2880,
+          "y": -180
+        },
+        "properties": {
+          "path": "Async with serving recheck"
+        }
       },
       {
         "id": "analytics",
@@ -401,17 +457,27 @@
         "componentId": "analytics",
         "label": "Analytics and ranking",
         "description": "Consumes sampled events for insights, recommendations, ranking features, and abuse detection.",
-        "position": { "x": 3240, "y": -180 },
-        "properties": { "path": "Async" }
+        "position": {
+          "x": 3240,
+          "y": -180
+        },
+        "properties": {
+          "path": "Async"
+        }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Design Instagram monitoring",
         "description": "Tracks upload readiness, feed lag, CDN hit rate, fanout backlog, expiry, and policy drift.",
-        "position": { "x": 3600, "y": -180 },
-        "properties": { "alerts": "Latency, lag, errors, drift" }
+        "position": {
+          "x": 3600,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Latency, lag, errors, drift"
+        }
       }
     ],
     "connections": [
@@ -556,107 +622,95 @@
         "source": "event-stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
+        "label": "Design Instagram pipeline health",
         "description": "Tracks consumer lag, fanout pressure, and processing errors."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Media uploads and delivery",
+      "title": "Fanout strategy and hot creators",
       "points": [
-        "Use direct resumable multipart uploads with checksums so retries do not resend large payloads through application servers.",
-        "Store originals and immutable renditions in object storage; publish only after required processing and moderation state is known.",
-        "Use signed CDN URLs, cache keys by rendition/version, and invalidation or tombstones for deletion and privacy changes."
+        "For Instagram's media, graph, feed, and story platform, a user's feed must contain only visible, non-expired content from the current graph and policy versions.",
+        "Design for the failure case where celebrity fanout, upload bursts, deletes, and policy changes must not overwhelm writes or expose content; keep retries, versions, and repair state explicit.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Feed fanout and celebrity accounts",
+      "title": "Media processing and lifecycle",
       "points": [
-        "Push feed entries for ordinary authors because most home reads should be bounded and cheap.",
-        "Pull recent posts for celebrity accounts because writing to millions of followers per upload creates a burst; merge a bounded number of pull sources on read.",
-        "Use separate queues, shard fanout, and backpressure so a viral account cannot starve normal publication work."
+        "For Instagram's media, graph, feed, and story platform, a user's feed must contain only visible, non-expired content from the current graph and policy versions.",
+        "Keep this concern off unrelated request paths and partition it by the Instagram's media, graph, feed, and story platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
     {
-      "title": "Stories, deletion, and privacy",
+      "title": "Graph authorization and moderation",
       "points": [
-        "Represent story expiry as durable content state plus a serving TTL; cleanup is asynchronous but reads must reject expired content immediately.",
-        "Recheck visibility, blocks, moderation, and deletion at read time because a projection may outlive a policy change.",
-        "Emit tombstones to invalidate feed entries, CDN manifests, counters, notifications, and analytics copies according to deletion policy."
-      ]
-    },
-    {
-      "title": "Interactions and ranking",
-      "points": [
-        "Use actor-content uniqueness and idempotent events for likes, comments, and shares under retries and rapid taps.",
-        "Keep interaction counts and recommendation features as projections that can be rebuilt from retained events.",
-        "Introduce personalized ranking after the chronological or bounded feed path is correct; version candidates and ranking models for explainability."
+        "For Instagram's media, graph, feed, and story platform, a user's feed must contain only visible, non-expired content from the current graph and policy versions.",
+        "Keep this concern off unrelated request paths and partition it by the Instagram's media, graph, feed, and story platform access key.",
+        "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Fanout on write versus read",
-      "recommendation": "Use hybrid fanout: push ordinary authors and pull high-follower accounts, with a configurable threshold.",
-      "caution": "Pure push amplifies celebrity writes; pure pull makes every feed read traverse too much graph and increases tail latency."
+      "title": "Fanout-on-write versus fanout-on-read",
+      "recommendation": "Use a hybrid: push normal creators to feed partitions and pull high-fanout creators when the viewer reads.",
+      "caution": "Pure push creates massive write amplification; pure pull makes home-feed latency and ranking expensive."
     },
     {
-      "title": "Original quality versus delivery cost",
-      "recommendation": "Keep originals for durable ownership and generate bounded renditions for device and bandwidth classes at the edge.",
-      "caution": "Serving originals everywhere increases egress and startup cost; generating every possible rendition wastes storage and processing."
+      "title": "Strong graph reads versus cached feed",
+      "recommendation": "Commit graph edges strongly and let feed projections converge with invalidation and policy checks on read.",
+      "caution": "A feed cache without visibility checks can show content after unfollow, block, or delete."
     },
     {
-      "title": "Strong versus eventual interaction counts",
-      "recommendation": "Strongly commit the actor's interaction state and use versioned eventual counters for high-volume display reads.",
-      "caution": "An exact aggregate read across all interactions is too expensive for hot content, but stale counts need freshness metadata."
+      "title": "Original media retention versus delivery cost",
+      "recommendation": "Keep originals in durable tiered storage and generate policy-approved renditions behind a CDN.",
+      "caution": "Keeping every rendition hot is expensive; deleting originals too early prevents reprocessing."
     }
   ],
   "commonMistakes": [
-    "Proxying all media through the API servers instead of using signed direct uploads and CDN delivery.",
-    "Faning out every post synchronously to every follower, ignoring celebrity accounts and backpressure.",
-    "Treating feed entries, story TTLs, counters, or CDN objects as the source of truth.",
-    "Ignoring duplicate uploads, retries, moderation, privacy, deletion, and blocked users.",
-    "Adding ranking or recommendation complexity before defining a bounded, observable feed contract."
+    "Fanning out every celebrity post to every follower synchronously.",
+    "Putting media transcoding on the publish request path.",
+    "Ignoring block/private-account/delete checks during feed reads.",
+    "Using notification delivery as proof that an interaction committed.",
+    "Having no replay path for feed or graph projection drift."
   ],
   "followUps": [
     {
-      "question": "How would you support a private account?",
-      "answer": "Store visibility and follow approval durably, authorize feed and media URL issuance, and recheck access on reads so cached projections cannot leak content."
+      "question": "How do you handle a creator with 100M followers?",
+      "answer": "Use hybrid fanout, pull-time ranking, cached creator posts, and isolate the creator's partitions from ordinary writes."
     },
     {
-      "question": "What happens when media processing is delayed?",
-      "answer": "Persist the post as processing, show a safe placeholder and progress state, retry through a queue, and publish the feed entry only when the required rendition policy is met."
+      "question": "What if a private account changes visibility?",
+      "answer": "Commit the policy version, invalidate affected feed items, enforce the policy at read time, and audit deletion from projections."
     },
     {
-      "question": "How would you rebuild a user's feed?",
-      "answer": "Replay follow, post, moderation, deletion, and ranking events into a shadow projection, compare versions, then replace the bounded user partition incrementally."
-    },
-    {
-      "question": "How do you handle a viral creator?",
-      "answer": "Use pull-on-read or hybrid delivery, isolate the creator's event and fanout partitions, cache recent content and renditions, and send refresh hints rather than pushing full feeds."
+      "question": "How do you process a video upload spike?",
+      "answer": "Use direct object uploads, prioritized durable queues, elastic transcode pools, and a status endpoint that never waits for renditions."
     }
   ],
   "rubric": [
     {
-      "criterion": "Media architecture",
-      "description": "Direct resumable upload, object storage, processing, signed CDN delivery, lifecycle, and deletion invalidation are explicit."
+      "criterion": "Requirements",
+      "description": "The answer defines media durability, graph consistency, hybrid feed fanout, ranking, visibility, moderation, and async interaction handling, scale, latency, durability, authorization, and failure behavior."
     },
     {
-      "criterion": "Feed design",
-      "description": "The answer explains bounded cursor reads, hybrid fanout, celebrity isolation, cache behavior, and freshness."
-    },
-    {
-      "criterion": "Correctness",
-      "description": "Durable metadata, idempotent interactions, privacy, moderation, expiry, deletion, and projection rebuilds are covered."
+      "criterion": "Data model",
+      "description": "Entities and keys make Instagram's media, graph, feed, and story platform state, versions, lifecycle, and derived projections explicit."
     },
     {
       "criterion": "Scalability",
-      "description": "The design accounts for upload bursts, large media, follower skew, CDN egress, worker queues, and regional failures."
+      "description": "Partitioning, queues, backpressure, cache behavior, hot-key handling, and bounded work are explicit."
     },
     {
-      "criterion": "Evolution",
-      "description": "Notifications, search, recommendations, ranking, and analytics remain asynchronous and independently versioned."
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded behavior, observability, and auditability protect the primary contract."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain the Instagram's media, graph, feed, and story platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }
