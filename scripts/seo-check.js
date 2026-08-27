@@ -254,6 +254,12 @@ if (fs.existsSync(distDir)) {
       `Built ${problem.slug} exposes learning-resource data`,
       problemHtml.includes('"@type":"LearningResource"'),
     );
+    check(
+      `Built ${problem.slug} exposes prerendered guide content`,
+      ["guide-prompt", "guide-requirements", "guide-data-flow"].every(
+        (sectionId) => problemHtml.includes(`id="${sectionId}"`),
+      ),
+    );
   }
 
   for (const route of guideRoutes) {
