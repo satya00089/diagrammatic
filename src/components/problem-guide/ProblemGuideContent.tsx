@@ -8,7 +8,6 @@ import {
 import type { ProblemGuide } from "../../types/problemGuide";
 import PublicArchitectureCanvas from "../public-design/PublicArchitectureCanvas";
 import { useRoughAnnotation } from "../../hooks/useRoughAnnotation";
-import { generatedProblemGuides } from "../../data/generatedProblemGuides";
 
 const problemGuideSections = [
   { id: "requirements", label: "Requirements" },
@@ -165,9 +164,14 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   const isTopKRankingSystem = problemSlug === "top-k-ranking-system";
   const isCostOptimizedBatchProcessing =
     problemSlug === "design-a-cost-optimized-architecture-for-batch-processing";
-  const isGeneratedProblem = Boolean(
-    problemSlug && generatedProblemGuides[problemSlug],
-  );
+  const isInstagramSystemDesign = problemSlug === "instagram-system-design";
+  const isDesignInstagram = problemSlug === "design-instagram";
+  const isDesignPastebin = problemSlug === "design-pastebin";
+  const isSortLargeDataSets =
+    problemSlug === "design-a-system-for-sorting-large-data-sets";
+  const isFacebookMarketplace =
+    problemSlug === "build-a-marketplace-feature-for-facebook";
+  const isCatalogProblem = Boolean(problemSlug);
   const isAnnotatedProblem =
     isDocumentManagement ||
     isUrlShortener ||
@@ -179,7 +183,12 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     isTwitterSystemDesign ||
     isTopKRankingSystem ||
     isCostOptimizedBatchProcessing ||
-    isGeneratedProblem;
+    isInstagramSystemDesign ||
+    isDesignInstagram ||
+    isDesignPastebin ||
+    isSortLargeDataSets ||
+    isFacebookMarketplace ||
+    isCatalogProblem;
   const highlightedMetricLabel = isDocumentManagement
     ? "Peak edit rate"
     : isUrlShortener
@@ -198,9 +207,19 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ? "Peak event rate"
                   : isCostOptimizedBatchProcessing
                     ? "Peak runnable tasks"
-                    : isGeneratedProblem
-                      ? guide.requirements.metrics[0]?.label
-                      : "Peak dispatch rate";
+                    : isInstagramSystemDesign
+                      ? "Media upload rate"
+                      : isDesignInstagram
+                        ? "Media upload rate"
+                        : isDesignPastebin
+                          ? "Paste create rate"
+                          : isSortLargeDataSets
+                            ? "Input throughput"
+                            : isFacebookMarketplace
+                              ? "Search throughput"
+                              : isCatalogProblem
+                                ? guide.requirements.metrics[0]?.label
+                                : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
@@ -219,9 +238,19 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ? "Maintain the Top-K"
                   : isCostOptimizedBatchProcessing
                     ? "Commit the durable state"
-                    : isGeneratedProblem
-                      ? guide.dataFlow[1]?.title
-                      : "Claim due work";
+                    : isInstagramSystemDesign
+                      ? "Commit content metadata"
+                      : isDesignInstagram
+                        ? "Commit the content record"
+                        : isDesignPastebin
+                          ? "Commit immutable content"
+                          : isSortLargeDataSets
+                            ? "Spill sorted runs"
+                            : isFacebookMarketplace
+                              ? "Commit the listing"
+                              : isCatalogProblem
+                                ? guide.dataFlow[1]?.title
+                                : "Claim due work";
   const asyncStepTitle = isDocumentManagement
     ? "Buffer asynchronous work"
     : isUrlShortener
@@ -240,9 +269,19 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ? "Serve or rebuild asynchronously"
                   : isCostOptimizedBatchProcessing
                     ? "Reconcile and report asynchronously"
-                    : isGeneratedProblem
-                      ? guide.dataFlow[4]?.title
-                      : "Enqueue an execution";
+                    : isInstagramSystemDesign
+                      ? "Serve and invalidate asynchronously"
+                      : isDesignInstagram
+                        ? "Process media asynchronously"
+                        : isDesignPastebin
+                          ? "Invalidate and expire asynchronously"
+                          : isSortLargeDataSets
+                            ? "Commit the output manifest"
+                            : isFacebookMarketplace
+                              ? "Notify and moderate asynchronously"
+                              : isCatalogProblem
+                                ? guide.dataFlow[4]?.title
+                                : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);

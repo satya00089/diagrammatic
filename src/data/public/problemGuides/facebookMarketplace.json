@@ -1,0 +1,604 @@
+{
+  "prompt": {
+    "brief": "Design a Facebook Marketplace feature where people list products, discover nearby items, search and filter inventory, message sellers, and complete listing and moderation workflows at large scale.",
+    "successSignals": [
+      "Separate listing source data, search indexes, image media, messaging, and recommendation projections.",
+      "Make location and category search scalable while keeping listing ownership and status authoritative.",
+      "Handle ranking, seller safety, fraud, moderation, and stale inventory explicitly.",
+      "Use asynchronous indexing and notifications without making listing creation depend on every downstream consumer."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Create, edit, pause, and remove listings with title, description, price, category, condition, location, and photos.",
+      "Search nearby inventory with text, category, price, distance, and freshness filters.",
+      "View listing details, save items, contact sellers, and report suspicious listings.",
+      "Notify sellers of messages and buyers of listing changes while supporting moderation and audit actions."
+    ],
+    "nonFunctional": [
+      "A listing must be durable before it appears in the owner's inventory.",
+      "Target p95 below 300 ms for a cached search page and below 500 ms for an uncached query.",
+      "Search results may be eventually consistent but must not return deleted, blocked, or sold listings after policy recheck.",
+      "Protect users from spam, location leakage, fraud, abusive content, and notification storms."
+    ],
+    "scaleAssumptions": [
+      "100 million active listings, 50 million daily searches, and 20,000 peak search requests per second.",
+      "Listings have one or more images and are concentrated in geographic and category hot spots.",
+      "Most listing edits are infrequent, but popular products and local events create hot queries.",
+      "Messages and reports require durable delivery, while recommendations and counters are rebuildable."
+    ],
+    "metrics": [
+      {
+        "label": "Search throughput",
+        "value": "20K peak/s",
+        "description": "Provision read replicas, index shards, and cache for bursty local queries."
+      },
+      {
+        "label": "Search latency",
+        "value": "p95 <=300ms",
+        "description": "Bound candidate retrieval, ranking, and policy filtering."
+      },
+      {
+        "label": "Index freshness",
+        "value": "p95 <=10s",
+        "description": "New or edited listings become searchable asynchronously within the target."
+      },
+      {
+        "label": "Report response",
+        "value": "<1 minute",
+        "description": "A report is durably queued quickly even if review is asynchronous."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Listing",
+      "fields": [
+        "listing_id",
+        "seller_id",
+        "title",
+        "description",
+        "price",
+        "category_id",
+        "geo_hash",
+        "state",
+        "version"
+      ],
+      "notes": "The listing database is authoritative for ownership, lifecycle, price, and policy state."
+    },
+    {
+      "name": "ListingMedia",
+      "fields": [
+        "media_id",
+        "listing_id",
+        "object_key",
+        "renditions",
+        "checksum",
+        "state"
+      ],
+      "notes": "Photos live in object storage and are served through signed or public CDN URLs according to policy."
+    },
+    {
+      "name": "SearchDocument",
+      "fields": [
+        "listing_id",
+        "tokens",
+        "category_id",
+        "geo_hash",
+        "price",
+        "rank_features",
+        "indexed_version"
+      ],
+      "notes": "A rebuildable search projection; reads recheck the source listing before display."
+    },
+    {
+      "name": "Conversation",
+      "fields": [
+        "conversation_id",
+        "listing_id",
+        "buyer_id",
+        "seller_id",
+        "last_message_at",
+        "state"
+      ],
+      "notes": "Message access is authorized by participant and listing policy, not by search visibility."
+    },
+    {
+      "name": "Report",
+      "fields": [
+        "report_id",
+        "listing_id",
+        "reporter_id",
+        "reason",
+        "state",
+        "created_at"
+      ],
+      "notes": "Reports are deduplicated and routed to automated and human review queues."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/marketplace/listings",
+      "contract": "{ title, description, price, categoryId, location, mediaIds, requestId } -> { listingId, state }",
+      "notes": "Validate seller permissions, media ownership, location precision, and abuse limits before committing."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/marketplace/search?q=&geo=&filters=&cursor=",
+      "contract": "{ items[], nextCursor, appliedFilters, indexLagMs }",
+      "notes": "Retrieve bounded candidates from the search index and recheck state, privacy, blocks, and availability."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/marketplace/listings/{listingId}",
+      "contract": "{ listing, media[], sellerSummary, version }",
+      "notes": "Authorize and recheck the source record before returning details."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/marketplace/listings/{listingId}/reports",
+      "contract": "{ reason, requestId } -> { reportId, state }",
+      "notes": "Rate-limit reports and enqueue them durably for moderation."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/marketplace/conversations",
+      "contract": "{ listingId, requestId } -> { conversationId }",
+      "notes": "Create or return the buyer-seller conversation idempotently."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Commit the listing",
+      "description": "The API validates seller, category, price, location, media, and policy constraints, then writes a durable listing version."
+    },
+    {
+      "title": "Index asynchronously",
+      "description": "A listing event updates text, category, geo, and ranking indexes; index workers retry by listing version."
+    },
+    {
+      "title": "Retrieve candidates",
+      "description": "Search combines text and geo indexes with filters and a bounded ranking stage, using cache for hot queries."
+    },
+    {
+      "title": "Recheck and serve",
+      "description": "The marketplace service reads authoritative state or a batched status view to remove deleted, blocked, sold, or policy-violating items."
+    },
+    {
+      "title": "Notify and moderate asynchronously",
+      "description": "Messages, reports, recommendations, fraud signals, analytics, and seller notifications consume events independently from search reads."
+    }
+  ],
+  "architecture": {
+    "title": "Facebook Marketplace reference architecture",
+    "summary": "A listing service owns durable inventory state while media, geo-text search, messaging, moderation, and recommendations scale as separate event-driven projections.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience and edge",
+        "description": "Clients submit listings and search through authenticated APIs and caches.",
+        "componentIds": ["client", "gateway", "search", "cdn"]
+      },
+      {
+        "id": "source",
+        "label": "Marketplace source",
+        "description": "Listings, seller permissions, conversations, and media metadata.",
+        "componentIds": ["listing", "listing-db", "media-db", "object-store"]
+      },
+      {
+        "id": "projections",
+        "label": "Search and messaging",
+        "description": "Rebuildable indexes and durable conversation delivery.",
+        "componentIds": ["events", "search-index", "messaging", "message-db"]
+      },
+      {
+        "id": "trust",
+        "label": "Trust and operations",
+        "description": "Moderation, fraud, notifications, recommendations, and observability.",
+        "componentIds": [
+          "moderation",
+          "fraud",
+          "notifications",
+          "analytics",
+          "monitoring"
+        ]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "create",
+        "label": "Create listing",
+        "description": "Client -> gateway -> listing service -> source store -> event stream -> search index.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "listing",
+          "listing-db",
+          "events",
+          "search-index"
+        ]
+      },
+      {
+        "id": "discover",
+        "label": "Discover inventory",
+        "description": "Client -> search service -> index and cache -> source-state recheck -> CDN media.",
+        "componentIds": [
+          "client",
+          "gateway",
+          "search",
+          "search-index",
+          "listing-db",
+          "cdn"
+        ]
+      },
+      {
+        "id": "contact",
+        "label": "Contact seller",
+        "description": "Buyer -> listing service -> conversation store -> notification and abuse consumers.",
+        "componentIds": [
+          "client",
+          "listing",
+          "messaging",
+          "message-db",
+          "notifications"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Marketplace clients",
+        "description": "Create listings, search, inspect details, and message sellers.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "protocol": "HTTPS" }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Marketplace gateway",
+        "description": "Authenticates users, applies quotas, and routes commands and queries.",
+        "position": { "x": 360, "y": 280 },
+        "properties": { "controls": "Auth, WAF, abuse limits" }
+      },
+      {
+        "id": "listing",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Listing service",
+        "description": "Owns listing lifecycle, seller authorization, price, location, and policy state.",
+        "position": { "x": 720, "y": 360 },
+        "properties": { "consistency": "Versioned source writes" }
+      },
+      {
+        "id": "listing-db",
+        "type": "database",
+        "componentId": "database",
+        "label": "Listing store",
+        "description": "Stores authoritative listing versions, seller state, and lifecycle tombstones.",
+        "position": { "x": 1080, "y": 360 },
+        "properties": { "partition": "listing_id and seller_id" }
+      },
+      {
+        "id": "media-db",
+        "type": "database",
+        "componentId": "database",
+        "label": "Media metadata",
+        "description": "Tracks upload ownership, renditions, and processing status.",
+        "position": { "x": 1080, "y": 80 },
+        "properties": { "partition": "listing_id" }
+      },
+      {
+        "id": "object-store",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Photo object store",
+        "description": "Stores originals and resized listing images with lifecycle policies.",
+        "position": { "x": 1440, "y": 80 },
+        "properties": { "delivery": "CDN origins" }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Marketplace event stream",
+        "description": "Retains listing, report, message, and lifecycle events for projections and replay.",
+        "position": { "x": 1440, "y": 360 },
+        "properties": { "delivery": "At least once" }
+      },
+      {
+        "id": "search-index",
+        "type": "database",
+        "componentId": "search",
+        "label": "Geo-text search index",
+        "description": "Indexes listing text, category, geo cells, price, freshness, and ranking features.",
+        "position": { "x": 1800, "y": 160 },
+        "properties": { "partition": "geo and category shards" }
+      },
+      {
+        "id": "search",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Search service",
+        "description": "Parses queries, retrieves candidates, ranks them, and applies bounded policy filters.",
+        "position": { "x": 2160, "y": 280 },
+        "properties": { "latency": "Bounded candidate set" }
+      },
+      {
+        "id": "cdn",
+        "type": "cdn",
+        "componentId": "cdn",
+        "label": "Media CDN",
+        "description": "Serves authorized listing photos close to viewers.",
+        "position": { "x": 2520, "y": 80 },
+        "properties": { "delivery": "Edge cache and purge" }
+      },
+      {
+        "id": "messaging",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Messaging service",
+        "description": "Creates conversations and delivers buyer-seller messages with abuse controls.",
+        "position": { "x": 1800, "y": 600 },
+        "properties": { "delivery": "Durable and ordered per conversation" }
+      },
+      {
+        "id": "message-db",
+        "type": "database",
+        "componentId": "database",
+        "label": "Conversation store",
+        "description": "Stores participant membership, messages, read state, and moderation holds.",
+        "position": { "x": 2160, "y": 600 },
+        "properties": { "partition": "conversation_id" }
+      },
+      {
+        "id": "moderation",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Moderation service",
+        "description": "Scans text and images, processes reports, and issues takedown decisions.",
+        "position": { "x": 2520, "y": 360 },
+        "properties": { "path": "Async with serving recheck" }
+      },
+      {
+        "id": "fraud",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Fraud and risk",
+        "description": "Detects scams, account abuse, duplicate listings, and suspicious conversations.",
+        "position": { "x": 2880, "y": 360 },
+        "properties": { "path": "Async risk scoring" }
+      },
+      {
+        "id": "notifications",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Notifications",
+        "description": "Delivers relevant messages, listing, and moderation notifications with preferences.",
+        "position": { "x": 2520, "y": 600 },
+        "properties": { "delivery": "Async and deduplicated" }
+      },
+      {
+        "id": "analytics",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Recommendations and analytics",
+        "description": "Builds discovery features and aggregates marketplace events.",
+        "position": { "x": 2880, "y": 80 },
+        "properties": { "path": "Async" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Marketplace observability",
+        "description": "Tracks index lag, search latency, stale results, fraud queues, and notification failures.",
+        "position": { "x": 3240, "y": 280 },
+        "properties": { "alerts": "SLO, lag, safety" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Marketplace API",
+        "description": "Authenticated listing, search, and messaging requests."
+      },
+      {
+        "id": "gateway-listing",
+        "source": "gateway",
+        "target": "listing",
+        "type": "api-call",
+        "label": "Listing command",
+        "description": "The listing service owns source state."
+      },
+      {
+        "id": "listing-db",
+        "source": "listing",
+        "target": "listing-db",
+        "type": "data-flow",
+        "label": "Listing state",
+        "description": "Durable versioned records and tombstones."
+      },
+      {
+        "id": "listing-events",
+        "source": "listing",
+        "target": "events",
+        "type": "async",
+        "label": "Listing events",
+        "description": "Changes feed all rebuildable consumers."
+      },
+      {
+        "id": "events-search",
+        "source": "events",
+        "target": "search-index",
+        "type": "async",
+        "label": "Index updates",
+        "description": "Versioned workers update search documents."
+      },
+      {
+        "id": "gateway-search",
+        "source": "gateway",
+        "target": "search",
+        "type": "api-call",
+        "label": "Search query",
+        "description": "Search returns bounded candidates."
+      },
+      {
+        "id": "search-source",
+        "source": "search",
+        "target": "listing-db",
+        "type": "data-flow",
+        "label": "Policy recheck",
+        "description": "Source state prevents stale or deleted results from leaking."
+      },
+      {
+        "id": "search-cdn",
+        "source": "search",
+        "target": "cdn",
+        "type": "data-flow",
+        "label": "Photo URLs",
+        "description": "Results reference CDN renditions."
+      },
+      {
+        "id": "gateway-messaging",
+        "source": "gateway",
+        "target": "messaging",
+        "type": "api-call",
+        "label": "Conversation",
+        "description": "Participant-authorized contact workflow."
+      },
+      {
+        "id": "messaging-db",
+        "source": "messaging",
+        "target": "message-db",
+        "type": "data-flow",
+        "label": "Messages",
+        "description": "Conversation history is durable and ordered per thread."
+      },
+      {
+        "id": "events-moderation",
+        "source": "events",
+        "target": "moderation",
+        "type": "async",
+        "label": "Trust review",
+        "description": "Reports and content changes enter moderation queues."
+      },
+      {
+        "id": "events-fraud",
+        "source": "events",
+        "target": "fraud",
+        "type": "async",
+        "label": "Risk signals",
+        "description": "Fraud scoring is decoupled from search availability."
+      },
+      {
+        "id": "events-notifications",
+        "source": "events",
+        "target": "notifications",
+        "type": "async",
+        "label": "User updates",
+        "description": "Notifications retry independently."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Geo-text search",
+      "points": [
+        "Index coarse geo cells and query neighboring cells rather than scanning all listings.",
+        "Apply price and category filters inside the index, then rank a bounded candidate set.",
+        "Use source-state rechecks for deletion, blocks, sold state, and moderation changes."
+      ]
+    },
+    {
+      "title": "Listing freshness",
+      "points": [
+        "Attach a monotonically increasing listing version to events and reject out-of-order index updates.",
+        "Expose index lag and fall back to the owner's source view after a successful create.",
+        "Use replay and periodic reconciliation to repair missed updates."
+      ]
+    },
+    {
+      "title": "Trust and safety",
+      "points": [
+        "Run image, text, duplicate, and seller-risk checks asynchronously with quarantine for high-risk listings.",
+        "Do not reveal exact private seller locations; bucket coordinates to an appropriate area.",
+        "Tombstone content and purge CDN media after takedown while preserving audit evidence."
+      ]
+    },
+    {
+      "title": "Messaging safety",
+      "points": [
+        "Authorize every message by conversation membership and listing state.",
+        "Rate-limit new conversations, scan links, and support user blocking.",
+        "Deliver notifications asynchronously and coalesce bursts for active threads."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Search consistency versus latency",
+      "recommendation": "Use an eventually consistent index with authoritative state rechecks on result serving.",
+      "caution": "New listings can be briefly absent, so show index lag and provide owner-visible confirmation."
+    },
+    {
+      "title": "Exact location versus privacy",
+      "recommendation": "Store precise coordinates privately but index and display coarse geo buckets.",
+      "caution": "Distance results are approximate and need clear user expectations."
+    },
+    {
+      "title": "Centralized versus per-category indexes",
+      "recommendation": "Start with a shared geo-text index and shard by geo/category only when hot spots require it.",
+      "caution": "More shards improve isolation but complicate rebalancing and cross-shard pagination."
+    }
+  ],
+  "commonMistakes": [
+    "Making search the source of truth for listing status.",
+    "Indexing precise user locations or returning them in public results.",
+    "Blocking listing creation on image processing, recommendations, or moderation completion.",
+    "Ignoring out-of-order index events and stale sold or deleted results.",
+    "Treating seller messaging as an unauthenticated notification channel."
+  ],
+  "followUps": [
+    {
+      "question": "How do you stop deleted listings from appearing in search?",
+      "answer": "Write a source tombstone first, publish a versioned delete event, purge the index and caches, and recheck source state before rendering every result."
+    },
+    {
+      "question": "How do you handle a local event causing a hot query?",
+      "answer": "Cache normalized query results briefly, cap candidate work, shard the hot geo/category partition, and protect the source database with batching and rate limits."
+    },
+    {
+      "question": "What if an index worker is down?",
+      "answer": "Retain events, expose index lag, replay from the last checkpoint, and periodically compare index documents with source records."
+    },
+    {
+      "question": "How do you protect buyers from scams?",
+      "answer": "Combine account and listing risk signals, content scanning, rate limits, user reports, link warnings, and human review with reversible quarantine."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Marketplace source of truth",
+      "description": "Listing lifecycle, media ownership, and seller authorization are durable and separate from projections."
+    },
+    {
+      "criterion": "Search scalability",
+      "description": "Geo-text indexing, bounded ranking, cursor pagination, hot-query controls, and freshness are explained."
+    },
+    {
+      "criterion": "Trust and privacy",
+      "description": "Moderation, fraud, reports, location precision, deletion, and source rechecks are explicit."
+    },
+    {
+      "criterion": "Messaging and operations",
+      "description": "Durable conversations, notifications, replay, lag metrics, and failure recovery are covered."
+    }
+  ]
+}

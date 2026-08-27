@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design a globally distributed gaming backend for millions of concurrent players with low-latency matchmaking, authoritative game sessions, durable player progress, and regional failover.",
+    "successSignals": [
+      "Separate authoritative per-match state from durable player inventory, ratings, rewards, matchmaking tickets, and telemetry.",
+      "Place players and sessions near one another, keep game-loop work bounded, and isolate noisy regions and hot tournaments.",
+      "Use a server-authoritative protocol with reconnect tokens, sequence numbers, lag handling, and cheat detection.",
+      "Explain matchmaking fairness, party constraints, session migration, regional failure, and durable reward settlement."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Authenticate players, create parties, enqueue matchmaking tickets, and return a match assignment with a region.",
+      "Establish real-time game sessions, validate commands, broadcast snapshots, and support reconnect and spectate flows.",
+      "Persist inventory, ratings, rewards, bans, and match outcomes with idempotent settlement and auditable events."
+    ],
+    "nonFunctional": [
+      "Keep the game loop within a regional tick budget, target p95 command acknowledgement below 100 ms, and matchmaking below 5 seconds.",
+      "Scale to millions of concurrent players by sharding sessions and queues by region, mode, and skill bucket.",
+      "Do not lose settled rewards or bans; make reconnects, duplicate commands, and match results safe.",
+      "Degrade by shedding non-critical telemetry and social reads while protecting authoritative session state."
+    ],
+    "scaleAssumptions": [
+      "Support 10 million concurrent connections, 1 million active matches, and bursty launches by region.",
+      "Partition by region, game mode, match ID, and player ID; isolate hot tournaments and large parties.",
+      "Keep session memory bounded and retain commands, snapshots, settlement records, and telemetry for replay."
+    ],
+    "metrics": [
+      {
+        "label": "Concurrent players",
+        "value": "10M peak",
+        "description": "Drives connection gateways, session shards, regional capacity, and admission control."
+      },
+      {
+        "label": "Command latency",
+        "value": "p95 <=100ms",
+        "description": "Regional acknowledgement target; the simulation tick budget is stricter than database latency."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "The source of truth is the authoritative session shard and durable reward settlement record."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep analytics, telemetry, recommendations, and non-critical social work off the game-loop path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Build a Global Gaming Backend System",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Handle player matchmaking; Store game state globally; design keys around the main reads and writes."
+    },
+    {
+      "name": "build-a-global-gaming-backend event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Handle player matchmaking command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Create a matchmaking ticket",
+      "description": "The gateway authenticates the player and party, validates mode and region eligibility, and stores a ticket with a request ID and skill snapshot."
+    },
+    {
+      "title": "Reserve an authoritative session",
+      "description": "The matchmaker conditionally assigns a session shard and the game service creates a match record before clients receive a join token."
+    },
+    {
+      "title": "Run the regional game loop",
+      "description": "Clients send sequenced commands to the authoritative game server, which validates them, advances the tick, and broadcasts snapshots or deltas."
+    },
+    {
+      "title": "Settle durable player state",
+      "description": "Match completion emits a versioned outcome; a settlement worker conditionally applies rewards, ratings, inventory, and bans so duplicate results cannot pay twice."
+    },
+    {
+      "title": "Recover and analyze asynchronously",
+      "description": "Reconnect state, telemetry, anti-cheat analysis, leaderboards, and analytics consume events independently while session shards handle failover or migration."
+    }
+  ],
+  "architecture": {
+    "title": "Design a low-latency gaming backend that handles millions of concurrent players, provides real-time matchmaking, stores player data globally, and manages game sessions. reference architecture",
+    "summary": "The authoritative state records Handle player matchmaking; asynchronous workers build serving projections while Cloud Spanner for global consistency, Memorystore Redis for caching, GKE for game servers stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Durable player/party tickets, authoritative match/session state, and replayable gameplay outcomes.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Clients authenticate, queue for matches, join sessions, and render reconnect/settlement status.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns matchmaking tickets, session admission, game commands, authorization, and lifecycle contracts.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores player/party profiles, match records, session metadata, and durable reward settlement state.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Build a Global Gaming Backend System"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes match, gameplay, reconnect, anti-cheat, and settlement events with ordering keys.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Workers process partitioned asynchronous work, update projections, and retry transient failures.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves matchmaking status, reconnect state, profiles, rankings, and settlement views with freshness metadata.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Latency under 50ms globally"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client submits a party queue request or reconnects with a session ticket."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers settle rewards, update rankings, process telemetry/anti-cheat, and maintain reconnect projections."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "Returns queue/match/session status with regional latency, tick, and settlement freshness."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Authoritative sessions and reconnects",
+      "points": [
+        "Keep the simulation authoritative in one regional session shard and replicate snapshots for recovery, not for competing writes.",
+        "Use sequence numbers, command IDs, reconnect tokens, and fencing epochs to reject duplicates and stale clients.",
+        "Treat rewards and inventory as a separate durable settlement transaction after the match result is finalized."
+      ]
+    },
+    {
+      "title": "Matchmaking fairness and capacity",
+      "points": [
+        "Partition queues by region, mode, skill band, and party size; expand the acceptable skill window only as wait time increases.",
+        "Reserve capacity for launches and tournaments, apply admission control, and avoid global coordination in the match hot path.",
+        "Keep a replayable ticket and outcome log so matchmaking and settlement can be audited after a regional failure."
+      ]
+    },
+    {
+      "title": "Regional failure and abuse",
+      "points": [
+        "If a region fails, stop new assignments, recover from the latest fenced snapshot, or migrate only at a safe match boundary.",
+        "Validate movement and commands server-side, rate-limit reconnects, and feed suspicious behavior to delayed anti-cheat analysis.",
+        "Measure tick overruns, command latency, queue wait, disconnect rate, shard saturation, settlement lag, and duplicate rewards."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines matchmaking, session gameplay, settlement, scale, latency, durability, and failure contracts."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and player/party/session keys support matchmaking, gameplay, settlement, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}
