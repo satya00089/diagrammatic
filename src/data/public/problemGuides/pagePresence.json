@@ -40,7 +40,7 @@
       },
       {
         "label": "Count freshness",
-        "value": "â‰¤2 seconds",
+        "value": "≤2 seconds",
         "description": "The target for normal live updates; expose stale state when the budget is exceeded."
       },
       {
@@ -171,7 +171,7 @@
       {
         "id": "join",
         "label": "Join and heartbeat path",
-        "description": "Client â†’ gateway â†’ presence service â†’ expiring membership store.",
+        "description": "Client → gateway → presence service → expiring membership store.",
         "componentIds": [
           "client",
           "gateway",
@@ -182,7 +182,7 @@
       {
         "id": "broadcast",
         "label": "Count broadcast path",
-        "description": "Membership change â†’ coalesced count event â†’ fan-out to the page room.",
+        "description": "Membership change → coalesced count event → fan-out to the page room.",
         "componentIds": ["presence-service", "count-stream", "fanout", "client"]
       }
     ],
@@ -394,7 +394,7 @@
       "title": "Hot-page count aggregation",
       "points": [
         "For the real-time page-presence feature, presence is disposable lease state, not a durable user fact, and expired sessions must not count.",
-        "Keep this concern off unrelated request paths and partition it by the the real-time page-presence feature access key.",
+        "Keep this concern off unrelated request paths and partition it by the real-time page-presence feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -402,7 +402,7 @@
       "title": "Approximation and live delivery",
       "points": [
         "For the real-time page-presence feature, presence is disposable lease state, not a durable user fact, and expired sessions must not count.",
-        "Keep this concern off unrelated request paths and partition it by the the real-time page-presence feature access key.",
+        "Keep this concern off unrelated request paths and partition it by the real-time page-presence feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -464,7 +464,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the real-time page-presence feature consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the real-time page-presence feature consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

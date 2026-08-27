@@ -539,7 +539,7 @@
       "title": "Context budgets and grounded generation",
       "points": [
         "For the enterprise RAG platform, every citation must resolve to an authorized retrieved passage from a versioned source.",
-        "Keep this concern off unrelated request paths and partition it by the the enterprise RAG platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the enterprise RAG platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -547,7 +547,7 @@
       "title": "Streaming reliability and model fallbacks",
       "points": [
         "For the enterprise RAG platform, every citation must resolve to an authorized retrieved passage from a versioned source.",
-        "Keep this concern off unrelated request paths and partition it by the the enterprise RAG platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the enterprise RAG platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -609,7 +609,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the enterprise RAG platform consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the enterprise RAG platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

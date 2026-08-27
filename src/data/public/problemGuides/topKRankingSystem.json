@@ -586,7 +586,7 @@
       "title": "Hot-item candidate maintenance",
       "points": [
         "For the continuously updated Top-K ranking system, every ranking snapshot must identify its rule, window, watermark, and deterministic tie-break semantics.",
-        "Keep this concern off unrelated request paths and partition it by the the continuously updated Top-K ranking system access key.",
+        "Keep this concern off unrelated request paths and partition it by the continuously updated Top-K ranking system access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -594,7 +594,7 @@
       "title": "Snapshot freshness and rebuild",
       "points": [
         "For the continuously updated Top-K ranking system, every ranking snapshot must identify its rule, window, watermark, and deterministic tie-break semantics.",
-        "Keep this concern off unrelated request paths and partition it by the the continuously updated Top-K ranking system access key.",
+        "Keep this concern off unrelated request paths and partition it by the continuously updated Top-K ranking system access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -656,7 +656,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the continuously updated Top-K ranking system consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the continuously updated Top-K ranking system consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

@@ -447,7 +447,7 @@
       "title": "Expiry, deletion, and lifecycle",
       "points": [
         "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
-        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Keep this concern off unrelated request paths and partition it by the Pastebin-like paste service access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -455,7 +455,7 @@
       "title": "Abuse scanning without blocking reads",
       "points": [
         "For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content.",
-        "Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key.",
+        "Keep this concern off unrelated request paths and partition it by the Pastebin-like paste service access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -517,7 +517,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the Pastebin-like paste service consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the Pastebin-like paste service consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

@@ -484,7 +484,7 @@
       "title": "Hot-post counter aggregation",
       "points": [
         "For Facebook's like and live-count feature, one user/post state is authoritative while counts and live updates are derived and repairable.",
-        "Keep this concern off unrelated request paths and partition it by the Facebook's like and live-count feature access key.",
+        "Keep this concern off unrelated request paths and partition it by Facebook's like and live-count feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -492,7 +492,7 @@
       "title": "Coalesced live delivery and resync",
       "points": [
         "For Facebook's like and live-count feature, one user/post state is authoritative while counts and live updates are derived and repairable.",
-        "Keep this concern off unrelated request paths and partition it by the Facebook's like and live-count feature access key.",
+        "Keep this concern off unrelated request paths and partition it by Facebook's like and live-count feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }

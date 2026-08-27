@@ -182,7 +182,7 @@
       {
         "id": "redirect-path",
         "label": "Redirect path",
-        "description": "Edge â†’ gateway â†’ redirect service â†’ cache, with a database fallback on a miss.",
+        "description": "Edge → gateway → redirect service → cache, with a database fallback on a miss.",
         "componentIds": [
           "edge",
           "gateway",
@@ -463,7 +463,7 @@
       "title": "Redirect cache and invalidation",
       "points": [
         "For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy.",
-        "Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key.",
+        "Keep this concern off unrelated request paths and partition it by the low-latency URL shortener access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -471,7 +471,7 @@
       "title": "Asynchronous click analytics",
       "points": [
         "For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy.",
-        "Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key.",
+        "Keep this concern off unrelated request paths and partition it by the low-latency URL shortener access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -533,7 +533,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the low-latency URL shortener consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the low-latency URL shortener consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }
