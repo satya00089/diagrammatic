@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Design Pastebin — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Design Pastebin — System Design Interview Practice | Diagrammatic" />
+    <title>Design Pastebin | System Design Guide</title>
+    <meta name="title" content="Design Pastebin | System Design Guide" />
     <meta name="description" content="Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Design Pastebin, system design interview question, web-services, storage, caching" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/pastebin-system-design/" />
-    <meta property="og:title" content="Design Pastebin — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Design Pastebin | System Design Guide" />
     <meta property="og:description" content="Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Design Pastebin practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/pastebin-system-design/" />
-    <meta name="twitter:title" content="Design Pastebin — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Design Pastebin | System Design Guide" />
     <meta name="twitter:description" content="Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Design Pastebin practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","url":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","name":"Design Pastebin — System Design Interview Practice | Diagrammatic","description":"Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design Pastebin — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/"}]},{"@type":"LearningResource","name":"Design Pastebin — System Design Interview Practice","description":"Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","educationalLevel":"Easy","teaches":["web-services","storage","caching"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","url":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","name":"Design Pastebin | System Design Guide","description":"Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design Pastebin | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/"}]},{"@type":"LearningResource","name":"Design Pastebin — System Design Interview Practice","description":"Design a web service where users can store plain text and share it with others through a generated URL. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/pastebin-system-design/","educationalLevel":"Easy","teaches":["web-services","storage","caching"],"timeRequired":"30-45 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>web services</strong><span>Concept to explore</span></li><li><strong>storage</strong><span>Concept to explore</span></li><li><strong>caching</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design text snippets with generated URLs, expiration, and sharing so users can create and retrieve a paste reliably at scale.</p><ul class="static-route-list"><li>Define the source of truth for paste content and ownership and make retries idempotent.</li><li>Use bounded, partitioned state to meet 10M pastes per day and 100K reads per second and p95 &lt;=100ms reads.</li><li>Separate the critical request path from expiration cleanup, abuse scanning, and analytics.</li><li>Explain consistency, failure recovery, authorization, observability, and a degraded mode.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Support the core workflow to create and retrieve a paste.</li><li>Expose status, results, and freshness appropriate to text snippets with generated URLs, expiration, and sharing.</li><li>Support authorization, validation, updates, deletion, and recovery semantics.</li><li>Meet p95 &lt;=100ms reads under normal load.</li><li>Scale to 10M pastes per day and 100K reads per second without a single hot key or unbounded synchronous work.</li><li>Do not lose committed state; make retries and duplicate events safe.</li><li>Degrade safely when downstream workers, caches, or external dependencies fail.</li><li>10M pastes per day and 100K reads per second</li><li>Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.</li><li>Keep serving state bounded; retain raw events or durable records for replay and auditing.</li></ul><ul class="static-route-list"><li>Peak scale: 10M pastes per day — Capacity assumption that drives partitioning and backpressure.</li><li>Latency target: p95 &lt;=100ms reads — User-facing budget for the primary request or read path.</li><li>Durable boundary: Committed before async — The source of truth is paste content and ownership.</li><li>Async boundary: At-least-once workers — Keep expiration cleanup, abuse scanning, and analytics off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>Paste</strong><span>pasteId, ownerId, contentHash, visibility, expiresAt, createdAt, status</span><p>Immutable or versioned text content with ownership and expiry.</p></li><li><strong>ShortAlias</strong><span>alias, pasteId, createdAt, status</span><p>Unique lookup key mapped to a paste without exposing database identifiers.</p></li><li><strong>AccessPolicy</strong><span>pasteId, visibility, passwordHash, allowedUsers, expiresAt, version</span><p>Versioned access and retention policy.</p></li><li><strong>AbuseScan</strong><span>scanId, pasteId, scannerVersion, findings, status, completedAt</span><p>Asynchronous moderation and malware/secret scan result.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Create and validate a paste</strong><span>The API checks size, expiry, visibility, abuse policy, and idempotency, then stores content and alias metadata durably.</span></li><li><strong>2. Resolve a short alias</strong><span>Edge and cache look up the alias; cache misses read metadata and content, recheck expiry and access policy, and return a bounded response.</span></li><li><strong>3. Scan and moderate asynchronously</strong><span>A queue sends content to secret, malware, and abuse scanners; a policy result can hide a paste without deleting audit evidence.</span></li><li><strong>4. Expire and delete safely</strong><span>Expiry workers write tombstones, evict aliases, and delete content by lifecycle policy while preserving ownership and deletion audit.</span></li><li><strong>5. Measure reads without hurting redirects</strong><span>Click/read events leave the serving path and are aggregated asynchronously with privacy and retention controls.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Alias resolution and cache safety</strong><span>For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content. Design for the failure case where a hot alias, abuse burst, or cleanup lag must not expose content or take down reads; keep retries, versions, and repair state explicit. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Expiry, deletion, and lifecycle</strong><span>For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content. Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Abuse scanning without blocking reads</strong><span>For the Pastebin-like paste service, an alias must never resolve to expired, deleted, or unauthorized content. Keep this concern off unrelated request paths and partition it by the the Pastebin-like paste service access key. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Mutable paste versus immutable versions</strong><span>Prefer immutable content versions and an explicit latest pointer when editing is required. In-place edits complicate cache invalidation, audit, and link consistency.</span></li><li><strong>Synchronous scan versus fast creation</strong><span>Accept within size/policy limits and quarantine or label content while deep scanning asynchronously. Blocking every create on scanners raises tail latency and couples availability to third parties.</span></li><li><strong>Long cache TTL versus revocation</strong><span>Use short policy-aware TTLs and targeted invalidation for password, delete, and abuse changes. A long TTL improves hot reads but can serve revoked or expired content.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

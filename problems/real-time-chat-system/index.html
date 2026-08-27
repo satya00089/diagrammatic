@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Real-time Chat System — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Real-time Chat System — System Design Interview Practice | Diagrammatic" />
+    <title>Real-time Chat System | System Design Guide</title>
+    <meta name="title" content="Real-time Chat System | System Design Guide" />
     <meta name="description" content="Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Real-time Chat System, system design interview question, real-time, websockets, messaging" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/real-time-chat-system/" />
-    <meta property="og:title" content="Real-time Chat System — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Real-time Chat System | System Design Guide" />
     <meta property="og:description" content="Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Real-time Chat System practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/real-time-chat-system/" />
-    <meta name="twitter:title" content="Real-time Chat System — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Real-time Chat System | System Design Guide" />
     <meta name="twitter:description" content="Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Real-time Chat System practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","url":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","name":"Real-time Chat System — System Design Interview Practice | Diagrammatic","description":"Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Real-time Chat System — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/"}]},{"@type":"LearningResource","name":"Real-time Chat System — System Design Interview Practice","description":"Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","educationalLevel":"Hard","teaches":["real-time","websockets","messaging"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","url":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","name":"Real-time Chat System | System Design Guide","description":"Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Real-time Chat System | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/"}]},{"@type":"LearningResource","name":"Real-time Chat System — System Design Interview Practice","description":"Design a real-time messaging system like WhatsApp or Slack that supports group chats and file sharing. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/real-time-chat-system/","educationalLevel":"Hard","teaches":["real-time","websockets","messaging"],"timeRequired":"60-90 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>real time</strong><span>Concept to explore</span></li><li><strong>websockets</strong><span>Concept to explore</span></li><li><strong>messaging</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design one-to-one and group messaging with delivery, ordering, presence, and history so users can send a message to a conversation reliably at scale.</p><ul class="static-route-list"><li>Define the source of truth for message log and conversation membership and make retries idempotent.</li><li>Use bounded, partitioned state to meet 100M daily users and 1M messages per second and message acknowledgement p95 &lt;=150ms.</li><li>Separate the critical request path from fanout, push notifications, search, and media.</li><li>Explain consistency, failure recovery, authorization, observability, and a degraded mode.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Support the core workflow to send a message to a conversation.</li><li>Expose status, results, and freshness appropriate to one-to-one and group messaging with delivery, ordering, presence, and history.</li><li>Support authorization, validation, updates, deletion, and recovery semantics.</li><li>Meet message acknowledgement p95 &lt;=150ms under normal load.</li><li>Scale to 100M daily users and 1M messages per second without a single hot key or unbounded synchronous work.</li><li>Do not lose committed state; make retries and duplicate events safe.</li><li>Degrade safely when downstream workers, caches, or external dependencies fail.</li><li>100M daily users and 1M messages per second</li><li>Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.</li><li>Keep serving state bounded; retain raw events or durable records for replay and auditing.</li></ul><ul class="static-route-list"><li>Peak scale: 100M daily users — Capacity assumption that drives partitioning and backpressure.</li><li>Latency target: message acknowledgement p95 &lt;=150ms — User-facing budget for the primary request or read path.</li><li>Durable boundary: Committed before async — The source of truth is message log and conversation membership.</li><li>Async boundary: At-least-once workers — Keep fanout, push notifications, search, and media off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>Interaction</strong><span>interactionId, actorId, objectId, type, version, occurredAt</span><p>Canonical real time chat system interaction with an idempotency key and ordering version.</p></li><li><strong>ConnectionSession</strong><span>sessionId, userId, deviceId, roomKey, lastHeartbeat, status</span><p>Ephemeral but observable real time chat system connection registration used for routing and presence.</p></li><li><strong>FanoutCursor</strong><span>streamKey, shard, offset, consumerGroup, updatedAt</span><p>Durable progress marker for real time chat system fan-out and replay.</p></li><li><strong>DeliveryReceipt</strong><span>interactionId, recipientId, channel, attempt, status, deliveredAt</span><p>Deduplicated real time chat system delivery state for reconnects, retries, or acknowledgements.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Accept and commit the interaction</strong><span>The real time chat system gateway authenticates the actor, validates room or object membership, applies rate limits, and conditionally commits the interaction.</span></li><li><strong>2. Publish an ordered event</strong><span>An outbox emits the committed real time chat system transition with an event ID, partition key, sequence, and replay retention.</span></li><li><strong>3. Fan out by partition</strong><span>Consumers route real time chat system events to connected recipients, durable inboxes, or notification channels without making the origin write wait for every recipient.</span></li><li><strong>4. Resume and reconcile connections</strong><span>Clients reconnect with a cursor; the real time chat system service replays missed events, deduplicates delivery, and exposes stale or degraded state.</span></li><li><strong>5. Measure latency and recover</strong><span>Operations tracks real time chat system publish-to-deliver latency, hot partitions, reconnect storms, dropped events, and consumer lag for replay or repair.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Ordering, idempotency, and hot keys</strong><span>Choose a real time chat system partition key that preserves required order while distributing high-volume rooms, users, or objects. Use event IDs, inboxes, consumer offsets, and conditional state transitions for at-least-once delivery. Split or isolate hot partitions without changing the client-visible sequence contract.</span></li><li><strong>Reconnect and replay semantics</strong><span>Issue resumable real time chat system cursors with an expiry and a clear snapshot-plus-delta fallback. Bound replay windows and rebuild from durable state when a cursor is too old. Expose version and freshness so a client can distinguish current, catching up, and degraded state.</span></li><li><strong>Backpressure and presence</strong><span>Keep connection heartbeats and ephemeral presence separate from durable real time chat system interactions. Coalesce safe updates, shed low-value work, and protect critical events during reconnect storms. Measure end-to-end delivery, not only broker publish latency.</span></li><li><strong>Direct fan-out versus pull-based reads</strong><span>Use push for latency-sensitive real time chat system deltas and pull or replay for reconnect, history, and recovery. A push-only design loses state when clients disconnect and a pull-only design wastes latency and bandwidth.</span></li><li><strong>Per-recipient queues versus shared streams</strong><span>Use shared partitioned streams with per-recipient cursors where fan-out is large, and isolate exceptional high-fanout objects. A queue per recipient becomes expensive and hard to inspect at large scale.</span></li><li><strong>Strong ordering versus availability</strong><span>Guarantee ordering only within the scope the product needs, such as a room, object, or conversation. Global ordering introduces a bottleneck and still does not solve duplicate delivery or reconnect recovery.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

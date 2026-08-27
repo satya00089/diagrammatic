@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Design a Job Scheduler — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Design a Job Scheduler — System Design Interview Practice | Diagrammatic" />
+    <title>Design a Job Scheduler | System Design Guide</title>
+    <meta name="title" content="Design a Job Scheduler | System Design Guide" />
     <meta name="description" content="Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Design a Job Scheduler, system design interview question, scheduling, distributed-systems, background-jobs, cron" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/" />
-    <meta property="og:title" content="Design a Job Scheduler — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Design a Job Scheduler | System Design Guide" />
     <meta property="og:description" content="Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Design a Job Scheduler practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/" />
-    <meta name="twitter:title" content="Design a Job Scheduler — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Design a Job Scheduler | System Design Guide" />
     <meta name="twitter:description" content="Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Design a Job Scheduler practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","url":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","name":"Design a Job Scheduler — System Design Interview Practice | Diagrammatic","description":"Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design a Job Scheduler — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/"}]},{"@type":"LearningResource","name":"Design a Job Scheduler — System Design Interview Practice","description":"Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","educationalLevel":"Easy","teaches":["scheduling","distributed-systems","background-jobs","cron"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","url":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","name":"Design a Job Scheduler | System Design Guide","description":"Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design a Job Scheduler | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/"}]},{"@type":"LearningResource","name":"Design a Job Scheduler — System Design Interview Practice","description":"Design a distributed job scheduling system to execute tasks at specified times or intervals. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/design-a-job-scheduler/","educationalLevel":"Easy","teaches":["scheduling","distributed-systems","background-jobs","cron"],"timeRequired":"30-45 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>scheduling</strong><span>Concept to explore</span></li><li><strong>distributed systems</strong><span>Concept to explore</span></li><li><strong>background jobs</strong><span>Concept to explore</span></li><li><strong>cron</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design a distributed job scheduler for one-time and recurring tasks that provides durable schedules, accurate due-time dispatch, worker leases, retries, backoff, and tenant fairness.</p><ul class="static-route-list"><li>Make the schedule and execution state authoritative, with leases and fencing preventing two workers from owning one attempt.</li><li>Partition due work by time bucket and tenant, use priority and fairness, and avoid scanning millions of future jobs on every tick.</li><li>Define at-least-once execution, idempotency keys, retry/backoff, misfire policy, concurrency limits, and cancellation.</li><li>Explain clock skew, scheduler failover, worker loss, recurring-job drift, dead letters, quotas, and auditability.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Create, update, pause, resume, and delete one-time or recurring schedules with timezone and misfire policies.</li><li>Claim due jobs, execute attempts, heartbeat leases, retry failures, dead-letter exhausted jobs, and expose run history.</li><li>Support tenant quotas, priority, concurrency limits, idempotent cancellation, audit records, and safe replay.</li><li>Dispatch jobs within a five-second p95 due-time tolerance under normal load.</li><li>Handle 50 million schedules through time buckets, partitioned queues, and tenant-aware worker pools.</li><li>Never lose a committed schedule; make dispatch, lease renewal, retry, and completion idempotent.</li><li>Preserve due work and recover leases when schedulers, workers, or downstream task dependencies fail.</li><li>Support 50 million schedules, 5 million daily executions, and bursty top-of-hour workloads.</li><li>Partition by tenant and due-time bucket; shard hot tenants and spread recurring jobs with jitter.</li><li>Retain schedules, attempts, leases, and audit history while keeping ready queues and worker heartbeats bounded.</li></ul><ul class="static-route-list"><li>Schedule volume: 50M schedules — Volume drives time buckets, queue sharding, fairness, and due-work indexing.</li><li>Dispatch tolerance: p95 &lt;=5s — Measures due time to first leased attempt, separate from task runtime.</li><li>Durable boundary: Committed before async — The source of truth is Schedule jobs for future execution; Support one-time and recurring jobs.</li><li>Async boundary: At-least-once workers — Keep Priority queue for job scheduling, Distributed lock for job execution, Heartbeat mechanism for worker health off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>ResourceSpec</strong><span>resourceId, tenantId, desiredState, version, policyVersion, updatedAt</span><p>Versioned desired state for a job scheduler managed resource.</p></li><li><strong>Operation</strong><span>operationId, resourceId, requestHash, step, attempt, status</span><p>Durable job scheduler reconciliation operation with per-step progress.</p></li><li><strong>PolicyVersion</strong><span>policyId, scope, version, rules, effectiveAt, status</span><p>Auditable job scheduler policy evaluated before provisioning or mutation.</p></li><li><strong>ReconciliationCheckpoint</strong><span>resourceId, provider, observedVersion, cursor, lastError, updatedAt</span><p>Provider-specific job scheduler observation and recovery cursor.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Accept a desired-state command</strong><span>The job scheduler control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state.</span></li><li><strong>2. Plan a safe operation</strong><span>A planner turns job scheduler desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata.</span></li><li><strong>3. Reconcile providers asynchronously</strong><span>Workers apply job scheduler operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state.</span></li><li><strong>4. Publish observed health</strong><span>The serving projection joins desired and observed job scheduler state with operation status, policy version, freshness, and actionable errors.</span></li><li><strong>5. Recover and audit</strong><span>Retries, dead letters, drift detection, and operator approvals repair job scheduler resources without losing the original command or provider evidence.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Desired versus observed state</strong><span>Keep job scheduler desired state separate from provider-observed state and show both to operators. Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects. Version policy and resource state so old operations cannot overwrite newer intent.</span></li><li><strong>Provider failures and unknown outcomes</strong><span>Use provider-specific idempotency tokens and query-after-timeout behavior for job scheduler operations. Bound retries with exponential backoff, circuit breakers, and per-provider quotas. Route irreconcilable drift to an approval or quarantine path instead of retrying forever.</span></li><li><strong>Blast radius and operations</strong><span>Partition job scheduler work by tenant, region, cluster, or resource class and cap concurrent mutations. Audit who changed desired state, which policy allowed it, and what provider evidence was observed. Alert on drift age, operation backlog, failed steps, policy denials, and stale observations.</span></li><li><strong>Push versus pull reconciliation</strong><span>Use event triggers for fast response and periodic scans for missed events, drift, and recovery. A push-only job scheduler controller silently misses changes when a provider event is lost.</span></li><li><strong>Central control plane versus provider-native controllers</strong><span>Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters. A monolithic controller becomes hard to scale and couples unrelated provider failure domains.</span></li><li><strong>Automatic repair versus approval</strong><span>Automate low-risk, reversible job scheduler changes and require approval for destructive or high-blast-radius operations. Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

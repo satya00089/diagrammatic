@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Design an A/B Testing System — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Design an A/B Testing System — System Design Interview Practice | Diagrammatic" />
+    <title>Design an A/B Testing System | System Design Guide</title>
+    <meta name="title" content="Design an A/B Testing System | System Design Guide" />
     <meta name="description" content="Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Design an A/B Testing System, system design interview question, experimentation, ab-testing, analytics, feature-flags" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/" />
-    <meta property="og:title" content="Design an A/B Testing System — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Design an A/B Testing System | System Design Guide" />
     <meta property="og:description" content="Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Design an A/B Testing System practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/" />
-    <meta name="twitter:title" content="Design an A/B Testing System — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Design an A/B Testing System | System Design Guide" />
     <meta name="twitter:description" content="Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Design an A/B Testing System practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","url":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","name":"Design an A/B Testing System — System Design Interview Practice | Diagrammatic","description":"Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design an A/B Testing System — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/"}]},{"@type":"LearningResource","name":"Design an A/B Testing System — System Design Interview Practice","description":"Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","educationalLevel":"Hard","teaches":["experimentation","ab-testing","analytics","feature-flags"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","url":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","name":"Design an A/B Testing System | System Design Guide","description":"Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design an A/B Testing System | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/"}]},{"@type":"LearningResource","name":"Design an A/B Testing System — System Design Interview Practice","description":"Design a platform to run experiments and A/B tests to compare different versions of features. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/design-an-a-b-testing-system/","educationalLevel":"Hard","teaches":["experimentation","ab-testing","analytics","feature-flags"],"timeRequired":"45-60 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>experimentation</strong><span>Concept to explore</span></li><li><strong>ab testing</strong><span>Concept to explore</span></li><li><strong>analytics</strong><span>Concept to explore</span></li><li><strong>feature flags</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design an experimentation platform that assigns users consistently to variants, captures exposure and outcome events, detects sample-ratio or data-quality issues, and produces decision-ready analyses.</p><ul class="static-route-list"><li>Define experiment lifecycle, targeting, mutual exclusion, allocation, deterministic assignment, exposure logging, metrics, guardrails, and stopping rules.</li><li>Keep assignment fast and stable across retries/devices where intended; support ramping, holdouts, overrides, and emergency kill switches.</li><li>Separate flag evaluation from event collection and statistical analysis; make experiment definitions and analysis snapshots versioned.</li><li>Explain interference, novelty, missing exposure, sample-ratio mismatch, privacy, sequential peeking, auditability, and degraded evaluation.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Create experiments, define populations/variants/metrics, assign subjects, evaluate flags, record exposures/outcomes, and analyze results.</li><li>Support gradual rollout, holdout groups, mutually exclusive layers, audience exclusions, guardrail alerts, approvals, and experiment history.</li><li>Make assignments deterministic and auditable, handle identity changes, replay events, correct metrics, and stop unsafe variants immediately.</li><li>Return a stable assignment with p95 evaluation under 20ms and publish trusted analyses only after exposure/data-quality checks.</li><li>Scale to 1,000 concurrent experiments and 100M subjects without a single hot key or unbounded synchronous work.</li><li>Do not lose committed state; make retries and duplicate events safe.</li><li>Degrade safely when downstream workers, caches, or external dependencies fail.</li><li>100M subjects, 1,000 experiments, and 10M exposure events per minute</li><li>Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.</li><li>Keep serving state bounded; retain raw events or durable records for replay and auditing.</li></ul><ul class="static-route-list"><li>Peak scale: 1k experiments; 10M exposures/min — Capacity assumption that drives partitioning and backpressure.</li><li>Latency target: assignment p95 &lt; 20ms; stable hash — User-facing budget for the primary request or read path.</li><li>Durable boundary: Committed before async — Versioned experiment definitions and exposure/outcome events are authoritative; analyses are derived snapshots.</li><li>Async boundary: At-least-once workers — Keep Deterministic hash function for assignment, Feature flag system integration, Data pipeline for metrics collection off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>ExperimentDefinition</strong><span>experimentId, version, variants, eligibility, allocation, status</span><p>Versioned a b testing system hypothesis and assignment contract.</p></li><li><strong>Assignment</strong><span>subjectId, experimentId, variant, definitionVersion, assignedAt, override</span><p>Deterministic, sticky assignment with exposure metadata.</p></li><li><strong>ExposureEvent</strong><span>eventId, subjectId, experimentId, variant, occurredAt, schemaVersion</span><p>Deduplicated evidence that a subject actually saw a a b testing system variant.</p></li><li><strong>MetricSnapshot</strong><span>experimentId, cohort, metric, window, estimate, guardrailStatus</span><p>Reproducible metric and guardrail result for decision-making.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Version the experiment contract</strong><span>The a b testing system catalog records hypothesis, variants, eligibility, allocation, metric definitions, and approval state.</span></li><li><strong>2. Assign consistently</strong><span>The assignment service hashes the subject and experiment version, applies overrides, and emits exposure metadata.</span></li><li><strong>3. Collect real exposure and outcomes</strong><span>Events are deduplicated and joined by cohort, definition version, and event time rather than assignment alone.</span></li><li><strong>4. Compute metrics and guardrails</strong><span>Workers calculate lift, uncertainty, sample-ratio mismatch, and safety metrics into a reproducible snapshot.</span></li><li><strong>5. Roll out or stop safely</strong><span>Operators use evidence and guardrails to advance, pause, or roll back the a b testing system definition with an audit trail.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Assignment correctness</strong><span>Hash on a stable subject key and experiment version so allocation remains sticky across devices where policy permits. Record exposure only when the subject could actually see the variant. Keep overrides, exclusion rules, and allocation changes explicit and auditable.</span></li><li><strong>Metric integrity</strong><span>Use event-time windows, deduplication, late-event policy, and cohort definitions that match the hypothesis. Alert on sample-ratio mismatch, missing exposure, instrumentation changes, and metric freshness. Analyze guardrails and segments alongside the primary metric.</span></li><li><strong>Safe decisions</strong><span>Require approval and lifecycle state transitions for a b testing system rollout, pause, and rollback. Keep definition, assignment, event, and analysis versions linked for replay. Do not let a dashboard with stale or incomplete data imply statistical certainty.</span></li><li><strong>Sticky assignment versus dynamic targeting</strong><span>Prefer sticky assignment for causal interpretation and make targeting changes a new version. Changing eligibility or allocation in place contaminates cohort analysis.</span></li><li><strong>Client versus server event collection</strong><span>Collect exposure close to the rendering decision and supplement with server events for durable outcomes. A client-only pipeline loses events under blockers, offline use, or app termination.</span></li><li><strong>Fast decision versus statistical certainty</strong><span>Use sequential monitoring with declared stopping rules and guardrails. Repeatedly checking noisy metrics until a desired result appears creates false confidence.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

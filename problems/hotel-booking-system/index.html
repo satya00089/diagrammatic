@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Design a Hotel Booking System — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Design a Hotel Booking System — System Design Interview Practice | Diagrammatic" />
+    <title>Design a Hotel Booking System | System Design Guide</title>
+    <meta name="title" content="Design a Hotel Booking System | System Design Guide" />
     <meta name="description" content="Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Design a Hotel Booking System, system design interview question, booking, inventory, transactions" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/hotel-booking-system/" />
-    <meta property="og:title" content="Design a Hotel Booking System — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Design a Hotel Booking System | System Design Guide" />
     <meta property="og:description" content="Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Design a Hotel Booking System practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/hotel-booking-system/" />
-    <meta name="twitter:title" content="Design a Hotel Booking System — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Design a Hotel Booking System | System Design Guide" />
     <meta name="twitter:description" content="Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Design a Hotel Booking System practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","url":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","name":"Design a Hotel Booking System — System Design Interview Practice | Diagrammatic","description":"Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design a Hotel Booking System — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/"}]},{"@type":"LearningResource","name":"Design a Hotel Booking System — System Design Interview Practice","description":"Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","educationalLevel":"Medium","teaches":["booking","inventory","transactions"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","url":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","name":"Design a Hotel Booking System | System Design Guide","description":"Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design a Hotel Booking System | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/"}]},{"@type":"LearningResource","name":"Design a Hotel Booking System — System Design Interview Practice","description":"Design a reservation system for booking hotel rooms with availability management and payment processing. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/hotel-booking-system/","educationalLevel":"Medium","teaches":["booking","inventory","transactions"],"timeRequired":"45-60 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>booking</strong><span>Concept to explore</span></li><li><strong>inventory</strong><span>Concept to explore</span></li><li><strong>transactions</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design room inventory, search, reservation holds, payment, and cancellation so users can reserve an available room reliably at scale.</p><ul class="static-route-list"><li>Define the source of truth for inventory and confirmed reservations and make retries idempotent.</li><li>Use bounded, partitioned state to meet 10M properties and 1M bookings per day and availability search p95 &lt;=300ms.</li><li>Separate the critical request path from search indexing, expiration, payment callbacks, and notifications.</li><li>Explain consistency, failure recovery, authorization, observability, and a degraded mode.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Support the core workflow to reserve an available room.</li><li>Expose status, results, and freshness appropriate to room inventory, search, reservation holds, payment, and cancellation.</li><li>Support authorization, validation, updates, deletion, and recovery semantics.</li><li>Meet availability search p95 &lt;=300ms under normal load.</li><li>Scale to 10M properties and 1M bookings per day without a single hot key or unbounded synchronous work.</li><li>Do not lose committed state; make retries and duplicate events safe.</li><li>Degrade safely when downstream workers, caches, or external dependencies fail.</li><li>10M properties and 1M bookings per day</li><li>Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.</li><li>Keep serving state bounded; retain raw events or durable records for replay and auditing.</li></ul><ul class="static-route-list"><li>Peak scale: 10M properties — Capacity assumption that drives partitioning and backpressure.</li><li>Latency target: availability search p95 &lt;=300ms — User-facing budget for the primary request or read path.</li><li>Durable boundary: Committed before async — The source of truth is inventory and confirmed reservations.</li><li>Async boundary: At-least-once workers — Keep search indexing, expiration, payment callbacks, and notifications off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>ReservationIntent</strong><span>intentId, customerId, offerId, status, version, idempotencyKey</span><p>Idempotent hotel booking system reservation intent with an explicit lifecycle.</p></li><li><strong>InventoryClaim</strong><span>claimId, itemId, quantity, expiresAt, status, version</span><p>Short-lived conditional claim that protects scarce availability.</p></li><li><strong>PaymentAttempt</strong><span>attemptId, intentId, provider, requestHash, status, providerRef</span><p>Retry-safe payment attempt with unknown-outcome reconciliation.</p></li><li><strong>FulfillmentState</strong><span>intentId, stage, owner, lastEventId, status, updatedAt</span><p>Durable downstream reservation fulfillment progress.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Search and price current candidates</strong><span>The hotel booking system query path combines catalog, eligibility, price, and current availability without treating a stale index as a final claim.</span></li><li><strong>2. Claim scarce inventory</strong><span>The hotel booking system service creates a short-lived conditional claim keyed by item and request idempotency before charging or confirming.</span></li><li><strong>3. Confirm the reservation safely</strong><span>Payment, policy, and inventory transitions are versioned; unknown provider outcomes are reconciled before retry.</span></li><li><strong>4. Publish fulfillment work</strong><span>The committed hotel booking system intent emits an event for partner, packing, delivery, or campaign dispatch workers.</span></li><li><strong>5. Expire, cancel, and reconcile</strong><span>Expiry and cancellation release claims idempotently while reconciliation compares internal state with external providers or partners.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Inventory claims and oversell control</strong><span>Use conditional writes or a serialized inventory partition for hotel booking system scarce capacity. Give holds an expiry and reaper, but never release a confirmed claim from a stale worker. Separate searchable availability from the authoritative claim path.</span></li><li><strong>Payment and unknown outcomes</strong><span>Bind hotel booking system payment attempts to the intent and request hash, not just the customer session. Treat timeout as unknown, query or reconcile provider state, and avoid a blind second charge. Keep sensitive payment tokens outside business records and logs.</span></li><li><strong>Fulfillment and partner recovery</strong><span>Publish hotel booking system events after commit, consume at least once, and track per-stage progress. Use reconciliation against partner feeds or delivery evidence instead of assuming a callback arrives. Expose pending and expired status so the client can explain what happened.</span></li><li><strong>Reservation versus oversell tolerance</strong><span>Prefer a short-lived hotel booking system claim for scarce inventory and state the consistency scope explicitly. A cache or search index cannot safely decrement the final room count.</span></li><li><strong>Synchronous checkout versus asynchronous fulfillment</strong><span>Commit the reservation intent synchronously and move partner or delivery work behind events. Waiting for downstream fulfillment makes retries ambiguous and increases checkout tail latency.</span></li><li><strong>Precompute availability versus compute at read time</strong><span>Precompute common search dimensions but validate the final claim against authoritative state. Serving only a precomputed hotel booking system availability view creates oversell or stale-price failures.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>Develop a Weather Application — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="Develop a Weather Application — System Design Interview Practice | Diagrammatic" />
+    <title>Develop a Weather Application | System Design Guide</title>
+    <meta name="title" content="Develop a Weather Application | System Design Guide" />
     <meta name="description" content="Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="Develop a Weather Application, system design interview question, api-integration, caching, location-services, mobile" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/" />
-    <meta property="og:title" content="Develop a Weather Application — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="Develop a Weather Application | System Design Guide" />
     <meta property="og:description" content="Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="Develop a Weather Application practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/" />
-    <meta name="twitter:title" content="Develop a Weather Application — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="Develop a Weather Application | System Design Guide" />
     <meta name="twitter:description" content="Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="Develop a Weather Application practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","url":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","name":"Develop a Weather Application — System Design Interview Practice | Diagrammatic","description":"Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Develop a Weather Application — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/"}]},{"@type":"LearningResource","name":"Develop a Weather Application — System Design Interview Practice","description":"Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","educationalLevel":"Easy","teaches":["api-integration","caching","location-services","mobile"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","url":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","name":"Develop a Weather Application | System Design Guide","description":"Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Develop a Weather Application | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/"}]},{"@type":"LearningResource","name":"Develop a Weather Application — System Design Interview Practice","description":"Design a weather application that provides current conditions, forecasts, and weather alerts. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/develop-a-weather-application/","educationalLevel":"Easy","teaches":["api-integration","caching","location-services","mobile"],"timeRequired":"30-45 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>api integration</strong><span>Concept to explore</span></li><li><strong>caching</strong><span>Concept to explore</span></li><li><strong>location services</strong><span>Concept to explore</span></li><li><strong>mobile</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design a weather service that aggregates provider observations and forecasts, serves current conditions and multi-day outlooks, and delivers timely location-aware alerts with freshness metadata.</p><ul class="static-route-list"><li>Define provider normalization, station/grid identity, forecast versions, units, timezone, freshness, confidence, and alert lifecycle.</li><li>Cache by geospatial cell and forecast horizon, refresh adaptively, reconcile conflicting providers, and avoid thundering-herd refreshes.</li><li>Separate provider ingestion from serving projections, historical observations, notifications, and expensive forecast transformations.</li><li>Explain provider outage, stale labeling, alert deduplication, location privacy, observability, and degraded cached forecasts.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Return current conditions, hourly/daily forecasts, historical observations, air-quality fields, units, and provider/freshness metadata.</li><li>Subscribe users to threshold/severe-weather alerts by location, deduplicate notifications, and support locale/timezone preferences.</li><li>Ingest multiple providers, retry safely, backfill gaps, invalidate outdated forecasts, and serve cached data with an explicit stale marker.</li><li>Serve common forecast reads with p95 under 200ms and propagate severe alerts within two minutes of provider receipt.</li><li>Scale to 50M users and highly skewed popular locations without a single hot key or unbounded synchronous work.</li><li>Do not lose committed state; make retries and duplicate events safe.</li><li>Degrade safely when downstream workers, caches, or external dependencies fail.</li><li>50M users, 10M watched locations, and 1M provider updates per hour</li><li>Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.</li><li>Keep serving state bounded; retain raw events or durable records for replay and auditing.</li></ul><ul class="static-route-list"><li>Peak scale: 50M users; 1M provider updates/hour — Capacity assumption that drives partitioning and backpressure.</li><li>Latency target: forecast p95 &lt; 200ms; alerts &lt; 2m — User-facing budget for the primary request or read path.</li><li>Durable boundary: Committed before async — Versioned provider observations/forecasts and alert bulletins are authoritative; cached responses are derived.</li><li>Async boundary: At-least-once workers — Keep Integrate with weather APIs, Cache weather data with TTL, Geolocation for user location off the synchronous path.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>Observation</strong><span>locationId, provider, eventTime, temperature, conditions, quality</span><p>Timestamped weather observation with provider provenance.</p></li><li><strong>ForecastVersion</strong><span>locationId, provider, issuedAt, validFrom, validTo, modelVersion</span><p>Versioned forecast used by weather application.</p></li><li><strong>LocationSubscription</strong><span>subscriptionId, userId, locationId, thresholds, channels, status</span><p>User alert policy and delivery preferences.</p></li><li><strong>ForecastQuality</strong><span>locationId, metric, window, provider, value, sampleCount</span><p>Observed-versus-forecast quality evidence.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Collect provider observations</strong><span>Collectors fetch weather application feeds with cursors, signatures, quotas, and explicit provider failure state.</span></li><li><strong>2. Normalize and preserve versions</strong><span>Workers map provider-specific data into canonical observations and forecasts without discarding provenance.</span></li><li><strong>3. Serve location and time-window reads</strong><span>The API reads freshness-aware cache or time-indexed storage and reports quality or gap state.</span></li><li><strong>4. Evaluate severe-weather alerts</strong><span>Alert workers compare new updates to subscription thresholds and send deduplicated notifications.</span></li><li><strong>5. Measure and reconcile quality</strong><span>Quality jobs compare forecasts to later observations and flag provider gaps, bias, or stale coverage.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Provider freshness and gaps</strong><span>Carry provider issue time, valid time, fetch time, cursor, and signature through the model. Expose spatial coverage and stale state instead of silently filling a missing provider feed. Use provider adapters so schema or quota failures are isolated.</span></li><li><strong>Time and spatial indexing</strong><span>Partition by geospatial cell and valid-time bucket for bounded forecast reads. Keep forecast revisions separate from observations so consumers can compare what was known when. Cache only with a provider watermark and expiry contract.</span></li><li><strong>Alert correctness</strong><span>Evaluate thresholds with hysteresis, deduplication, and subscription version to prevent alert storms. Record the forecast or observation evidence behind each alert. Track delivery latency, suppressed duplicates, and stale-policy behavior.</span></li><li><strong>Provider redundancy versus cost</strong><span>Use multiple providers for severe-weather or high-availability paths and a single source for lower-risk products. Failover without normalization or confidence metadata can produce contradictory forecasts.</span></li><li><strong>Precompute tiles versus query on demand</strong><span>Precompute common spatial/time products and compute rare views within a bounded budget. Generating every resolution and time horizon is expensive and hard to invalidate.</span></li><li><strong>Freshness versus stability</strong><span>Expose issued and valid times and choose product-specific freshness budgets. Aggressively refreshing can amplify provider rate limits without improving forecast quality.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.

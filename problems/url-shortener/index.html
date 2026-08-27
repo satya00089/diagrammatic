@@ -41,8 +41,8 @@
     />
 
     <!-- Primary metadata -->
-    <title>URL Shortener (like bit.ly) — System Design Interview Practice | Diagrammatic</title>
-    <meta name="title" content="URL Shortener (like bit.ly) — System Design Interview Practice | Diagrammatic" />
+    <title>URL Shortener (like bit.ly) | System Design Guide</title>
+    <meta name="title" content="URL Shortener (like bit.ly) | System Design Guide" />
     <meta name="description" content="Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="keywords" content="URL Shortener (like bit.ly), system design interview question, web-services, scalability, caching" />
     <meta name="author" content="Diagrammatic" />
@@ -57,7 +57,7 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://diagrammatic.next-zen.dev/problems/url-shortener/" />
-    <meta property="og:title" content="URL Shortener (like bit.ly) — System Design Interview Practice | Diagrammatic" />
+    <meta property="og:title" content="URL Shortener (like bit.ly) | System Design Guide" />
     <meta property="og:description" content="Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta property="og:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta property="og:image:alt" content="URL Shortener (like bit.ly) practice challenge" />
@@ -67,7 +67,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://diagrammatic.next-zen.dev/problems/url-shortener/" />
-    <meta name="twitter:title" content="URL Shortener (like bit.ly) — System Design Interview Practice | Diagrammatic" />
+    <meta name="twitter:title" content="URL Shortener (like bit.ly) | System Design Guide" />
     <meta name="twitter:description" content="Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review." />
     <meta name="twitter:image" content="https://diagrammatic.next-zen.dev/og/problems.png" />
     <meta name="twitter:image:alt" content="URL Shortener (like bit.ly) practice challenge" />
@@ -377,9 +377,9 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DMHW4Aiv.js"></script>
+    <script type="module" crossorigin src="/assets/index-CFuCeLO1.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FzPpz3nu.css">
-      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/url-shortener/","url":"https://diagrammatic.next-zen.dev/problems/url-shortener/","name":"URL Shortener (like bit.ly) — System Design Interview Practice | Diagrammatic","description":"Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"URL Shortener (like bit.ly) — System Design Interview Practice","item":"https://diagrammatic.next-zen.dev/problems/url-shortener/"}]},{"@type":"LearningResource","name":"URL Shortener (like bit.ly) — System Design Interview Practice","description":"Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/url-shortener/","educationalLevel":"Medium","teaches":["web-services","scalability","caching"],"provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
+      <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/url-shortener/","url":"https://diagrammatic.next-zen.dev/problems/url-shortener/","name":"URL Shortener (like bit.ly) | System Design Guide","description":"Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/url-shortener/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"URL Shortener (like bit.ly) | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/url-shortener/"}]},{"@type":"LearningResource","name":"URL Shortener (like bit.ly) — System Design Interview Practice","description":"Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/url-shortener/","educationalLevel":"Medium","teaches":["web-services","scalability","caching"],"timeRequired":"45-60 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
     <div id="root">
@@ -405,6 +405,28 @@
           <h2>Concepts and architecture decisions to consider</h2>
           <ul class="static-route-list"><li><strong>web services</strong><span>Concept to explore</span></li><li><strong>scalability</strong><span>Concept to explore</span></li><li><strong>caching</strong><span>Concept to explore</span></li></ul>
         </section>
+        <div class="static-route-guide" aria-label="System design guide">
+    <section class="static-route-section static-route-guide-section" id="guide-prompt">
+    <h2>Interview prompt</h2>
+    <p>Design a service that turns long URLs into compact links and resolves them with consistently low latency, even when traffic spikes.</p><ul class="static-route-list"><li>Separate the link-creation path from the read-heavy redirect path.</li><li>Choose a short-code strategy and explain collision and capacity behavior.</li><li>Keep analytics, abuse checks, and operational work away from redirect latency.</li><li>Cover aliases, expiration, deletion, privacy, and cache invalidation.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-requirements">
+    <h2>Requirements and scale assumptions</h2>
+    <ul class="static-route-list"><li>Create a compact URL for a valid destination URL.</li><li>Redirect a short code to its current destination.</li><li>Support optional custom aliases and expiration dates.</li><li>Provide aggregate click analytics by time, referrer, device, and coarse location.</li><li>Let an authenticated owner update, disable, or delete a link.</li><li>Keep p95 redirect latency below 50 ms for cached links.</li><li>Remain highly available because every redirect is user-facing.</li><li>Make private or unlisted codes difficult to enumerate.</li><li>Allow creation to be slower than redirects while remaining reliable and idempotent.</li><li>Treat analytics as eventually consistent and never block a redirect on it.</li><li>100 million new links per month.</li><li>10 billion redirects per month with sharp viral peaks.</li><li>An average destination URL is about 120 bytes before metadata and indexes.</li><li>Read traffic is roughly 100 times heavier than write traffic.</li></ul><ul class="static-route-list"><li>Create traffic: ~40 req/s — Average write rate; quota and campaign bursts drive peak sizing.</li><li>Redirect traffic: ~3.9K req/s — Average reads; hot links can concentrate far more traffic on one code.</li><li>Code capacity: 62^7 = 3.5T — A seven-character Base62 namespace leaves ample room for growth.</li><li>Link storage: 50-100 GB/mo — Redirect rows stay small; raw click events usually dominate storage.</li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-entities">
+    <h2>Key entities</h2>
+    <ul class="static-route-list"><li><strong>ShortLink</strong><span>linkId, alias, ownerId, destination, status, expiresAt, version</span><p>Authoritative link metadata and lifecycle state.</p></li><li><strong>RedirectLookup</strong><span>alias, destination, status, version, cachedAt, expiresAt</span><p>Read-optimized alias projection with expiry.</p></li><li><strong>ClickEvent</strong><span>eventId, alias, occurredAt, referrer, region, userAgentHash</span><p>Privacy-scoped redirect event emitted off the hot path.</p></li><li><strong>AnalyticsAggregate</strong><span>alias, bucket, clicks, uniqueEstimate, updatedAt</span><p>Rebuildable time-bucketed click aggregate.</p></li></ul>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-data-flow">
+    <h2>Data flow</h2>
+    <ol class="static-route-list"><li><strong>1. Create a compact link</strong><span>The service validates the destination and policy, allocates a collision-free alias, and commits metadata before returning it.</span></li><li><strong>2. Resolve a redirect</strong><span>Edge and link cache resolve the alias; a miss reads the link store, checks status and expiry, then returns the redirect with bounded latency.</span></li><li><strong>3. Emit click telemetry</strong><span>The redirect path appends a privacy-scoped click event asynchronously or through a buffered queue without waiting for analytics.</span></li><li><strong>4. Aggregate analytics</strong><span>Workers deduplicate events, build time buckets, and expose a processing watermark for dashboards.</span></li><li><strong>5. Expire, update, or delete</strong><span>Lifecycle workers and owner commands invalidate caches, tombstone aliases, and retain only policy-approved analytics and audit data.</span></li></ol>
+  </section>
+    <section class="static-route-section static-route-guide-section" id="guide-deep-dives">
+    <h2>Deep dives and trade-offs</h2>
+    <ul class="static-route-list"><li><strong>Alias allocation and collision safety</strong><span>For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy. Design for the failure case where hot aliases, cache staleness, destination abuse, and analytics bursts must not affect redirects or expose deleted links; keep retries, versions, and repair state explicit. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Redirect cache and invalidation</strong><span>For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy. Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Asynchronous click analytics</strong><span>For the low-latency URL shortener, redirect resolution must be fast but must never bypass link status, expiry, or owner policy. Keep this concern off unrelated request paths and partition it by the the low-latency URL shortener access key. Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state.</span></li><li><strong>Random IDs versus sequential aliases</strong><span>Use collision-safe random or centrally allocated IDs with a uniqueness constraint and idempotency. Sequential IDs are compact but reveal volume and become allocation hot spots without careful sharding.</span></li><li><strong>Long cache TTL versus revocation</strong><span>Cache active links with TTL and targeted invalidation on update, delete, or expiry; always enforce a bounded expiry policy. Long TTL improves hit rate but serves stale destinations after owner changes.</span></li><li><strong>Synchronous click logging versus redirect latency</strong><span>Buffer or enqueue click events and keep redirect success independent of analytics availability. Synchronous analytics adds tail latency and lets an analytics outage take down redirects.</span></li></ul>
+  </section>
+  </div>
       </main>
       <footer class="static-route-footer">
         Diagrammatic — system design practice and architecture review.
