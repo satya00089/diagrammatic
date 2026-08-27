@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MdArrowForward, MdCheckCircleOutline } from "react-icons/md";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import RollingNavLabel from "../components/RollingNavLabel";
 import { featuredProblems } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 
@@ -210,13 +211,13 @@ const SeoGuide: React.FC = () => {
                 to="/problems/"
                 className="text-sm font-semibold text-muted hover:text-theme"
               >
-                Problems
+                <RollingNavLabel>Problems</RollingNavLabel>
               </Link>
               <Link
                 to="/learning-paths/"
                 className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline"
               >
-                Learning paths
+                <RollingNavLabel>Learning paths</RollingNavLabel>
               </Link>
               <ThemeSwitcher />
             </nav>

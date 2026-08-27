@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import RollingNavLabel from "../components/RollingNavLabel";
 import { useTheme } from "../hooks/useTheme";
 import SEO from "../components/SEO";
 import { useAuth } from "../hooks/useAuth";
@@ -703,14 +704,14 @@ const Home: React.FC = () => {
                   onClick={() => handleNavigate("/problems", false)}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                 >
-                  Problems
+                  <RollingNavLabel>Problems</RollingNavLabel>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleNavigate("/learning-paths/", false)}
                   className="hidden lg:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--brand)]"
                 >
-                  Learning Paths
+                  <RollingNavLabel>Learning Paths</RollingNavLabel>
                 </button>
                 {isAuthenticated && (
                   <button
@@ -718,7 +719,7 @@ const Home: React.FC = () => {
                     onClick={() => handleNavigate("/diagrams")}
                     className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
                   >
-                    My Designs
+                    <RollingNavLabel>My Designs</RollingNavLabel>
                   </button>
                 )}
 

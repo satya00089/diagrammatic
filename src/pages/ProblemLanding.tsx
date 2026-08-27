@@ -15,6 +15,7 @@ import ProblemGuideContent, {
 import PublicArchitectureCanvas from "../components/public-design/PublicArchitectureCanvas";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import RollingNavLabel from "../components/RollingNavLabel";
 import { getGuideArchitecture, getProblemGuide } from "../data/problemGuides";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
@@ -228,14 +229,16 @@ const ProblemLanding: React.FC = () => {
       />
 
       <div className="min-h-screen bg-[var(--bg)] text-theme">
-        <header className="border-b border-theme/10 bg-[var(--surface)]">
-          <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8 2xl:px-10">
+        <header className="border-b border-white/20 bg-[var(--brand)] text-white">
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between">
             <Link
               to="/"
-              className="flex items-center gap-3 font-bold tracking-wide"
+              className="flex items-center gap-3 font-bold tracking-wide text-white"
             >
               <img src="/logo.png" alt="" className="h-7" />
-              <span>Diagrammatic</span>
+              <span className="text-lg font-bold leading-none tracking-wide text-white">
+                Diagrammatic
+              </span>
             </Link>
             <nav
               className="flex items-center gap-2 sm:gap-4"
@@ -243,15 +246,15 @@ const ProblemLanding: React.FC = () => {
             >
               <Link
                 to="/problems/"
-                className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline"
+                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:inline"
               >
-                All problems
+                <RollingNavLabel>All problems</RollingNavLabel>
               </Link>
               <Link
                 to="/learning-paths/"
-                className="hidden text-sm font-semibold text-muted hover:text-theme md:inline"
+                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:inline"
               >
-                Learning paths
+                <RollingNavLabel>Learning paths</RollingNavLabel>
               </Link>
               <ThemeSwitcher />
             </nav>
