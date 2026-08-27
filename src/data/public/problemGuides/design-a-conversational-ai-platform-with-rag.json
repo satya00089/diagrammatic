@@ -1,0 +1,571 @@
+{
+  "prompt": {
+    "brief": "Design an enterprise RAG platform that ingests permissioned documents, retrieves fresh evidence, maintains conversation context, and generates cited answers with safe model fallbacks.",
+    "successSignals": [
+      "Separate source documents, chunk and embedding versions, access-control metadata, conversations, prompts, and model outputs.",
+      "Use hybrid dense and sparse retrieval with reranking, bounded context, citations, and tenant-aware filters.",
+      "Make indexing asynchronous and versioned so deletes and permission changes cannot leak stale evidence.",
+      "Explain prompt injection, hallucination, model failure, feedback evaluation, cost budgets, and auditability."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Upload and parse enterprise documents, chunk and embed them, and publish a searchable version with freshness status.",
+      "Answer a question with authorized retrieved passages, citations, conversation context, safety checks, and streamed output.",
+      "Support document deletion, permission changes, reindexing, feedback, evaluation sets, usage controls, and tenant export."
+    ],
+    "nonFunctional": [
+      "Target p95 time to first token below 500 ms and completed grounded responses below 3 seconds for normal queries.",
+      "Scale document indexing and query traffic independently, with per-tenant quotas and bounded retrieval work.",
+      "Never lose a source document or feedback event; make embedding, indexing, generation, and tool retries safe.",
+      "Fall back to keyword search, a smaller model, or an explicit no-answer response when dependencies fail."
+    ],
+    "scaleAssumptions": [
+      "Support 10,000 queries per second, 100 million indexed chunks, and thousands of enterprise tenants.",
+      "Partition by tenant and knowledge collection; isolate large reindex jobs and hot assistants.",
+      "Retain encrypted source and audit data while keeping vector indexes, conversation context, and caches bounded."
+    ],
+    "metrics": [
+      {
+        "label": "Peak scale",
+        "value": "Provide feedback collection",
+        "description": "Capacity assumption that drives partitioning and backpressure."
+      },
+      {
+        "label": "Latency target",
+        "value": "End-to-end response latency under 3 seconds",
+        "description": "User-facing budget for the primary request or read path."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "The source of truth is Ingest and index enterprise documents; Retrieve relevant context for user queries."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep Use chunking strategies for document processing, Implement hybrid retrieval (dense + sparse), Use re-ranking models to improve retrieval quality off the synchronous path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Design a Conversational AI Platform with RAG",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Ingest and index enterprise documents; Retrieve relevant context for user queries; design keys around the main reads and writes."
+    },
+    {
+      "name": "design-a-conversational-ai-with-rag event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Ingest and index enterprise documents command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept Ingest and index enterprise documents",
+      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+    },
+    {
+      "title": "Commit the durable state",
+      "description": "The platform records a versioned document ingestion request and conversation turn before indexing or generation."
+    },
+    {
+      "title": "Publish the domain event",
+      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+    },
+    {
+      "title": "Build the read model",
+      "description": "Indexing workers parse versioned documents, preserve ACL metadata, create chunks and embeddings, update lexical/vector indexes, and expose indexing watermarks."
+    },
+    {
+      "title": "Serve and recover asynchronously",
+      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+    }
+  ],
+  "architecture": {
+    "title": "Design a conversational AI platform that uses Retrieval-Augmented Generation (RAG) to answer questions from enterprise knowledge bases, maintains conversation context, and provides cited responses. reference architecture",
+    "summary": "The ingestion path durably versions documents and asynchronously builds ACL-aware lexical and vector indexes. The query path synchronously enforces authorization, retrieves and reranks evidence, constructs a bounded context, applies safety policy, and routes generation through a model gateway before streaming cited output.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Document versions, ACLs, conversation turns, citations, tool outcomes, and replayable lifecycle events.",
+        "componentIds": ["source", "document-store", "stream"]
+      },
+      {
+        "id": "query",
+        "label": "Query and generation",
+        "description": "Authorization-aware retrieval, context construction, safety checks, model routing, and streamed answers.",
+        "componentIds": ["policy-safety", "retrieval", "index", "model-gateway"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Question-to-answer path",
+        "description": "Client -> gateway -> service -> policy -> retrieval -> indexes/model gateway -> service -> client.",
+        "componentIds": ["client", "gateway", "service", "policy-safety", "retrieval", "index", "model-gateway"]
+      },
+      {
+        "id": "ingestion",
+        "label": "Document ingestion path",
+        "description": "Source -> event stream -> workers -> document store/indexes/read model.",
+        "componentIds": ["source", "stream", "workers", "document-store", "index", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Users upload/search governed knowledge, ask questions, stream cited answers, and inspect indexing status.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns ingestion, ACL enforcement, retrieval, conversation policy, citations, tools, and answer contracts.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "policy-safety",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "ACL and safety policy",
+        "description": "Applies tenant and document ACL filters at retrieval time, redacts sensitive content, detects prompt injection, and enforces answer policy.",
+        "position": {
+          "x": 720,
+          "y": 500
+        },
+        "properties": {
+          "guarantee": "No unauthorized passage reaches retrieval context or model input"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores document versions, chunks/embeddings, ACL metadata, conversations, citations, and tool results.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Document metadata, ACL versions, conversations, citations, and lifecycle state"
+        }
+      },
+      {
+        "id": "document-store",
+        "type": "database",
+        "componentId": "object-storage",
+        "label": "Document/object store",
+        "description": "Stores immutable source documents and extracted artifacts by tenant and document version for reprocessing, export, and deletion.",
+        "position": {
+          "x": 1080,
+          "y": 80
+        },
+        "properties": {
+          "lifecycle": "Versioned, encrypted, retention and deletion controlled"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes document-version, indexing, retrieval, conversation, citation, safety, and feedback events.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Chunks/embeds documents, updates lexical/vector indexes, evaluates retrieval, and runs asynchronous enrichment.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "index",
+        "type": "database",
+        "componentId": "database",
+        "label": "Hybrid search indexes",
+        "description": "Maintains versioned lexical and vector indexes with tenant, ACL-version, document-version, and freshness filters.",
+        "position": {
+          "x": 1440,
+          "y": 500
+        },
+        "properties": {
+          "query": "BM25 plus vector retrieval followed by reranking"
+        }
+      },
+      {
+        "id": "retrieval",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Retriever and context builder",
+        "description": "Runs hybrid retrieval, reranks candidates, applies freshness and ACL filters, budgets context tokens, and returns evidence with citation IDs.",
+        "position": {
+          "x": 1080,
+          "y": 500
+        },
+        "properties": {
+          "latency": "Bounded top-k retrieval and reranking budget"
+        }
+      },
+      {
+        "id": "model-gateway",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Model gateway",
+        "description": "Routes requests across approved models, applies token and cost budgets, supports fallback, and streams cancellable generation.",
+        "position": {
+          "x": 1440,
+          "y": 680
+        },
+        "properties": {
+          "resilience": "Timeouts, circuit breakers, provider fallback"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves conversations, citations, document/index status, retrieval evidence, and usage views.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "End-to-end response latency under 3 seconds"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client uploads a document, asks a governed question, or requests index/retrieval status."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "Commits the document/turn request and policy references before indexing or model/tool work."
+      },
+      {
+        "id": "service-policy",
+        "source": "service",
+        "target": "policy-safety",
+        "type": "api-call",
+        "label": "Policy evaluation",
+        "description": "The service passes tenant identity, document ACL version, conversation policy, and safety requirements before retrieval."
+      },
+      {
+        "id": "policy-retrieval",
+        "source": "policy-safety",
+        "target": "retrieval",
+        "type": "api-call",
+        "label": "Authorized query",
+        "description": "Only an authorization-filtered question and permitted corpus scope reach retrieval."
+      },
+      {
+        "id": "retrieval-index",
+        "source": "retrieval",
+        "target": "index",
+        "type": "database-connection",
+        "label": "Hybrid top-k search",
+        "description": "The retriever queries lexical and vector indexes with tenant, ACL-version, document-version, and freshness predicates."
+      },
+      {
+        "id": "retrieval-model",
+        "source": "retrieval",
+        "target": "model-gateway",
+        "type": "api-call",
+        "label": "Cited context",
+        "description": "The context builder sends bounded, policy-approved passages and citation metadata to the model gateway."
+      },
+      {
+        "id": "model-service",
+        "source": "model-gateway",
+        "target": "service",
+        "type": "stream",
+        "label": "Token stream",
+        "description": "The model gateway streams tokens and completion metadata back to the service, with cancellation and fallback state."
+      },
+      {
+        "id": "workers-document-store",
+        "source": "workers",
+        "target": "document-store",
+        "type": "data-flow",
+        "label": "Source version",
+        "description": "Ingestion workers persist immutable source versions and extracted artifacts before indexing."
+      },
+      {
+        "id": "workers-index",
+        "source": "workers",
+        "target": "index",
+        "type": "data-flow",
+        "label": "ACL-aware index update",
+        "description": "Workers publish chunks and embeddings with document and ACL versions, then advance an index watermark."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers chunk/embed/index documents, rerank candidates, evaluate quality, and process feedback."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "Returns a cited answer or explicit no-answer/clarification state with model, source, and freshness metadata."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Consistency and idempotency",
+      "points": [
+        "Define which state is strongly consistent and which projection is eventually consistent.",
+        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
+        "Return version and observedAt so clients can reason about freshness."
+      ]
+    },
+    {
+      "title": "Partitioning and hot keys",
+      "points": [
+        "Partition by the access pattern implied by Design a conversational AI platform that uses Retrieval-Augmented Generation (RAG) to answer questions from enterprise knowledge bases, maintains conversation context, and provides cited responses., then isolate hot tenants, users, items, or regions.",
+        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
+        "Keep a replay or reconciliation path for projection drift and partial failures."
+      ]
+    },
+    {
+      "title": "Failure and recovery",
+      "points": [
+        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
+        "Retain durable records for replay; treat Use chunking strategies for document processing, Implement hybrid retrieval (dense + sparse), Use re-ranking models to improve retrieval quality as independently retryable.",
+        "Measure latency, backlog, freshness, error rate, and correctness drift."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines ingestion, authorized retrieval, cited generation, scale, durability, and failure contracts."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and document/tenant/conversation keys support ACL-safe RAG, citations, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}

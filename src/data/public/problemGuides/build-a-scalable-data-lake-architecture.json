@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design a governed data lake that ingests batch and streaming sources, preserves raw structured/unstructured data, catalogs schemas and lineage, enables performant SQL, and serves trusted analytics.",
+    "successSignals": [
+      "Define raw, validated, curated, and aggregate zones; dataset ownership, schema contracts, partitions, retention, lineage, and quality gates.",
+      "Separate ingestion from compaction, cataloging, transformation, query engines, and BI serving; optimize file sizes and partition pruning.",
+      "Handle late data, schema evolution, duplicates, backfills, sensitive fields, deletion requests, and exactly-once or replay semantics.",
+      "Explain governance, cost controls, isolation, query correctness, disaster recovery, observability, and degraded query behavior."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Ingest files, database changes, and streams into durable raw zones; validate, deduplicate, transform, catalog, and publish curated tables.",
+      "Provide dataset discovery, schema/lineage views, SQL queries, materialized aggregates, BI access, freshness and quality status.",
+      "Support role/row/column access, retention/deletion, replay/backfill, schema approval, failed-batch quarantine, and restore testing."
+    ],
+    "nonFunctional": [
+      "Return common partition-pruned analytical queries with p95 under 10 seconds and publish freshness/quality metadata.",
+      "Scale to petabytes and thousands of concurrent workloads without a single hot key or unbounded synchronous work.",
+      "Do not lose committed state; make retries and duplicate events safe.",
+      "Degrade safely when downstream workers, caches, or external dependencies fail."
+    ],
+    "scaleAssumptions": [
+      "5PB retained, 100TB daily ingest, and 10k concurrent analytical users",
+      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
+      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+    ],
+    "metrics": [
+      {
+        "label": "Peak scale",
+        "value": "5PB retained; 100TB/day ingest",
+        "description": "Capacity assumption that drives partitioning and backpressure."
+      },
+      {
+        "label": "Latency target",
+        "value": "partitioned query p95 < 10s",
+        "description": "User-facing budget for the primary request or read path."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "Immutable raw objects and approved table manifests are authoritative; catalogs, indexes, and aggregates are derived."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep S3 for data lake storage, AWS Glue for ETL and catalog, Athena for SQL queries off the synchronous path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Build a Scalable Data Lake Architecture",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Store structured and unstructured data; Catalog and discover datasets; design keys around the main reads and writes."
+    },
+    {
+      "name": "build-a-scalable-data-lake-architecture event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Store structured and unstructured data command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept Store structured and unstructured data",
+      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+    },
+    {
+      "title": "Commit the durable state",
+      "description": "The service validates authorization and idempotency, then records the command before acknowledging the client."
+    },
+    {
+      "title": "Publish the domain event",
+      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+    },
+    {
+      "title": "Build the read model",
+      "description": "Partitioned workers process S3 for data lake storage, AWS Glue for ETL and catalog, Athena for SQL queries, update projections, and expose lag or watermark metadata."
+    },
+    {
+      "title": "Serve and recover asynchronously",
+      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+    }
+  ],
+  "architecture": {
+    "title": "Design a data lake architecture that ingests data from multiple sources, catalogs and organizes data, enables SQL queries, and provides data visualization capabilities. reference architecture",
+    "summary": "The authoritative state records Store structured and unstructured data; asynchronous workers build serving projections while S3 for data lake storage, AWS Glue for ETL and catalog, Athena for SQL queries stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Immutable raw objects, approved table manifests, lineage, and replayable ingestion events.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Analysts discover datasets, query governed tables, and render freshness, quality, and job progress.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns dataset registration, ingestion requests, governance policy, authorization, and publication contracts.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores raw/curated objects, table manifests, schema/lineage metadata, quality results, and aggregates.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Build a Scalable Data Lake Architecture"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes ingestion, validation, transformation, catalog, backfill, and deletion events.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Runs validation, compaction, transformations, catalog updates, quality gates, and exports asynchronously.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves dataset discovery, schema/lineage, quality, freshness, and aggregate query views.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Query latency under 10 seconds"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client registers a dataset, starts ingestion, or submits a governed analytical query."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers validate files, compact partitions, transform tables, update catalog/lineage, and publish quality status."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "The read path returns the latest acceptable result within its stated latency target."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Consistency and idempotency",
+      "points": [
+        "Define which state is strongly consistent and which projection is eventually consistent.",
+        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
+        "Return version and observedAt so clients can reason about freshness."
+      ]
+    },
+    {
+      "title": "Partitioning and hot keys",
+      "points": [
+        "Partition by the access pattern implied by Design a data lake architecture that ingests data from multiple sources, catalogs and organizes data, enables SQL queries, and provides data visualization capabilities., then isolate hot tenants, users, items, or regions.",
+        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
+        "Keep a replay or reconciliation path for projection drift and partial failures."
+      ]
+    },
+    {
+      "title": "Failure and recovery",
+      "points": [
+        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
+        "Retain durable records for replay; treat S3 for data lake storage, AWS Glue for ETL and catalog, Athena for SQL queries as independently retryable.",
+        "Measure latency, backlog, freshness, error rate, and correctness drift."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines the primary workflow, data model, scale, latency, durability, and failure contract."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and keys support the primary access patterns, authorization, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}

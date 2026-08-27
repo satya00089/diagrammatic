@@ -1,0 +1,620 @@
+{
+  "prompt": {
+    "brief": "Design a batch and streaming data platform that ingests events from many sources, transforms them reliably, and serves fresh analytical results without losing data during backpressure or worker failure.",
+    "successSignals": [
+      "Separate immutable raw data, replayable events, stateful stream processing, and query-optimized analytical tables.",
+      "Explain event-time windows, late data, watermarks, deduplication, schema evolution, and exactly-once effects.",
+      "Use one ingestion contract for streaming and batch backfills while isolating noisy tenants and hot keys.",
+      "Define data-quality gates, privacy controls, replay, dead-letter handling, and operational freshness metrics."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Ingest events from APIs, message brokers, databases, and object-storage batch drops.",
+      "Validate schemas, normalize records, enrich them, and run windowed streaming and historical batch transformations.",
+      "Write raw immutable data and curated analytical tables for dashboards, ad-hoc queries, and exports.",
+      "Expose pipeline configuration, run status, freshness, quality failures, replay, backfill, and cancellation."
+    ],
+    "nonFunctional": [
+      "Acknowledge accepted events after durable ingestion, not after every downstream table is updated.",
+      "Target p95 streaming freshness below 10 seconds for healthy partitions and make lag visible.",
+      "Preserve ordering where required by a business key while scaling independent partitions in parallel.",
+      "Make retries, late events, duplicate delivery, schema changes, partial sink failure, and regional recovery safe."
+    ],
+    "scaleAssumptions": [
+      "Ingest 2 million events per second at peak, with records averaging 2 KB and 10x bursts.",
+      "Retain raw data for 90 days in object storage and curated data for years in a columnar warehouse.",
+      "Largest tenants can dominate a partition, so partition keys may require salting and tenant quotas.",
+      "A streaming job has hundreds of partitions and a batch backfill may run thousands of tasks."
+    ],
+    "metrics": [
+      {
+        "label": "Peak ingest rate",
+        "value": "2M events/s",
+        "description": "Drives broker partitions, network capacity, and admission control."
+      },
+      {
+        "label": "Streaming freshness",
+        "value": "p95 <=10s",
+        "description": "Time from source event timestamp to curated-table availability."
+      },
+      {
+        "label": "Raw retention",
+        "value": "90 days",
+        "description": "Replay and audit window before data moves to a lower-cost tier."
+      },
+      {
+        "label": "Quality acceptance",
+        "value": ">99.9% valid",
+        "description": "Invalid records are quarantined with reason codes rather than silently dropped."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "PipelineDefinition",
+      "fields": [
+        "pipeline_id",
+        "owner_id",
+        "schema_version",
+        "transform_graph",
+        "sink_configs",
+        "state"
+      ],
+      "notes": "Version definitions immutably so in-flight jobs retain their original contract."
+    },
+    {
+      "name": "RawEvent",
+      "fields": [
+        "event_id",
+        "source_id",
+        "tenant_id",
+        "event_time",
+        "ingest_time",
+        "schema_version",
+        "payload"
+      ],
+      "notes": "Append-only raw data is the replay authority and carries both event and ingestion timestamps."
+    },
+    {
+      "name": "StreamCheckpoint",
+      "fields": [
+        "pipeline_id",
+        "partition_id",
+        "offset",
+        "watermark",
+        "state_snapshot_uri",
+        "updated_at"
+      ],
+      "notes": "Offsets and state snapshots advance together through a checkpoint protocol."
+    },
+    {
+      "name": "QualityFinding",
+      "fields": [
+        "finding_id",
+        "pipeline_id",
+        "run_id",
+        "rule_id",
+        "severity",
+        "state"
+      ],
+      "notes": "Quality failures are queryable and policy decides whether they block publication."
+    },
+    {
+      "name": "DatasetManifest",
+      "fields": [
+        "dataset_id",
+        "run_id",
+        "partitions",
+        "schema_version",
+        "row_count",
+        "watermark",
+        "committed_at"
+      ],
+      "notes": "Consumers pin an atomic manifest for a consistent batch or table snapshot."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/pipelines",
+      "contract": "{ name, sources, schema, transforms, sinks, requestId } -> { pipelineId, version, state }",
+      "notes": "Validate DAG, connector credentials, schema compatibility, quotas, and sink permissions."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/events:ingest",
+      "contract": "{ pipelineId, events[], requestId } -> { accepted, rejected, partitionOffsets }",
+      "notes": "Deduplicate by source event ID and acknowledge only after broker durability."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/pipelines/{pipelineId}/status",
+      "contract": "{ state, partitionLag[], watermark, quality, lastCheckpoint }",
+      "notes": "Expose event-time progress and per-partition lag rather than one misleading percentage."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/pipelines/{pipelineId}/backfills",
+      "contract": "{ start, end, sinkSnapshot, requestId } -> { runId, state }",
+      "notes": "Write an isolated output version and atomically promote it after comparison."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/pipelines/{pipelineId}/replay",
+      "contract": "{ partitions, fromOffsets, reason, requestId } -> { runId, state }",
+      "notes": "Authorize and rate-limit replay; keep it separate from the live output."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept and validate source records",
+      "description": "Connectors authenticate, validate schema versions, attach tenant and time metadata, and quarantine malformed records."
+    },
+    {
+      "title": "Commit the raw event log",
+      "description": "The ingestion tier writes partitioned replicated records; the response contains accepted offsets and rejection reasons."
+    },
+    {
+      "title": "Process by event time",
+      "description": "Stream workers checkpoint state, advance watermarks, deduplicate, and close windows according to lateness policy."
+    },
+    {
+      "title": "Publish quality-gated datasets",
+      "description": "Sinks write immutable fragments, run quality rules, and advance a dataset manifest only when policy passes."
+    },
+    {
+      "title": "Replay, backfill, and observe asynchronously",
+      "description": "A control plane schedules repair and historical runs while dashboards consume lag, cost, quality, and lineage events."
+    }
+  ],
+  "architecture": {
+    "title": "Batch and streaming data platform reference architecture",
+    "summary": "Durable ingestion feeds replayable raw storage and partitioned processing; quality-gated manifests publish curated data to analytical stores.",
+    "layers": [
+      {
+        "id": "ingestion",
+        "label": "Ingestion boundary",
+        "description": "Connectors, auth, schema checks, quotas, and durable event acceptance.",
+        "componentIds": ["client", "gateway", "connectors", "broker"]
+      },
+      {
+        "id": "storage",
+        "label": "Durable data",
+        "description": "Raw events, schemas, checkpoints, and output manifests.",
+        "componentIds": ["raw-store", "metadata", "checkpoint"]
+      },
+      {
+        "id": "compute",
+        "label": "Processing plane",
+        "description": "Partitioned streaming and batch transforms with state and backpressure.",
+        "componentIds": [
+          "scheduler",
+          "stream-engine",
+          "batch-engine",
+          "quality"
+        ]
+      },
+      {
+        "id": "serving",
+        "label": "Serving and operations",
+        "description": "Curated tables, query APIs, replay controls, lineage, and monitoring.",
+        "componentIds": ["warehouse", "query", "control", "monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "stream",
+        "label": "Streaming path",
+        "description": "Source -> broker -> stateful processor -> quality checks -> curated manifest.",
+        "componentIds": [
+          "connectors",
+          "broker",
+          "stream-engine",
+          "checkpoint",
+          "quality",
+          "warehouse"
+        ]
+      },
+      {
+        "id": "batch",
+        "label": "Batch path",
+        "description": "Raw files -> scheduler -> parallel stages -> validated snapshot.",
+        "componentIds": [
+          "raw-store",
+          "scheduler",
+          "batch-engine",
+          "quality",
+          "warehouse"
+        ]
+      },
+      {
+        "id": "replay",
+        "label": "Replay path",
+        "description": "Raw data and checkpoints -> isolated run -> compare -> atomic promotion.",
+        "componentIds": [
+          "control",
+          "raw-store",
+          "stream-engine",
+          "batch-engine",
+          "warehouse"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Source clients",
+        "description": "Applications and connectors submit events or configure pipelines.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "protocol": "HTTPS, CDC, files" }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Ingestion gateway",
+        "description": "Authenticates producers, validates envelopes, and enforces quotas.",
+        "position": { "x": 360, "y": 280 },
+        "properties": { "controls": "Auth, schema, quotas" }
+      },
+      {
+        "id": "connectors",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Source connectors",
+        "description": "Reads APIs, CDC logs, queues, and files with source checkpoints.",
+        "position": { "x": 720, "y": 100 },
+        "properties": { "delivery": "Resumable" }
+      },
+      {
+        "id": "broker",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Durable event broker",
+        "description": "Buffers bursts, preserves partition order, and exposes replayable offsets.",
+        "position": { "x": 1080, "y": 280 },
+        "properties": { "delivery": "Replicated at least once" }
+      },
+      {
+        "id": "raw-store",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Raw object store",
+        "description": "Stores compressed immutable events and replay manifests.",
+        "position": { "x": 1080, "y": 600 },
+        "properties": { "retention": "90 days plus archive" }
+      },
+      {
+        "id": "metadata",
+        "type": "database",
+        "componentId": "database",
+        "label": "Pipeline catalog",
+        "description": "Stores definitions, schemas, runs, lineage, and manifests.",
+        "position": { "x": 1440, "y": 80 },
+        "properties": { "consistency": "Versioned" }
+      },
+      {
+        "id": "checkpoint",
+        "type": "database",
+        "componentId": "database",
+        "label": "Checkpoint store",
+        "description": "Stores offsets, watermarks, state snapshots, and worker leases.",
+        "position": { "x": 1440, "y": 600 },
+        "properties": { "partition": "pipeline and partition" }
+      },
+      {
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Job scheduler",
+        "description": "Schedules streaming jobs, batch stages, retries, and quotas.",
+        "position": { "x": 1800, "y": 280 },
+        "properties": { "scaling": "Lag and bytes" }
+      },
+      {
+        "id": "stream-engine",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Stateful stream engine",
+        "description": "Runs keyed transforms, windows, joins, and checkpointed state.",
+        "position": { "x": 2160, "y": 80 },
+        "properties": { "semantics": "Event time" }
+      },
+      {
+        "id": "batch-engine",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Batch execution engine",
+        "description": "Runs historical transforms and writes isolated fragments.",
+        "position": { "x": 2160, "y": 520 },
+        "properties": { "scaling": "Parallel stages" }
+      },
+      {
+        "id": "quality",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Quality and policy gates",
+        "description": "Checks schema, completeness, duplicates, privacy, and lineage.",
+        "position": { "x": 2520, "y": 280 },
+        "properties": { "policy": "Block, quarantine, warn" }
+      },
+      {
+        "id": "warehouse",
+        "type": "database",
+        "componentId": "database",
+        "label": "Curated analytical store",
+        "description": "Serves partitioned columnar tables and snapshots.",
+        "position": { "x": 2880, "y": 280 },
+        "properties": { "storage": "Columnar" }
+      },
+      {
+        "id": "query",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Query and export service",
+        "description": "Provides bounded dashboard queries and asynchronous exports.",
+        "position": { "x": 3240, "y": 280 },
+        "properties": { "latency": "Cached or async" }
+      },
+      {
+        "id": "control",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Replay and control plane",
+        "description": "Authorizes backfills, compares runs, and promotes manifests safely.",
+        "position": { "x": 2520, "y": 600 },
+        "properties": { "safety": "Fenced isolated runs" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Pipeline observability",
+        "description": "Tracks throughput, lag, watermarks, quality, cost, lineage, and retries.",
+        "position": { "x": 3240, "y": 600 },
+        "properties": { "alerts": "Freshness and quality" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Events and config",
+        "description": "Producers send events or pipeline commands."
+      },
+      {
+        "id": "gateway-broker",
+        "source": "gateway",
+        "target": "broker",
+        "type": "data-flow",
+        "label": "Durable ingest",
+        "description": "Accepted records are partitioned and replicated."
+      },
+      {
+        "id": "connectors-broker",
+        "source": "connectors",
+        "target": "broker",
+        "type": "data-flow",
+        "label": "CDC and files",
+        "description": "Connectors normalize external sources."
+      },
+      {
+        "id": "broker-raw",
+        "source": "broker",
+        "target": "raw-store",
+        "type": "data-flow",
+        "label": "Raw archive",
+        "description": "Events are compacted into replay files."
+      },
+      {
+        "id": "broker-stream",
+        "source": "broker",
+        "target": "stream-engine",
+        "type": "async",
+        "label": "Partitioned stream",
+        "description": "Workers process keyed partitions with watermarks."
+      },
+      {
+        "id": "metadata-scheduler",
+        "source": "metadata",
+        "target": "scheduler",
+        "type": "data-flow",
+        "label": "Pipeline versions",
+        "description": "Scheduler uses immutable definitions and quotas."
+      },
+      {
+        "id": "scheduler-stream",
+        "source": "scheduler",
+        "target": "stream-engine",
+        "type": "async",
+        "label": "Stream tasks",
+        "description": "Scheduler assigns and fences tasks."
+      },
+      {
+        "id": "scheduler-batch",
+        "source": "scheduler",
+        "target": "batch-engine",
+        "type": "async",
+        "label": "Batch stages",
+        "description": "Backfills are independently retryable."
+      },
+      {
+        "id": "stream-checkpoint",
+        "source": "stream-engine",
+        "target": "checkpoint",
+        "type": "data-flow",
+        "label": "Offsets and state",
+        "description": "Checkpoint commits make restart deterministic."
+      },
+      {
+        "id": "stream-quality",
+        "source": "stream-engine",
+        "target": "quality",
+        "type": "async",
+        "label": "Curated records",
+        "description": "Streaming output passes policy rules."
+      },
+      {
+        "id": "batch-raw",
+        "source": "raw-store",
+        "target": "batch-engine",
+        "type": "data-flow",
+        "label": "Historical input",
+        "description": "Batch reads immutable raw partitions."
+      },
+      {
+        "id": "batch-quality",
+        "source": "batch-engine",
+        "target": "quality",
+        "type": "async",
+        "label": "Validated fragments",
+        "description": "Batch output is checked before promotion."
+      },
+      {
+        "id": "quality-warehouse",
+        "source": "quality",
+        "target": "warehouse",
+        "type": "data-flow",
+        "label": "Committed manifest",
+        "description": "Only approved snapshots become visible."
+      },
+      {
+        "id": "warehouse-query",
+        "source": "warehouse",
+        "target": "query",
+        "type": "api-call",
+        "label": "Analytical reads",
+        "description": "Queries use curated partitions."
+      },
+      {
+        "id": "control-raw",
+        "source": "control",
+        "target": "raw-store",
+        "type": "data-flow",
+        "label": "Replay input",
+        "description": "Authorized repairs reread immutable data."
+      },
+      {
+        "id": "control-warehouse",
+        "source": "control",
+        "target": "warehouse",
+        "type": "async",
+        "label": "Promote snapshot",
+        "description": "Comparison precedes atomic promotion."
+      },
+      {
+        "id": "scheduler-monitoring",
+        "source": "scheduler",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and capacity",
+        "description": "Operations observe queues and freshness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Event time and late data",
+      "points": [
+        "Use event_time for business windows and ingestion time for operational lag.",
+        "Advance watermarks from partition progress and define allowed lateness.",
+        "Route very late records to correction tables instead of silently mutating closed aggregates."
+      ]
+    },
+    {
+      "title": "Exactly-once effects",
+      "points": [
+        "Assume at-least-once delivery and make sinks idempotent with event IDs or window versions.",
+        "Checkpoint offsets with state snapshots and fence old workers.",
+        "Use an outbox or idempotency key for external APIs."
+      ]
+    },
+    {
+      "title": "Schema and quality",
+      "points": [
+        "Keep compatible schema versions and quarantine incompatible records with reasons.",
+        "Run completeness, uniqueness, range, referential, and privacy checks.",
+        "Publish quality and lineage with the dataset manifest."
+      ]
+    },
+    {
+      "title": "Backfills and replay",
+      "points": [
+        "Read immutable raw data into isolated output versions.",
+        "Compare counts, distributions, and samples before promotion.",
+        "Throttle historical work so it cannot starve streaming freshness."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Unified versus separate engines",
+      "recommendation": "Use a common programming model while isolating streaming and batch resources.",
+      "caution": "A shared engine can let backfills compete with freshness-critical work."
+    },
+    {
+      "title": "Broker versus object retention",
+      "recommendation": "Keep short replay windows in the broker and archive compressed raw data in objects.",
+      "caution": "Object replay is cheaper but slower and needs manifest discipline."
+    },
+    {
+      "title": "Strict versus warning quality gates",
+      "recommendation": "Block security, schema, and key failures; warn on non-critical quality issues.",
+      "caution": "Overly strict gates freeze consumers while weak gates hide corruption."
+    },
+    {
+      "title": "Precompute versus raw queries",
+      "recommendation": "Precompute common aggregates and retain curated detail for flexible queries.",
+      "caution": "Each projection adds compute and freshness obligations."
+    }
+  ],
+  "commonMistakes": [
+    "Treating ingestion acknowledgement as proof every sink is updated.",
+    "Using processing time for event-time windows without a late-data policy.",
+    "Claiming broker exactly-once solves duplicate external side effects.",
+    "Letting a historical backfill consume all streaming capacity.",
+    "Dropping invalid records without quarantine or replay.",
+    "Overwriting a live table from a partial backfill."
+  ],
+  "followUps": [
+    {
+      "question": "What if one tenant creates a hot partition?",
+      "answer": "Apply quotas, salt or split the key when ordering permits, isolate its workers, and preserve ordering only where required."
+    },
+    {
+      "question": "How do you recover after state loss?",
+      "answer": "Restore the latest checkpoint and replay broker or raw offsets from a safe boundary, then compare before promotion."
+    },
+    {
+      "question": "How do you handle a breaking schema?",
+      "answer": "Quarantine the incompatible version, alert the owner, retain the payload, and activate a compatible parser after review."
+    },
+    {
+      "question": "How do consumers get a consistent result?",
+      "answer": "Expose a manifest and watermark; consumers pin a version instead of reading while fragments are promoted."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Ingestion and durability",
+      "description": "The design has durable acceptance, replayable raw data, partitioning, quotas, and clear acknowledgement semantics."
+    },
+    {
+      "criterion": "Stream and batch semantics",
+      "description": "Event time, watermarks, late data, checkpoints, backfills, and isolated execution are addressed."
+    },
+    {
+      "criterion": "Quality and governance",
+      "description": "Schema evolution, quarantine, quality gates, privacy, lineage, and atomic publication are explicit."
+    },
+    {
+      "criterion": "Reliability and operations",
+      "description": "Retries, fencing, lag, freshness, cost, recovery, and replay are observable and actionable."
+    }
+  ]
+}

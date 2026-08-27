@@ -1,0 +1,514 @@
+{
+  "prompt": {
+    "brief": "Design a distributed service that sorts datasets larger than one machine's memory and makes the sorted result available reliably to downstream consumers.",
+    "successSignals": [
+      "Choose an external-sort pipeline with bounded partitions and spill files.",
+      "Explain partitioning, shuffle, skew handling, retries, and output commit semantics.",
+      "Separate durable input and output objects from ephemeral worker state.",
+      "Define validation, cleanup, observability, and cost controls."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Accept a dataset and sort key or comparator.",
+      "Split, sort, shuffle, merge, and publish a sorted result.",
+      "Support CSV, JSONL, and binary records with schema validation.",
+      "Expose job status, progress, cancellation, retry, and result download APIs."
+    ],
+    "nonFunctional": [
+      "Never require the complete dataset in one worker's memory.",
+      "Make task retries safe and publish outputs atomically only after validation.",
+      "Scale workers with input size while bounding shuffle amplification and hot partitions.",
+      "Preserve tenant isolation, encryption, retention, and auditability."
+    ],
+    "scaleAssumptions": [
+      "Datasets range from 100 GB to 100 TB.",
+      "Input arrives in object storage and records have a stable sortable key.",
+      "A job may use thousands of workers and produce many output shards.",
+      "Most jobs are batch workloads with a completion SLO rather than interactive latency."
+    ],
+    "metrics": [
+      {
+        "label": "Input throughput",
+        "value": ">=2 GB/s",
+        "description": "Aggregate scan throughput across workers for large jobs."
+      },
+      {
+        "label": "Shuffle amplification",
+        "value": "<2x",
+        "description": "Track bytes written and read during partition exchange."
+      },
+      {
+        "label": "Job completion",
+        "value": "p95 <30 min",
+        "description": "Target for a representative 10 TB sort with provisioned capacity."
+      },
+      {
+        "label": "Failed task retry rate",
+        "value": "<1%",
+        "description": "Detect bad partitions, transient storage errors, and skew."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "SortJob",
+      "fields": [
+        "job_id",
+        "tenant_id",
+        "input_uri",
+        "sort_spec",
+        "state",
+        "created_at",
+        "output_manifest"
+      ],
+      "notes": "The job record is the durable state machine and owns cancellation and retention."
+    },
+    {
+      "name": "Partition",
+      "fields": [
+        "job_id",
+        "partition_id",
+        "range",
+        "input_bytes",
+        "checksum",
+        "state"
+      ],
+      "notes": "Partitions are immutable work units and can be recomputed from source data."
+    },
+    {
+      "name": "TaskAttempt",
+      "fields": [
+        "task_id",
+        "partition_id",
+        "worker_id",
+        "attempt",
+        "state",
+        "heartbeat_at"
+      ],
+      "notes": "Attempts use leases and fencing so a slow worker cannot commit over a newer attempt."
+    },
+    {
+      "name": "OutputManifest",
+      "fields": [
+        "job_id",
+        "shard_uris",
+        "record_count",
+        "min_key",
+        "max_key",
+        "checksum",
+        "committed_at"
+      ],
+      "notes": "Consumers read the manifest only after the final atomic commit."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/sort-jobs",
+      "contract": "{ inputUri, format, sortKeys, outputFormat, requestId } -> { jobId, state }",
+      "notes": "Validate ownership, schema, and quotas before creating an idempotent job."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/sort-jobs/{jobId}",
+      "contract": "{ state, progress, counters, outputManifest, error }",
+      "notes": "Return stage-level progress and the last durable checkpoint."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sort-jobs/{jobId}/cancel",
+      "contract": "{ requestId } -> { state }",
+      "notes": "Cancel queued work and fence running attempts before cleanup."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/sort-jobs/{jobId}/result",
+      "contract": "redirect or { manifestUri, expiresAt }",
+      "notes": "Authorize access and issue signed URLs only for committed manifests."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Register the sort job",
+      "description": "The API validates the input manifest, comparator, tenant quota, and idempotency key, then writes a pending job."
+    },
+    {
+      "title": "Sample and partition",
+      "description": "Workers scan keys or use range sampling to create balanced partition boundaries without loading all records in memory."
+    },
+    {
+      "title": "Spill sorted runs",
+      "description": "Each mapper sorts bounded chunks in memory and writes checksummed run files to durable temporary storage."
+    },
+    {
+      "title": "Shuffle and merge",
+      "description": "Partitioned runs are co-located with reducers, which perform streaming k-way merges and write immutable output shards."
+    },
+    {
+      "title": "Commit the output manifest",
+      "description": "A validator checks shard ordering, counts, and checksums, then atomically marks one manifest committed and schedules cleanup."
+    }
+  ],
+  "architecture": {
+    "title": "External sort reference architecture",
+    "summary": "A durable job coordinator schedules partition, sort, shuffle, and merge work over object storage while a manifest service publishes one validated result.",
+    "layers": [
+      {
+        "id": "api",
+        "label": "Control plane",
+        "description": "Clients submit jobs and inspect progress.",
+        "componentIds": ["client", "gateway", "coordinator", "job-db"]
+      },
+      {
+        "id": "data",
+        "label": "Data plane",
+        "description": "Workers stream source data and exchange immutable runs.",
+        "componentIds": [
+          "object-store",
+          "scheduler",
+          "sorters",
+          "shuffle",
+          "reducers"
+        ]
+      },
+      {
+        "id": "ops",
+        "label": "Reliability plane",
+        "description": "Events, validation, cleanup, metrics, and audit operate independently.",
+        "componentIds": ["events", "validator", "cleanup", "monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "submit",
+        "label": "Submit job",
+        "description": "Client -> gateway -> coordinator -> durable job state.",
+        "componentIds": ["client", "gateway", "coordinator", "job-db"]
+      },
+      {
+        "id": "sort",
+        "label": "Sort pipeline",
+        "description": "Input objects -> partition workers -> shuffle runs -> reducers -> output objects.",
+        "componentIds": ["object-store", "sorters", "shuffle", "reducers"]
+      },
+      {
+        "id": "publish",
+        "label": "Publish result",
+        "description": "Reducer outputs -> validator -> committed manifest -> signed download.",
+        "componentIds": ["reducers", "validator", "coordinator", "object-store"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Batch clients",
+        "description": "Submit and monitor sort jobs.",
+        "position": { "x": 0, "y": 280 },
+        "properties": { "protocol": "HTTPS" }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "Job API",
+        "description": "Authenticates tenants, applies quotas, and validates requests.",
+        "position": { "x": 320, "y": 280 },
+        "properties": { "controls": "Auth and quotas" }
+      },
+      {
+        "id": "coordinator",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Job coordinator",
+        "description": "Owns state transitions, checkpoints, leases, and output commit.",
+        "position": { "x": 680, "y": 280 },
+        "properties": { "consistency": "Fenced state machine" }
+      },
+      {
+        "id": "job-db",
+        "type": "database",
+        "componentId": "database",
+        "label": "Job metadata store",
+        "description": "Stores jobs, partitions, task attempts, and manifests.",
+        "position": { "x": 1040, "y": 280 },
+        "properties": { "partition": "tenant_id and job_id" }
+      },
+      {
+        "id": "object-store",
+        "type": "file-storage",
+        "componentId": "file-storage",
+        "label": "Object storage",
+        "description": "Stores input, spill runs, output shards, and manifests.",
+        "position": { "x": 1040, "y": 40 },
+        "properties": { "durability": "Versioned and checksummed" }
+      },
+      {
+        "id": "scheduler",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Task scheduler",
+        "description": "Places partition and merge tasks according to capacity and locality.",
+        "position": { "x": 1400, "y": 280 },
+        "properties": { "scaling": "Queue depth and bytes" }
+      },
+      {
+        "id": "sorters",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Partition sorters",
+        "description": "Stream records, sort bounded runs, and spill them durably.",
+        "position": { "x": 1760, "y": 40 },
+        "properties": { "memory": "Bounded buffer" }
+      },
+      {
+        "id": "shuffle",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Shuffle index",
+        "description": "Tracks partition ranges and run locations; data remains in object storage.",
+        "position": { "x": 1760, "y": 280 },
+        "properties": { "delivery": "At least once metadata" }
+      },
+      {
+        "id": "reducers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Merge reducers",
+        "description": "Perform streaming k-way merges and write immutable output shards.",
+        "position": { "x": 2120, "y": 40 },
+        "properties": { "algorithm": "Streaming k-way merge" }
+      },
+      {
+        "id": "events",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Job event stream",
+        "description": "Publishes progress, failure, cancellation, and completion events.",
+        "position": { "x": 1760, "y": 600 },
+        "properties": { "retention": "Replayable" }
+      },
+      {
+        "id": "validator",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Output validator",
+        "description": "Checks ordering, counts, checksums, and manifest completeness.",
+        "position": { "x": 2480, "y": 280 },
+        "properties": { "policy": "No partial publish" }
+      },
+      {
+        "id": "cleanup",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Cleanup workers",
+        "description": "Delete temporary runs after retention and recover abandoned jobs.",
+        "position": { "x": 2480, "y": 600 },
+        "properties": { "scaling": "Due-time queue" }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Sort observability",
+        "description": "Tracks throughput, skew, shuffle, retries, stragglers, and storage cost.",
+        "position": { "x": 2840, "y": 280 },
+        "properties": { "alerts": "SLO and cost drift" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Job commands",
+        "description": "Create, inspect, cancel, and download requests."
+      },
+      {
+        "id": "gateway-coordinator",
+        "source": "gateway",
+        "target": "coordinator",
+        "type": "api-call",
+        "label": "Validated job",
+        "description": "The coordinator owns the durable workflow."
+      },
+      {
+        "id": "coordinator-db",
+        "source": "coordinator",
+        "target": "job-db",
+        "type": "data-flow",
+        "label": "Job state",
+        "description": "State transitions and leases are conditional and fenced."
+      },
+      {
+        "id": "coordinator-scheduler",
+        "source": "coordinator",
+        "target": "scheduler",
+        "type": "async",
+        "label": "Task plan",
+        "description": "The scheduler receives partition and merge work."
+      },
+      {
+        "id": "sorters-objects",
+        "source": "sorters",
+        "target": "object-store",
+        "type": "data-flow",
+        "label": "Input and runs",
+        "description": "Workers stream input and write checksummed spill files."
+      },
+      {
+        "id": "scheduler-sorters",
+        "source": "scheduler",
+        "target": "sorters",
+        "type": "async",
+        "label": "Partition tasks",
+        "description": "Leased attempts can be retried safely."
+      },
+      {
+        "id": "shuffle-reducers",
+        "source": "shuffle",
+        "target": "reducers",
+        "type": "data-flow",
+        "label": "Run locations",
+        "description": "Reducers discover immutable runs by partition."
+      },
+      {
+        "id": "reducers-objects",
+        "source": "reducers",
+        "target": "object-store",
+        "type": "data-flow",
+        "label": "Output shards",
+        "description": "Reducers write immutable sorted shards."
+      },
+      {
+        "id": "reducers-validator",
+        "source": "reducers",
+        "target": "validator",
+        "type": "async",
+        "label": "Validate output",
+        "description": "Validation precedes publication."
+      },
+      {
+        "id": "validator-coordinator",
+        "source": "validator",
+        "target": "coordinator",
+        "type": "data-flow",
+        "label": "Commit decision",
+        "description": "Only one complete manifest is committed."
+      },
+      {
+        "id": "coordinator-events",
+        "source": "coordinator",
+        "target": "events",
+        "type": "async",
+        "label": "Progress events",
+        "description": "Consumers update dashboards and cleanup schedules."
+      },
+      {
+        "id": "events-cleanup",
+        "source": "events",
+        "target": "cleanup",
+        "type": "async",
+        "label": "Retention work",
+        "description": "Temporary data is removed after safe completion."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Partition balance and skew",
+      "points": [
+        "Use sampling or histograms to select range boundaries.",
+        "Split oversized partitions and use multiple reducers for hot ranges.",
+        "Track bytes and records, because equal record counts can hide very different sizes."
+      ]
+    },
+    {
+      "title": "Retries and speculative execution",
+      "points": [
+        "Write attempt-specific immutable paths and commit through a conditional task record.",
+        "Fence stale workers with leases and attempt numbers.",
+        "Speculate only stragglers after accounting for storage and network contention."
+      ]
+    },
+    {
+      "title": "Output correctness",
+      "points": [
+        "Validate adjacent shard boundaries and per-shard checksums.",
+        "Publish a manifest pointer atomically instead of exposing a partially written directory.",
+        "Keep failed output invisible and clean it after a grace period."
+      ]
+    },
+    {
+      "title": "Cost controls",
+      "points": [
+        "Compress runs, colocate reducers with storage, and cap concurrent jobs per tenant.",
+        "Use lifecycle tiers for temporary data and delete it after the manifest is committed.",
+        "Expose bytes scanned, shuffled, written, and retried to callers."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Range versus hash partitioning",
+      "recommendation": "Use sampled range partitioning when globally sorted output is required.",
+      "caution": "Skewed keys require adaptive splitting and can create boundary complexity."
+    },
+    {
+      "title": "Managed engine versus custom workers",
+      "recommendation": "Prefer a managed distributed execution engine unless custom ordering or isolation requirements justify ownership.",
+      "caution": "A custom engine adds scheduler, recovery, and capacity responsibilities."
+    },
+    {
+      "title": "Materialized output versus streaming",
+      "recommendation": "Materialize validated shards for repeatable batch consumption.",
+      "caution": "Materialization costs storage and delays first results compared with streaming."
+    }
+  ],
+  "commonMistakes": [
+    "Loading the complete dataset into one process.",
+    "Using record counts instead of bytes to balance partitions.",
+    "Letting stale task attempts overwrite successful output.",
+    "Publishing a directory before all shards are validated.",
+    "Keeping spill data forever or ignoring shuffle cost."
+  ],
+  "followUps": [
+    {
+      "question": "What if one key owns half the dataset?",
+      "answer": "Detect the hot range from sampling, split it into subranges using a secondary tie-breaker, and merge those subranges while preserving the total order."
+    },
+    {
+      "question": "How do you resume after coordinator failure?",
+      "answer": "Persist the job state, partition manifests, leases, and committed attempts; reconstruct runnable work from the last durable checkpoint."
+    },
+    {
+      "question": "Can consumers read results while the job runs?",
+      "answer": "Only expose explicitly marked complete shards with a snapshot boundary; otherwise consumers should use the final manifest for a consistent result."
+    },
+    {
+      "question": "How do you cancel safely?",
+      "answer": "Fence new commits, stop scheduling, let workers checkpoint or abort, and retain source data until all attempts are accounted for."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "External sorting fundamentals",
+      "description": "The answer explains bounded memory, spill runs, partitioning, shuffle, and streaming merge."
+    },
+    {
+      "criterion": "Distributed correctness",
+      "description": "Retries, leases, fencing, checksums, and atomic manifest publication are covered."
+    },
+    {
+      "criterion": "Scale and cost",
+      "description": "The design handles skew, stragglers, throughput, storage lifecycle, and tenant quotas."
+    },
+    {
+      "criterion": "Operations",
+      "description": "Progress, cancellation, recovery, cleanup, and meaningful metrics are explicit."
+    }
+  ]
+}

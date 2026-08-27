@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design an ML-driven dynamic pricing engine that updates prices from demand, competition, inventory, cost, and policy signals while protecting margin, fairness, and price stability.",
+    "successSignals": [
+      "Separate authoritative catalog, cost, inventory, and pricing policy from model predictions, experiments, and cached offers.",
+      "Version features and models, cap exploration, smooth price changes, and enforce floors, ceilings, currencies, and regional rules.",
+      "Publish a price decision with reason, model version, and expiry so checkout can validate the quote and avoid stale surprises.",
+      "Explain delayed competitor data, demand shocks, causal evaluation, rollback, fairness, auditability, and safe fallback pricing."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Ingest sales, inventory, cost, competitor, promotion, and segment signals and calculate a versioned price recommendation.",
+      "Serve current price and quote details, publish scheduled updates, run controlled experiments, and expose dashboards and explanations.",
+      "Support price overrides, approval workflows, rollback, market-specific policy, stale-data handling, and audit history."
+    ],
+    "nonFunctional": [
+      "Propagate material demand changes to eligible prices within five minutes and keep checkout quote validation below 100 ms.",
+      "Price millions of SKU-market combinations with per-market partitions and isolated hot products or promotions.",
+      "Make feature ingestion, model scoring, price publication, and experiment assignment idempotent and explainable.",
+      "Fall back to the last approved rule-based price when models, competitor feeds, or inventory signals are stale."
+    ],
+    "scaleAssumptions": [
+      "Support 10 million SKU-market series, 100,000 price reads per second, and frequent promotion bursts.",
+      "Partition by market, SKU, and time; isolate hot products and prevent one competitor feed from blocking all updates.",
+      "Retain signed price decisions, features, model versions, policies, and overrides while bounding live price caches."
+    ],
+    "metrics": [
+      {
+        "label": "Peak scale",
+        "value": "Provide pricing dashboards",
+        "description": "Capacity assumption that drives partitioning and backpressure."
+      },
+      {
+        "label": "Latency target",
+        "value": "Price updates within 5 minutes of demand changes",
+        "description": "User-facing budget for the primary request or read path."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "The source of truth is Predict demand elasticity per product; Monitor competitor prices in real-time."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep Use price elasticity models (log-linear demand curves), Implement contextual bandits for exploration vs exploitation, Use causal inference to estimate price sensitivity off the synchronous path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Design a Dynamic Pricing Engine",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Predict demand elasticity per product; Monitor competitor prices in real-time; design keys around the main reads and writes."
+    },
+    {
+      "name": "design-a-dynamic-pricing event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Predict demand elasticity per product command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept Predict demand elasticity per product",
+      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+    },
+    {
+      "title": "Commit the durable state",
+      "description": "The pricing service records a versioned pricing decision request and policy context before publication."
+    },
+    {
+      "title": "Publish the domain event",
+      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+    },
+    {
+      "title": "Build the read model",
+      "description": "Partitioned workers process Use price elasticity models (log-linear demand curves), Implement contextual bandits for exploration vs exploitation, Use causal inference to estimate price sensitivity, update projections, and expose lag or watermark metadata."
+    },
+    {
+      "title": "Serve and recover asynchronously",
+      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+    }
+  ],
+  "architecture": {
+    "title": "Design an ML-driven dynamic pricing engine that optimizes prices in real-time based on demand, competition, inventory levels, and customer segments to maximize revenue. reference architecture",
+    "summary": "The authoritative state records Predict demand elasticity per product; asynchronous workers build serving projections while Use price elasticity models (log-linear demand curves), Implement contextual bandits for exploration vs exploitation, Use causal inference to estimate price sensitivity stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Catalog/inventory context, competitor observations, pricing policies, experiments, decisions, and audit events.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Merchants inspect prices, recommendations, elasticity evidence, policy status, and experiment outcomes.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns pricing policy, eligibility, constraints, authorization, decision versions, and publication contracts.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores Predict demand elasticity per product; Monitor competitor prices in real-time and supports the primary access patterns.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Design a Dynamic Pricing Engine"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes price decisions, competitor changes, experiment assignments, overrides, and realized outcomes.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Computes elasticity/scenarios, evaluates constraints, detects changes, and updates recommendations asynchronously.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves current prices, policy explanations, recommendation evidence, and decision freshness.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Price updates within 5 minutes of demand changes"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client requests a price/recommendation or updates a product policy/override."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "Commits the pricing decision context and idempotency key before downstream publication."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers refresh signals, run scenarios, evaluate experiments, and publish bounded price projections."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "Returns a price, policy/model version, constraints, evidence, and freshness metadata."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Consistency and idempotency",
+      "points": [
+        "Define which state is strongly consistent and which projection is eventually consistent.",
+        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
+        "Return version and observedAt so clients can reason about freshness."
+      ]
+    },
+    {
+      "title": "Partitioning and hot keys",
+      "points": [
+        "Partition by the access pattern implied by Design an ML-driven dynamic pricing engine that optimizes prices in real-time based on demand, competition, inventory levels, and customer segments to maximize revenue., then isolate hot tenants, users, items, or regions.",
+        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
+        "Keep a replay or reconciliation path for projection drift and partial failures."
+      ]
+    },
+    {
+      "title": "Failure and recovery",
+      "points": [
+        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
+        "Retain durable records for replay; treat Use price elasticity models (log-linear demand curves), Implement contextual bandits for exploration vs exploitation, Use causal inference to estimate price sensitivity as independently retryable.",
+        "Measure latency, backlog, freshness, error rate, and correctness drift."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines price decisions, elasticity, constraints, experiments, scale, durability, and failure contracts."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and product/segment/policy keys support pricing, competition, inventory, experiments, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}

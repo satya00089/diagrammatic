@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design a multimodal data-labeling platform for image, text, and audio tasks with collaborative workflows, consensus quality controls, active-learning prioritization, and exportable dataset versions.",
+    "successSignals": [
+      "Define immutable source items, task schemas, annotation versions, assignments, consensus, adjudication, quality scores, and dataset snapshots.",
+      "Support concurrent annotation without lost work, model-assisted suggestions, gold tasks, reviewer queues, disagreement handling, and active learning.",
+      "Separate asset storage and task orchestration from browser collaboration, quality analytics, model training, and export pipelines.",
+      "Explain tenant isolation, PII/access controls, moderation, auditability, retries, recovery, observability, and offline/degraded annotation."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Create multimodal projects and schemas, import assets, assign tasks, annotate collaboratively, validate labels, adjudicate conflicts, and export versions.",
+      "Provide pre-label suggestions, gold questions, reviewer workflows, throughput/quality dashboards, active-learning queues, and incremental exports.",
+      "Support task lease expiry, annotation history, asset deletion, dataset rollback, annotator permissions, and recovery after browser/worker failure."
+    ],
+    "nonFunctional": [
+      "Persist annotation changes with conflict-safe versions and update task/quality status quickly for active annotators.",
+      "Scale to 10k concurrent annotators and 100M assets without a single hot key or unbounded synchronous work.",
+      "Do not lose committed state; make retries and duplicate events safe.",
+      "Degrade safely when downstream workers, caches, or external dependencies fail."
+    ],
+    "scaleAssumptions": [
+      "100M assets, 10k concurrent annotators, and multimodal projects",
+      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
+      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+    ],
+    "metrics": [
+      {
+        "label": "Peak scale",
+        "value": "100M assets; 10k annotators",
+        "description": "Capacity assumption that drives partitioning and backpressure."
+      },
+      {
+        "label": "Latency target",
+        "value": "annotation save p95 < 500ms",
+        "description": "User-facing budget for the primary request or read path."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "Versioned annotations and dataset manifests are authoritative; task queues, suggestions, and dashboards are derived."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions off the synchronous path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Design a Data Labeling and Annotation Platform",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Support image bounding box, polygon, and segmentation annotations; Handle text classification, NER, and relation labeling; design keys around the main reads and writes."
+    },
+    {
+      "name": "design-a-data-labeling-and-annotation event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Support image bounding box, polygon, and segmentation annotations command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept Support image bounding box, polygon, and segmentation annotations",
+      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+    },
+    {
+      "title": "Commit the durable state",
+      "description": "The service validates and durably records Support image bounding box, polygon, and segmentation annotations; Handle text classification, NER, and relation labeling before acknowledging the client."
+    },
+    {
+      "title": "Publish the domain event",
+      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+    },
+    {
+      "title": "Build the read model",
+      "description": "Partitioned workers process Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions, update projections, and expose lag or watermark metadata."
+    },
+    {
+      "title": "Serve and recover asynchronously",
+      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+    }
+  ],
+  "architecture": {
+    "title": "Design a data labeling platform that supports image, text, and audio annotation, manages labeling workflows, ensures label quality, and provides active learning-based sample selection. reference architecture",
+    "summary": "The authoritative state records Support image bounding box, polygon, and segmentation annotations; asynchronous workers build serving projections while Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Durable state for Support image bounding box, polygon, and segmentation annotations; Handle text classification, NER, and relation labeling supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Clients use the Support image bounding box, polygon, and segmentation annotations workflow and receive explicit status, freshness, or progress.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns the Support image bounding box, polygon, and segmentation annotations command, authorization policy, lifecycle state, and client contract.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores Support image bounding box, polygon, and segmentation annotations; Handle text classification, NER, and relation labeling and supports the primary access patterns.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Design a Data Labeling and Annotation Platform"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes versioned events for Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions after durable commits.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Workers process Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions independently from the user-facing command and retry transient failures.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves low-latency views for Design a Data Labeling and Annotation Platform with explicit freshness and fallback behavior.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Support 100+ concurrent annotators"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client submits Support image bounding box, polygon, and segmentation annotations through the authenticated request boundary."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "Commits Support image bounding box, polygon, and segmentation annotations; Handle text classification, NER, and relation labeling before downstream asynchronous work."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers handle Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions with bounded retries and idempotent updates."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "Returns the latest acceptable result within Support 100+ concurrent annotators."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Consistency and idempotency",
+      "points": [
+        "Define which state is strongly consistent and which projection is eventually consistent.",
+        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
+        "Return version and observedAt so clients can reason about freshness."
+      ]
+    },
+    {
+      "title": "Partitioning and hot keys",
+      "points": [
+        "Partition by the access pattern implied by Design a data labeling platform that supports image, text, and audio annotation, manages labeling workflows, ensures label quality, and provides active learning-based sample selection., then isolate hot tenants, users, items, or regions.",
+        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
+        "Keep a replay or reconciliation path for projection drift and partial failures."
+      ]
+    },
+    {
+      "title": "Failure and recovery",
+      "points": [
+        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
+        "Retain durable records for replay; treat Use Label Studio or CVAT as open-source base, Implement active learning for intelligent sample selection, Use pre-trained models for label suggestions as independently retryable.",
+        "Measure latency, backlog, freshness, error rate, and correctness drift."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines the Support image bounding box, polygon, and segmentation annotations workflow, scale, latency, durability, and failure contract."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and keys support Design a data labeling platform that supports image, text, and audio annotation, manages labeling workflows, ensures label quality, and provides active learning-based sample selection., authorization, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}

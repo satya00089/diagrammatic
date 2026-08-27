@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design a distributed tracing platform that propagates trace context across services, collects spans with low application overhead, samples intelligently, and supports fast latency and dependency analysis.",
+    "successSignals": [
+      "Define trace and span identity, parentage, propagation, status, resource attributes, links, and clock-skew handling.",
+      "Buffer and batch spans at agents, apply head or tail sampling, cap high-cardinality attributes, and partition by trace ID.",
+      "Keep instrumentation non-blocking and preserve enough sampled evidence to diagnose tail latency and errors.",
+      "Explain partial traces, collector overload, late spans, retention, tenant privacy, indexing, and query cost."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Propagate context, create spans, collect batches, sample traces, store searchable data, and query a trace or service dependency.",
+      "Show waterfall timing, errors, exemplars, service maps, latency percentiles, sampling decisions, and incomplete-span warnings.",
+      "Support tenant access, PII redaction, retention policies, trace deletion, collector health, and export to incident tools."
+    ],
+    "nonFunctional": [
+      "Keep synchronous instrumentation overhead below 1% and target p95 query latency below 2 seconds for recent traces.",
+      "Ingest 10 billion spans per day with agent batching, sampling, compression, and trace-ID partitioning.",
+      "Make collector retries and batch ingestion deduplicable while distinguishing incomplete traces from healthy short traces.",
+      "Drop or sample low-value spans under pressure but preserve error, latency-tail, and policy-required traces."
+    ],
+    "scaleAssumptions": [
+      "Collect 10 billion spans per day from 100,000 services with bursts during incidents.",
+      "Partition by tenant, trace ID, and event time; isolate high-cardinality services and incident surges.",
+      "Retain recent indexed spans and lower-cost raw archives under tenant-specific retention and privacy policy."
+    ],
+    "metrics": [
+      {
+        "label": "Peak scale",
+        "value": "Handle billions of spans per day",
+        "description": "Capacity assumption that drives partitioning and backpressure."
+      },
+      {
+        "label": "Latency target",
+        "value": "Low overhead on application performance",
+        "description": "User-facing budget for the primary request or read path."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "The source of truth is Trace requests across distributed services; Capture timing and latency information."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep Trace ID and span ID propagation, Sampling strategies (head-based, tail-based), Time-series storage for spans off the synchronous path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Design a Distributed Tracing System",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Trace requests across distributed services; Capture timing and latency information; design keys around the main reads and writes."
+    },
+    {
+      "name": "design-a-distributed-tracing event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Trace requests across distributed services command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept Trace requests across distributed services",
+      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+    },
+    {
+      "title": "Commit the durable state",
+      "description": "The ingestion path validates tenant policy and durably records the request context before acknowledging the client."
+    },
+    {
+      "title": "Publish the domain event",
+      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+    },
+    {
+      "title": "Build the read model",
+      "description": "Partitioned workers process Trace ID and span ID propagation, Sampling strategies (head-based, tail-based), Time-series storage for spans, update projections, and expose lag or watermark metadata."
+    },
+    {
+      "title": "Serve and recover asynchronously",
+      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+    }
+  ],
+  "architecture": {
+    "title": "Design a system to trace requests across microservices for debugging and performance monitoring. reference architecture",
+    "summary": "The authoritative state records Trace requests across distributed services; asynchronous workers build serving projections while Trace ID and span ID propagation, Sampling strategies (head-based, tail-based), Time-series storage for spans stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Durable trace and span records support replay, retention, deletion, and consistency checks.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Clients and agents propagate context, submit spans, and query traces, service maps, and latency evidence.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns trace-context validation, tenant policy, sampling configuration, and query contracts.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores trace metadata, span batches, sampling decisions, indexes, and retention markers.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Design a Distributed Tracing System"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes span batches, sampling decisions, trace completion, and retention events with deduplication.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Collectors batch, compress, sample, index, and archive spans independently from application requests.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves trace waterfalls, dependency graphs, and recent-span queries from indexed projections.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Low overhead on application performance"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Instrumented services propagate trace context and send batched spans to collectors."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "The ingestion layer durably accepts the span batch before asynchronous indexing and aggregation."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers assemble traces, apply tail-sampling decisions, build indexes, and archive raw spans."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "The query path returns recent trace evidence within the interactive investigation latency target."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Consistency and idempotency",
+      "points": [
+        "Define which state is strongly consistent and which projection is eventually consistent.",
+        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
+        "Return version and observedAt so clients can reason about freshness."
+      ]
+    },
+    {
+      "title": "Partitioning and hot keys",
+      "points": [
+        "Partition by the access pattern implied by Design a system to trace requests across microservices for debugging and performance monitoring., then isolate hot tenants, users, items, or regions.",
+        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
+        "Keep a replay or reconciliation path for projection drift and partial failures."
+      ]
+    },
+    {
+      "title": "Failure and recovery",
+      "points": [
+        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
+        "Retain durable records for replay; treat Trace ID and span ID propagation, Sampling strategies (head-based, tail-based), Time-series storage for spans as independently retryable.",
+        "Measure latency, backlog, freshness, error rate, and correctness drift."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines propagation, ingestion, sampling, indexing, query behavior, scale, privacy, and recovery."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and keys cover tenants, traces, spans, batches, sampling policies, indexes, and retention state."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}

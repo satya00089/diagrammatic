@@ -1,0 +1,439 @@
+{
+  "prompt": {
+    "brief": "Design a multimodal conversational AI application that accepts text, images, and speech, retrieves grounded knowledge, understands intent, and answers users reliably at scale.",
+    "successSignals": [
+      "Separate conversation state, tenant knowledge sources, document chunks, embeddings, prompts, and model outputs.",
+      "Keep p95 response latency below two seconds with bounded retrieval, token budgets, streaming output, and model fallbacks.",
+      "Ground answers in authorized knowledge and defend against prompt injection, data leakage, abuse, and hallucination.",
+      "Make model calls, tool calls, safety filters, evaluation, and usage accounting observable and retry-safe."
+    ]
+  },
+  "requirements": {
+    "functional": [
+      "Create assistants, upload authorized knowledge, and configure supported text, image, speech, tools, and model policies.",
+      "Accept a user turn, classify intent, retrieve relevant context, generate a cited response, and stream partial output.",
+      "Store conversation history, feedback, safety decisions, token usage, traces, and evaluation results with tenant isolation."
+    ],
+    "nonFunctional": [
+      "Target p95 time to first token below 500 ms and p95 completed response below 2 seconds for normal turns.",
+      "Scale conversation traffic and embedding/index updates without unbounded prompt size or a hot tenant.",
+      "Do not lose committed turns or audit events; make model retries and tool calls idempotent where possible.",
+      "Degrade to a smaller model, cached retrieval, or an explicit unavailable response when dependencies fail."
+    ],
+    "scaleAssumptions": [
+      "Support 100K concurrent conversations, 10K model requests per second, and millions of indexed documents.",
+      "Partition conversation state by tenant and conversation; shard embeddings by collection and isolate large tenants.",
+      "Bound history and retrieved context in prompts while retaining encrypted audit and evaluation data for replay."
+    ],
+    "metrics": [
+      {
+        "label": "Peak model traffic",
+        "value": "10K requests/s",
+        "description": "Drives model quotas, admission control, prompt budgets, and concurrency pools."
+      },
+      {
+        "label": "Response latency",
+        "value": "p95 <=2s",
+        "description": "Completed response target; time to first token is separately tracked."
+      },
+      {
+        "label": "Durable boundary",
+        "value": "Committed before async",
+        "description": "The source of truth is the committed conversation turn, assistant policy, and knowledge version."
+      },
+      {
+        "label": "Async boundary",
+        "value": "At-least-once workers",
+        "description": "Keep indexing, evaluation, analytics, and long-running tool work off the synchronous response path."
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Build a Cognitive AI Application",
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
+      "notes": "Durable model for Implement conversational AI bot; Understand natural language; design keys around the main reads and writes."
+    },
+    {
+      "name": "build-a-cognitive-ai-application event",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Policy and configuration",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    },
+    {
+      "name": "Read model",
+      "fields": ["id", "source_id", "version", "occurred_at", "status"],
+      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+    }
+  ],
+  "apis": [
+    {
+      "method": "POST",
+      "path": "/v1/commands",
+      "contract": "{ requestId, input } -> { id, status }",
+      "notes": "Authenticate and validate the Implement conversational AI bot command, then commit it idempotently."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources/{id}",
+      "contract": "{ resource, status, version, observedAt }",
+      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+    },
+    {
+      "method": "GET",
+      "path": "/v1/resources?cursor=&limit=",
+      "contract": "{ items[], nextCursor }",
+      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/jobs",
+      "contract": "{ type, input } -> { jobId, status }",
+      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+    }
+  ],
+  "dataFlow": [
+    {
+      "title": "Accept and persist the user turn",
+      "description": "The gateway authenticates the tenant and user, enforces quotas, stores the user turn with an idempotency key, and creates a trace context."
+    },
+    {
+      "title": "Select context and tools",
+      "description": "The orchestrator classifies intent, applies assistant policy, retrieves only authorized chunks, and selects tools within a bounded token and time budget."
+    },
+    {
+      "title": "Generate a grounded response",
+      "description": "A model gateway calls the selected model with citations and safety instructions, streams tokens, validates tool results, and records the model version and usage."
+    },
+    {
+      "title": "Process knowledge and evaluation asynchronously",
+      "description": "Workers chunk and embed documents, update the vector index, run safety and quality evaluations, and publish freshness and ingestion status without blocking chat responses."
+    },
+    {
+      "title": "Reconcile, audit, and recover asynchronously",
+      "description": "The system records feedback, traces, moderation outcomes, and cost metrics; retries transient model calls and replays indexing from durable documents."
+    }
+  ],
+  "architecture": {
+    "title": "Design an AI application that processes text, images, and speech, provides conversational AI, understands user intent, and answers questions from knowledge bases. reference architecture",
+    "summary": "The authoritative state records Implement conversational AI bot; asynchronous workers build serving projections while Bot Service for bot framework, LUIS for language understanding, QnA Maker for knowledge base stays isolated from the request path.",
+    "layers": [
+      {
+        "id": "experience",
+        "label": "Experience",
+        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "componentIds": ["client", "gateway", "service"]
+      },
+      {
+        "id": "source",
+        "label": "Source of truth",
+        "description": "Durable conversation turns, assistant policy, knowledge versions, tool outcomes, and replayable events.",
+        "componentIds": ["source", "stream"]
+      },
+      {
+        "id": "processing",
+        "label": "Processing and serving",
+        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
+      },
+      {
+        "id": "operations",
+        "label": "Operations",
+        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
+      }
+    ],
+    "keyPaths": [
+      {
+        "id": "critical",
+        "label": "Critical request path",
+        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
+      },
+      {
+        "id": "async",
+        "label": "Async projection path",
+        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
+      }
+    ],
+    "components": [
+      {
+        "id": "client",
+        "type": "client",
+        "componentId": "web-app",
+        "label": "Clients",
+        "description": "Clients start conversations, stream responses, and render citations, tool progress, and usage status.",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "properties": {
+          "protocol": "HTTPS or streaming API"
+        }
+      },
+      {
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "position": {
+          "x": 360,
+          "y": 260
+        },
+        "properties": {
+          "protection": "Auth, validation, rate limits"
+        }
+      },
+      {
+        "id": "service",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Core service",
+        "description": "Owns conversation turns, authorization, safety policy, tool contracts, and response orchestration.",
+        "position": {
+          "x": 720,
+          "y": 260
+        },
+        "properties": {
+          "consistency": "Idempotent command handling"
+        }
+      },
+      {
+        "id": "source",
+        "type": "database",
+        "componentId": "database",
+        "label": "Durable source of truth",
+        "description": "Stores conversation history, policy/configuration, knowledge manifests, tool outcomes, and response metadata.",
+        "position": {
+          "x": 1080,
+          "y": 260
+        },
+        "properties": {
+          "storage": "Build a Cognitive AI Application"
+        }
+      },
+      {
+        "id": "stream",
+        "type": "message-broker",
+        "componentId": "message-broker",
+        "label": "Event stream",
+        "description": "Publishes versioned domain events after durable commits so consumers can retry safely.",
+        "position": {
+          "x": 1440,
+          "y": 100
+        },
+        "properties": {
+          "delivery": "At least once with dedupe"
+        }
+      },
+      {
+        "id": "workers",
+        "type": "microservice",
+        "componentId": "backend-server",
+        "label": "Async workers",
+        "description": "Chunks/embeds knowledge, evaluates safety, processes feedback, and runs long tools independently from chat.",
+        "position": {
+          "x": 1800,
+          "y": 100
+        },
+        "properties": {
+          "scaling": "Partitioned workers"
+        }
+      },
+      {
+        "id": "read-model",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Read model / cache",
+        "description": "Serves conversation history, citations, job status, and usage views with explicit freshness and fallback behavior.",
+        "position": {
+          "x": 2160,
+          "y": 260
+        },
+        "properties": {
+          "latency": "Response latency under 2 seconds"
+        }
+      },
+      {
+        "id": "monitoring",
+        "type": "monitoring",
+        "componentId": "monitoring",
+        "label": "Observability",
+        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "position": {
+          "x": 1800,
+          "y": -180
+        },
+        "properties": {
+          "alerts": "Errors, lag, drift"
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "client-gateway",
+        "source": "client",
+        "target": "gateway",
+        "type": "http",
+        "label": "Request",
+        "description": "Client submits a conversation turn with bounded context and an idempotency key."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "service",
+        "type": "api-call",
+        "label": "Validated command",
+        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+      },
+      {
+        "id": "service-source",
+        "source": "service",
+        "target": "source",
+        "type": "database-connection",
+        "label": "Durable commit",
+        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+      },
+      {
+        "id": "source-stream",
+        "source": "source",
+        "target": "stream",
+        "type": "event-stream",
+        "label": "Domain event",
+        "description": "An outbox or change stream preserves committed transitions."
+      },
+      {
+        "id": "stream-workers",
+        "source": "stream",
+        "target": "workers",
+        "type": "message-queue",
+        "label": "Async work",
+        "description": "Workers index knowledge, process feedback, evaluate responses, and execute approved asynchronous tools."
+      },
+      {
+        "id": "workers-read-model",
+        "source": "workers",
+        "target": "read-model",
+        "type": "data-flow",
+        "label": "Projection",
+        "description": "Workers update serving projections and expose a freshness watermark."
+      },
+      {
+        "id": "read-service",
+        "source": "read-model",
+        "target": "service",
+        "type": "database-connection",
+        "label": "Fast read",
+        "description": "The domain service reads the latest acceptable projection or authoritative state."
+      },
+      {
+        "id": "service-client",
+        "source": "service",
+        "target": "client",
+        "type": "http",
+        "label": "Response",
+        "description": "Streams a response within the turn budget and reports citations, tool status, and model metadata."
+      },
+      {
+        "id": "stream-monitoring",
+        "source": "stream",
+        "target": "monitoring",
+        "type": "data-flow",
+        "label": "Lag and health",
+        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+      }
+    ]
+  },
+  "deepDives": [
+    {
+      "title": "Conversation and model consistency",
+      "points": [
+        "Commit the user turn and assistant policy before generation; treat retrieval indexes and analytics as eventually consistent.",
+        "Use request IDs for turns, tool-call IDs for side effects, and model/version metadata for reproducible traces.",
+        "Return citations, safety status, model identity, and usage metadata so clients can explain the answer."
+      ]
+    },
+    {
+      "title": "Retrieval quality and prompt budgets",
+      "points": [
+        "Partition conversation state by tenant and conversation, and vector indexes by assistant knowledge collection.",
+        "Retrieve a bounded top-k context, rerank it, and reject chunks that fail tenant, document, or user authorization.",
+        "Keep a replayable document pipeline and compare index versions when answers appear stale or ungrounded."
+      ]
+    },
+    {
+      "title": "Safety and dependency failure",
+      "points": [
+        "Apply input, retrieval, tool, and output safety checks; never let retrieved instructions override system policy.",
+        "Fall back to a smaller model or retrieval-only answer when the primary model is unavailable, and never fabricate a successful tool action.",
+        "Measure time to first token, groundedness, refusal quality, token cost, retrieval freshness, and tenant-level error rates."
+      ]
+    }
+  ],
+  "tradeoffs": [
+    {
+      "title": "Strong consistency versus throughput",
+      "recommendation": "Strongly protect the business commit and use versioned eventual projections for high-volume reads.",
+      "caution": "Making every derived read synchronous increases coordination and tail latency."
+    },
+    {
+      "title": "Push versus pull processing",
+      "recommendation": "Push bounded events to workers and pull durable snapshots on reads or recovery.",
+      "caution": "Unbounded fanout or full scans make bursts and hot keys expensive."
+    },
+    {
+      "title": "Managed service versus custom control",
+      "recommendation": "Start with managed primitives where their limits match the access pattern, then isolate replaceable interfaces.",
+      "caution": "Provider defaults do not remove the need for quotas, replay, observability, and data lifecycle design."
+    }
+  ],
+  "commonMistakes": [
+    "Putting all work on the synchronous request path.",
+    "Choosing a data store before writing the access patterns and consistency contract.",
+    "Ignoring retries, duplicate events, late data, deletion, privacy, or authorization.",
+    "Leaving hot partitions, backpressure, stale reads, and recovery unspecified.",
+    "Allowing unbounded requests or exports to compete with normal traffic."
+  ],
+  "followUps": [
+    {
+      "question": "What happens when the primary worker is unavailable?",
+      "answer": "Acknowledge only after the durable boundary, serve the last acceptable projection, queue retryable work, and replay or reconcile after recovery."
+    },
+    {
+      "question": "How would you support a tenfold traffic spike?",
+      "answer": "Pre-scale partitions, apply admission control and backpressure, isolate hot keys, cache immutable snapshots, and make freshness degradation visible."
+    },
+    {
+      "question": "How do you verify correctness?",
+      "answer": "Use idempotency metrics, version gaps, sampled source-to-projection comparisons, replay tests, and a shadow rebuild before repair."
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Requirements",
+      "description": "The answer defines the primary workflow, data model, scale, latency, durability, and failure contract."
+    },
+    {
+      "criterion": "Data model",
+      "description": "Entities and keys support the primary access patterns, authorization, privacy, and lifecycle changes."
+    },
+    {
+      "criterion": "Scalability",
+      "description": "Partitioning, cache behavior, queues, backpressure, and hot-key handling are explicit."
+    },
+    {
+      "criterion": "Reliability",
+      "description": "Idempotency, replay, recovery, degraded reads, and observability protect committed state."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+    }
+  ]
+}
