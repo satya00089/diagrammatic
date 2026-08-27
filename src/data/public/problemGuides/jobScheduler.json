@@ -495,7 +495,7 @@
       "title": "Exactly-once run intent",
       "points": [
         "For the multi-tenant job scheduler, each scheduled occurrence creates at most one logical execution while allowing safe attempts.",
-        "Keep this concern off unrelated request paths and partition it by the the multi-tenant job scheduler access key.",
+        "Keep this concern off unrelated request paths and partition it by the multi-tenant job scheduler access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -503,7 +503,7 @@
       "title": "Retries, fairness, and recovery",
       "points": [
         "For the multi-tenant job scheduler, each scheduled occurrence creates at most one logical execution while allowing safe attempts.",
-        "Keep this concern off unrelated request paths and partition it by the the multi-tenant job scheduler access key.",
+        "Keep this concern off unrelated request paths and partition it by the multi-tenant job scheduler access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -565,7 +565,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the multi-tenant job scheduler consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the multi-tenant job scheduler consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

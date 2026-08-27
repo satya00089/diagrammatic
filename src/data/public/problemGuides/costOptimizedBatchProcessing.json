@@ -543,7 +543,7 @@
       "title": "Cost-aware scheduling",
       "points": [
         "For the cost-optimized batch-processing platform, a job is complete only when required artifacts and billing evidence are durable.",
-        "Keep this concern off unrelated request paths and partition it by the the cost-optimized batch-processing platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the cost-optimized batch-processing platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -551,7 +551,7 @@
       "title": "Artifact correctness and retention",
       "points": [
         "For the cost-optimized batch-processing platform, a job is complete only when required artifacts and billing evidence are durable.",
-        "Keep this concern off unrelated request paths and partition it by the the cost-optimized batch-processing platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the cost-optimized batch-processing platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -613,7 +613,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the cost-optimized batch-processing platform consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the cost-optimized batch-processing platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

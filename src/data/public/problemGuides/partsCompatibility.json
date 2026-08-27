@@ -492,7 +492,7 @@
       "title": "Context normalization and cache keys",
       "points": [
         "For the parts compatibility and fitment feature, a fitment answer must identify the normalized context and catalog/rule versions that produced it.",
-        "Keep this concern off unrelated request paths and partition it by the the parts compatibility and fitment feature access key.",
+        "Keep this concern off unrelated request paths and partition it by the parts compatibility and fitment feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -500,7 +500,7 @@
       "title": "Catalog publication and checkout rechecks",
       "points": [
         "For the parts compatibility and fitment feature, a fitment answer must identify the normalized context and catalog/rule versions that produced it.",
-        "Keep this concern off unrelated request paths and partition it by the the parts compatibility and fitment feature access key.",
+        "Keep this concern off unrelated request paths and partition it by the parts compatibility and fitment feature access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -562,7 +562,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the parts compatibility and fitment feature consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the parts compatibility and fitment feature consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

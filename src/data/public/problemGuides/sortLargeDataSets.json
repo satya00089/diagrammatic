@@ -488,7 +488,7 @@
       "title": "Range partitioning and skew",
       "points": [
         "For the external sort service, the output manifest is visible only when all parts are complete, ordered, and validated.",
-        "Keep this concern off unrelated request paths and partition it by the the external sort service access key.",
+        "Keep this concern off unrelated request paths and partition it by the external sort service access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -496,7 +496,7 @@
       "title": "Atomic output and cleanup",
       "points": [
         "For the external sort service, the output manifest is visible only when all parts are complete, ordered, and validated.",
-        "Keep this concern off unrelated request paths and partition it by the the external sort service access key.",
+        "Keep this concern off unrelated request paths and partition it by the external sort service access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -558,7 +558,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the external sort service consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the external sort service consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

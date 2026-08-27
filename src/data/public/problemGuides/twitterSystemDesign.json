@@ -658,7 +658,7 @@
       "title": "Timeline pagination and ranking",
       "points": [
         "For Twitter's post, follow, home-timeline, and live-update platform, post publication is durable before fanout, and every timeline item remains subject to current visibility and graph policy.",
-        "Keep this concern off unrelated request paths and partition it by the Twitter's post, follow, home-timeline, and live-update platform access key.",
+        "Keep this concern off unrelated request paths and partition it by Twitter's post, follow, home-timeline, and live-update platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -666,7 +666,7 @@
       "title": "Deletes, unfollows, and live resync",
       "points": [
         "For Twitter's post, follow, home-timeline, and live-update platform, post publication is durable before fanout, and every timeline item remains subject to current visibility and graph policy.",
-        "Keep this concern off unrelated request paths and partition it by the Twitter's post, follow, home-timeline, and live-update platform access key.",
+        "Keep this concern off unrelated request paths and partition it by Twitter's post, follow, home-timeline, and live-update platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }

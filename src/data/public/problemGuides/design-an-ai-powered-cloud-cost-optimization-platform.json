@@ -687,7 +687,7 @@
       "title": "Multi-cloud allocation and feature history",
       "points": [
         "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
-        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the multi-cloud FinOps platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -695,7 +695,7 @@
       "title": "Recommendation safety and feedback",
       "points": [
         "For the multi-cloud FinOps platform, provider evidence, allocation coverage, model assumptions, and realized savings must remain distinguishable.",
-        "Keep this concern off unrelated request paths and partition it by the the multi-cloud FinOps platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the multi-cloud FinOps platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -757,7 +757,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the multi-cloud FinOps platform consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the multi-cloud FinOps platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

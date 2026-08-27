@@ -24,7 +24,7 @@
       "Never lose an acknowledged operation; reconnecting clients must be able to resume from a known sequence.",
       "Keep document opens below 300 ms at p95 for warm snapshots and make search eventually consistent.",
       "Target 99.9% monthly availability for document reads and collaboration sessions, with graceful reconnect behavior.",
-      "Apply authorization on every document read, edit, share, export, and attachment accessâ€”not only at connection time."
+      "Apply authorization on every document read, edit, share, export, and attachment access—not only at connection time."
     ],
     "scaleAssumptions": [
       "10 million registered users, 1 million daily active users, and 100,000 peak concurrent editing sessions.",
@@ -601,7 +601,7 @@
       "title": "Snapshots, reconnects, and hot documents",
       "points": [
         "For the collaborative document platform, all accepted edits must converge to one versioned head without losing authorship or access policy.",
-        "Keep this concern off unrelated request paths and partition it by the the collaborative document platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the collaborative document platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -609,7 +609,7 @@
       "title": "ACLs, history, and safe restore",
       "points": [
         "For the collaborative document platform, all accepted edits must converge to one versioned head without losing authorship or access policy.",
-        "Keep this concern off unrelated request paths and partition it by the the collaborative document platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the collaborative document platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -671,7 +671,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the collaborative document platform consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the collaborative document platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }

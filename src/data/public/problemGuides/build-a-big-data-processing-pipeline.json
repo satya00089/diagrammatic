@@ -586,7 +586,7 @@
       "title": "Watermarks, late data, and backpressure",
       "points": [
         "For the batch and streaming analytics platform, accepted offsets, checkpoint state, and sink writes must advance together.",
-        "Keep this concern off unrelated request paths and partition it by the the batch and streaming analytics platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the batch and streaming analytics platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     },
@@ -594,7 +594,7 @@
       "title": "Sink correctness and replay",
       "points": [
         "For the batch and streaming analytics platform, accepted offsets, checkpoint state, and sink writes must advance together.",
-        "Keep this concern off unrelated request paths and partition it by the the batch and streaming analytics platform access key.",
+        "Keep this concern off unrelated request paths and partition it by the batch and streaming analytics platform access key.",
         "Expose freshness, version, lineage, or audit metadata so operators and clients can distinguish current, pending, and degraded state."
       ]
     }
@@ -656,7 +656,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain the the batch and streaming analytics platform consistency boundary, asynchronous work, and operational limits."
+      "description": "The candidate can explain the batch and streaming analytics platform consistency boundary, asynchronous work, and operational limits."
     }
   ]
 }
