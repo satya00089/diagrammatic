@@ -51,45 +51,42 @@
   "entities": [
     {
       "name": "inverted index and document store",
-      "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
-      ],
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
       "notes": "Durable model for document index and crawl metadata; design keys around the main reads and writes."
     },
     {
       "name": "web-search event",
       "fields": [
-        "id",
-        "source_id",
+        "eventId",
+        "crawlIndexRetrieveRankId",
+        "eventType",
         "version",
-        "occurred_at",
-        "status"
+        "occurredAt",
+        "payload"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     },
     {
       "name": "Policy and configuration",
       "fields": [
-        "id",
-        "source_id",
+        "policyId",
+        "tenantId",
+        "scope",
         "version",
-        "occurred_at",
-        "status"
+        "rules",
+        "updatedAt"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     },
     {
       "name": "Read model",
       "fields": [
-        "id",
-        "source_id",
+        "crawlIndexRetrieveRankId",
+        "status",
         "version",
-        "occurred_at",
-        "status"
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     }
@@ -97,49 +94,49 @@
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the answer a search query command, then commit it idempotently."
+      "path": "/v1/crawl-index-retrieve-rank",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { crawlIndexRetrieveRankId, status, version }",
+      "notes": "Create or submit Crawl, index, retrieve, rank, with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/crawl-index-retrieve-rank/{crawlIndexRetrieveRankId}",
+      "contract": "{ crawlIndexRetrieveRankId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Crawl, index, retrieve, rank, state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/crawl-index-retrieve-rank?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Crawl, index, retrieve, rank, records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/crawl-index-retrieve-rank/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Crawl, index, retrieve, rank, rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept answer a search query",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Crawl, index, retrieve, rank, gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records document index and crawl metadata before acknowledging the client."
+      "description": "The Crawl, index, retrieve, rank, service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Crawl, index, retrieve, rank, events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process crawling, parsing, indexing, ranking, and refresh, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Crawl, index, retrieve, rank, events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Crawl, index, retrieve, rank, projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -148,63 +145,41 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service"
-        ]
+        "label": "Crawl, index, retrieve, rank, request boundary",
+        "description": "Clients submit and read Crawl, index, retrieve, rank, requests through an authenticated boundary.",
+        "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for document index and crawl metadata supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
+        "label": "Crawl, index, retrieve, rank, authoritative state",
+        "description": "Durable Crawl, index, retrieve, rank, state supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "label": "Crawl, index, retrieve, rank, processing and serving",
+        "description": "Partitioned Crawl, index, retrieve, rank, workers build serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
+        "label": "Crawl, index, retrieve, rank, operations",
+        "description": "Crawl, index, retrieve, rank, signals expose lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
+        "label": "Crawl, index, retrieve, rank, write path",
+        "description": "Client -> Crawl, index, retrieve, rank, gateway -> service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Crawl, index, retrieve, rank, projection path",
+        "description": "Authoritative Crawl, index, retrieve, rank, state -> event backbone -> workers -> serving projection.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -212,7 +187,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design crawl, index, retrieve, rank, clients",
         "description": "Clients use the answer a search query workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -226,8 +201,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design crawl, index, retrieve, rank, gateway",
+        "description": "Authenticates Design crawl, index, retrieve, rank, requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -240,7 +215,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design crawl, index, retrieve, rank, service",
         "description": "Owns the answer a search query command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -254,7 +229,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Design crawl, index, retrieve, rank, state",
         "description": "Stores document index and crawl metadata and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -268,7 +243,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design crawl, index, retrieve, rank, event backbone",
         "description": "Publishes versioned events for crawling, parsing, indexing, ranking, and refresh after durable commits.",
         "position": {
           "x": 1440,
@@ -282,7 +257,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design crawl, index, retrieve, rank, workers",
         "description": "Workers process crawling, parsing, indexing, ranking, and refresh independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -296,7 +271,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design crawl, index, retrieve, rank, projection",
         "description": "Serves low-latency views for inverted index and document store with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -310,8 +285,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design crawl, index, retrieve, rank, monitoring",
+        "description": "Tracks Design crawl, index, retrieve, rank, latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -327,7 +302,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Design crawl, index, retrieve, rank,",
         "description": "Client submits answer a search query through the authenticated request boundary."
       },
       {
@@ -335,15 +310,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Design crawl, index, retrieve, rank, operation",
+        "description": "The gateway forwards a validated Design crawl, index, retrieve, rank, operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Design crawl, index, retrieve, rank, state commit",
         "description": "Commits document index and crawl metadata before downstream asynchronous work."
       },
       {
@@ -351,15 +326,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Design crawl, index, retrieve, rank, event",
+        "description": "An outbox or change stream publishes committed Design crawl, index, retrieve, rank, transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Design crawl, index, retrieve, rank, background work",
         "description": "Workers handle crawling, parsing, indexing, ranking, and refresh with bounded retries and idempotent updates."
       },
       {
@@ -367,23 +342,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Design crawl, index, retrieve, rank, serving update",
+        "description": "Workers update the Design crawl, index, retrieve, rank, projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Design crawl, index, retrieve, rank, projection read",
+        "description": "The Design crawl, index, retrieve, rank, service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Design crawl, index, retrieve, rank, result",
         "description": "Returns the latest acceptable result within p95 <=200ms search results."
       },
       {
@@ -391,8 +366,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Design crawl, index, retrieve, rank, pipeline health",
+        "description": "Monitors Design crawl, index, retrieve, rank, consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -400,25 +375,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Crawl, index, retrieve, rank, commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Crawl, index, retrieve, rank, writes, event IDs, and versions so retries and replay are safe.",
+        "Return Crawl, index, retrieve, rank, version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by crawl, index, retrieve, rank, and serve web search results, then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Crawl, index, retrieve, rank, by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Crawl, index, retrieve, rank, work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Crawl, index, retrieve, rank, projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat crawling, parsing, indexing, ranking, and refresh as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Crawl, index, retrieve, rank, projection or an explicit degraded response when workers fail.",
+        "Retain durable Crawl, index, retrieve, rank, records for replay and make each downstream effect independently retryable.",
+        "Measure Crawl, index, retrieve, rank, latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -479,7 +454,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Crawl, index, retrieve, rank, consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

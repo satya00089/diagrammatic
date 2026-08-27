@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design a Distributed Stream Processing System like Kafka",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Publish and subscribe to streams of records; Store streams durably and fault-tolerantly; design keys around the main reads and writes."
+      "name": "Kafka-like distributed log",
+      "fields": [
+        "tenantId",
+        "kafkaLikeDistributedLogId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Kafka-like distributed log record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-distributed-stream-processing-like-kafka event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Kafka-like distributed log event",
+      "fields": [
+        "eventId",
+        "kafkaLikeDistributedLogId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Kafka-like distributed log event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Kafka-like distributed log policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Kafka-like distributed log authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Kafka-like distributed log projection",
+      "fields": [
+        "kafkaLikeDistributedLogId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Kafka-like distributed log projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Publish and subscribe to streams of records command, then commit it idempotently."
+      "path": "/v1/kafka-like-distributed-log",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { kafkaLikeDistributedLogId, status, version }",
+      "notes": "Create or submit Kafka-like distributed log with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/kafka-like-distributed-log/{kafkaLikeDistributedLogId}",
+      "contract": "{ kafkaLikeDistributedLogId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Kafka-like distributed log state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/kafka-like-distributed-log?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Kafka-like distributed log records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/kafka-like-distributed-log/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Kafka-like distributed log rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Publish and subscribe to streams of records",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Kafka-like distributed log gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Publish and subscribe to streams of records; Store streams durably and fault-tolerantly before acknowledging the client."
+      "description": "The Kafka-like distributed log service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Kafka-like distributed log events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Partition data for parallelism, Replication for fault tolerance, Commit log for durability, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Kafka-like distributed log events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Kafka-like distributed log projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Kafka-like distributed log request boundary",
+        "description": "Clients submit and read Kafka-like distributed log requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Publish and subscribe to streams of records; Store streams durably and fault-tolerantly supports replay, repair, and consistency checks.",
+        "label": "Kafka-like distributed log authoritative state",
+        "description": "Durable Kafka-like distributed log state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Kafka-like distributed log processing and serving",
+        "description": "Partitioned Kafka-like distributed log workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Kafka-like distributed log operations",
+        "description": "Kafka-like distributed log signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Kafka-like distributed log write path",
+        "description": "Client -> Kafka-like distributed log gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Kafka-like distributed log projection path",
+        "description": "Authoritative Kafka-like distributed log state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Kafka-like distributed log clients",
         "description": "Clients use the Publish and subscribe to streams of records workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Kafka-like distributed log gateway",
+        "description": "Authenticates Kafka-like distributed log requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Kafka-like distributed log service",
         "description": "Owns the Publish and subscribe to streams of records command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Kafka-like distributed log state",
         "description": "Stores Publish and subscribe to streams of records; Store streams durably and fault-tolerantly and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Kafka-like distributed log event backbone",
         "description": "Publishes versioned events for Partition data for parallelism, Replication for fault tolerance, Commit log for durability after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Kafka-like distributed log workers",
         "description": "Workers process Partition data for parallelism, Replication for fault tolerance, Commit log for durability independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Kafka-like distributed log projection",
         "description": "Serves low-latency views for Design a Distributed Stream Processing System like Kafka with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Kafka-like distributed log monitoring",
+        "description": "Tracks Kafka-like distributed log latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Kafka-like distributed log",
         "description": "Client submits Publish and subscribe to streams of records through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Kafka-like distributed log operation",
+        "description": "The gateway forwards a validated Kafka-like distributed log operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Kafka-like distributed log state commit",
         "description": "Commits Publish and subscribe to streams of records; Store streams durably and fault-tolerantly before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Kafka-like distributed log event",
+        "description": "An outbox or change stream publishes committed Kafka-like distributed log transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Kafka-like distributed log background work",
         "description": "Workers handle Partition data for parallelism, Replication for fault tolerance, Commit log for durability with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Kafka-like distributed log serving update",
+        "description": "Workers update the Kafka-like distributed log projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Kafka-like distributed log projection read",
+        "description": "The Kafka-like distributed log service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Kafka-like distributed log result",
         "description": "Returns the latest acceptable result within Low latency for message delivery."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Kafka-like distributed log pipeline health",
+        "description": "Monitors Kafka-like distributed log consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Kafka-like distributed log commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Kafka-like distributed log writes, event IDs, and versions so retries and replay are safe.",
+        "Return Kafka-like distributed log version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a distributed streaming platform for real-time data pipelines and event-driven architectures., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Kafka-like distributed log by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Kafka-like distributed log work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Kafka-like distributed log projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Partition data for parallelism, Replication for fault tolerance, Commit log for durability as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Kafka-like distributed log projection or an explicit degraded response when workers fail.",
+        "Retain durable Kafka-like distributed log records for replay and make each downstream effect independently retryable.",
+        "Measure Kafka-like distributed log latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Kafka-like distributed log consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

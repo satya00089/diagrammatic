@@ -51,95 +51,92 @@
   "entities": [
     {
       "name": "preferences, templates, and delivery state",
-      "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
-      ],
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
       "notes": "Durable model for notification intent and delivery ledger; design keys around the main reads and writes."
     },
     {
       "name": "notification event",
       "fields": [
-        "id",
-        "source_id",
+        "eventId",
+        "multiChannelNotificationDeliveryId",
+        "eventType",
         "version",
-        "occurred_at",
-        "status"
+        "occurredAt",
+        "payload"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Multi-channel notification delivery records preserve ownership, lifecycle, audit, and replay semantics."
     },
     {
-      "name": "Policy and configuration",
+      "name": "Multi-channel notification delivery policy",
       "fields": [
-        "id",
-        "source_id",
+        "policyId",
+        "tenantId",
+        "scope",
         "version",
-        "occurred_at",
-        "status"
+        "rules",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Multi-channel notification delivery records preserve ownership, lifecycle, audit, and replay semantics."
     },
     {
-      "name": "Read model",
+      "name": "Multi-channel notification delivery projection",
       "fields": [
-        "id",
-        "source_id",
+        "multiChannelNotificationDeliveryId",
+        "status",
         "version",
-        "occurred_at",
-        "status"
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Multi-channel notification delivery records preserve ownership, lifecycle, audit, and replay semantics."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the send a notification command, then commit it idempotently."
+      "path": "/v1/multi-channel-notification-delivery",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { multiChannelNotificationDeliveryId, status, version }",
+      "notes": "Create or submit Multi-channel notification delivery with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/multi-channel-notification-delivery/{multiChannelNotificationDeliveryId}",
+      "contract": "{ multiChannelNotificationDeliveryId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Multi-channel notification delivery state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/multi-channel-notification-delivery?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Multi-channel notification delivery records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/multi-channel-notification-delivery/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Multi-channel notification delivery rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept send a notification",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Multi-channel notification delivery gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records notification intent and delivery ledger before acknowledging the client."
+      "description": "The Multi-channel notification delivery service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Multi-channel notification delivery events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process template rendering, provider delivery, retries, and analytics, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Multi-channel notification delivery events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Multi-channel notification delivery projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -148,63 +145,41 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service"
-        ]
+        "label": "Multi-channel notification delivery request boundary",
+        "description": "Clients submit and read Multi-channel notification delivery requests through an authenticated boundary.",
+        "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for notification intent and delivery ledger supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
+        "label": "Multi-channel notification delivery authoritative state",
+        "description": "Durable Multi-channel notification delivery state supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "label": "Multi-channel notification delivery processing and serving",
+        "description": "Partitioned Multi-channel notification delivery workers build serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
+        "label": "Multi-channel notification delivery operations",
+        "description": "Multi-channel notification delivery signals expose lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
+        "label": "Multi-channel notification delivery write path",
+        "description": "Client -> Multi-channel notification delivery gateway -> service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Multi-channel notification delivery projection path",
+        "description": "Authoritative Multi-channel notification delivery state -> event backbone -> workers -> serving projection.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -212,7 +187,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design multi-channel notification delivery clients",
         "description": "Clients use the send a notification workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -226,8 +201,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design multi-channel notification delivery gateway",
+        "description": "Authenticates Design multi-channel notification delivery requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -240,7 +215,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design multi-channel notification delivery service",
         "description": "Owns the send a notification command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -254,7 +229,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Design multi-channel notification delivery state",
         "description": "Stores notification intent and delivery ledger and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -268,7 +243,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design multi-channel notification delivery event backbone",
         "description": "Publishes versioned events for template rendering, provider delivery, retries, and analytics after durable commits.",
         "position": {
           "x": 1440,
@@ -282,7 +257,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design multi-channel notification delivery workers",
         "description": "Workers process template rendering, provider delivery, retries, and analytics independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -296,7 +271,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design multi-channel notification delivery projection",
         "description": "Serves low-latency views for preferences, templates, and delivery state with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -310,8 +285,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design multi-channel notification delivery monitoring",
+        "description": "Tracks Design multi-channel notification delivery latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -327,7 +302,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Design multi-channel notification delivery",
         "description": "Client submits send a notification through the authenticated request boundary."
       },
       {
@@ -335,15 +310,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Design multi-channel notification delivery operation",
+        "description": "The gateway forwards a validated Design multi-channel notification delivery operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Design multi-channel notification delivery state commit",
         "description": "Commits notification intent and delivery ledger before downstream asynchronous work."
       },
       {
@@ -351,15 +326,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Design multi-channel notification delivery event",
+        "description": "An outbox or change stream publishes committed Design multi-channel notification delivery transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Design multi-channel notification delivery background work",
         "description": "Workers handle template rendering, provider delivery, retries, and analytics with bounded retries and idempotent updates."
       },
       {
@@ -367,23 +342,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Design multi-channel notification delivery serving update",
+        "description": "Workers update the Design multi-channel notification delivery projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Design multi-channel notification delivery projection read",
+        "description": "The Design multi-channel notification delivery service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Design multi-channel notification delivery result",
         "description": "Returns the latest acceptable result within enqueue acknowledgement <=100ms."
       },
       {
@@ -391,8 +366,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Design multi-channel notification delivery pipeline health",
+        "description": "Monitors Design multi-channel notification delivery consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -400,25 +375,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Multi-channel notification delivery commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Multi-channel notification delivery writes, event IDs, and versions so retries and replay are safe.",
+        "Return Multi-channel notification delivery version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by multi-channel notification delivery with preferences, retries, and provider limits, then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Multi-channel notification delivery by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Multi-channel notification delivery work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Multi-channel notification delivery projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat template rendering, provider delivery, retries, and analytics as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Multi-channel notification delivery projection or an explicit degraded response when workers fail.",
+        "Retain durable Multi-channel notification delivery records for replay and make each downstream effect independently retryable.",
+        "Measure Multi-channel notification delivery latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -479,7 +454,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Multi-channel notification delivery consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

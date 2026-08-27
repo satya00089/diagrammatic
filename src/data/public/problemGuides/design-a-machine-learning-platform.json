@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design a Machine Learning Platform",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Train custom ML models; Use AutoML for quick prototypes; design keys around the main reads and writes."
+      "name": "ML platform",
+      "fields": [
+        "tenantId",
+        "mlPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative ML platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-machine-learning event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ML platform event",
+      "fields": [
+        "eventId",
+        "mlPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable ML platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ML platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling ML platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "ML platform projection",
+      "fields": [
+        "mlPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable ML platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Train custom ML models command, then commit it idempotently."
+      "path": "/v1/ml-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { mlPlatformId, status, version }",
+      "notes": "Create or submit ML platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/ml-platform/{mlPlatformId}",
+      "contract": "{ mlPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest ML platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/ml-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped ML platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/ml-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a ML platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Train custom ML models",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The ML platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Train custom ML models; Use AutoML for quick prototypes before acknowledging the client."
+      "description": "The ML platform service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed ML platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Vertex AI for unified ML platform, AutoML for automated training, Cloud Functions for preprocessing, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume ML platform events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the ML platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "ML platform request boundary",
+        "description": "Clients submit and read ML platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Train custom ML models; Use AutoML for quick prototypes supports replay, repair, and consistency checks.",
+        "label": "ML platform authoritative state",
+        "description": "Durable ML platform state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "ML platform processing and serving",
+        "description": "Partitioned ML platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "ML platform operations",
+        "description": "ML platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "ML platform write path",
+        "description": "Client -> ML platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "ML platform projection path",
+        "description": "Authoritative ML platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "ML platform clients",
         "description": "Clients use the Train custom ML models workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "ML platform gateway",
+        "description": "Authenticates ML platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "ML platform service",
         "description": "Owns the Train custom ML models command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "ML platform state",
         "description": "Stores Train custom ML models; Use AutoML for quick prototypes and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "ML platform event backbone",
         "description": "Publishes versioned events for Vertex AI for unified ML platform, AutoML for automated training, Cloud Functions for preprocessing after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "ML platform workers",
         "description": "Workers process Vertex AI for unified ML platform, AutoML for automated training, Cloud Functions for preprocessing independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "ML platform projection",
         "description": "Serves low-latency views for Design a Machine Learning Platform with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "ML platform monitoring",
+        "description": "Tracks ML platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start ML platform",
         "description": "Client submits Train custom ML models through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated ML platform operation",
+        "description": "The gateway forwards a validated ML platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "ML platform state commit",
         "description": "Commits Train custom ML models; Use AutoML for quick prototypes before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "ML platform event",
+        "description": "An outbox or change stream publishes committed ML platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "ML platform background work",
         "description": "Workers handle Vertex AI for unified ML platform, AutoML for automated training, Cloud Functions for preprocessing with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "ML platform serving update",
+        "description": "Workers update the ML platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "ML platform projection read",
+        "description": "The ML platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "ML platform result",
         "description": "Returns the latest acceptable result within Inference latency under 100ms."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "ML platform pipeline health",
+        "description": "Monitors ML platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the ML platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional ML platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return ML platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design an ML platform that trains custom models, automates ML workflows, deploys models as APIs, and monitors model performance in production., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition ML platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound ML platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for ML platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Vertex AI for unified ML platform, AutoML for automated training, Cloud Functions for preprocessing as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable ML platform projection or an explicit degraded response when workers fail.",
+        "Retain durable ML platform records for replay and make each downstream effect independently retryable.",
+        "Measure ML platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain ML platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

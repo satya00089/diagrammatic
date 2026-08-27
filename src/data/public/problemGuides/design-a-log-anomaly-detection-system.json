@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design a Log Anomaly Detection System",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Parse and normalize heterogeneous log formats; Detect anomalous log patterns automatically; design keys around the main reads and writes."
+      "name": "Log-anomaly platform",
+      "fields": [
+        "tenantId",
+        "logAnomalyPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Log-anomaly platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-log-anomaly-detection event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Log-anomaly platform event",
+      "fields": [
+        "eventId",
+        "logAnomalyPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Log-anomaly platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Log-anomaly platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Log-anomaly platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Log-anomaly platform projection",
+      "fields": [
+        "logAnomalyPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Log-anomaly platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Parse and normalize heterogeneous log formats command, then commit it idempotently."
+      "path": "/v1/log-anomaly-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { logAnomalyPlatformId, status, version }",
+      "notes": "Create or submit Log-anomaly platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/log-anomaly-platform/{logAnomalyPlatformId}",
+      "contract": "{ logAnomalyPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Log-anomaly platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/log-anomaly-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Log-anomaly platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/log-anomaly-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Log-anomaly platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Parse and normalize heterogeneous log formats",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Log-anomaly platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Parse and normalize heterogeneous log formats; Detect anomalous log patterns automatically before acknowledging the client."
+      "description": "The Log-anomaly platform service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Log-anomaly platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use Drain or LogMine for log template extraction, Implement word embeddings for semantic log analysis, Use autoencoders for unsupervised anomaly detection, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Log-anomaly platform events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Log-anomaly platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Log-anomaly platform request boundary",
+        "description": "Clients submit and read Log-anomaly platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Parse and normalize heterogeneous log formats; Detect anomalous log patterns automatically supports replay, repair, and consistency checks.",
+        "label": "Log-anomaly platform authoritative state",
+        "description": "Durable Log-anomaly platform state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Log-anomaly platform processing and serving",
+        "description": "Partitioned Log-anomaly platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Log-anomaly platform operations",
+        "description": "Log-anomaly platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Log-anomaly platform write path",
+        "description": "Client -> Log-anomaly platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Log-anomaly platform projection path",
+        "description": "Authoritative Log-anomaly platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Log-anomaly platform clients",
         "description": "Clients use the Parse and normalize heterogeneous log formats workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Log-anomaly platform gateway",
+        "description": "Authenticates Log-anomaly platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Log-anomaly platform service",
         "description": "Owns the Parse and normalize heterogeneous log formats command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Log-anomaly platform state",
         "description": "Stores Parse and normalize heterogeneous log formats; Detect anomalous log patterns automatically and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Log-anomaly platform event backbone",
         "description": "Publishes versioned events for Use Drain or LogMine for log template extraction, Implement word embeddings for semantic log analysis, Use autoencoders for unsupervised anomaly detection after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Log-anomaly platform workers",
         "description": "Workers process Use Drain or LogMine for log template extraction, Implement word embeddings for semantic log analysis, Use autoencoders for unsupervised anomaly detection independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Log-anomaly platform projection",
         "description": "Serves low-latency views for Design a Log Anomaly Detection System with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Log-anomaly platform monitoring",
+        "description": "Tracks Log-anomaly platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Log-anomaly platform",
         "description": "Client submits Parse and normalize heterogeneous log formats through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Log-anomaly platform operation",
+        "description": "The gateway forwards a validated Log-anomaly platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Log-anomaly platform state commit",
         "description": "Commits Parse and normalize heterogeneous log formats; Detect anomalous log patterns automatically before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Log-anomaly platform event",
+        "description": "An outbox or change stream publishes committed Log-anomaly platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Log-anomaly platform background work",
         "description": "Workers handle Use Drain or LogMine for log template extraction, Implement word embeddings for semantic log analysis, Use autoencoders for unsupervised anomaly detection with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Log-anomaly platform serving update",
+        "description": "Workers update the Log-anomaly platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Log-anomaly platform projection read",
+        "description": "The Log-anomaly platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Log-anomaly platform result",
         "description": "Returns the latest acceptable result within Process 1M+ log lines per second."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Log-anomaly platform pipeline health",
+        "description": "Monitors Log-anomaly platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Log-anomaly platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Log-anomaly platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return Log-anomaly platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a system that automatically detects anomalies in application logs using ML, identifies new error patterns, clusters similar log messages, and correlates log anomalies with system events., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Log-anomaly platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Log-anomaly platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Log-anomaly platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use Drain or LogMine for log template extraction, Implement word embeddings for semantic log analysis, Use autoencoders for unsupervised anomaly detection as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Log-anomaly platform projection or an explicit degraded response when workers fail.",
+        "Retain durable Log-anomaly platform records for replay and make each downstream effect independently retryable.",
+        "Measure Log-anomaly platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Log-anomaly platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

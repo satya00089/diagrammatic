@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Design a File Downloader Library from Frontend to Backend",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Download files from URLs; Resume interrupted downloads; design keys around the main reads and writes."
+      "name": "Frontend-to-backend file downloader",
+      "fields": [
+        "tenantId",
+        "frontendToBackendFileDownloaderId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Frontend-to-backend file downloader record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-file-downloader-library-from-frontend-to-backend event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Frontend-to-backend file downloader event",
+      "fields": [
+        "eventId",
+        "frontendToBackendFileDownloaderId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Frontend-to-backend file downloader event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Frontend-to-backend file downloader policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Frontend-to-backend file downloader authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Frontend-to-backend file downloader projection",
+      "fields": [
+        "frontendToBackendFileDownloaderId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Frontend-to-backend file downloader projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Download files from URLs command, then commit it idempotently."
+      "path": "/v1/frontend-to-backend-file-downloader",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { frontendToBackendFileDownloaderId, status, version }",
+      "notes": "Create or submit Frontend-to-backend file downloader with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/frontend-to-backend-file-downloader/{frontendToBackendFileDownloaderId}",
+      "contract": "{ frontendToBackendFileDownloaderId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Frontend-to-backend file downloader state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/frontend-to-backend-file-downloader?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Frontend-to-backend file downloader records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/frontend-to-backend-file-downloader/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Frontend-to-backend file downloader rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Download files from URLs",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Frontend-to-backend file downloader gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Frontend-to-backend file downloader events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process HTTP Range requests for chunked downloads, Checksum validation (MD5, SHA), Thread pool for concurrent downloads, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Frontend-to-backend file downloader events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Frontend-to-backend file downloader projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Frontend-to-backend file downloader request boundary",
+        "description": "Clients submit and read Frontend-to-backend file downloader requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Frontend-to-backend file downloader authoritative state",
         "description": "Download jobs, source validators, chunk/checksum manifests, byte progress, retries, and replayable events.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Frontend-to-backend file downloader processing and serving",
+        "description": "Partitioned Frontend-to-backend file downloader workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Frontend-to-backend file downloader operations",
+        "description": "Frontend-to-backend file downloader signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Frontend-to-backend file downloader write path",
+        "description": "Client -> Frontend-to-backend file downloader gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Frontend-to-backend file downloader projection path",
+        "description": "Authoritative Frontend-to-backend file downloader state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Frontend-to-backend file downloader clients",
         "description": "Clients submit URLs/files, pause/resume jobs, inspect byte progress, verify integrity, and retrieve results.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Frontend-to-backend file downloader gateway",
+        "description": "Authenticates Frontend-to-backend file downloader requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Frontend-to-backend file downloader service",
         "description": "Owns source validation, destination policy, chunking, integrity, authorization, and transfer contracts.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Frontend-to-backend file downloader state",
         "description": "Stores Download files from URLs; Resume interrupted downloads and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Frontend-to-backend file downloader event backbone",
         "description": "Publishes download-created, chunk, retry, checksum, pause/resume, completion, and failure events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Frontend-to-backend file downloader workers",
         "description": "Fetches ranged chunks, validates checksums, retries transient failures, assembles output, and cleans partial state asynchronously.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Frontend-to-backend file downloader projection",
         "description": "Serves transfer progress, chunk errors, integrity state, retry status, and completed-file metadata.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Frontend-to-backend file downloader monitoring",
+        "description": "Tracks Frontend-to-backend file downloader latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Frontend-to-backend file downloader",
         "description": "Client submits a download source and options or resumes an existing transfer job."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Frontend-to-backend file downloader operation",
+        "description": "The gateway forwards a validated Frontend-to-backend file downloader operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Frontend-to-backend file downloader state commit",
         "description": "Commits the download job, source validator, chunk plan, and idempotency key before fetching."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Frontend-to-backend file downloader event",
+        "description": "An outbox or change stream publishes committed Frontend-to-backend file downloader transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Frontend-to-backend file downloader background work",
         "description": "Workers fetch ranges, verify content, persist progress, retry safely, and assemble the final object."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Frontend-to-backend file downloader serving update",
+        "description": "Workers update the Frontend-to-backend file downloader projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Frontend-to-backend file downloader projection read",
+        "description": "The Frontend-to-backend file downloader service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Frontend-to-backend file downloader result",
         "description": "Returns job progress, resumable ranges, source changes, checksum state, and completion metadata."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Frontend-to-backend file downloader pipeline health",
+        "description": "Monitors Frontend-to-backend file downloader consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Frontend-to-backend file downloader commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Frontend-to-backend file downloader writes, event IDs, and versions so retries and replay are safe.",
+        "Return Frontend-to-backend file downloader version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a robust file download system with resume capability, progress tracking, and error handling., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Frontend-to-backend file downloader by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Frontend-to-backend file downloader work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Frontend-to-backend file downloader projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat HTTP Range requests for chunked downloads, Checksum validation (MD5, SHA), Thread pool for concurrent downloads as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Frontend-to-backend file downloader projection or an explicit degraded response when workers fail.",
+        "Retain durable Frontend-to-backend file downloader records for replay and make each downstream effect independently retryable.",
+        "Measure Frontend-to-backend file downloader latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Frontend-to-backend file downloader consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

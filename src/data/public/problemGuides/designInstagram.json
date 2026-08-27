@@ -66,61 +66,47 @@
     {
       "name": "Post",
       "fields": [
-        "post_id",
-        "author_id",
-        "asset_ids",
-        "caption",
-        "visibility",
-        "created_at",
-        "moderation_state"
+        "eventId",
+        "globalInstagramLikePhotoId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
       ],
       "notes": "The durable source record is separate from feed entries and counters."
     },
     {
       "name": "Story",
       "fields": [
-        "story_id",
-        "author_id",
-        "asset_id",
-        "audience",
-        "created_at",
-        "expires_at"
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
       ],
       "notes": "Expiry is a serving constraint, not a reason to rely only on a cache TTL."
     },
     {
       "name": "FollowEdge",
       "fields": [
-        "follower_id",
-        "followee_id",
-        "state",
-        "created_at",
-        "version"
+        "globalInstagramLikePhotoId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
       "notes": "Maintain both follower and following access paths for fanout and profile queries."
     },
     {
       "name": "FeedEntry",
-      "fields": [
-        "viewer_id",
-        "post_id",
-        "author_id",
-        "rank_key",
-        "inserted_at",
-        "expires_at"
-      ],
+      "fields": [],
       "notes": "A rebuildable projection; celebrity posts can be merged during reads."
     },
     {
       "name": "Interaction",
-      "fields": [
-        "event_id",
-        "actor_id",
-        "object_id",
-        "type",
-        "created_at",
-        "idempotency_key"
-      ],
+      "fields": [],
       "notes": "At-least-once consumers deduplicate by event or actor-object key."
     }
   ],
@@ -190,7 +176,7 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
+        "label": "Global Instagram-like photo request boundary",
         "description": "Clients and edge services handle uploads, reads, authentication, and media delivery.",
         "componentIds": ["client", "gateway", "feed", "cdn"]
       },
@@ -260,7 +246,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Global Instagram-like photo gateway",
         "description": "Authenticates requests, applies quotas, and issues signed upload URLs.",
         "position": { "x": 360, "y": 280 },
         "properties": { "controls": "Auth, rate limits, abuse checks" }
@@ -323,7 +309,7 @@
         "id": "events",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Global Instagram-like photo event backbone",
         "description": "Retains publication, graph, interaction, deletion, and moderation events for replay.",
         "position": { "x": 1800, "y": 280 },
         "properties": { "delivery": "At least once" }
@@ -404,7 +390,7 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Global Instagram-like photo monitoring",
         "description": "Tracks upload readiness, feed lag, fanout backlog, CDN hit rate, and expiry correctness.",
         "position": { "x": 3600, "y": -160 },
         "properties": { "alerts": "Latency, lag, errors, drift" }

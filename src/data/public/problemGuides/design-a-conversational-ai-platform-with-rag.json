@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Design a Conversational AI Platform with RAG",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Ingest and index enterprise documents; Retrieve relevant context for user queries; design keys around the main reads and writes."
+      "name": "Enterprise RAG platform",
+      "fields": [
+        "tenantId",
+        "enterpriseRagPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Enterprise RAG platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-conversational-ai-with-rag event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Enterprise RAG platform event",
+      "fields": [
+        "eventId",
+        "enterpriseRagPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Enterprise RAG platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Enterprise RAG platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Enterprise RAG platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Enterprise RAG platform projection",
+      "fields": [
+        "enterpriseRagPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Enterprise RAG platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Ingest and index enterprise documents command, then commit it idempotently."
+      "path": "/v1/enterprise-rag-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { enterpriseRagPlatformId, status, version }",
+      "notes": "Create or submit Enterprise RAG platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/enterprise-rag-platform/{enterpriseRagPlatformId}",
+      "contract": "{ enterpriseRagPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Enterprise RAG platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/enterprise-rag-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Enterprise RAG platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/enterprise-rag-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Enterprise RAG platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Ingest and index enterprise documents",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Enterprise RAG platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,7 +135,7 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Enterprise RAG platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
@@ -115,7 +143,7 @@
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Enterprise RAG platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,13 +152,13 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Enterprise RAG platform request boundary",
+        "description": "Clients submit and read Enterprise RAG platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Enterprise RAG platform authoritative state",
         "description": "Document versions, ACLs, conversation turns, citations, tool outcomes, and replayable lifecycle events.",
         "componentIds": ["source", "document-store", "stream"]
       },
@@ -142,14 +170,14 @@
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Enterprise RAG platform processing and serving",
+        "description": "Partitioned Enterprise RAG platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Enterprise RAG platform operations",
+        "description": "Enterprise RAG platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
@@ -158,13 +186,28 @@
         "id": "critical",
         "label": "Question-to-answer path",
         "description": "Client -> gateway -> service -> policy -> retrieval -> indexes/model gateway -> service -> client.",
-        "componentIds": ["client", "gateway", "service", "policy-safety", "retrieval", "index", "model-gateway"]
+        "componentIds": [
+          "client",
+          "gateway",
+          "service",
+          "policy-safety",
+          "retrieval",
+          "index",
+          "model-gateway"
+        ]
       },
       {
         "id": "ingestion",
         "label": "Document ingestion path",
         "description": "Source -> event stream -> workers -> document store/indexes/read model.",
-        "componentIds": ["source", "stream", "workers", "document-store", "index", "read-model"]
+        "componentIds": [
+          "source",
+          "stream",
+          "workers",
+          "document-store",
+          "index",
+          "read-model"
+        ]
       }
     ],
     "components": [
@@ -172,7 +215,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Enterprise RAG platform clients",
         "description": "Users upload/search governed knowledge, ask questions, stream cited answers, and inspect indexing status.",
         "position": {
           "x": 0,
@@ -186,8 +229,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Enterprise RAG platform gateway",
+        "description": "Authenticates Enterprise RAG platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -200,7 +243,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Enterprise RAG platform service",
         "description": "Owns ingestion, ACL enforcement, retrieval, conversation policy, citations, tools, and answer contracts.",
         "position": {
           "x": 720,
@@ -228,7 +271,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Enterprise RAG platform state",
         "description": "Stores document versions, chunks/embeddings, ACL metadata, conversations, citations, and tool results.",
         "position": {
           "x": 1080,
@@ -256,7 +299,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Enterprise RAG platform event backbone",
         "description": "Publishes document-version, indexing, retrieval, conversation, citation, safety, and feedback events.",
         "position": {
           "x": 1440,
@@ -270,7 +313,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Enterprise RAG platform workers",
         "description": "Chunks/embeds documents, updates lexical/vector indexes, evaluates retrieval, and runs asynchronous enrichment.",
         "position": {
           "x": 1800,
@@ -326,7 +369,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Enterprise RAG platform projection",
         "description": "Serves conversations, citations, document/index status, retrieval evidence, and usage views.",
         "position": {
           "x": 2160,
@@ -340,8 +383,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Enterprise RAG platform monitoring",
+        "description": "Tracks Enterprise RAG platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -357,7 +400,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Enterprise RAG platform",
         "description": "Client uploads a document, asks a governed question, or requests index/retrieval status."
       },
       {
@@ -365,15 +408,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Enterprise RAG platform operation",
+        "description": "The gateway forwards a validated Enterprise RAG platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Enterprise RAG platform state commit",
         "description": "Commits the document/turn request and policy references before indexing or model/tool work."
       },
       {
@@ -437,15 +480,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Enterprise RAG platform event",
+        "description": "An outbox or change stream publishes committed Enterprise RAG platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Enterprise RAG platform background work",
         "description": "Workers chunk/embed/index documents, rerank candidates, evaluate quality, and process feedback."
       },
       {
@@ -453,23 +496,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Enterprise RAG platform serving update",
+        "description": "Workers update the Enterprise RAG platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Enterprise RAG platform projection read",
+        "description": "The Enterprise RAG platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Enterprise RAG platform result",
         "description": "Returns a cited answer or explicit no-answer/clarification state with model, source, and freshness metadata."
       },
       {
@@ -477,8 +520,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Enterprise RAG platform pipeline health",
+        "description": "Monitors Enterprise RAG platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -486,25 +529,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Enterprise RAG platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Enterprise RAG platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return Enterprise RAG platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a conversational AI platform that uses Retrieval-Augmented Generation (RAG) to answer questions from enterprise knowledge bases, maintains conversation context, and provides cited responses., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Enterprise RAG platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Enterprise RAG platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Enterprise RAG platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use chunking strategies for document processing, Implement hybrid retrieval (dense + sparse), Use re-ranking models to improve retrieval quality as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Enterprise RAG platform projection or an explicit degraded response when workers fail.",
+        "Retain durable Enterprise RAG platform records for replay and make each downstream effect independently retryable.",
+        "Measure Enterprise RAG platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -565,7 +608,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Enterprise RAG platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

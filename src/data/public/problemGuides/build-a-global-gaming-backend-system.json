@@ -50,50 +50,78 @@
   },
   "entities": [
     {
-      "name": "Build a Global Gaming Backend System",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Handle player matchmaking; Store game state globally; design keys around the main reads and writes."
+      "name": "Globally distributed gaming backend",
+      "fields": [
+        "tenantId",
+        "globallyDistributedGamingBackendId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Globally distributed gaming backend record keyed for its primary command and read paths."
     },
     {
-      "name": "build-a-global-gaming-backend event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Globally distributed gaming backend event",
+      "fields": [
+        "eventId",
+        "globallyDistributedGamingBackendId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Globally distributed gaming backend event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Globally distributed gaming backend policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Globally distributed gaming backend authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Globally distributed gaming backend projection",
+      "fields": [
+        "globallyDistributedGamingBackendId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Globally distributed gaming backend projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Handle player matchmaking command, then commit it idempotently."
+      "path": "/v1/globally-distributed-gaming-backend",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { globallyDistributedGamingBackendId, status, version }",
+      "notes": "Create or submit Globally distributed gaming backend with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/globally-distributed-gaming-backend/{globallyDistributedGamingBackendId}",
+      "contract": "{ globallyDistributedGamingBackendId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Globally distributed gaming backend state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/globally-distributed-gaming-backend?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Globally distributed gaming backend records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/globally-distributed-gaming-backend/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Globally distributed gaming backend rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Globally distributed gaming backend request boundary",
+        "description": "Clients submit and read Globally distributed gaming backend requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Globally distributed gaming backend authoritative state",
         "description": "Durable player/party tickets, authoritative match/session state, and replayable gameplay outcomes.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Globally distributed gaming backend processing and serving",
+        "description": "Partitioned Globally distributed gaming backend workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Globally distributed gaming backend operations",
+        "description": "Globally distributed gaming backend signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Globally distributed gaming backend write path",
+        "description": "Client -> Globally distributed gaming backend gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Globally distributed gaming backend projection path",
+        "description": "Authoritative Globally distributed gaming backend state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design a globally distributed gaming backend for milli clients",
         "description": "Clients authenticate, queue for matches, join sessions, and render reconnect/settlement status.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design a globally distributed gaming backend for milli gateway",
+        "description": "Authenticates Globally distributed gaming backend requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design a globally distributed gaming backend for milli service",
         "description": "Owns matchmaking tickets, session admission, game commands, authorization, and lifecycle contracts.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Authoritative Design a globally distributed gaming backend for milli state",
         "description": "Stores player/party profiles, match records, session metadata, and durable reward settlement state.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design a globally distributed gaming backend for milli event backbone",
         "description": "Publishes match, gameplay, reconnect, anti-cheat, and settlement events with ordering keys.",
         "position": {
           "x": 1440,
@@ -236,8 +264,8 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process partitioned asynchronous work, update projections, and retry transient failures.",
+        "label": "Design a globally distributed gaming backend for milli processing workers",
+        "description": "Workers process Globally distributed gaming backend events in partitions, update projections, and retry transient failures.",
         "position": {
           "x": 1800,
           "y": 100
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design a globally distributed gaming backend for milli serving projection",
         "description": "Serves matchmaking status, reconnect state, profiles, rankings, and settlement views with freshness metadata.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design a globally distributed gaming backend for milli SLO monitoring",
+        "description": "Tracks Globally distributed gaming backend latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -290,7 +318,7 @@
         "target": "service",
         "type": "api-call",
         "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "description": "The gateway forwards a validated Globally distributed gaming backend operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
@@ -298,7 +326,7 @@
         "target": "source",
         "type": "database-connection",
         "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "description": "The Globally distributed gaming backend service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
@@ -306,7 +334,7 @@
         "target": "stream",
         "type": "event-stream",
         "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "description": "An outbox or change stream publishes committed Globally distributed gaming backend transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
@@ -322,7 +350,7 @@
         "target": "read-model",
         "type": "data-flow",
         "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "description": "Workers update the Globally distributed gaming backend projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
@@ -330,7 +358,7 @@
         "target": "service",
         "type": "database-connection",
         "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "description": "The Globally distributed gaming backend service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
@@ -346,7 +374,7 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "description": "Monitors Globally distributed gaming backend consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Globally distributed gaming backend consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

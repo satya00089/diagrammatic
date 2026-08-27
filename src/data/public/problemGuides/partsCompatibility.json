@@ -259,7 +259,7 @@
         "id": "parts-gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Parts compatibility feature gateway",
         "description": "Authenticates users, validates bounded query inputs, and applies rate limits.",
         "position": {
           "x": 480,
@@ -372,7 +372,7 @@
         "id": "observability",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Parts compatibility feature monitoring",
         "description": "Tracks lookup latency, stale index age, mismatch reports, queue lag, and publication failures.",
         "position": {
           "x": 1920,

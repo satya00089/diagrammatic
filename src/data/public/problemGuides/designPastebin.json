@@ -67,42 +67,42 @@
     {
       "name": "PasteContent",
       "fields": [
-        "content_key",
-        "body",
-        "language",
-        "byte_length",
-        "checksum",
-        "created_at"
+        "eventId",
+        "pastebinLikeServiceWhereUsersCreateTextPaId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
       ],
       "notes": "Store the body as immutable data so retries and cache reads are safe."
     },
     {
       "name": "RateLimitBucket",
-      "fields": ["subject_id", "window", "count", "limit", "reset_at"],
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
       "notes": "Apply separate limits by account, IP, token, and destination risk."
     },
     {
       "name": "Report",
       "fields": [
-        "report_id",
-        "paste_id",
-        "reporter_id",
-        "reason",
-        "state",
-        "created_at"
+        "pastebinLikeServiceWhereUsersCreateTextPaId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
       "notes": "Reports enter a moderation queue and do not directly mutate content without policy checks."
     },
     {
       "name": "AuditEvent",
-      "fields": [
-        "event_id",
-        "actor_id",
-        "action",
-        "paste_id",
-        "request_id",
-        "created_at"
-      ],
+      "fields": [],
       "notes": "Append-only security evidence for deletes, password changes, and moderator actions."
     }
   ],
@@ -229,7 +229,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Pastebin-like service where users create text pa gateway",
         "description": "Authenticates users, limits abuse, and routes read and write traffic.",
         "position": { "x": 360, "y": 260 },
         "properties": { "controls": "Auth, WAF, quotas" }

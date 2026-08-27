@@ -224,7 +224,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Service where users watch products gateway",
         "description": "Authenticates users, validates product identifiers and applies quotas.",
         "position": {
           "x": 420,

@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Design a Confidential Computing Solution",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Protect data during processing; Use hardware-based trusted execution; design keys around the main reads and writes."
+      "name": "Confidential-computing platform",
+      "fields": [
+        "tenantId",
+        "confidentialComputingPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Confidential-computing platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-confidential-computing-solution event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Confidential-computing platform event",
+      "fields": [
+        "eventId",
+        "confidentialComputingPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Confidential-computing platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Confidential-computing platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Confidential-computing platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Confidential-computing platform projection",
+      "fields": [
+        "confidentialComputingPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Confidential-computing platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Protect data during processing command, then commit it idempotently."
+      "path": "/v1/confidential-computing-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { confidentialComputingPlatformId, status, version }",
+      "notes": "Create or submit Confidential-computing platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/confidential-computing-platform/{confidentialComputingPlatformId}",
+      "contract": "{ confidentialComputingPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Confidential-computing platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/confidential-computing-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Confidential-computing platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/confidential-computing-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Confidential-computing platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Protect data during processing",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Confidential-computing platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Confidential-computing platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Confidential VMs with SGX/SEV, Azure Attestation for verification, Key Vault with HSM, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Confidential-computing platform events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Confidential-computing platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Confidential-computing platform request boundary",
+        "description": "Clients submit and read Confidential-computing platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Confidential-computing platform authoritative state",
         "description": "Workload/image measurements, attestation evidence, key-release policy, encrypted data references, and audit events.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Confidential-computing platform processing and serving",
+        "description": "Partitioned Confidential-computing platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Confidential-computing platform operations",
+        "description": "Confidential-computing platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Confidential-computing platform write path",
+        "description": "Client -> Confidential-computing platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Confidential-computing platform projection path",
+        "description": "Authoritative Confidential-computing platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Confidential-computing platform clients",
         "description": "Operators submit protected workloads, inspect attestation/key status, and render execution evidence.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Confidential-computing platform gateway",
+        "description": "Authenticates Confidential-computing platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Confidential-computing platform service",
         "description": "Owns workload policy, attestation requirements, key-release authorization, and protected-compute contracts.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Confidential-computing platform state",
         "description": "Stores workload manifests, measurements, attestation reports, encrypted references, policy, and audit state.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Confidential-computing platform event backbone",
         "description": "Publishes workload, attestation, key-release, execution, and policy-violation events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Confidential-computing platform workers",
         "description": "Verifies measurements, releases keys only under policy, runs protected jobs, and records tamper-evident evidence asynchronously.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Confidential-computing platform projection",
         "description": "Serves workload, attestation, key-release, execution, and evidence views with explicit trust state.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Confidential-computing platform monitoring",
+        "description": "Tracks Confidential-computing platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Confidential-computing platform",
         "description": "Client submits a protected workload or requests attestation/evidence status."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Confidential-computing platform operation",
+        "description": "The gateway forwards a validated Confidential-computing platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Confidential-computing platform state commit",
         "description": "Commits the workload manifest and policy before attestation or key release."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Confidential-computing platform event",
+        "description": "An outbox or change stream publishes committed Confidential-computing platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Confidential-computing platform background work",
         "description": "Workers verify attestation, execute inside the enclave/TDX boundary, and emit evidence."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Confidential-computing platform serving update",
+        "description": "Workers update the Confidential-computing platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Confidential-computing platform projection read",
+        "description": "The Confidential-computing platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Confidential-computing platform result",
         "description": "Returns trust state, attestation evidence, key-release decision, and protected-job status."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Confidential-computing platform pipeline health",
+        "description": "Monitors Confidential-computing platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Confidential-computing platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Confidential-computing platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return Confidential-computing platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a secure compute environment that protects data in use with hardware-based encryption, verifies compute integrity, and manages encryption keys securely., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Confidential-computing platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Confidential-computing platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Confidential-computing platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Confidential VMs with SGX/SEV, Azure Attestation for verification, Key Vault with HSM as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Confidential-computing platform projection or an explicit degraded response when workers fail.",
+        "Retain durable Confidential-computing platform records for replay and make each downstream effect independently retryable.",
+        "Measure Confidential-computing platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Confidential-computing platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

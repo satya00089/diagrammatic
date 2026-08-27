@@ -51,45 +51,42 @@
   "entities": [
     {
       "name": "URL frontier and content fingerprints",
-      "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
-      ],
+      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
       "notes": "Durable model for frontier state and fetch history; design keys around the main reads and writes."
     },
     {
       "name": "web-crawler event",
       "fields": [
-        "id",
-        "source_id",
+        "eventId",
+        "politeDistributedDiscoveryFetchingDeduplicId",
+        "eventType",
         "version",
-        "occurred_at",
-        "status"
+        "occurredAt",
+        "payload"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     },
     {
       "name": "Policy and configuration",
       "fields": [
-        "id",
-        "source_id",
+        "policyId",
+        "tenantId",
+        "scope",
         "version",
-        "occurred_at",
-        "status"
+        "rules",
+        "updatedAt"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     },
     {
       "name": "Read model",
       "fields": [
-        "id",
-        "source_id",
+        "politeDistributedDiscoveryFetchingDeduplicId",
+        "status",
         "version",
-        "occurred_at",
-        "status"
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
       "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
     }
@@ -97,49 +94,49 @@
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the discover and fetch a URL command, then commit it idempotently."
+      "path": "/v1/polite-distributed-discovery-fetching-dedu",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { politeDistributedDiscoveryFetchingDeduplicId, status, version }",
+      "notes": "Create or submit Polite distributed discovery, fetching, deduplic with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/polite-distributed-discovery-fetching-dedu/{politeDistributedDiscoveryFetchingDeduplicId}",
+      "contract": "{ politeDistributedDiscoveryFetchingDeduplicId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Polite distributed discovery, fetching, deduplic state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/polite-distributed-discovery-fetching-dedu?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Polite distributed discovery, fetching, deduplic records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/polite-distributed-discovery-fetching-dedu/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Polite distributed discovery, fetching, deduplic rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept discover and fetch a URL",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Polite distributed discovery, fetching, deduplic gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records frontier state and fetch history before acknowledging the client."
+      "description": "The Polite distributed discovery, fetching, deduplic service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Polite distributed discovery, fetching, deduplic events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process fetching, parsing, canonicalization, and indexing, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Polite distributed discovery, fetching, deduplic events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Polite distributed discovery, fetching, deduplic projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -148,63 +145,41 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic request boundary",
+        "description": "Clients submit and read Polite distributed discovery, fetching, deduplic requests through an authenticated boundary.",
+        "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for frontier state and fetch history supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic authoritative state",
+        "description": "Durable Polite distributed discovery, fetching, deduplic state supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic processing and serving",
+        "description": "Partitioned Polite distributed discovery, fetching, deduplic workers build serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic operations",
+        "description": "Polite distributed discovery, fetching, deduplic signals expose lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic write path",
+        "description": "Client -> Polite distributed discovery, fetching, deduplic gateway -> service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Polite distributed discovery, fetching, deduplic projection path",
+        "description": "Authoritative Polite distributed discovery, fetching, deduplic state -> event backbone -> workers -> serving projection.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -212,7 +187,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design polite distributed discovery, fetching, d clients",
         "description": "Clients use the discover and fetch a URL workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -226,8 +201,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design polite distributed discovery, fetching, d gateway",
+        "description": "Authenticates Design polite distributed discovery, fetching, d requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -240,7 +215,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design polite distributed discovery, fetching, d service",
         "description": "Owns the discover and fetch a URL command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -254,7 +229,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Design polite distributed discovery, fetching, d state",
         "description": "Stores frontier state and fetch history and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -268,7 +243,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design polite distributed discovery, fetching, d event backbone",
         "description": "Publishes versioned events for fetching, parsing, canonicalization, and indexing after durable commits.",
         "position": {
           "x": 1440,
@@ -282,7 +257,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design polite distributed discovery, fetching, d workers",
         "description": "Workers process fetching, parsing, canonicalization, and indexing independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -296,7 +271,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design polite distributed discovery, fetching, d projection",
         "description": "Serves low-latency views for URL frontier and content fingerprints with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -310,8 +285,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design polite distributed discovery, fetching, d monitoring",
+        "description": "Tracks Design polite distributed discovery, fetching, d latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -327,7 +302,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Design polite distributed discovery, fetching, d",
         "description": "Client submits discover and fetch a URL through the authenticated request boundary."
       },
       {
@@ -335,15 +310,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Design polite distributed discovery, fetching, d operation",
+        "description": "The gateway forwards a validated Design polite distributed discovery, fetching, d operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Design polite distributed discovery, fetching, d state commit",
         "description": "Commits frontier state and fetch history before downstream asynchronous work."
       },
       {
@@ -351,15 +326,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Design polite distributed discovery, fetching, d event",
+        "description": "An outbox or change stream publishes committed Design polite distributed discovery, fetching, d transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Design polite distributed discovery, fetching, d background work",
         "description": "Workers handle fetching, parsing, canonicalization, and indexing with bounded retries and idempotent updates."
       },
       {
@@ -367,23 +342,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Design polite distributed discovery, fetching, d serving update",
+        "description": "Workers update the Design polite distributed discovery, fetching, d projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Design polite distributed discovery, fetching, d projection read",
+        "description": "The Design polite distributed discovery, fetching, d service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Design polite distributed discovery, fetching, d result",
         "description": "Returns the latest acceptable result within frontier enqueue <=100ms."
       },
       {
@@ -391,8 +366,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Design polite distributed discovery, fetching, d pipeline health",
+        "description": "Monitors Design polite distributed discovery, fetching, d consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -400,25 +375,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Polite distributed discovery, fetching, deduplic commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Polite distributed discovery, fetching, deduplic writes, event IDs, and versions so retries and replay are safe.",
+        "Return Polite distributed discovery, fetching, deduplic version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by polite distributed discovery, fetching, deduplication, and indexing, then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Polite distributed discovery, fetching, deduplic by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Polite distributed discovery, fetching, deduplic work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Polite distributed discovery, fetching, deduplic projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat fetching, parsing, canonicalization, and indexing as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Polite distributed discovery, fetching, deduplic projection or an explicit degraded response when workers fail.",
+        "Retain durable Polite distributed discovery, fetching, deduplic records for replay and make each downstream effect independently retryable.",
+        "Measure Polite distributed discovery, fetching, deduplic latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -479,7 +454,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Polite distributed discovery, fetching, deduplic consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

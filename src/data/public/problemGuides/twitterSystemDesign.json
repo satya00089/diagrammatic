@@ -388,7 +388,7 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Design Twitter monitoring",
         "description": "Tracks feed lag, fanout backlog, cache hit rate, hot partitions, read latency, and projection drift.",
         "position": { "x": 3240, "y": -220 },
         "properties": { "alerts": "Lag, errors, saturation" }

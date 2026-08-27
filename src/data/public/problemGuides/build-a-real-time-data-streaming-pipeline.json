@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Build a Real-time Data Streaming Pipeline",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Ingest millions of events per second; Process data in real-time; design keys around the main reads and writes."
+      "name": "High-throughput streaming pipeline",
+      "fields": [
+        "tenantId",
+        "highThroughputStreamingPipelineId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative High-throughput streaming pipeline record keyed for its primary command and read paths."
     },
     {
-      "name": "build-a-real-time-data-streaming event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "High-throughput streaming pipeline event",
+      "fields": [
+        "eventId",
+        "highThroughputStreamingPipelineId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable High-throughput streaming pipeline event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "High-throughput streaming pipeline policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling High-throughput streaming pipeline authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "High-throughput streaming pipeline projection",
+      "fields": [
+        "highThroughputStreamingPipelineId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable High-throughput streaming pipeline projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Ingest millions of events per second command, then commit it idempotently."
+      "path": "/v1/high-throughput-streaming-pipeline",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { highThroughputStreamingPipelineId, status, version }",
+      "notes": "Create or submit High-throughput streaming pipeline with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/high-throughput-streaming-pipeline/{highThroughputStreamingPipelineId}",
+      "contract": "{ highThroughputStreamingPipelineId, status, version, observedAt, freshness }",
+      "notes": "Return the latest High-throughput streaming pipeline state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/high-throughput-streaming-pipeline?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped High-throughput streaming pipeline records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/high-throughput-streaming-pipeline/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a High-throughput streaming pipeline rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Ingest millions of events per second",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The High-throughput streaming pipeline gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed High-throughput streaming pipeline events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Kinesis Data Streams for ingestion, Kinesis Data Analytics for SQL queries, Lambda for data transformation, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume High-throughput streaming pipeline events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the High-throughput streaming pipeline projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "High-throughput streaming pipeline request boundary",
+        "description": "Clients submit and read High-throughput streaming pipeline requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "High-throughput streaming pipeline authoritative state",
         "description": "Durable event log, schema versions, consumer checkpoints, delivery attempts, and replayable history.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "High-throughput streaming pipeline processing and serving",
+        "description": "Partitioned High-throughput streaming pipeline workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "High-throughput streaming pipeline operations",
+        "description": "High-throughput streaming pipeline signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "High-throughput streaming pipeline write path",
+        "description": "Client -> High-throughput streaming pipeline gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "High-throughput streaming pipeline projection path",
+        "description": "Authoritative High-throughput streaming pipeline state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "High-throughput streaming pipeline clients",
         "description": "Producers publish events and operators inspect throughput, lag, watermarks, retries, and replay progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "High-throughput streaming pipeline gateway",
+        "description": "Authenticates High-throughput streaming pipeline requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "High-throughput streaming pipeline service",
         "description": "Owns event validation, partitioning, retention, consumer contracts, replay, and sink delivery semantics.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "High-throughput streaming pipeline state",
         "description": "Stores Ingest millions of events per second; Process data in real-time and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "High-throughput streaming pipeline event backbone",
         "description": "Appends validated events to partitioned streams with ordering, retention, and schema metadata.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "High-throughput streaming pipeline workers",
         "description": "Runs transformations, window aggregates, enrichments, projections, and sink delivery asynchronously.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "High-throughput streaming pipeline projection",
         "description": "Serves projections, consumer lag, watermarks, delivery status, and replay progress with freshness metadata.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "High-throughput streaming pipeline monitoring",
+        "description": "Tracks High-throughput streaming pipeline latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start High-throughput streaming pipeline",
         "description": "Producer submits an event with schema version, ordering key, and idempotency identity."
       },
       {
@@ -289,31 +317,31 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated High-throughput streaming pipeline operation",
+        "description": "The gateway forwards a validated High-throughput streaming pipeline operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "label": "High-throughput streaming pipeline state commit",
+        "description": "The High-throughput streaming pipeline service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "High-throughput streaming pipeline event",
+        "description": "An outbox or change stream publishes committed High-throughput streaming pipeline transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "High-throughput streaming pipeline background work",
         "description": "Workers consume partitions, transform events, update projections, and deliver idempotent sink effects."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "High-throughput streaming pipeline serving update",
+        "description": "Workers update the High-throughput streaming pipeline projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "High-throughput streaming pipeline projection read",
+        "description": "The High-throughput streaming pipeline service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "High-throughput streaming pipeline result",
         "description": "Returns publish status and projection freshness while exposing lag or incomplete windows."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "High-throughput streaming pipeline pipeline health",
+        "description": "Monitors High-throughput streaming pipeline consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the accepted domain mutation strongly consistent; make derived projections explicitly eventually consistent.",
+        "Use idempotency keys, conditional writes, event IDs, and resource versions so retries are safe.",
+        "Return version and observedAt so clients can reason about projection freshness and convergence."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a real-time data pipeline that can ingest, process, and analyze millions of events per second with sub-second latency., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition High-throughput streaming pipeline by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound High-throughput streaming pipeline work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for High-throughput streaming pipeline projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Kinesis Data Streams for ingestion, Kinesis Data Analytics for SQL queries, Lambda for data transformation as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable projection or a domain-safe degraded response when asynchronous dependencies fail.",
+        "Retain durable High-throughput streaming pipeline records for replay and make each downstream effect independently retryable.",
+        "Measure domain latency, backlog, freshness, error rate, and source-to-projection correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain High-throughput streaming pipeline consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

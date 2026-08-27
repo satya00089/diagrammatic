@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design a Distributed Botnet",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Command and control architecture; Distributed node communication; design keys around the main reads and writes."
+      "name": "For defensive security research, design a contro",
+      "fields": [
+        "tenantId",
+        "forDefensiveSecurityResearchDesignAControId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative For defensive security research, design a contro record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-distributed-botnet event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "For defensive security research, design a contro event",
+      "fields": [
+        "eventId",
+        "forDefensiveSecurityResearchDesignAControId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable For defensive security research, design a contro event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "For defensive security research, design a contro policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling For defensive security research, design a contro authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "For defensive security research, design a contro projection",
+      "fields": [
+        "forDefensiveSecurityResearchDesignAControId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable For defensive security research, design a contro projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Command and control architecture command, then commit it idempotently."
+      "path": "/v1/for-defensive-security-research-design-a-c",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { forDefensiveSecurityResearchDesignAControId, status, version }",
+      "notes": "Create or submit For defensive security research, design a contro with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/for-defensive-security-research-design-a-c/{forDefensiveSecurityResearchDesignAControId}",
+      "contract": "{ forDefensiveSecurityResearchDesignAControId, status, version, observedAt, freshness }",
+      "notes": "Return the latest For defensive security research, design a contro state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/for-defensive-security-research-design-a-c?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped For defensive security research, design a contro records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/for-defensive-security-research-design-a-c/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a For defensive security research, design a contro rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Command and control architecture",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The For defensive security research, design a contro gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Command and control architecture; Distributed node communication before acknowledging the client."
+      "description": "The For defensive security research, design a contro service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed For defensive security research, design a contro events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume For defensive security research, design a contro events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the For defensive security research, design a contro projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "For defensive security research, design a contro request boundary",
+        "description": "Clients submit and read For defensive security research, design a contro requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Command and control architecture; Distributed node communication supports replay, repair, and consistency checks.",
+        "label": "For defensive security research, design a contro authoritative state",
+        "description": "Durable For defensive security research, design a contro state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "For defensive security research, design a contro processing and serving",
+        "description": "Partitioned For defensive security research, design a contro workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "For defensive security research, design a contro operations",
+        "description": "For defensive security research, design a contro signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "For defensive security research, design a contro write path",
+        "description": "Client -> For defensive security research, design a contro gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "For defensive security research, design a contro projection path",
+        "description": "Authoritative For defensive security research, design a contro state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "For defensive security research, design a contro clients",
         "description": "Clients use the Command and control architecture workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "For defensive security research, design a contro gateway",
+        "description": "Authenticates For defensive security research, design a contro requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "For defensive security research, design a contro service",
         "description": "Owns the Command and control architecture command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "For defensive security research, design a contro state",
         "description": "Stores Command and control architecture; Distributed node communication and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "For defensive security research, design a contro event backbone",
         "description": "Publishes versioned events for Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "For defensive security research, design a contro workers",
         "description": "Workers process Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "For defensive security research, design a contro projection",
         "description": "Serves low-latency views for Design a Distributed Botnet with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "For defensive security research, design a contro monitoring",
+        "description": "Tracks For defensive security research, design a contro latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start For defensive security research, design a contro",
         "description": "Client submits Command and control architecture through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated For defensive security research, design a contro operation",
+        "description": "The gateway forwards a validated For defensive security research, design a contro operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "For defensive security research, design a contro state commit",
         "description": "Commits Command and control architecture; Distributed node communication before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "For defensive security research, design a contro event",
+        "description": "An outbox or change stream publishes committed For defensive security research, design a contro transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "For defensive security research, design a contro background work",
         "description": "Workers handle Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "For defensive security research, design a contro serving update",
+        "description": "Workers update the For defensive security research, design a contro projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "For defensive security research, design a contro projection read",
+        "description": "The For defensive security research, design a contro service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "For defensive security research, design a contro result",
         "description": "Returns the latest acceptable result within Resilient to takedown attempts."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "For defensive security research, design a contro pipeline health",
+        "description": "Monitors For defensive security research, design a contro consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the For defensive security research, design a contro commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional For defensive security research, design a contro writes, event IDs, and versions so retries and replay are safe.",
+        "Return For defensive security research, design a contro version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a distributed system architecture similar to a botnet (for educational/security research purposes)., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition For defensive security research, design a contro by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound For defensive security research, design a contro work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for For defensive security research, design a contro projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Peer-to-peer architecture, Distributed hash table (DHT), Encrypted communication channels as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable For defensive security research, design a contro projection or an explicit degraded response when workers fail.",
+        "Retain durable For defensive security research, design a contro records for replay and make each downstream effect independently retryable.",
+        "Measure For defensive security research, design a contro latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain For defensive security research, design a contro consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

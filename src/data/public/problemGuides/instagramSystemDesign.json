@@ -264,7 +264,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Design Instagram gateway",
         "description": "Authenticates users, applies quotas, validates commands, and issues signed upload URLs.",
         "position": { "x": 360, "y": 280 },
         "properties": { "protection": "Auth, quotas, abuse controls" }
@@ -408,7 +408,7 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Design Instagram monitoring",
         "description": "Tracks upload readiness, feed lag, CDN hit rate, fanout backlog, expiry, and policy drift.",
         "position": { "x": 3600, "y": -180 },
         "properties": { "alerts": "Latency, lag, errors, drift" }
@@ -556,7 +556,7 @@
         "source": "event-stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
+        "label": "Design Instagram pipeline health",
         "description": "Tracks consumer lag, fanout pressure, and processing errors."
       }
     ]

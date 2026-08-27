@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design an ML Experiment Tracking System",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Log hyperparameters, metrics, and artifacts per run; Track code version and environment for reproducibility; design keys around the main reads and writes."
+      "name": "Collaborative ML experiment-tracking service",
+      "fields": [
+        "tenantId",
+        "collaborativeMlExperimentTrackingServiceId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Collaborative ML experiment-tracking service record keyed for its primary command and read paths."
     },
     {
-      "name": "design-an-ml-experiment-tracking event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Collaborative ML experiment-tracking service event",
+      "fields": [
+        "eventId",
+        "collaborativeMlExperimentTrackingServiceId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Collaborative ML experiment-tracking service event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Collaborative ML experiment-tracking service policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Collaborative ML experiment-tracking service authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Collaborative ML experiment-tracking service projection",
+      "fields": [
+        "collaborativeMlExperimentTrackingServiceId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Collaborative ML experiment-tracking service projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Log hyperparameters, metrics, and artifacts per run command, then commit it idempotently."
+      "path": "/v1/collaborative-ml-experiment-tracking-servi",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { collaborativeMlExperimentTrackingServiceId, status, version }",
+      "notes": "Create or submit Collaborative ML experiment-tracking service with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/collaborative-ml-experiment-tracking-servi/{collaborativeMlExperimentTrackingServiceId}",
+      "contract": "{ collaborativeMlExperimentTrackingServiceId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Collaborative ML experiment-tracking service state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/collaborative-ml-experiment-tracking-servi?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Collaborative ML experiment-tracking service records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/collaborative-ml-experiment-tracking-servi/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Collaborative ML experiment-tracking service rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Log hyperparameters, metrics, and artifacts per run",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Collaborative ML experiment-tracking service gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Log hyperparameters, metrics, and artifacts per run; Track code version and environment for reproducibility before acknowledging the client."
+      "description": "The Collaborative ML experiment-tracking service service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Collaborative ML experiment-tracking service events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use MLflow, Weights & Biases, or Neptune as reference, Implement append-only log storage for metrics, Use object storage for large artifacts, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Collaborative ML experiment-tracking service events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Collaborative ML experiment-tracking service projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Collaborative ML experiment-tracking service request boundary",
+        "description": "Clients submit and read Collaborative ML experiment-tracking service requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Log hyperparameters, metrics, and artifacts per run; Track code version and environment for reproducibility supports replay, repair, and consistency checks.",
+        "label": "Collaborative ML experiment-tracking service authoritative state",
+        "description": "Durable Collaborative ML experiment-tracking service state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Collaborative ML experiment-tracking service processing and serving",
+        "description": "Partitioned Collaborative ML experiment-tracking service workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Collaborative ML experiment-tracking service operations",
+        "description": "Collaborative ML experiment-tracking service signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Collaborative ML experiment-tracking service write path",
+        "description": "Client -> Collaborative ML experiment-tracking service gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Collaborative ML experiment-tracking service projection path",
+        "description": "Authoritative Collaborative ML experiment-tracking service state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Collaborative ML experiment-tracking service clients",
         "description": "Clients use the Log hyperparameters, metrics, and artifacts per run workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Collaborative ML experiment-tracking service gateway",
+        "description": "Authenticates Collaborative ML experiment-tracking service requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Collaborative ML experiment-tracking service service",
         "description": "Owns the Log hyperparameters, metrics, and artifacts per run command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Collaborative ML experiment-tracking service state",
         "description": "Stores Log hyperparameters, metrics, and artifacts per run; Track code version and environment for reproducibility and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Collaborative ML experiment-tracking service event backbone",
         "description": "Publishes versioned events for Use MLflow, Weights & Biases, or Neptune as reference, Implement append-only log storage for metrics, Use object storage for large artifacts after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Collaborative ML experiment-tracking service workers",
         "description": "Workers process Use MLflow, Weights & Biases, or Neptune as reference, Implement append-only log storage for metrics, Use object storage for large artifacts independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Collaborative ML experiment-tracking service projection",
         "description": "Serves low-latency views for Design an ML Experiment Tracking System with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Collaborative ML experiment-tracking service monitoring",
+        "description": "Tracks Collaborative ML experiment-tracking service latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Collaborative ML experiment-tracking service",
         "description": "Client submits Log hyperparameters, metrics, and artifacts per run through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Collaborative ML experiment-tracking service operation",
+        "description": "The gateway forwards a validated Collaborative ML experiment-tracking service operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Collaborative ML experiment-tracking service state commit",
         "description": "Commits Log hyperparameters, metrics, and artifacts per run; Track code version and environment for reproducibility before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Collaborative ML experiment-tracking service event",
+        "description": "An outbox or change stream publishes committed Collaborative ML experiment-tracking service transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Collaborative ML experiment-tracking service background work",
         "description": "Workers handle Use MLflow, Weights & Biases, or Neptune as reference, Implement append-only log storage for metrics, Use object storage for large artifacts with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Collaborative ML experiment-tracking service serving update",
+        "description": "Workers update the Collaborative ML experiment-tracking service projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Collaborative ML experiment-tracking service projection read",
+        "description": "The Collaborative ML experiment-tracking service service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Collaborative ML experiment-tracking service result",
         "description": "Returns the latest acceptable result within Handle 10k+ experiments per project."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Collaborative ML experiment-tracking service pipeline health",
+        "description": "Monitors Collaborative ML experiment-tracking service consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Collaborative ML experiment-tracking service commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Collaborative ML experiment-tracking service writes, event IDs, and versions so retries and replay are safe.",
+        "Return Collaborative ML experiment-tracking service version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design an experiment tracking system that logs hyperparameters, metrics, artifacts, and code for ML experiments, enabling comparison, reproducibility, and team collaboration., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Collaborative ML experiment-tracking service by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Collaborative ML experiment-tracking service work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Collaborative ML experiment-tracking service projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use MLflow, Weights & Biases, or Neptune as reference, Implement append-only log storage for metrics, Use object storage for large artifacts as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Collaborative ML experiment-tracking service projection or an explicit degraded response when workers fail.",
+        "Retain durable Collaborative ML experiment-tracking service records for replay and make each downstream effect independently retryable.",
+        "Measure Collaborative ML experiment-tracking service latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Collaborative ML experiment-tracking service consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

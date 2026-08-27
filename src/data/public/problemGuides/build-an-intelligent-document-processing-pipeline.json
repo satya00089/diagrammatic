@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Build an Intelligent Document Processing Pipeline",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Extract text from documents; Classify document types; design keys around the main reads and writes."
+      "name": "Intelligent document-processing pipeline",
+      "fields": [
+        "tenantId",
+        "intelligentDocumentProcessingPipelineId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Intelligent document-processing pipeline record keyed for its primary command and read paths."
     },
     {
-      "name": "build-an-intelligent-document-processing event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Intelligent document-processing pipeline event",
+      "fields": [
+        "eventId",
+        "intelligentDocumentProcessingPipelineId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Intelligent document-processing pipeline event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Intelligent document-processing pipeline policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Intelligent document-processing pipeline authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Intelligent document-processing pipeline projection",
+      "fields": [
+        "intelligentDocumentProcessingPipelineId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Intelligent document-processing pipeline projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Extract text from documents command, then commit it idempotently."
+      "path": "/v1/intelligent-document-processing-pipeline",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { intelligentDocumentProcessingPipelineId, status, version }",
+      "notes": "Create or submit Intelligent document-processing pipeline with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/intelligent-document-processing-pipeline/{intelligentDocumentProcessingPipelineId}",
+      "contract": "{ intelligentDocumentProcessingPipelineId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Intelligent document-processing pipeline state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/intelligent-document-processing-pipeline?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Intelligent document-processing pipeline records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/intelligent-document-processing-pipeline/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Intelligent document-processing pipeline rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Extract text from documents",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Intelligent document-processing pipeline gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Intelligent document-processing pipeline events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Document AI for OCR and extraction, Cloud Functions for orchestration, Cloud Storage for document storage, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Intelligent document-processing pipeline events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Intelligent document-processing pipeline projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Intelligent document-processing pipeline request boundary",
+        "description": "Clients submit and read Intelligent document-processing pipeline requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Intelligent document-processing pipeline authoritative state",
         "description": "Original documents, page manifests, OCR/extraction versions, confidence, corrections, and replayable events.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Intelligent document-processing pipeline processing and serving",
+        "description": "Partitioned Intelligent document-processing pipeline workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Intelligent document-processing pipeline operations",
+        "description": "Intelligent document-processing pipeline signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Intelligent document-processing pipeline write path",
+        "description": "Client -> Intelligent document-processing pipeline gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Intelligent document-processing pipeline projection path",
+        "description": "Authoritative Intelligent document-processing pipeline state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Intelligent document-processing pipeline clients",
         "description": "Clients upload documents, inspect per-page progress/confidence, review fields, and export results.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Intelligent document-processing pipeline gateway",
+        "description": "Authenticates Intelligent document-processing pipeline requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Intelligent document-processing pipeline service",
         "description": "Owns document manifests, processing schemas, authorization, review state, and result contracts.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Intelligent document-processing pipeline state",
         "description": "Stores immutable originals, page outputs, extracted fields, model versions, review decisions, and audit metadata.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Intelligent document-processing pipeline event backbone",
         "description": "Publishes document-accepted, page-ready, extraction, validation, review, and publication events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Intelligent document-processing pipeline workers",
         "description": "Runs page OCR, classification, extraction, confidence checks, enrichment, and review assignment asynchronously.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Intelligent document-processing pipeline projection",
         "description": "Serves document/page status, extracted fields, confidence, validation errors, and review views.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Intelligent document-processing pipeline monitoring",
+        "description": "Tracks Intelligent document-processing pipeline latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Intelligent document-processing pipeline",
         "description": "Client uploads a document or requests reprocessing/export of a versioned result."
       },
       {
@@ -289,31 +317,31 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Intelligent document-processing pipeline operation",
+        "description": "The gateway forwards a validated Intelligent document-processing pipeline operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "label": "Intelligent document-processing pipeline state commit",
+        "description": "The Intelligent document-processing pipeline service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Intelligent document-processing pipeline event",
+        "description": "An outbox or change stream publishes committed Intelligent document-processing pipeline transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Intelligent document-processing pipeline background work",
         "description": "Workers process pages, validate fields, assign human review, and publish a versioned document result."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Intelligent document-processing pipeline serving update",
+        "description": "Workers update the Intelligent document-processing pipeline projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Intelligent document-processing pipeline projection read",
+        "description": "The Intelligent document-processing pipeline service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Intelligent document-processing pipeline result",
         "description": "Returns progress and confidence-aware results, or an explicit human-review/degraded status."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Intelligent document-processing pipeline pipeline health",
+        "description": "Monitors Intelligent document-processing pipeline consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the accepted domain mutation strongly consistent; make derived projections explicitly eventually consistent.",
+        "Use idempotency keys, conditional writes, event IDs, and resource versions so retries are safe.",
+        "Return version and observedAt so clients can reason about projection freshness and convergence."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a document processing system that extracts text from PDFs and images, classifies documents, extracts structured data, and validates accuracy., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Intelligent document-processing pipeline by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Intelligent document-processing pipeline work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Intelligent document-processing pipeline projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Document AI for OCR and extraction, Cloud Functions for orchestration, Cloud Storage for document storage as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable projection or a domain-safe degraded response when asynchronous dependencies fail.",
+        "Retain durable Intelligent document-processing pipeline records for replay and make each downstream effect independently retryable.",
+        "Measure domain latency, backlog, freshness, error rate, and source-to-projection correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Intelligent document-processing pipeline consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

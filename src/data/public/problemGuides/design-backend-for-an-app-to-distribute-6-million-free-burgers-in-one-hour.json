@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design Backend for an App to Distribute 6 Million Free Burgers in One Hour",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Handle millions of concurrent requests; Fair distribution (first-come-first-served); design keys around the main reads and writes."
+      "name": "Fair, abuse-resistant flash-distribution system",
+      "fields": [
+        "tenantId",
+        "fairAbuseResistantFlashDistributionSystemId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Fair, abuse-resistant flash-distribution system record keyed for its primary command and read paths."
     },
     {
-      "name": "design-backend-for-an-app-to-distribute-6-million-free-burgers-in-one-hour event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Fair, abuse-resistant flash-distribution system event",
+      "fields": [
+        "eventId",
+        "fairAbuseResistantFlashDistributionSystemId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Fair, abuse-resistant flash-distribution system event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Fair, abuse-resistant flash-distribution system policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Fair, abuse-resistant flash-distribution system authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Fair, abuse-resistant flash-distribution system projection",
+      "fields": [
+        "fairAbuseResistantFlashDistributionSystemId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Fair, abuse-resistant flash-distribution system projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Handle millions of concurrent requests command, then commit it idempotently."
+      "path": "/v1/fair-abuse-resistant-flash-distribution-sy",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { fairAbuseResistantFlashDistributionSystemId, status, version }",
+      "notes": "Create or submit Fair, abuse-resistant flash-distribution system with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/fair-abuse-resistant-flash-distribution-sy/{fairAbuseResistantFlashDistributionSystemId}",
+      "contract": "{ fairAbuseResistantFlashDistributionSystemId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Fair, abuse-resistant flash-distribution system state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/fair-abuse-resistant-flash-distribution-sy?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Fair, abuse-resistant flash-distribution system records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/fair-abuse-resistant-flash-distribution-sy/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Fair, abuse-resistant flash-distribution system rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Handle millions of concurrent requests",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Fair, abuse-resistant flash-distribution system gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Handle millions of concurrent requests; Fair distribution (first-come-first-served) before acknowledging the client."
+      "description": "The Fair, abuse-resistant flash-distribution system service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Fair, abuse-resistant flash-distribution system events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Fair, abuse-resistant flash-distribution system events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Fair, abuse-resistant flash-distribution system projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Fair, abuse-resistant flash-distribution system request boundary",
+        "description": "Clients submit and read Fair, abuse-resistant flash-distribution system requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Handle millions of concurrent requests; Fair distribution (first-come-first-served) supports replay, repair, and consistency checks.",
+        "label": "Fair, abuse-resistant flash-distribution system authoritative state",
+        "description": "Durable Fair, abuse-resistant flash-distribution system state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Fair, abuse-resistant flash-distribution system processing and serving",
+        "description": "Partitioned Fair, abuse-resistant flash-distribution system workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Fair, abuse-resistant flash-distribution system operations",
+        "description": "Fair, abuse-resistant flash-distribution system signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Fair, abuse-resistant flash-distribution system write path",
+        "description": "Client -> Fair, abuse-resistant flash-distribution system gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Fair, abuse-resistant flash-distribution system projection path",
+        "description": "Authoritative Fair, abuse-resistant flash-distribution system state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Fair, abuse-resistant flash-distribution system clients",
         "description": "Clients use the Handle millions of concurrent requests workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Fair, abuse-resistant flash-distribution system gateway",
+        "description": "Authenticates Fair, abuse-resistant flash-distribution system requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Fair, abuse-resistant flash-distribution system service",
         "description": "Owns the Handle millions of concurrent requests command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Fair, abuse-resistant flash-distribution system state",
         "description": "Stores Handle millions of concurrent requests; Fair distribution (first-come-first-served) and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Fair, abuse-resistant flash-distribution system event backbone",
         "description": "Publishes versioned events for Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Fair, abuse-resistant flash-distribution system workers",
         "description": "Workers process Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Fair, abuse-resistant flash-distribution system projection",
         "description": "Serves low-latency views for Design Backend for an App to Distribute 6 Million Free Burgers in One Hour with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Fair, abuse-resistant flash-distribution system monitoring",
+        "description": "Tracks Fair, abuse-resistant flash-distribution system latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Fair, abuse-resistant flash-distribution system",
         "description": "Client submits Handle millions of concurrent requests through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Fair, abuse-resistant flash-distribution system operation",
+        "description": "The gateway forwards a validated Fair, abuse-resistant flash-distribution system operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Fair, abuse-resistant flash-distribution system state commit",
         "description": "Commits Handle millions of concurrent requests; Fair distribution (first-come-first-served) before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Fair, abuse-resistant flash-distribution system event",
+        "description": "An outbox or change stream publishes committed Fair, abuse-resistant flash-distribution system transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Fair, abuse-resistant flash-distribution system background work",
         "description": "Workers handle Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Fair, abuse-resistant flash-distribution system serving update",
+        "description": "Workers update the Fair, abuse-resistant flash-distribution system projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Fair, abuse-resistant flash-distribution system projection read",
+        "description": "The Fair, abuse-resistant flash-distribution system service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Fair, abuse-resistant flash-distribution system result",
         "description": "Returns the latest acceptable result within Extreme traffic spike (millions in minutes)."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Fair, abuse-resistant flash-distribution system pipeline health",
+        "description": "Monitors Fair, abuse-resistant flash-distribution system consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Fair, abuse-resistant flash-distribution system commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Fair, abuse-resistant flash-distribution system writes, event IDs, and versions so retries and replay are safe.",
+        "Return Fair, abuse-resistant flash-distribution system version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a system to handle flash distribution of limited items with high concurrency and fairness., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Fair, abuse-resistant flash-distribution system by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Fair, abuse-resistant flash-distribution system work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Fair, abuse-resistant flash-distribution system projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Queue-based request handling, Redis for atomic inventory decrements, Rate limiting per user as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Fair, abuse-resistant flash-distribution system projection or an explicit degraded response when workers fail.",
+        "Retain durable Fair, abuse-resistant flash-distribution system records for replay and make each downstream effect independently retryable.",
+        "Measure Fair, abuse-resistant flash-distribution system latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Fair, abuse-resistant flash-distribution system consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

@@ -199,7 +199,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Service clients",
         "description": "Browsers, mobile apps, and crawlers that create or follow links.",
         "position": {
           "x": 0,
@@ -227,7 +227,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Service gateway",
         "description": "Validates requests, applies quotas, and routes create/read traffic.",
         "position": {
           "x": 960,

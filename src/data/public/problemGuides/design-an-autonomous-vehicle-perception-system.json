@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design an Autonomous Vehicle Perception System",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Process multi-camera feeds in real-time; Process LiDAR point clouds for 3D detection; design keys around the main reads and writes."
+      "name": "Safety-critical vehicle-perception stack",
+      "fields": [
+        "tenantId",
+        "safetyCriticalVehiclePerceptionStackId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Safety-critical vehicle-perception stack record keyed for its primary command and read paths."
     },
     {
-      "name": "design-an-autonomous-vehicle-perception event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Safety-critical vehicle-perception stack event",
+      "fields": [
+        "eventId",
+        "safetyCriticalVehiclePerceptionStackId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Safety-critical vehicle-perception stack event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Safety-critical vehicle-perception stack policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Safety-critical vehicle-perception stack authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Safety-critical vehicle-perception stack projection",
+      "fields": [
+        "safetyCriticalVehiclePerceptionStackId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Safety-critical vehicle-perception stack projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Process multi-camera feeds in real-time command, then commit it idempotently."
+      "path": "/v1/safety-critical-vehicle-perception-stack",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { safetyCriticalVehiclePerceptionStackId, status, version }",
+      "notes": "Create or submit Safety-critical vehicle-perception stack with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/safety-critical-vehicle-perception-stack/{safetyCriticalVehiclePerceptionStackId}",
+      "contract": "{ safetyCriticalVehiclePerceptionStackId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Safety-critical vehicle-perception stack state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/safety-critical-vehicle-perception-stack?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Safety-critical vehicle-perception stack records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/safety-critical-vehicle-perception-stack/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Safety-critical vehicle-perception stack rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Process multi-camera feeds in real-time",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Safety-critical vehicle-perception stack gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Process multi-camera feeds in real-time; Process LiDAR point clouds for 3D detection before acknowledging the client."
+      "description": "The Safety-critical vehicle-perception stack service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Safety-critical vehicle-perception stack events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use BEV (Bird's Eye View) representations for fusion, Implement PointPillars or CenterPoint for LiDAR detection, Use temporal fusion for multi-frame tracking, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Safety-critical vehicle-perception stack events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Safety-critical vehicle-perception stack projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Safety-critical vehicle-perception stack request boundary",
+        "description": "Clients submit and read Safety-critical vehicle-perception stack requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Process multi-camera feeds in real-time; Process LiDAR point clouds for 3D detection supports replay, repair, and consistency checks.",
+        "label": "Safety-critical vehicle-perception stack authoritative state",
+        "description": "Durable Safety-critical vehicle-perception stack state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Safety-critical vehicle-perception stack processing and serving",
+        "description": "Partitioned Safety-critical vehicle-perception stack workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Safety-critical vehicle-perception stack operations",
+        "description": "Safety-critical vehicle-perception stack signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Safety-critical vehicle-perception stack write path",
+        "description": "Client -> Safety-critical vehicle-perception stack gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Safety-critical vehicle-perception stack projection path",
+        "description": "Authoritative Safety-critical vehicle-perception stack state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Safety-critical vehicle-perception stack clients",
         "description": "Clients use the Process multi-camera feeds in real-time workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Safety-critical vehicle-perception stack gateway",
+        "description": "Authenticates Safety-critical vehicle-perception stack requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Safety-critical vehicle-perception stack service",
         "description": "Owns the Process multi-camera feeds in real-time command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Safety-critical vehicle-perception stack state",
         "description": "Stores Process multi-camera feeds in real-time; Process LiDAR point clouds for 3D detection and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Safety-critical vehicle-perception stack event backbone",
         "description": "Publishes versioned events for Use BEV (Bird's Eye View) representations for fusion, Implement PointPillars or CenterPoint for LiDAR detection, Use temporal fusion for multi-frame tracking after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Safety-critical vehicle-perception stack workers",
         "description": "Workers process Use BEV (Bird's Eye View) representations for fusion, Implement PointPillars or CenterPoint for LiDAR detection, Use temporal fusion for multi-frame tracking independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Safety-critical vehicle-perception stack projection",
         "description": "Serves low-latency views for Design an Autonomous Vehicle Perception System with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Safety-critical vehicle-perception stack monitoring",
+        "description": "Tracks Safety-critical vehicle-perception stack latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Safety-critical vehicle-perception stack",
         "description": "Client submits Process multi-camera feeds in real-time through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Safety-critical vehicle-perception stack operation",
+        "description": "The gateway forwards a validated Safety-critical vehicle-perception stack operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Safety-critical vehicle-perception stack state commit",
         "description": "Commits Process multi-camera feeds in real-time; Process LiDAR point clouds for 3D detection before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Safety-critical vehicle-perception stack event",
+        "description": "An outbox or change stream publishes committed Safety-critical vehicle-perception stack transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Safety-critical vehicle-perception stack background work",
         "description": "Workers handle Use BEV (Bird's Eye View) representations for fusion, Implement PointPillars or CenterPoint for LiDAR detection, Use temporal fusion for multi-frame tracking with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Safety-critical vehicle-perception stack serving update",
+        "description": "Workers update the Safety-critical vehicle-perception stack projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Safety-critical vehicle-perception stack projection read",
+        "description": "The Safety-critical vehicle-perception stack service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Safety-critical vehicle-perception stack result",
         "description": "Returns the latest acceptable result within End-to-end perception latency under 100ms."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Safety-critical vehicle-perception stack pipeline health",
+        "description": "Monitors Safety-critical vehicle-perception stack consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Safety-critical vehicle-perception stack commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Safety-critical vehicle-perception stack writes, event IDs, and versions so retries and replay are safe.",
+        "Return Safety-critical vehicle-perception stack version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design the perception stack for an autonomous vehicle that fuses data from cameras, LiDAR, and radar sensors, detects objects in 3D space, and tracks their movement in real-time., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Safety-critical vehicle-perception stack by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Safety-critical vehicle-perception stack work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Safety-critical vehicle-perception stack projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use BEV (Bird's Eye View) representations for fusion, Implement PointPillars or CenterPoint for LiDAR detection, Use temporal fusion for multi-frame tracking as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Safety-critical vehicle-perception stack projection or an explicit degraded response when workers fail.",
+        "Retain durable Safety-critical vehicle-perception stack records for replay and make each downstream effect independently retryable.",
+        "Measure Safety-critical vehicle-perception stack latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Safety-critical vehicle-perception stack consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

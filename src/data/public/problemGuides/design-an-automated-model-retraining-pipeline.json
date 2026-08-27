@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design an Automated Model Retraining Pipeline",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Trigger retraining on schedule or drift detection; Automatically collect and validate training data; design keys around the main reads and writes."
+      "name": "Automated model-retraining platform",
+      "fields": [
+        "tenantId",
+        "automatedModelRetrainingPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Automated model-retraining platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-an-automated-model-retraining event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Automated model-retraining platform event",
+      "fields": [
+        "eventId",
+        "automatedModelRetrainingPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Automated model-retraining platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Automated model-retraining platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Automated model-retraining platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Automated model-retraining platform projection",
+      "fields": [
+        "automatedModelRetrainingPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Automated model-retraining platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Trigger retraining on schedule or drift detection command, then commit it idempotently."
+      "path": "/v1/automated-model-retraining-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { automatedModelRetrainingPlatformId, status, version }",
+      "notes": "Create or submit Automated model-retraining platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/automated-model-retraining-platform/{automatedModelRetrainingPlatformId}",
+      "contract": "{ automatedModelRetrainingPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Automated model-retraining platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/automated-model-retraining-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Automated model-retraining platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/automated-model-retraining-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Automated model-retraining platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Trigger retraining on schedule or drift detection",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Automated model-retraining platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Trigger retraining on schedule or drift detection; Automatically collect and validate training data before acknowledging the client."
+      "description": "The Automated model-retraining platform service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Automated model-retraining platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use CI/CD principles applied to ML (CT/CD), Implement shadow deployments for validation, Use statistical significance tests for comparison, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Automated model-retraining platform events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Automated model-retraining platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Automated model-retraining platform request boundary",
+        "description": "Clients submit and read Automated model-retraining platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Trigger retraining on schedule or drift detection; Automatically collect and validate training data supports replay, repair, and consistency checks.",
+        "label": "Automated model-retraining platform authoritative state",
+        "description": "Durable Automated model-retraining platform state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Automated model-retraining platform processing and serving",
+        "description": "Partitioned Automated model-retraining platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Automated model-retraining platform operations",
+        "description": "Automated model-retraining platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Automated model-retraining platform write path",
+        "description": "Client -> Automated model-retraining platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Automated model-retraining platform projection path",
+        "description": "Authoritative Automated model-retraining platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Automated model-retraining platform clients",
         "description": "Clients use the Trigger retraining on schedule or drift detection workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Automated model-retraining platform gateway",
+        "description": "Authenticates Automated model-retraining platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Automated model-retraining platform service",
         "description": "Owns the Trigger retraining on schedule or drift detection command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Automated model-retraining platform state",
         "description": "Stores Trigger retraining on schedule or drift detection; Automatically collect and validate training data and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Automated model-retraining platform event backbone",
         "description": "Publishes versioned events for Use CI/CD principles applied to ML (CT/CD), Implement shadow deployments for validation, Use statistical significance tests for comparison after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Automated model-retraining platform workers",
         "description": "Workers process Use CI/CD principles applied to ML (CT/CD), Implement shadow deployments for validation, Use statistical significance tests for comparison independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Automated model-retraining platform projection",
         "description": "Serves low-latency views for Design an Automated Model Retraining Pipeline with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Automated model-retraining platform monitoring",
+        "description": "Tracks Automated model-retraining platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Automated model-retraining platform",
         "description": "Client submits Trigger retraining on schedule or drift detection through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Automated model-retraining platform operation",
+        "description": "The gateway forwards a validated Automated model-retraining platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Automated model-retraining platform state commit",
         "description": "Commits Trigger retraining on schedule or drift detection; Automatically collect and validate training data before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Automated model-retraining platform event",
+        "description": "An outbox or change stream publishes committed Automated model-retraining platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Automated model-retraining platform background work",
         "description": "Workers handle Use CI/CD principles applied to ML (CT/CD), Implement shadow deployments for validation, Use statistical significance tests for comparison with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Automated model-retraining platform serving update",
+        "description": "Workers update the Automated model-retraining platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Automated model-retraining platform projection read",
+        "description": "The Automated model-retraining platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Automated model-retraining platform result",
         "description": "Returns the latest acceptable result within Retraining completion within 4 hours."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Automated model-retraining platform pipeline health",
+        "description": "Monitors Automated model-retraining platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Automated model-retraining platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Automated model-retraining platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return Automated model-retraining platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a system that automatically retrains ML models when performance degrades or new data arrives, validates retrained models against quality gates, and deploys approved models to production., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Automated model-retraining platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Automated model-retraining platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Automated model-retraining platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use CI/CD principles applied to ML (CT/CD), Implement shadow deployments for validation, Use statistical significance tests for comparison as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Automated model-retraining platform projection or an explicit degraded response when workers fail.",
+        "Retain durable Automated model-retraining platform records for replay and make each downstream effect independently retryable.",
+        "Measure Automated model-retraining platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Automated model-retraining platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

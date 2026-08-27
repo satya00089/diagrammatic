@@ -300,7 +300,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Collaborative document platform where many users gateway",
         "description": "Authenticates users, applies workspace quotas, validates request envelopes, and routes REST and WebSocket traffic.",
         "position": {
           "x": 880,

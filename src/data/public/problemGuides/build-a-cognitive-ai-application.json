@@ -50,50 +50,78 @@
   },
   "entities": [
     {
-      "name": "Build a Cognitive AI Application",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Implement conversational AI bot; Understand natural language; design keys around the main reads and writes."
+      "name": "Multimodal conversational AI application",
+      "fields": [
+        "tenantId",
+        "multimodalConversationalAiApplicationId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Multimodal conversational AI application record keyed for its primary command and read paths."
     },
     {
-      "name": "build-a-cognitive-ai-application event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal conversational AI application event",
+      "fields": [
+        "eventId",
+        "multimodalConversationalAiApplicationId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Multimodal conversational AI application event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal conversational AI application policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Multimodal conversational AI application authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal conversational AI application projection",
+      "fields": [
+        "multimodalConversationalAiApplicationId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Multimodal conversational AI application projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Implement conversational AI bot command, then commit it idempotently."
+      "path": "/v1/multimodal-conversational-ai-application",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { multimodalConversationalAiApplicationId, status, version }",
+      "notes": "Create or submit Multimodal conversational AI application with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/multimodal-conversational-ai-application/{multimodalConversationalAiApplicationId}",
+      "contract": "{ multimodalConversationalAiApplicationId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Multimodal conversational AI application state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/multimodal-conversational-ai-application?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Multimodal conversational AI application records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/multimodal-conversational-ai-application/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Multimodal conversational AI application rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Multimodal conversational AI application request boundary",
+        "description": "Clients submit and read Multimodal conversational AI application requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Multimodal conversational AI application authoritative state",
         "description": "Durable conversation turns, assistant policy, knowledge versions, tool outcomes, and replayable events.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Multimodal conversational AI application processing and serving",
+        "description": "Partitioned Multimodal conversational AI application workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Multimodal conversational AI application operations",
+        "description": "Multimodal conversational AI application signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Multimodal conversational AI application write path",
+        "description": "Client -> Multimodal conversational AI application gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Multimodal conversational AI application projection path",
+        "description": "Authoritative Multimodal conversational AI application state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design a multimodal conversational AI application that clients",
         "description": "Clients start conversations, stream responses, and render citations, tool progress, and usage status.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design a multimodal conversational AI application that gateway",
+        "description": "Authenticates Multimodal conversational AI application requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design a multimodal conversational AI application that service",
         "description": "Owns conversation turns, authorization, safety policy, tool contracts, and response orchestration.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Authoritative Design a multimodal conversational AI application that state",
         "description": "Stores conversation history, policy/configuration, knowledge manifests, tool outcomes, and response metadata.",
         "position": {
           "x": 1080,
@@ -222,8 +250,8 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned domain events after durable commits so consumers can retry safely.",
+        "label": "Design a multimodal conversational AI application that event backbone",
+        "description": "Publishes committed Multimodal conversational AI application events with stable keys so consumers can retry and replay safely.",
         "position": {
           "x": 1440,
           "y": 100
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design a multimodal conversational AI application that processing workers",
         "description": "Chunks/embeds knowledge, evaluates safety, processes feedback, and runs long tools independently from chat.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design a multimodal conversational AI application that serving projection",
         "description": "Serves conversation history, citations, job status, and usage views with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design a multimodal conversational AI application that SLO monitoring",
+        "description": "Tracks Multimodal conversational AI application latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -290,7 +318,7 @@
         "target": "service",
         "type": "api-call",
         "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "description": "The gateway forwards a validated Multimodal conversational AI application operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
@@ -298,7 +326,7 @@
         "target": "source",
         "type": "database-connection",
         "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "description": "The Multimodal conversational AI application service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
@@ -306,7 +334,7 @@
         "target": "stream",
         "type": "event-stream",
         "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "description": "An outbox or change stream publishes committed Multimodal conversational AI application transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
@@ -322,7 +350,7 @@
         "target": "read-model",
         "type": "data-flow",
         "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "description": "Workers update the Multimodal conversational AI application projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
@@ -330,7 +358,7 @@
         "target": "service",
         "type": "database-connection",
         "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "description": "The Multimodal conversational AI application service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
@@ -346,7 +374,7 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "description": "Monitors Multimodal conversational AI application consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Multimodal conversational AI application consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

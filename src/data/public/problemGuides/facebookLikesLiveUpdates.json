@@ -297,7 +297,7 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Design Facebook's Like feature so a user can lik monitoring",
         "description": "Tracks mutation latency, stream lag, projection drift, fan-out drops, and hot-key pressure.",
         "position": { "x": 2160, "y": -180 },
         "properties": { "alerts": "Lag, drift, error rate" }

@@ -50,72 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design a Multi-Modal AI Assistant",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Accept text, image, audio, and video inputs; Reason across multiple modalities; design keys around the main reads and writes."
+      "name": "Multimodal AI assistant",
+      "fields": [
+        "tenantId",
+        "multimodalAiAssistantId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Multimodal AI assistant record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-multi-modal-ai-assistant event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal AI assistant event",
+      "fields": [
+        "eventId",
+        "multimodalAiAssistantId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Multimodal AI assistant event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal AI assistant policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Multimodal AI assistant authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Multimodal AI assistant projection",
+      "fields": [
+        "multimodalAiAssistantId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Multimodal AI assistant projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Accept text, image, audio, and video inputs command, then commit it idempotently."
+      "path": "/v1/multimodal-ai-assistant",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { multimodalAiAssistantId, status, version }",
+      "notes": "Create or submit Multimodal AI assistant with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/multimodal-ai-assistant/{multimodalAiAssistantId}",
+      "contract": "{ multimodalAiAssistantId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Multimodal AI assistant state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/multimodal-ai-assistant?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Multimodal AI assistant records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/multimodal-ai-assistant/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Multimodal AI assistant rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Accept text, image, audio, and video inputs",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Multimodal AI assistant gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Accept text, image, audio, and video inputs; Reason across multiple modalities before acknowledging the client."
+      "description": "The Multimodal AI assistant service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Multimodal AI assistant events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use vision-language models for image understanding, Implement Whisper for speech-to-text, Use separate encoders per modality with fusion layers, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Multimodal AI assistant events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Multimodal AI assistant projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Multimodal AI assistant request boundary",
+        "description": "Clients submit and read Multimodal AI assistant requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Accept text, image, audio, and video inputs; Reason across multiple modalities supports replay, repair, and consistency checks.",
+        "label": "Multimodal AI assistant authoritative state",
+        "description": "Durable Multimodal AI assistant state supports replay, repair, and consistency checks.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Multimodal AI assistant processing and serving",
+        "description": "Partitioned Multimodal AI assistant workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Multimodal AI assistant operations",
+        "description": "Multimodal AI assistant signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Multimodal AI assistant write path",
+        "description": "Client -> Multimodal AI assistant gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Multimodal AI assistant projection path",
+        "description": "Authoritative Multimodal AI assistant state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Multimodal AI assistant clients",
         "description": "Clients use the Accept text, image, audio, and video inputs workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Multimodal AI assistant gateway",
+        "description": "Authenticates Multimodal AI assistant requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Multimodal AI assistant service",
         "description": "Owns the Accept text, image, audio, and video inputs command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Multimodal AI assistant state",
         "description": "Stores Accept text, image, audio, and video inputs; Reason across multiple modalities and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Multimodal AI assistant event backbone",
         "description": "Publishes versioned events for Use vision-language models for image understanding, Implement Whisper for speech-to-text, Use separate encoders per modality with fusion layers after durable commits.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Multimodal AI assistant workers",
         "description": "Workers process Use vision-language models for image understanding, Implement Whisper for speech-to-text, Use separate encoders per modality with fusion layers independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Multimodal AI assistant projection",
         "description": "Serves low-latency views for Design a Multi-Modal AI Assistant with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Multimodal AI assistant monitoring",
+        "description": "Tracks Multimodal AI assistant latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Multimodal AI assistant",
         "description": "Client submits Accept text, image, audio, and video inputs through the authenticated request boundary."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Multimodal AI assistant operation",
+        "description": "The gateway forwards a validated Multimodal AI assistant operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Multimodal AI assistant state commit",
         "description": "Commits Accept text, image, audio, and video inputs; Reason across multiple modalities before downstream asynchronous work."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Multimodal AI assistant event",
+        "description": "An outbox or change stream publishes committed Multimodal AI assistant transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Multimodal AI assistant background work",
         "description": "Workers handle Use vision-language models for image understanding, Implement Whisper for speech-to-text, Use separate encoders per modality with fusion layers with bounded retries and idempotent updates."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Multimodal AI assistant serving update",
+        "description": "Workers update the Multimodal AI assistant projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Multimodal AI assistant projection read",
+        "description": "The Multimodal AI assistant service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Multimodal AI assistant result",
         "description": "Returns the latest acceptable result within Text response latency under 1 second."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Multimodal AI assistant pipeline health",
+        "description": "Monitors Multimodal AI assistant consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Multimodal AI assistant commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Multimodal AI assistant writes, event IDs, and versions so retries and replay are safe.",
+        "Return Multimodal AI assistant version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a multi-modal AI assistant that processes text, images, audio, and video inputs, reasoning across modalities to answer questions, generate content, and take actions., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Multimodal AI assistant by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Multimodal AI assistant work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Multimodal AI assistant projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use vision-language models for image understanding, Implement Whisper for speech-to-text, Use separate encoders per modality with fusion layers as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Multimodal AI assistant projection or an explicit degraded response when workers fail.",
+        "Retain durable Multimodal AI assistant records for replay and make each downstream effect independently retryable.",
+        "Measure Multimodal AI assistant latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Multimodal AI assistant consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

@@ -225,7 +225,7 @@
         "id": "scheduler-client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Multi-tenant job scheduling service clients",
         "description": "Applications and operators that create schedules and inspect execution history.",
         "position": {
           "x": 0,
@@ -239,7 +239,7 @@
         "id": "scheduler-gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API Gateway",
+        "label": "Multi-tenant job scheduling service gateway",
         "description": "Authenticates tenants, validates payloads, and applies quotas and idempotency keys.",
         "position": {
           "x": 480,
@@ -365,7 +365,7 @@
         "id": "observability",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
+        "label": "Multi-tenant job scheduling service monitoring",
         "description": "Tracks lateness, queue depth, retries, worker saturation, and missed-run alerts.",
         "position": {
           "x": 3360,

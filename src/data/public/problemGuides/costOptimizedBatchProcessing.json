@@ -104,7 +104,7 @@
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/jobs",
+      "path": "/v1/batch-jobs/rebuild",
       "contract": "{ inputUri, tasks, dependencies, priority, deadline, budget, requestId } -> { jobId, state }",
       "notes": "Authenticate the tenant, validate the DAG and resource limits, and persist the job idempotently."
     },
@@ -178,7 +178,7 @@
       },
       {
         "id": "operations",
-        "label": "Operations",
+        "label": "Cost-optimized batch-processing platform operations",
         "description": "Retries, cost telemetry, retention, and SLA monitoring.",
         "componentIds": ["reconciler", "cost-meter", "monitoring"]
       }
@@ -228,7 +228,7 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
+        "label": "Cost-optimized batch-processing platform gateway",
         "description": "Authenticates tenants, enforces quotas, validates payloads, and rate-limits control operations.",
         "position": { "x": 360, "y": 280 },
         "properties": { "protection": "Auth, quotas, validation" }

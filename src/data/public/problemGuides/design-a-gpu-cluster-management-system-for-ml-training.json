@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Design a GPU Cluster Management System for ML Training",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Schedule training jobs across GPU nodes; Implement fair-share resource allocation; design keys around the main reads and writes."
+      "name": "GPU cluster manager",
+      "fields": [
+        "tenantId",
+        "gpuClusterManagerId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative GPU cluster manager record keyed for its primary command and read paths."
     },
     {
-      "name": "design-a-gpu-cluster-management-for-ml-training event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "GPU cluster manager event",
+      "fields": [
+        "eventId",
+        "gpuClusterManagerId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable GPU cluster manager event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "GPU cluster manager policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling GPU cluster manager authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "GPU cluster manager projection",
+      "fields": [
+        "gpuClusterManagerId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable GPU cluster manager projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Schedule training jobs across GPU nodes command, then commit it idempotently."
+      "path": "/v1/gpu-cluster-manager",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { gpuClusterManagerId, status, version }",
+      "notes": "Create or submit GPU cluster manager with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/gpu-cluster-manager/{gpuClusterManagerId}",
+      "contract": "{ gpuClusterManagerId, status, version, observedAt, freshness }",
+      "notes": "Return the latest GPU cluster manager state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/gpu-cluster-manager?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped GPU cluster manager records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/gpu-cluster-manager/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a GPU cluster manager rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Schedule training jobs across GPU nodes",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The GPU cluster manager gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed GPU cluster manager events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use Kubernetes with GPU operator for orchestration, Implement Volcano or Kueue for batch scheduling, Use topology-aware scheduling for NVLink/NVSwitch, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume GPU cluster manager events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the GPU cluster manager projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "GPU cluster manager request boundary",
+        "description": "Clients submit and read GPU cluster manager requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "GPU cluster manager authoritative state",
         "description": "Durable job, queue, allocation, node, quota, and checkpoint state supports recovery and replayable scheduling decisions.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "GPU cluster manager processing and serving",
+        "description": "Partitioned GPU cluster manager workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "GPU cluster manager operations",
+        "description": "GPU cluster manager signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "GPU cluster manager write path",
+        "description": "Client -> GPU cluster manager gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "GPU cluster manager projection path",
+        "description": "Authoritative GPU cluster manager state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "GPU cluster manager clients",
         "description": "Users submit jobs and view queue, allocation, progress, preemption, checkpoint, and completion state.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "GPU cluster manager gateway",
+        "description": "Authenticates GPU cluster manager requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "GPU cluster manager service",
         "description": "Owns admission control, tenant quotas, priority and fair-share policy, placement constraints, and job lifecycle.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "GPU cluster manager state",
         "description": "Stores jobs, queues, GPU inventories, leases, allocations, quotas, checkpoints, and scheduler epochs.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "GPU cluster manager event backbone",
         "description": "Publishes job-admitted, queued, allocated, preempted, checkpointed, failed, and completed events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "GPU cluster manager workers",
         "description": "Scheduler workers reconcile node heartbeats, GPU health, queues, leases, topology, quotas, and gang-placement decisions.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "GPU cluster manager projection",
         "description": "Serves current queue, allocation, utilization, and job status projections with scheduler-epoch freshness.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "GPU cluster manager monitoring",
+        "description": "Tracks GPU cluster manager latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -281,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start GPU cluster manager",
         "description": "A user submits a resource request with image, command, GPU type/count, priority, and checkpoint policy."
       },
       {
@@ -289,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated GPU cluster manager operation",
+        "description": "The gateway forwards a validated GPU cluster manager operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "GPU cluster manager state commit",
         "description": "The control plane commits the job and queue placement intent before an asynchronous scheduler claims resources."
       },
       {
@@ -305,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "GPU cluster manager event",
+        "description": "An outbox or change stream publishes committed GPU cluster manager transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "GPU cluster manager background work",
         "description": "Schedulers claim fencing leases, select topology-compatible GPUs, launch workloads, and recover abandoned allocations."
       },
       {
@@ -321,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "GPU cluster manager serving update",
+        "description": "Workers update the GPU cluster manager projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "GPU cluster manager projection read",
+        "description": "The GPU cluster manager service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "GPU cluster manager result",
         "description": "Job admission and status reads meet interactive latency targets; utilization and queue fairness are tracked separately."
       },
       {
@@ -345,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "GPU cluster manager pipeline health",
+        "description": "Monitors GPU cluster manager consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the GPU cluster manager commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional GPU cluster manager writes, event IDs, and versions so retries and replay are safe.",
+        "Return GPU cluster manager version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a GPU cluster management system that handles job scheduling, resource allocation, multi-tenancy, preemption, and cost optimization for ML training workloads., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition GPU cluster manager by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound GPU cluster manager work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for GPU cluster manager projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use Kubernetes with GPU operator for orchestration, Implement Volcano or Kueue for batch scheduling, Use topology-aware scheduling for NVLink/NVSwitch as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable GPU cluster manager projection or an explicit degraded response when workers fail.",
+        "Retain durable GPU cluster manager records for replay and make each downstream effect independently retryable.",
+        "Measure GPU cluster manager latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain GPU cluster manager consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Build a Machine Learning Model Deployment Pipeline",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Train models on large datasets; Version control for models; design keys around the main reads and writes."
+      "name": "End-to-end ML platform",
+      "fields": [
+        "tenantId",
+        "endToEndMlPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative End-to-end ML platform record keyed for its primary command and read paths."
     },
     {
-      "name": "build-a-machine-learning-model-deployment event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "End-to-end ML platform event",
+      "fields": [
+        "eventId",
+        "endToEndMlPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable End-to-end ML platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "End-to-end ML platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling End-to-end ML platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "End-to-end ML platform projection",
+      "fields": [
+        "endToEndMlPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable End-to-end ML platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Train models on large datasets command, then commit it idempotently."
+      "path": "/v1/end-to-end-ml-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { endToEndMlPlatformId, status, version }",
+      "notes": "Create or submit End-to-end ML platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/end-to-end-ml-platform/{endToEndMlPlatformId}",
+      "contract": "{ endToEndMlPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest End-to-end ML platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/end-to-end-ml-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped End-to-end ML platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/end-to-end-ml-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a End-to-end ML platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Train models on large datasets",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The edge authenticates the request, validates Register datasets and experiments, launch training, evaluate candidate models, and store immutable artifacts., and applies tenant authorization and idempotency before the domain service accepts it."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "An outbox publishes a versioned event after the Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. commit; consumers deduplicate by event ID."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process SageMaker for training and hosting, S3 for data and model storage, Step Functions for ML workflow, update projections, and expose lag or watermark metadata."
+      "description": "Workers runs training/evaluation, shadow/canary serving, monitoring, and artifact promotion independently from inference. and update Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. projections with lag and watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Reads use the Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. serving projection; replay, repair, exports, and slow external work remain asynchronous."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "End-to-end ML platform request boundary",
+        "description": "Clients submit and read End-to-end ML platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "End-to-end ML platform authoritative state",
         "description": "Versioned datasets, code/features, model artifacts, evaluations, deployment stages, and replayable events.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "End-to-end ML platform processing and serving",
+        "description": "Partitioned End-to-end ML platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "End-to-end ML platform operations",
+        "description": "End-to-end ML platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "End-to-end ML platform write path",
+        "description": "Client -> End-to-end ML platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "End-to-end ML platform projection path",
+        "description": "Authoritative End-to-end ML platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design an end-to-end ML platform that trains models, v clients",
         "description": "Teams launch runs, inspect lineage/evaluations, approve promotion, and render rollout health and drift.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design an end-to-end ML platform that trains models, v gateway",
+        "description": "Authenticates End-to-end ML platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design an end-to-end ML platform that trains models, v service",
         "description": "Owns training, evaluation, registry, deployment policy, authorization, and rollout contracts.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Authoritative Design an end-to-end ML platform that trains models, v state",
         "description": "Stores immutable artifacts, lineage, evaluation evidence, deployment state, and rollback metadata.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design an end-to-end ML platform that trains models, v event backbone",
         "description": "Publishes training, evaluation, registry, deployment, canary, drift, and rollback events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design an end-to-end ML platform that trains models, v processing workers",
         "description": "Runs training/evaluation, shadow/canary serving, monitoring, and artifact promotion independently from inference.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design an end-to-end ML platform that trains models, v serving projection",
         "description": "Serves run lineage, evaluation, deployment stage, model health, and rollback views with freshness metadata.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design an end-to-end ML platform that trains models, v SLO monitoring",
+        "description": "Tracks End-to-end ML platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -290,7 +318,7 @@
         "target": "service",
         "type": "api-call",
         "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "description": "The gateway forwards a validated End-to-end ML platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
@@ -298,7 +326,7 @@
         "target": "source",
         "type": "database-connection",
         "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "description": "The End-to-end ML platform service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
@@ -306,7 +334,7 @@
         "target": "stream",
         "type": "event-stream",
         "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "description": "An outbox or change stream publishes committed End-to-end ML platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
@@ -322,7 +350,7 @@
         "target": "read-model",
         "type": "data-flow",
         "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "description": "Workers update the End-to-end ML platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
@@ -330,7 +358,7 @@
         "target": "service",
         "type": "database-connection",
         "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "description": "The End-to-end ML platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
@@ -346,7 +374,7 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "description": "Monitors End-to-end ML platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep accepted Register datasets and experiments, launch training, evaluate candidate models, and store immutable artifacts. strongly consistent; make derived Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. projections explicitly eventually consistent.",
+        "Use idempotency keys, conditional writes, event IDs, and resource versions so retries of Register datasets and experiments, launch training, evaluate candidate models, and store immutable artifacts. are safe.",
+        "Return version and observedAt so clients can reason about Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. freshness and convergence."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition End-to-end ML platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound End-to-end ML platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for End-to-end ML platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat SageMaker for training and hosting, S3 for data and model storage, Step Functions for ML workflow as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. projection or a conservative degraded response when Deploy a selected model to shadow, canary, A/B, and full-production stages with traffic and rollback controls. dependencies fail.",
+        "Retain durable End-to-end ML platform records for replay and make each downstream effect independently retryable.",
+        "Measure Design an end-to-end ML pipeline that automates model training, validation, deployment, and monitoring with A/B testing capabilities. latency, backlog, freshness, error rate, and source-to-projection correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain End-to-end ML platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

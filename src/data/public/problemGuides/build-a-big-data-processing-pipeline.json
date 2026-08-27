@@ -66,12 +66,11 @@
     {
       "name": "RawEvent",
       "fields": [
-        "event_id",
-        "source_id",
-        "tenant_id",
-        "event_time",
-        "ingest_time",
-        "schema_version",
+        "eventId",
+        "batchId",
+        "eventType",
+        "version",
+        "occurredAt",
         "payload"
       ],
       "notes": "Append-only raw data is the replay authority and carries both event and ingestion timestamps."
@@ -79,38 +78,30 @@
     {
       "name": "StreamCheckpoint",
       "fields": [
-        "pipeline_id",
-        "partition_id",
-        "offset",
-        "watermark",
-        "state_snapshot_uri",
-        "updated_at"
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
       ],
       "notes": "Offsets and state snapshots advance together through a checkpoint protocol."
     },
     {
       "name": "QualityFinding",
       "fields": [
-        "finding_id",
-        "pipeline_id",
-        "run_id",
-        "rule_id",
-        "severity",
-        "state"
+        "batchId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
       "notes": "Quality failures are queryable and policy decides whether they block publication."
     },
     {
       "name": "DatasetManifest",
-      "fields": [
-        "dataset_id",
-        "run_id",
-        "partitions",
-        "schema_version",
-        "row_count",
-        "watermark",
-        "committed_at"
-      ],
+      "fields": [],
       "notes": "Consumers pin an atomic manifest for a consistent batch or table snapshot."
     }
   ],

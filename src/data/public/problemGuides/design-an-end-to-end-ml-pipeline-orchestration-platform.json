@@ -50,96 +50,100 @@
   },
   "entities": [
     {
-      "name": "Design an End-to-End ML Pipeline Orchestration Platform",
+      "name": "Platform",
       "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
+        "tenantId",
+        "platformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
       ],
-      "notes": "Durable model for Define ML pipelines as DAGs; Orchestrate data processing, training, and evaluation steps; design keys around the main reads and writes."
+      "notes": "Authoritative Platform record keyed for its primary command and read paths."
     },
     {
-      "name": "design-an-end-to-end-ml-orchestration event",
+      "name": "Platform event",
       "fields": [
-        "id",
-        "source_id",
+        "eventId",
+        "platformId",
+        "eventType",
         "version",
-        "occurred_at",
-        "status"
+        "occurredAt",
+        "payload"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Immutable Platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
+      "name": "Platform policy",
       "fields": [
-        "id",
-        "source_id",
+        "policyId",
+        "tenantId",
+        "scope",
         "version",
-        "occurred_at",
-        "status"
+        "rules",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned policy controlling Platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
+      "name": "Platform projection",
       "fields": [
-        "id",
-        "source_id",
+        "platformId",
+        "status",
         "version",
-        "occurred_at",
-        "status"
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Rebuildable Platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Define ML pipelines as DAGs command, then commit it idempotently."
+      "path": "/v1/platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { platformId, status, version }",
+      "notes": "Create or submit Platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/platform/{platformId}",
+      "contract": "{ platformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Define ML pipelines as DAGs",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Platform gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records Define ML pipelines as DAGs; Orchestrate data processing, training, and evaluation steps before acknowledging the client."
+      "description": "The Platform service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Platform events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process Use Kubeflow Pipelines, Airflow, or Prefect for orchestration, Implement content-addressable artifact caching, Use containerized steps for reproducibility, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Platform events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Platform projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -148,63 +152,41 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service"
-        ]
+        "label": "Platform request boundary",
+        "description": "Clients submit and read Platform requests through an authenticated boundary.",
+        "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for Define ML pipelines as DAGs; Orchestrate data processing, training, and evaluation steps supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
+        "label": "Platform authoritative state",
+        "description": "Durable Platform state supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "label": "Platform processing and serving",
+        "description": "Partitioned Platform workers build serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
+        "label": "Platform operations",
+        "description": "Platform signals expose lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
+        "label": "Platform write path",
+        "description": "Client -> Platform gateway -> service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Platform projection path",
+        "description": "Authoritative Platform state -> event backbone -> workers -> serving projection.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -212,8 +194,8 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
-        "description": "Clients use the Define ML pipelines as DAGs workflow and receive explicit status, freshness, or progress.",
+        "label": "Platform clients",
+        "description": "Clients use the Platform workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
           "y": 260
@@ -226,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Platform gateway",
+        "description": "Authenticates Platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -240,8 +222,8 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
-        "description": "Owns the Define ML pipelines as DAGs command, authorization policy, lifecycle state, and client contract.",
+        "label": "Platform service",
+        "description": "Owns Platform commands, authorization, lifecycle state, and the client contract.",
         "position": {
           "x": 720,
           "y": 260
@@ -254,8 +236,8 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
-        "description": "Stores Define ML pipelines as DAGs; Orchestrate data processing, training, and evaluation steps and supports the primary access patterns.",
+        "label": "Platform state",
+        "description": "Stores authoritative Platform state and supports the primary access patterns.",
         "position": {
           "x": 1080,
           "y": 260
@@ -268,8 +250,8 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
-        "description": "Publishes versioned events for Use Kubeflow Pipelines, Airflow, or Prefect for orchestration, Implement content-addressable artifact caching, Use containerized steps for reproducibility after durable commits.",
+        "label": "Platform event backbone",
+        "description": "Publishes committed Platform events with stable keys so consumers can retry and replay safely.",
         "position": {
           "x": 1440,
           "y": 100
@@ -282,8 +264,8 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
-        "description": "Workers process Use Kubeflow Pipelines, Airflow, or Prefect for orchestration, Implement content-addressable artifact caching, Use containerized steps for reproducibility independently from the user-facing command and retry transient failures.",
+        "label": "Platform workers",
+        "description": "Workers process Platform events asynchronously, retry transient failures, and update projections.",
         "position": {
           "x": 1800,
           "y": 100
@@ -296,8 +278,8 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
-        "description": "Serves low-latency views for Design an End-to-End ML Pipeline Orchestration Platform with explicit freshness and fallback behavior.",
+        "label": "Platform projection",
+        "description": "Serves low-latency Platform views with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
           "y": 260
@@ -310,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Platform monitoring",
+        "description": "Tracks Platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -327,72 +309,72 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
-        "description": "Client submits Define ML pipelines as DAGs through the authenticated request boundary."
+        "label": "Start Platform",
+        "description": "The client submits an authenticated Platform request through the edge boundary."
       },
       {
         "id": "gateway-service",
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Platform operation",
+        "description": "The gateway forwards a validated Platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
-        "description": "Commits Define ML pipelines as DAGs; Orchestrate data processing, training, and evaluation steps before downstream asynchronous work."
+        "label": "Platform state commit",
+        "description": "The Platform service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Platform event",
+        "description": "An outbox or change stream publishes committed Platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
-        "description": "Workers handle Use Kubeflow Pipelines, Airflow, or Prefect for orchestration, Implement content-addressable artifact caching, Use containerized steps for reproducibility with bounded retries and idempotent updates."
+        "label": "Platform background work",
+        "description": "Workers consume committed Platform events, perform asynchronous work, and update serving state."
       },
       {
         "id": "workers-read-model",
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Platform serving update",
+        "description": "Workers update the Platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Platform projection read",
+        "description": "The Platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
-        "description": "Returns the latest acceptable result within Pipeline startup latency under 30 seconds."
+        "label": "Platform result",
+        "description": "The Platform read path returns the latest acceptable result within its latency target."
       },
       {
         "id": "stream-monitoring",
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Platform pipeline health",
+        "description": "Monitors Platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -400,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Platform commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Platform writes, event IDs, and versions so retries and replay are safe.",
+        "Return Platform version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a platform that orchestrates end-to-end ML workflows from data ingestion through model deployment, with DAG-based pipeline definitions, caching, and reproducibility guarantees., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat Use Kubeflow Pipelines, Airflow, or Prefect for orchestration, Implement content-addressable artifact caching, Use containerized steps for reproducibility as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Platform projection or an explicit degraded response when workers fail.",
+        "Retain durable Platform records for replay and make each downstream effect independently retryable.",
+        "Measure Platform latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -479,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

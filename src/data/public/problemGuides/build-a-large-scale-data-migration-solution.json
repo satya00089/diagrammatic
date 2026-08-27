@@ -50,56 +50,84 @@
   },
   "entities": [
     {
-      "name": "Build a Large-Scale Data Migration Solution",
-      "fields": ["id", "owner_id", "state", "created_at", "updated_at"],
-      "notes": "Durable model for Migrate on-premises databases to cloud; Transfer petabytes of file data; design keys around the main reads and writes."
+      "name": "Large-scale migration platform",
+      "fields": [
+        "tenantId",
+        "largeScaleMigrationPlatformId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
+      ],
+      "notes": "Authoritative Large-scale migration platform record keyed for its primary command and read paths."
     },
     {
-      "name": "build-a-large-scale-data-migration-solution event",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Large-scale migration platform event",
+      "fields": [
+        "eventId",
+        "largeScaleMigrationPlatformId",
+        "eventType",
+        "version",
+        "occurredAt",
+        "payload"
+      ],
+      "notes": "Immutable Large-scale migration platform event with an idempotency key and version for replay."
     },
     {
-      "name": "Policy and configuration",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Large-scale migration platform policy",
+      "fields": [
+        "policyId",
+        "tenantId",
+        "scope",
+        "version",
+        "rules",
+        "updatedAt"
+      ],
+      "notes": "Versioned policy controlling Large-scale migration platform authorization, routing, or eligibility decisions."
     },
     {
-      "name": "Read model",
-      "fields": ["id", "source_id", "version", "occurred_at", "status"],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "name": "Large-scale migration platform projection",
+      "fields": [
+        "largeScaleMigrationPlatformId",
+        "status",
+        "version",
+        "observedAt",
+        "freshness",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable Large-scale migration platform projection with observedAt and freshness metadata."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the Migrate on-premises databases to cloud command, then commit it idempotently."
+      "path": "/v1/large-scale-migration-platform",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { largeScaleMigrationPlatformId, status, version }",
+      "notes": "Create or submit Large-scale migration platform with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/large-scale-migration-platform/{largeScaleMigrationPlatformId}",
+      "contract": "{ largeScaleMigrationPlatformId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Large-scale migration platform state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/large-scale-migration-platform?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Large-scale migration platform records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/large-scale-migration-platform/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Large-scale migration platform rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept Migrate on-premises databases to cloud",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The edge authenticates the request, validates Discover source assets and dependencies, create a migration plan, and transfer database tables and file objects., and applies tenant authorization and idempotency before the domain service accepts it."
     },
     {
       "title": "Commit the durable state",
@@ -107,15 +135,15 @@
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "An outbox publishes a versioned event after the Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. commit; consumers deduplicate by event ID."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process AWS DMS for database migration, Snowball for large data transfers, DataSync for file migration, update projections, and expose lag or watermark metadata."
+      "description": "Workers runs parallel file/database transfer, checksum validation, reconciliation, and destination verification asynchronously. and update Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. projections with lag and watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Reads use the Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. serving projection; replay, repair, exports, and slow external work remain asynchronous."
     }
   ],
   "architecture": {
@@ -124,40 +152,40 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
+        "label": "Large-scale migration platform request boundary",
+        "description": "Clients submit and read Large-scale migration platform requests through an authenticated boundary.",
         "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
+        "label": "Large-scale migration platform authoritative state",
         "description": "Source inventories, chunk manifests, CDC positions, checksums, validation evidence, and cutover decisions.",
         "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
+        "label": "Large-scale migration platform processing and serving",
+        "description": "Partitioned Large-scale migration platform workers build serving projections with visible freshness.",
         "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
+        "label": "Large-scale migration platform operations",
+        "description": "Large-scale migration platform signals expose lag, failures, repair, correctness, and capacity.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
+        "label": "Large-scale migration platform write path",
+        "description": "Client -> Large-scale migration platform gateway -> service -> authoritative state.",
         "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
+        "label": "Large-scale migration platform projection path",
+        "description": "Authoritative Large-scale migration platform state -> event backbone -> workers -> serving projection.",
         "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
@@ -166,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design a large-scale migration platform that moves on- clients",
         "description": "Operators inventory sources, monitor transfer/CDC lag, inspect validation, and control cutover or rollback.",
         "position": {
           "x": 0,
@@ -180,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design a large-scale migration platform that moves on- gateway",
+        "description": "Authenticates Large-scale migration platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -194,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design a large-scale migration platform that moves on- service",
         "description": "Owns migration plans, source/destination authorization, checkpoint contracts, validation, and cutover state.",
         "position": {
           "x": 720,
@@ -208,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Authoritative Design a large-scale migration platform that moves on- state",
         "description": "Stores manifests, source mappings, chunk/checksum state, CDC checkpoints, validation reports, and cutover metadata.",
         "position": {
           "x": 1080,
@@ -222,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design a large-scale migration platform that moves on- event backbone",
         "description": "Publishes chunk-complete, CDC-progress, validation, reconciliation, and cutover events.",
         "position": {
           "x": 1440,
@@ -236,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design a large-scale migration platform that moves on- processing workers",
         "description": "Runs parallel file/database transfer, checksum validation, reconciliation, and destination verification asynchronously.",
         "position": {
           "x": 1800,
@@ -250,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design a large-scale migration platform that moves on- serving projection",
         "description": "Serves migration progress, lag, validation findings, readiness, and rollback status with freshness metadata.",
         "position": {
           "x": 2160,
@@ -264,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design a large-scale migration platform that moves on- SLO monitoring",
+        "description": "Tracks Large-scale migration platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -290,7 +318,7 @@
         "target": "service",
         "type": "api-call",
         "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "description": "The gateway forwards a validated Large-scale migration platform operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
@@ -298,7 +326,7 @@
         "target": "source",
         "type": "database-connection",
         "label": "Durable commit",
-        "description": "The service commits the authoritative state before downstream asynchronous work begins."
+        "description": "The Large-scale migration platform service commits authoritative state before downstream asynchronous work begins."
       },
       {
         "id": "source-stream",
@@ -306,7 +334,7 @@
         "target": "stream",
         "type": "event-stream",
         "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "description": "An outbox or change stream publishes committed Large-scale migration platform transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
@@ -322,7 +350,7 @@
         "target": "read-model",
         "type": "data-flow",
         "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "description": "Workers update the Large-scale migration platform projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
@@ -330,7 +358,7 @@
         "target": "service",
         "type": "database-connection",
         "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "description": "The Large-scale migration platform service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
@@ -346,7 +374,7 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "description": "Monitors Large-scale migration platform consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -354,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep accepted Discover source assets and dependencies, create a migration plan, and transfer database tables and file objects. strongly consistent; make derived Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. projections explicitly eventually consistent.",
+        "Use idempotency keys, conditional writes, event IDs, and resource versions so retries of Discover source assets and dependencies, create a migration plan, and transfer database tables and file objects. are safe.",
+        "Return version and observedAt so clients can reason about Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. freshness and convergence."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation., then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Large-scale migration platform by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Large-scale migration platform work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Large-scale migration platform projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat AWS DMS for database migration, Snowball for large data transfers, DataSync for file migration as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. projection or a conservative degraded response when Track chunk progress, lag, validation findings, retries, cutover readiness, and rollback state. dependencies fail.",
+        "Retain durable Large-scale migration platform records for replay and make each downstream effect independently retryable.",
+        "Measure Design a large-scale data migration solution that transfers on-premises databases and petabytes of files to the cloud with minimal downtime and data validation. latency, backlog, freshness, error rate, and source-to-projection correctness drift."
       ]
     }
   ],
@@ -433,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Large-scale migration platform consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }

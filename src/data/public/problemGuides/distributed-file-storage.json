@@ -50,96 +50,100 @@
   },
   "entities": [
     {
-      "name": "metadata plus object storage",
+      "name": "Upload, version, sync, sharing,",
       "fields": [
-        "id",
-        "owner_id",
-        "state",
-        "created_at",
-        "updated_at"
+        "tenantId",
+        "uploadVersionSyncSharingId",
+        "status",
+        "version",
+        "createdAt",
+        "updatedAt"
       ],
       "notes": "Durable model for object versions and permissions; design keys around the main reads and writes."
     },
     {
-      "name": "distributed-file-storage event",
+      "name": "Upload, version, sync, sharing, event",
       "fields": [
-        "id",
-        "source_id",
+        "eventId",
+        "uploadVersionSyncSharingId",
+        "eventType",
         "version",
-        "occurred_at",
-        "status"
+        "occurredAt",
+        "payload"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Upload, version, sync, sharing, records preserve ownership, lifecycle, audit, and replay semantics."
     },
     {
-      "name": "Policy and configuration",
+      "name": "Upload, version, sync, sharing, policy",
       "fields": [
-        "id",
-        "source_id",
+        "policyId",
+        "tenantId",
+        "scope",
         "version",
-        "occurred_at",
-        "status"
+        "rules",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Upload, version, sync, sharing, records preserve ownership, lifecycle, audit, and replay semantics."
     },
     {
-      "name": "Read model",
+      "name": "Upload, version, sync, sharing, projection",
       "fields": [
-        "id",
-        "source_id",
+        "uploadVersionSyncSharingId",
+        "status",
         "version",
-        "occurred_at",
-        "status"
+        "observedAt",
+        "freshness",
+        "updatedAt"
       ],
-      "notes": "Versioned, idempotent state supports retries, replay, and consistency checks."
+      "notes": "Versioned Upload, version, sync, sharing, records preserve ownership, lifecycle, audit, and replay semantics."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/commands",
-      "contract": "{ requestId, input } -> { id, status }",
-      "notes": "Authenticate and validate the upload and share a file command, then commit it idempotently."
+      "path": "/v1/upload-version-sync-sharing",
+      "contract": "{ requestId, actorId, input, idempotencyKey } -> { uploadVersionSyncSharingId, status, version }",
+      "notes": "Create or submit Upload, version, sync, sharing, with idempotency and return an accepted state/version."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{id}",
-      "contract": "{ resource, status, version, observedAt }",
-      "notes": "Return the latest acceptable read model with explicit freshness or progress."
+      "path": "/v1/upload-version-sync-sharing/{uploadVersionSyncSharingId}",
+      "contract": "{ uploadVersionSyncSharingId, status, version, observedAt, freshness }",
+      "notes": "Return the latest Upload, version, sync, sharing, state with version, observedAt, and freshness metadata."
     },
     {
       "method": "GET",
-      "path": "/v1/resources?cursor=&limit=",
-      "contract": "{ items[], nextCursor }",
-      "notes": "Use bounded cursor pagination and enforce tenant, privacy, and eligibility filters."
+      "path": "/v1/upload-version-sync-sharing?tenantId=&cursor=&limit=",
+      "contract": "{ items[], nextCursor, projectionVersion }",
+      "notes": "List tenant-scoped Upload, version, sync, sharing, records with cursor pagination and eligibility filters."
     },
     {
       "method": "POST",
-      "path": "/v1/jobs",
-      "contract": "{ type, input } -> { jobId, status }",
-      "notes": "Route large, historical, or asynchronous work to a quota-controlled job path."
+      "path": "/v1/upload-version-sync-sharing/rebuild",
+      "contract": "{ type, input, idempotencyKey } -> { jobId, status }",
+      "notes": "Start a Upload, version, sync, sharing, rebuild or repair operation and return job status."
     }
   ],
   "dataFlow": [
     {
       "title": "Accept upload and share a file",
-      "description": "The edge authenticates and validates the request; the core service applies authorization and an idempotency key."
+      "description": "The Upload, version, sync, sharing, gateway authenticates the caller, validates the request, applies tenant policy and idempotency, then routes it to the owning service."
     },
     {
       "title": "Commit the durable state",
-      "description": "The service validates and durably records object versions and permissions before acknowledging the client."
+      "description": "The Upload, version, sync, sharing, service records the accepted state and version before acknowledging the client."
     },
     {
       "title": "Publish the domain event",
-      "description": "An outbox or change stream emits a replayable event after the commit; consumers use at-least-once delivery safely."
+      "description": "A durable outbox publishes committed Upload, version, sync, sharing, events; consumers deduplicate by event ID and track offsets."
     },
     {
       "title": "Build the read model",
-      "description": "Partitioned workers process chunk assembly, virus scanning, indexing, and replication, update projections, and expose lag or watermark metadata."
+      "description": "Partitioned workers consume Upload, version, sync, sharing, events, update the serving projection, and expose lag or watermark metadata."
     },
     {
       "title": "Serve and recover asynchronously",
-      "description": "Reads use the bounded read model; replay, repair, exports, and slow external work stay asynchronous."
+      "description": "Serving reads use the Upload, version, sync, sharing, projection; replay, repair, export, and slow work remain off the request path."
     }
   ],
   "architecture": {
@@ -148,63 +152,41 @@
     "layers": [
       {
         "id": "experience",
-        "label": "Experience",
-        "description": "Authenticated clients and the request boundary for the primary workflow.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service"
-        ]
+        "label": "Upload, version, sync, sharing, request boundary",
+        "description": "Clients submit and read Upload, version, sync, sharing, requests through an authenticated boundary.",
+        "componentIds": ["client", "gateway", "service"]
       },
       {
         "id": "source",
-        "label": "Source of truth",
-        "description": "Durable state for object versions and permissions supports replay, repair, and consistency checks.",
-        "componentIds": [
-          "source",
-          "stream"
-        ]
+        "label": "Upload, version, sync, sharing, authoritative state",
+        "description": "Durable Upload, version, sync, sharing, state supports replay, repair, and consistency checks.",
+        "componentIds": ["source", "stream"]
       },
       {
         "id": "processing",
-        "label": "Processing and serving",
-        "description": "Partitioned domain workers and serving projections with visible freshness.",
-        "componentIds": [
-          "workers",
-          "read-model"
-        ]
+        "label": "Upload, version, sync, sharing, processing and serving",
+        "description": "Partitioned Upload, version, sync, sharing, workers build serving projections with visible freshness.",
+        "componentIds": ["workers", "read-model"]
       },
       {
         "id": "operations",
-        "label": "Operations",
-        "description": "Operational signals for lag, failures, repair, correctness, and capacity.",
-        "componentIds": [
-          "monitoring"
-        ]
+        "label": "Upload, version, sync, sharing, operations",
+        "description": "Upload, version, sync, sharing, signals expose lag, failures, repair, correctness, and capacity.",
+        "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
         "id": "critical",
-        "label": "Critical request path",
-        "description": "Client -> gateway -> domain service -> authoritative state.",
-        "componentIds": [
-          "client",
-          "gateway",
-          "service",
-          "source"
-        ]
+        "label": "Upload, version, sync, sharing, write path",
+        "description": "Client -> Upload, version, sync, sharing, gateway -> service -> authoritative state.",
+        "componentIds": ["client", "gateway", "service", "source"]
       },
       {
         "id": "async",
-        "label": "Async projection path",
-        "description": "Authoritative state -> event backbone -> workers -> serving projections.",
-        "componentIds": [
-          "source",
-          "stream",
-          "workers",
-          "read-model"
-        ]
+        "label": "Upload, version, sync, sharing, projection path",
+        "description": "Authoritative Upload, version, sync, sharing, state -> event backbone -> workers -> serving projection.",
+        "componentIds": ["source", "stream", "workers", "read-model"]
       }
     ],
     "components": [
@@ -212,7 +194,7 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Clients",
+        "label": "Design upload, version, sync, sharing, clients",
         "description": "Clients use the upload and share a file workflow and receive explicit status, freshness, or progress.",
         "position": {
           "x": 0,
@@ -226,8 +208,8 @@
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "API gateway",
-        "description": "Authenticates and validates requests, applies quotas and idempotency, and routes by tenant and resource key.",
+        "label": "Design upload, version, sync, sharing, gateway",
+        "description": "Authenticates Design upload, version, sync, sharing, requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
           "x": 360,
           "y": 260
@@ -240,7 +222,7 @@
         "id": "service",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Core service",
+        "label": "Design upload, version, sync, sharing, service",
         "description": "Owns the upload and share a file command, authorization policy, lifecycle state, and client contract.",
         "position": {
           "x": 720,
@@ -254,7 +236,7 @@
         "id": "source",
         "type": "database",
         "componentId": "database",
-        "label": "Durable source of truth",
+        "label": "Design upload, version, sync, sharing, state",
         "description": "Stores object versions and permissions and supports the primary access patterns.",
         "position": {
           "x": 1080,
@@ -268,7 +250,7 @@
         "id": "stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Event stream",
+        "label": "Design upload, version, sync, sharing, event backbone",
         "description": "Publishes versioned events for chunk assembly, virus scanning, indexing, and replication after durable commits.",
         "position": {
           "x": 1440,
@@ -282,7 +264,7 @@
         "id": "workers",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Async workers",
+        "label": "Design upload, version, sync, sharing, workers",
         "description": "Workers process chunk assembly, virus scanning, indexing, and replication independently from the user-facing command and retry transient failures.",
         "position": {
           "x": 1800,
@@ -296,7 +278,7 @@
         "id": "read-model",
         "type": "cache",
         "componentId": "cache",
-        "label": "Read model / cache",
+        "label": "Design upload, version, sync, sharing, projection",
         "description": "Serves low-latency views for metadata plus object storage with explicit freshness and fallback behavior.",
         "position": {
           "x": 2160,
@@ -310,8 +292,8 @@
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Observability",
-        "description": "Tracks latency, backlog, freshness, correctness, and saturation.",
+        "label": "Design upload, version, sync, sharing, monitoring",
+        "description": "Tracks Design upload, version, sync, sharing, latency, backlog, freshness, correctness, and saturation.",
         "position": {
           "x": 1800,
           "y": -180
@@ -327,7 +309,7 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Request",
+        "label": "Start Design upload, version, sync, sharing,",
         "description": "Client submits upload and share a file through the authenticated request boundary."
       },
       {
@@ -335,15 +317,15 @@
         "source": "gateway",
         "target": "service",
         "type": "api-call",
-        "label": "Validated command",
-        "description": "The gateway forwards an authenticated, validated request after quota and idempotency checks."
+        "label": "Validated Design upload, version, sync, sharing, operation",
+        "description": "The gateway forwards a validated Design upload, version, sync, sharing, operation after authentication, quota, and idempotency checks."
       },
       {
         "id": "service-source",
         "source": "service",
         "target": "source",
         "type": "database-connection",
-        "label": "Durable commit",
+        "label": "Design upload, version, sync, sharing, state commit",
         "description": "Commits object versions and permissions before downstream asynchronous work."
       },
       {
@@ -351,15 +333,15 @@
         "source": "source",
         "target": "stream",
         "type": "event-stream",
-        "label": "Domain event",
-        "description": "An outbox or change stream preserves committed transitions."
+        "label": "Design upload, version, sync, sharing, event",
+        "description": "An outbox or change stream publishes committed Design upload, version, sync, sharing, transitions with replayable ordering."
       },
       {
         "id": "stream-workers",
         "source": "stream",
         "target": "workers",
         "type": "message-queue",
-        "label": "Async work",
+        "label": "Design upload, version, sync, sharing, background work",
         "description": "Workers handle chunk assembly, virus scanning, indexing, and replication with bounded retries and idempotent updates."
       },
       {
@@ -367,23 +349,23 @@
         "source": "workers",
         "target": "read-model",
         "type": "data-flow",
-        "label": "Projection",
-        "description": "Workers update serving projections and expose a freshness watermark."
+        "label": "Design upload, version, sync, sharing, serving update",
+        "description": "Workers update the Design upload, version, sync, sharing, projection and expose a freshness watermark."
       },
       {
         "id": "read-service",
         "source": "read-model",
         "target": "service",
         "type": "database-connection",
-        "label": "Fast read",
-        "description": "The domain service reads the latest acceptable projection or authoritative state."
+        "label": "Design upload, version, sync, sharing, projection read",
+        "description": "The Design upload, version, sync, sharing, service reads the latest acceptable projection or authoritative state."
       },
       {
         "id": "service-client",
         "source": "service",
         "target": "client",
         "type": "http",
-        "label": "Response",
+        "label": "Design upload, version, sync, sharing, result",
         "description": "Returns the latest acceptable result within metadata p95 <=150ms."
       },
       {
@@ -391,8 +373,8 @@
         "source": "stream",
         "target": "monitoring",
         "type": "data-flow",
-        "label": "Lag and health",
-        "description": "Monitors consumer lag, processing health, freshness, and projection correctness."
+        "label": "Design upload, version, sync, sharing, pipeline health",
+        "description": "Monitors Design upload, version, sync, sharing, consumer lag, processing health, freshness, and projection correctness."
       }
     ]
   },
@@ -400,25 +382,25 @@
     {
       "title": "Consistency and idempotency",
       "points": [
-        "Define which state is strongly consistent and which projection is eventually consistent.",
-        "Use request IDs, conditional writes, event IDs, and versions to make retries safe.",
-        "Return version and observedAt so clients can reason about freshness."
+        "Keep the Upload, version, sync, sharing, commit authoritative; let derived projections converge with visible version and freshness.",
+        "Use idempotency keys, conditional Upload, version, sync, sharing, writes, event IDs, and versions so retries and replay are safe.",
+        "Return Upload, version, sync, sharing, version and observedAt so clients can reason about freshness."
       ]
     },
     {
       "title": "Partitioning and hot keys",
       "points": [
-        "Partition by the access pattern implied by upload, version, sync, sharing, and durable file storage, then isolate hot tenants, users, items, or regions.",
-        "Use bounded work, backpressure, and queue isolation instead of allowing one key to dominate the cluster.",
-        "Keep a replay or reconciliation path for projection drift and partial failures."
+        "Partition Upload, version, sync, sharing, by its primary read and write keys, then isolate hot tenants, users, items, or regions.",
+        "Bound Upload, version, sync, sharing, work with backpressure and queue isolation so one hot key cannot dominate the cluster.",
+        "Keep a replay or reconciliation path for Upload, version, sync, sharing, projection drift and partial failures."
       ]
     },
     {
       "title": "Failure and recovery",
       "points": [
-        "Serve the last acceptable projection or an explicit degraded response when asynchronous dependencies fail.",
-        "Retain durable records for replay; treat chunk assembly, virus scanning, indexing, and replication as independently retryable.",
-        "Measure latency, backlog, freshness, error rate, and correctness drift."
+        "Serve the last acceptable Upload, version, sync, sharing, projection or an explicit degraded response when workers fail.",
+        "Retain durable Upload, version, sync, sharing, records for replay and make each downstream effect independently retryable.",
+        "Measure Upload, version, sync, sharing, latency, backlog, freshness, error rate, and correctness drift."
       ]
     }
   ],
@@ -479,7 +461,7 @@
     },
     {
       "criterion": "Tradeoffs",
-      "description": "The candidate can explain consistency, push/pull, managed services, and what changes at larger scale."
+      "description": "The candidate can explain Upload, version, sync, sharing, consistency, push/pull, managed services, and the scale boundary."
     }
   ]
 }
