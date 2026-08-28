@@ -87,6 +87,88 @@ const buildQuestions = (problem: PublicProblem): string[] => {
   return [...new Set(questions)].slice(0, 5);
 };
 
+const SkeletonBlock: React.FC<{ className: string }> = ({ className }) => (
+  <span
+    className={`block animate-pulse rounded-lg bg-[var(--bg-hover)] ${className}`}
+    aria-hidden="true"
+  />
+);
+
+const ProblemLandingSkeleton: React.FC = () => (
+  <div
+    className="min-h-screen bg-[var(--bg)] text-theme"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading the design brief"
+  >
+    <header className="border-b border-white/20 bg-[var(--brand)] text-white">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <span className="h-7 w-7 rounded bg-white/20" />
+          <span className="h-4 w-32 rounded bg-white/20" />
+        </div>
+        <div className="flex items-center gap-2 sm:gap-4" aria-hidden="true">
+          <span className="hidden h-3 w-20 rounded bg-white/20 sm:block" />
+          <span className="hidden h-3 w-24 rounded bg-white/20 md:block" />
+          <span className="h-8 w-8 rounded-full bg-white/20" />
+        </div>
+      </div>
+    </header>
+
+    <main aria-hidden="true">
+      <section className="border-b border-theme/10 bg-[var(--surface)]">
+        <div className="w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-8 2xl:px-10">
+          <SkeletonBlock className="h-4 w-36" />
+          <div className="mt-7 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+            <div className="min-w-0">
+              <div className="mb-5 flex gap-2">
+                <SkeletonBlock className="h-7 w-28 rounded-full" />
+                <SkeletonBlock className="h-7 w-20 rounded-full" />
+              </div>
+              <SkeletonBlock className="h-12 w-full max-w-3xl sm:h-16" />
+              <SkeletonBlock className="mt-6 h-5 w-full max-w-3xl" />
+              <SkeletonBlock className="mt-3 h-5 w-4/5 max-w-2xl" />
+            </div>
+            <aside className="rounded-2xl bg-[var(--bg)] p-6 shadow-[0_12px_32px_rgba(17,24,39,0.10)]">
+              <SkeletonBlock className="h-4 w-full" />
+              <SkeletonBlock className="mt-5 h-4 w-full" />
+              <SkeletonBlock className="mt-7 h-12 w-full rounded-xl" />
+              <SkeletonBlock className="mx-auto mt-4 h-3 w-4/5" />
+              <SkeletonBlock className="mx-auto mt-2 h-3 w-3/5" />
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <div className="w-full px-4 py-12 sm:px-6 lg:px-8 lg:py-16 2xl:px-10">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-w-0 space-y-10">
+            <section>
+              <SkeletonBlock className="h-8 w-48" />
+              <SkeletonBlock className="mt-5 h-5 w-full max-w-3xl" />
+              <SkeletonBlock className="mt-3 h-5 w-11/12 max-w-3xl" />
+              <SkeletonBlock className="mt-3 h-5 w-3/4 max-w-2xl" />
+            </section>
+            <section>
+              <SkeletonBlock className="h-8 w-56" />
+              <SkeletonBlock className="mt-5 h-5 w-full max-w-3xl" />
+              <SkeletonBlock className="mt-3 h-5 w-10/12 max-w-3xl" />
+            </section>
+          </div>
+          <aside className="hidden space-y-3 lg:block">
+            <SkeletonBlock className="h-4 w-28" />
+            <SkeletonBlock className="h-10 w-full" />
+            <SkeletonBlock className="h-10 w-full" />
+            <SkeletonBlock className="h-10 w-full" />
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <span className="sr-only">Loading the design brief…</span>
+  </div>
+);
+
 const ProblemLanding: React.FC = () => {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
@@ -164,22 +246,7 @@ const ProblemLanding: React.FC = () => {
   if (missing) return <NotFound />;
 
   if (!problem || loading) {
-    return (
-      <main className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6">
-        <output className="max-w-md text-center">
-          <span
-            className="mx-auto mb-5 block h-10 w-10 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent"
-            aria-hidden
-          />
-          <span className="block text-2xl font-bold">
-            Loading the design brief…
-          </span>
-          <span className="mt-2 block text-muted">
-            Preparing requirements and practice guidance.
-          </span>
-        </output>
-      </main>
-    );
+    return <ProblemLandingSkeleton />;
   }
 
   const canonical = `${SITE_URL}/problems/${slug}/`;

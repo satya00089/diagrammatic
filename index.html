@@ -1,16 +1,28 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Load analytics after the page has loaded and the browser is idle. -->
+    <!-- Queue analytics immediately, but fetch the third-party script only
+         after real engagement or a generous fallback delay. -->
     <script>
+      globalThis.dataLayer = globalThis.dataLayer || [];
+      globalThis.gtag = function () {
+        globalThis.dataLayer.push(arguments);
+      };
+      globalThis.gtag("js", new Date());
+      globalThis.gtag("config", "G-TYPRCR0RGG");
+
       window.addEventListener("load", function () {
+        var loaded = false;
+        var fallbackId;
+        var engagementEvents = ["pointerdown", "keydown", "scroll"];
+
         function loadGoogleAnalytics() {
-          globalThis.dataLayer = globalThis.dataLayer || [];
-          globalThis.gtag = function () {
-            globalThis.dataLayer.push(arguments);
-          };
-          globalThis.gtag("js", new Date());
-          globalThis.gtag("config", "G-TYPRCR0RGG");
+          if (loaded) return;
+          loaded = true;
+          window.clearTimeout(fallbackId);
+          engagementEvents.forEach(function (eventName) {
+            window.removeEventListener(eventName, loadGoogleAnalytics);
+          });
 
           var script = document.createElement("script");
           script.async = true;
@@ -19,11 +31,13 @@
           document.head.appendChild(script);
         }
 
-        if ("requestIdleCallback" in window) {
-          window.requestIdleCallback(loadGoogleAnalytics, { timeout: 3000 });
-        } else {
-          window.setTimeout(loadGoogleAnalytics, 1000);
-        }
+        engagementEvents.forEach(function (eventName) {
+          window.addEventListener(eventName, loadGoogleAnalytics, {
+            once: true,
+            passive: true,
+          });
+        });
+        fallbackId = window.setTimeout(loadGoogleAnalytics, 15000);
       });
     </script>
 
