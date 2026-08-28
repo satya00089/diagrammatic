@@ -1,18 +1,44 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-TYPRCR0RGG"
-    ></script>
+    <!-- Queue analytics immediately, but fetch the third-party script only
+         after real engagement or a generous fallback delay. -->
     <script>
       globalThis.dataLayer = globalThis.dataLayer || [];
-      function gtag() {
+      globalThis.gtag = function () {
         globalThis.dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-TYPRCR0RGG");
+      };
+      globalThis.gtag("js", new Date());
+      globalThis.gtag("config", "G-TYPRCR0RGG");
+
+      window.addEventListener("load", function () {
+        var loaded = false;
+        var fallbackId;
+        var engagementEvents = ["pointerdown", "keydown", "scroll"];
+
+        function loadGoogleAnalytics() {
+          if (loaded) return;
+          loaded = true;
+          window.clearTimeout(fallbackId);
+          engagementEvents.forEach(function (eventName) {
+            window.removeEventListener(eventName, loadGoogleAnalytics);
+          });
+
+          var script = document.createElement("script");
+          script.async = true;
+          script.src =
+            "https://www.googletagmanager.com/gtag/js?id=G-TYPRCR0RGG";
+          document.head.appendChild(script);
+        }
+
+        engagementEvents.forEach(function (eventName) {
+          window.addEventListener(eventName, loadGoogleAnalytics, {
+            once: true,
+            passive: true,
+          });
+        });
+        fallbackId = window.setTimeout(loadGoogleAnalytics, 15000);
+      });
     </script>
 
     <!-- Microsoft Clarity -->
@@ -35,13 +61,6 @@
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-
     <!-- Primary metadata -->
     <title>Design a Video Processing and | System Design Guide</title>
     <meta name="title" content="Design a Video Processing and | System Design Guide" />
@@ -379,8 +398,8 @@
         }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CHAGnUXC.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-C5d_ceE-.css">
+    <script type="module" crossorigin src="/assets/index-DoQAgq9i.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CwF1StZ3.css">
       <script id="route-structured-data" type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/","url":"https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/","name":"Design a Video Processing and | System Design Guide","description":"Design a pipeline that uploads videos, transcodes multiple formats, generates thumbnails, and delivers content through a CDN. Work through the requirements, architecture trade-offs, and an interactive design review.","isPartOf":{"@type":"WebSite","url":"https://diagrammatic.next-zen.dev/","name":"Diagrammatic"},"mainEntityOfPage":"https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://diagrammatic.next-zen.dev/"},{"@type":"ListItem","position":2,"name":"Practice Problems","item":"https://diagrammatic.next-zen.dev/problems/"},{"@type":"ListItem","position":3,"name":"Design a Video Processing and | System Design Guide","item":"https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/"}]},{"@type":"LearningResource","name":"Design a Video Processing and Transcoding Pipeline — System Design Interview Practice","description":"Design a pipeline that uploads videos, transcodes multiple formats, generates thumbnails, and delivers content through a CDN. Work through the requirements, architecture trade-offs, and an interactive design review.","url":"https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/","educationalLevel":"Hard","teaches":["gcp","transcoding","media-processing"],"timeRequired":"60-90 minutes","dateModified":"2026-08-23","provider":{"@type":"Organization","name":"Diagrammatic","url":"https://diagrammatic.next-zen.dev/"}}]}</script>
   </head>
   <body>
@@ -389,7 +408,7 @@
     <div class="static-route-shell">
       <header class="static-route-header">
         <a class="static-route-brand" href="/">
-          <img src="/logo.png" alt="">
+          <img src="/logo-64.png" alt="" width="28" height="28">
           <span>Diagrammatic</span>
         </a>
         <nav class="static-route-nav" aria-label="Main navigation">
