@@ -659,14 +659,6 @@ function loadGuideCatalog() {
   for (const relativePath of files) {
     const source = fs.readFileSync(path.join(__dirname, relativePath), "utf-8");
     for (const match of source.matchAll(
-      /"([^"]+)"\s*:\s*"([^"]+\.json)"/g,
-    )) {
-      const guidePath = path.join(guideDirectory, match[2]);
-      if (fs.existsSync(guidePath)) {
-        guides.set(match[1], JSON.parse(fs.readFileSync(guidePath, "utf-8")));
-      }
-    }
-    for (const match of source.matchAll(
       /import\s+(\w+)\s+from\s+"\.\/public\/problemGuides\/([^\"]+)"/g,
     )) imports.set(match[1], match[2]);
     for (const match of source.matchAll(
