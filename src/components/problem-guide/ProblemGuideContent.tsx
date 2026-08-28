@@ -1,4 +1,11 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   MdCheckCircleOutline,
   MdExpandMore,
@@ -6,8 +13,11 @@ import {
   MdWarningAmber,
 } from "react-icons/md";
 import type { ProblemGuide } from "../../types/problemGuide";
-import PublicArchitectureCanvas from "../public-design/PublicArchitectureCanvas";
 import { useRoughAnnotation } from "../../hooks/useRoughAnnotation";
+
+const PublicArchitectureCanvas = lazy(
+  () => import("../public-design/PublicArchitectureCanvas"),
+);
 
 const problemGuideSections = [
   { id: "requirements", label: "Requirements" },
@@ -648,10 +658,18 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
           description="Follow the primary request path from left to right, then inspect the asynchronous paths below it."
         />
         <div className="mt-7">
-          <PublicArchitectureCanvas
-            architecture={guide.architecture}
-            onPractice={onPractice}
-          />
+          <Suspense
+            fallback={
+              <div className="grid min-h-96 place-items-center rounded-2xl bg-[var(--surface)] text-muted">
+                Loading reference architecture…
+              </div>
+            }
+          >
+            <PublicArchitectureCanvas
+              architecture={guide.architecture}
+              onPractice={onPractice}
+            />
+          </Suspense>
         </div>
       </section>
 
