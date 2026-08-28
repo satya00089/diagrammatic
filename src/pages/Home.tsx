@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import RollingNavLabel from "../components/RollingNavLabel";
@@ -9,7 +16,6 @@ import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import useAnalytics from "../hooks/useAnalytics";
 import { MdHelpOutline } from "react-icons/md";
-import { AuthModal } from "../components/AuthModal";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
 import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
@@ -31,12 +37,13 @@ import {
   HiBriefcase,
 } from "react-icons/hi2";
 
-const HERO_MESSAGES = [
-  "Get them reviewed.",
-  "Defend the decisions.",
-  "Improve the design.",
-  "Practice for interviews.",
-];
+const AuthModal = lazy(() =>
+  import("../components/AuthModal").then((module) => ({
+    default: module.AuthModal,
+  })),
+);
+
+const HERO_MESSAGE = "Get them reviewed.";
 
 const HERO_ICONS: {
   id: string;
@@ -233,15 +240,12 @@ const Home: React.FC = () => {
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
   const { trackPageView } = useAnalytics({ isEnabled: true });
-  const { isNewToPage, markPageVisited } = useOnboarding();
+  const { markPageVisited } = useOnboarding();
   const { startTour } = useTour("home");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
-  const [heroMessageIndex, setHeroMessageIndex] = useState(0);
-  const [heroMessage, setHeroMessage] = useState("");
-  const [isDeletingHeroMessage, setIsDeletingHeroMessage] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLSpanElement>(null);
@@ -303,26 +307,19 @@ const Home: React.FC = () => {
     setIsVisible(true);
   }, []);
 
-  // Mark page visited + auto-start tour for new users
+  // Keep onboarding discoverable through the Tour control without replacing
+  // the hero during the page's initial loading and LCP measurement window.
   useEffect(() => {
-    const isNew = isNewToPage("home");
-    if (isNew) {
-      const t = setTimeout(() => {
-        startTour();
-        // Do not mark the page visited here — the tour will mark the
-        // page as visited when it completes. This prevents feature
-        // announcements from appearing while the tour is running.
-      }, 1200);
-      return () => clearTimeout(t);
-    }
-    // Not a new visit — mark immediately
-    markPageVisited("home");
-    // Track page view for analytics
-    try {
-      trackPageView();
-    } catch {
-      // ignore analytics errors
-    }
+    const schedule = window.setTimeout(() => {
+      markPageVisited("home");
+      try {
+        trackPageView();
+      } catch {
+        // Analytics is best-effort and must never affect page readiness.
+      }
+    }, 5000);
+
+    return () => window.clearTimeout(schedule);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -359,36 +356,6 @@ const Home: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const message = HERO_MESSAGES[heroMessageIndex];
-    if (!message) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setHeroMessage(message);
-      return;
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (!isDeletingHeroMessage && heroMessage === message) {
-      timeoutId = setTimeout(() => setIsDeletingHeroMessage(true), 2200);
-    } else if (isDeletingHeroMessage && heroMessage === "") {
-      setIsDeletingHeroMessage(false);
-      setHeroMessageIndex((index) => (index + 1) % HERO_MESSAGES.length);
-    } else if (isDeletingHeroMessage) {
-      timeoutId = setTimeout(
-        () => setHeroMessage((value) => value.slice(0, -1)),
-        32,
-      );
-    } else {
-      timeoutId = setTimeout(
-        () => setHeroMessage(message.slice(0, heroMessage.length + 1)),
-        58,
-      );
-    }
-
-    return () => clearTimeout(timeoutId);
-  }, [heroMessage, heroMessageIndex, isDeletingHeroMessage]);
-
-  useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
     const onMove = (e: MouseEvent) => {
@@ -413,7 +380,7 @@ const Home: React.FC = () => {
     if (!ctx) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const N = 72;
+    const N = window.matchMedia("(max-width: 768px)").matches ? 30 : 44;
     const LINK_DIST = 135;
     type P = { x: number; y: number; vx: number; vy: number };
     let particles: P[] = [];
@@ -494,7 +461,16 @@ const Home: React.FC = () => {
       ctx.globalAlpha = 1;
     };
 
-    const frame = () => {
+    let isPageVisible = document.visibilityState === "visible";
+
+    let lastFrameTime = 0;
+    const frame = (timestamp: number) => {
+      if (!isPageVisible) return;
+      if (timestamp - lastFrameTime < 1000 / 30) {
+        rafId = requestAnimationFrame(frame);
+        return;
+      }
+      lastFrameTime = timestamp;
       if (W === 0 || H === 0) {
         rafId = requestAnimationFrame(frame);
         return;
@@ -518,10 +494,16 @@ const Home: React.FC = () => {
     rafId = requestAnimationFrame(frame);
 
     const onResize = () => resize();
+    const onVisibilityChange = () => {
+      isPageVisible = document.visibilityState === "visible";
+      if (isPageVisible) rafId = requestAnimationFrame(frame);
+    };
     window.addEventListener("resize", onResize, { passive: true });
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
 
@@ -881,12 +863,9 @@ const Home: React.FC = () => {
                 <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-[1.05] tracking-[-0.03em] text-white max-w-4xl">
                   <span
                     className="text-white/80 inline-block min-h-[1.05em]"
-                    aria-live="polite"
+                    aria-label={HERO_MESSAGE}
                   >
-                    {heroMessage}
-                    <span className="cursor-blink" aria-hidden="true">
-                      |
-                    </span>
+                    {HERO_MESSAGE}
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base lg:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -949,7 +928,7 @@ const Home: React.FC = () => {
         </section>
 
         {/* The product loop: a concrete preview of what happens after the click. */}
-        <section className="relative px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <section className="landing-deferred-section relative px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
           <div className="relative z-10 mx-auto max-w-7xl">
             <div className="mb-10">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--brand)]">
@@ -1255,7 +1234,7 @@ const Home: React.FC = () => {
 
         {/* My Diagrams Section - Only shown when authenticated */}
         {isAuthenticated && (
-          <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
+          <section className="landing-deferred-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -1468,7 +1447,7 @@ const Home: React.FC = () => {
         )}
 
         {/* Feature Cards */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="landing-deferred-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
               className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
@@ -1519,7 +1498,7 @@ const Home: React.FC = () => {
         </section>
 
         {/* Capabilities Grid */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="landing-deferred-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
               className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-3"
@@ -1559,7 +1538,7 @@ const Home: React.FC = () => {
         </section>
 
         {/* Use Cases */}
-        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
+        <section className="landing-deferred-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative z-10">
             <h2
               className="text-2xl md:text-3xl text-[var(--brand)] font-bold tracking-tight text-center mb-10"
@@ -1599,7 +1578,7 @@ const Home: React.FC = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-14 sm:py-24 px-4 sm:px-6 lg:px-8 relative">
+        <section className="landing-deferred-section py-14 sm:py-24 px-4 sm:px-6 lg:px-8 relative">
           <div className="max-w-7xl mx-auto relative" data-reveal>
             <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(circle_at_20%_20%,rgba(0,214,255,0.18),transparent_34%),radial-gradient(circle_at_80%_70%,rgba(4,217,160,0.14),transparent_30%),radial-gradient(circle_at_55%_45%,rgba(255,255,255,0.08),transparent_34%)] blur-2xl opacity-90 pointer-events-none" />
             <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#031018] px-6 py-12 sm:px-12 sm:py-14 shadow-[0_26px_100px_rgba(0,0,0,0.62)]">
@@ -1649,7 +1628,7 @@ const Home: React.FC = () => {
         </section>
 
         {/* Footer */}
-        <footer className="py-12 px-4 sm:px-6 lg:px-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <footer className="landing-deferred-section py-12 px-4 sm:px-6 lg:px-8 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center space-x-3">
@@ -1682,6 +1661,10 @@ const Home: React.FC = () => {
             radial-gradient(ellipse 40% 30% at var(--au3x) var(--au3y), rgba(255,255,255,0.05) 0%, transparent 65%);
           animation: au1 22s ease-in-out infinite alternate, au2 30s ease-in-out infinite alternate, au3 38s ease-in-out infinite alternate;
         }
+        .landing-deferred-section {
+          content-visibility: auto;
+          contain-intrinsic-size: auto 700px;
+        }
         @keyframes au1 { from { --au1x: 20%; --au1y: 30%; } to { --au1x: 34%; --au1y: 17%; } }
         @keyframes au2 { from { --au2x: 76%; --au2y: 62%; } to { --au2x: 63%; --au2y: 76%; } }
         @keyframes au3 { from { --au3x: 48%; --au3y: 82%; } to { --au3x: 38%; --au3y: 54%; } }
@@ -1692,16 +1675,6 @@ const Home: React.FC = () => {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           33%       { transform: translateY(-14px) rotate(3deg); }
           66%       { transform: translateY(-6px) rotate(-2deg); }
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
-        }
-        .cursor-blink {
-          display: inline-block;
-          margin-left: 1px;
-          font-weight: 200;
-          animation: blink 1s step-start infinite;
         }
         @keyframes shimmer-sweep {
           0%       { left: -100%; }
@@ -1758,19 +1731,21 @@ const Home: React.FC = () => {
 
         {/* Auth Modal */}
         {showAuthModal && (
-          <AuthModal
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onLogin={async (email, password) => {
-              await login({ email, password });
-            }}
-            onSignup={async (email, password, name) => {
-              await signup({ email, password, name });
-            }}
-            onGoogleLogin={async (credential) => {
-              await googleLogin(credential);
-            }}
-          />
+          <Suspense fallback={null}>
+            <AuthModal
+              isOpen={showAuthModal}
+              onClose={() => setShowAuthModal(false)}
+              onLogin={async (email, password) => {
+                await login({ email, password });
+              }}
+              onSignup={async (email, password, name) => {
+                await signup({ email, password, name });
+              }}
+              onGoogleLogin={async (credential) => {
+                await googleLogin(credential);
+              }}
+            />
+          </Suspense>
         )}
       </div>
     </>

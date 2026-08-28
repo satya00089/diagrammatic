@@ -1,4 +1,4 @@
-import { useLayoutEffect, type RefObject } from "react";
+import { useEffect, type RefObject } from "react";
 import { annotate, annotationGroup } from "rough-notation";
 type RoughAnnotationConfig = Omit<
   Parameters<typeof annotate>[1],
@@ -23,7 +23,7 @@ export const useRoughAnnotation = (
   targets: AnnotationTarget[],
   enabled = true,
 ) => {
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!enabled) {
       return;
     }

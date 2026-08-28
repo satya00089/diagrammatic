@@ -1,12 +1,18 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
-import OnboardingChecklist from "./components/OnboardingChecklist";
-import FeatureAnnouncement from "./components/FeatureAnnouncement";
-import QuickSetupModal from "./components/QuickSetupModal";
+
+const OnboardingChecklist = lazy(
+  () => import("./components/OnboardingChecklist"),
+);
+const FeatureAnnouncement = lazy(
+  () => import("./components/FeatureAnnouncement"),
+);
+const QuickSetupModal = lazy(() => import("./components/QuickSetupModal"));
+const StoreBoundary = lazy(() => import("./components/StoreBoundary"));
 
 const Home = lazy(() => import("./pages/Home"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -39,6 +45,50 @@ const RouteLoading: React.FC = () => (
 
 const GlobalProductChrome: React.FC = () => {
   const { pathname } = useLocation();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Load non-critical product chrome only after the route has had a quiet
+    // startup window. This keeps animation libraries and modal code out of
+    // the critical render and interaction path.
+    let idleId: number | undefined;
+    let hasScheduled = false;
+    const scheduleChrome = () => {
+      if (hasScheduled) return;
+      hasScheduled = true;
+      if ("requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(() => setIsReady(true), {
+          timeout: 3000,
+        });
+      } else {
+        setIsReady(true);
+      }
+    };
+
+    const timer = window.setTimeout(scheduleChrome, 12000);
+    const engagementEvents: Array<keyof WindowEventMap> = [
+      "pointerdown",
+      "keydown",
+      "scroll",
+    ];
+    engagementEvents.forEach((eventName) =>
+      window.addEventListener(eventName, scheduleChrome, {
+        once: true,
+        passive: true,
+      }),
+    );
+
+    return () => {
+      window.clearTimeout(timer);
+      engagementEvents.forEach((eventName) =>
+        window.removeEventListener(eventName, scheduleChrome),
+      );
+      if (idleId !== undefined && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
+  }, []);
+
   const isKnownRoute =
     [
       "/",
@@ -55,6 +105,7 @@ const GlobalProductChrome: React.FC = () => {
     );
 
   if (
+    !isReady ||
     pathname.startsWith("/public/") ||
     pathname === "/verify-email" ||
     !isKnownRoute
@@ -63,11 +114,11 @@ const GlobalProductChrome: React.FC = () => {
   }
 
   return (
-    <>
+    <Suspense fallback={null}>
       <OnboardingChecklist />
       <FeatureAnnouncement />
       <QuickSetupModal />
-    </>
+    </Suspense>
   );
 };
 
@@ -82,27 +133,95 @@ const App: React.FC = () => {
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/problems" element={<Dashboard />} />
-                <Route path="/problems/:slug" element={<ProblemLanding />} />
-                <Route path="/system-design-interview" element={<SeoGuide />} />
-                <Route path="/system-design-practice" element={<SeoGuide />} />
+                <Route
+                  path="/problems"
+                  element={
+                    <StoreBoundary>
+                      <Dashboard />
+                    </StoreBoundary>
+                  }
+                />
+                <Route
+                  path="/problems/:slug"
+                  element={
+                    <StoreBoundary>
+                      <ProblemLanding />
+                    </StoreBoundary>
+                  }
+                />
+                <Route
+                  path="/system-design-interview"
+                  element={
+                    <StoreBoundary>
+                      <SeoGuide />
+                    </StoreBoundary>
+                  }
+                />
+                <Route
+                  path="/system-design-practice"
+                  element={
+                    <StoreBoundary>
+                      <SeoGuide />
+                    </StoreBoundary>
+                  }
+                />
                 <Route
                   path="/ai-system-design-interview"
-                  element={<SeoGuide />}
+                  element={
+                    <StoreBoundary>
+                      <SeoGuide />
+                    </StoreBoundary>
+                  }
                 />
-                <Route path="/create-problem" element={<CreateProblem />} />
-                <Route path="/learning-paths" element={<LearningPaths />} />
+                <Route
+                  path="/create-problem"
+                  element={
+                    <StoreBoundary>
+                      <CreateProblem />
+                    </StoreBoundary>
+                  }
+                />
+                <Route
+                  path="/learning-paths"
+                  element={
+                    <StoreBoundary>
+                      <LearningPaths />
+                    </StoreBoundary>
+                  }
+                />
                 <Route
                   path="/learning-paths/:slug"
-                  element={<LearningPath />}
+                  element={
+                    <StoreBoundary>
+                      <LearningPath />
+                    </StoreBoundary>
+                  }
                 />
-                <Route path="/diagrams" element={<MyDesigns />} />
+                <Route
+                  path="/diagrams"
+                  element={
+                    <StoreBoundary>
+                      <MyDesigns />
+                    </StoreBoundary>
+                  }
+                />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route
                   path="/playground/:id"
-                  element={<SystemDesignPlayground />}
+                  element={
+                    <StoreBoundary>
+                      <SystemDesignPlayground />
+                    </StoreBoundary>
+                  }
                 />
-                <Route path="/public/:id" element={<SharedCanvasPage />} />
+                <Route
+                  path="/public/:id"
+                  element={
+                    <StoreBoundary>
+                      <SharedCanvasPage />
+                    </StoreBoundary>
+                  }
+                />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
