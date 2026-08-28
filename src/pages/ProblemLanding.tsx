@@ -236,7 +236,7 @@ const ProblemLanding: React.FC = () => {
               to="/"
               className="flex items-center gap-3 font-bold tracking-wide text-white"
             >
-              <img src="/logo.png" alt="" className="h-7" />
+              <img src="/logo-64.png" alt="" className="h-7" />
               <span className="text-lg font-bold leading-none tracking-wide text-white">
                 Diagrammatic
               </span>

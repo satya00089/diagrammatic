@@ -687,7 +687,7 @@ const Home: React.FC = () => {
                 className="flex items-center space-x-3 group cursor-pointer"
               >
                 <img
-                  src="/logo.png"
+                  src="/logo-64.png"
                   alt="Logo"
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
@@ -1653,7 +1653,7 @@ const Home: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center space-x-3">
-                <img src="./logo.png" alt="Logo" className="h-8" />
+                <img src="./logo-64.png" alt="Logo" className="h-8" />
                 <span className="font-semibold text-theme">Diagrammatic</span>
               </div>
               <p className="text-muted text-sm">

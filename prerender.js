@@ -413,7 +413,7 @@ function renderStaticRoute(data) {
     <div class="static-route-shell">
       <header class="static-route-header">
         <a class="static-route-brand" href="/">
-          <img src="/logo.png" alt="">
+          <img src="/logo-64.png" alt="" width="28" height="28">
           <span>Diagrammatic</span>
         </a>
         <nav class="static-route-nav" aria-label="Main navigation">

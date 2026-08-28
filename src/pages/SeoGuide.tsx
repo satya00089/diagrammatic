@@ -200,7 +200,7 @@ const SeoGuide: React.FC = () => {
               to="/"
               className="flex items-center gap-3 font-bold tracking-wide"
             >
-              <img src="/logo.png" alt="" className="h-7" />
+              <img src="/logo-64.png" alt="" className="h-7" />
               <span>Diagrammatic</span>
             </Link>
             <nav

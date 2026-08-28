@@ -98,6 +98,7 @@ const Dashboard: React.FC = () => {
   const selectedDomain = useAppSelector(selectSelectedDomain);
   const searchQuery = useAppSelector(selectSearchQuery);
   const attemptedProblems = useAppSelector(selectAttemptedProblems);
+  const hasProblems = filteredProblems.length > 0;
 
   const {
     user,
@@ -330,7 +331,9 @@ const Dashboard: React.FC = () => {
                 className="flex items-center space-x-3 group cursor-pointer"
               >
                 <img
-                  src="/logo.png"
+                  src="/logo-64.png"
+                  width="35"
+                  height="35"
                   alt="Logo"
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
@@ -350,8 +353,10 @@ const Dashboard: React.FC = () => {
                 )}
 
                 <div className="hidden md:block text-sm text-white/90">
-                  {loading
+                  {loading && !hasProblems
                     ? "Loading..."
+                    : loading
+                      ? "Updating..."
                     : `${filteredProblems.length} problems available`}
                 </div>
 
@@ -503,15 +508,25 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Loading State */}
-            {loading && (
-              <div className="text-center py-20">
-                <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
-                <div className="text-theme text-xl mb-2">
-                  Loading problems...
-                </div>
-                <div className="text-muted text-sm">
-                  Fetching the latest problems…
-                </div>
+            {loading && !hasProblems && (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"
+                aria-label="Loading problems"
+                aria-busy="true"
+              >
+                {Array.from({ length: 6 }, (_, index) => (
+                  <div
+                    key={index}
+                    className="elevated-card-bg rounded-2xl p-6 min-h-[390px] animate-pulse"
+                  >
+                    <div className="h-4 w-28 rounded bg-[var(--bg-hover)] mb-6" />
+                    <div className="h-6 w-4/5 rounded bg-[var(--bg-hover)] mb-4" />
+                    <div className="h-4 w-full rounded bg-[var(--bg-hover)] mb-2" />
+                    <div className="h-4 w-11/12 rounded bg-[var(--bg-hover)] mb-8" />
+                    <div className="h-4 w-2/3 rounded bg-[var(--bg-hover)] mb-10" />
+                    <div className="mt-auto h-11 w-full rounded-xl bg-[var(--bg-hover)]" />
+                  </div>
+                ))}
               </div>
             )}
 
@@ -538,7 +553,7 @@ const Dashboard: React.FC = () => {
             )}
 
             {/* Filters - Only show when not loading and no error */}
-            {!loading && !error && (
+            {!error && (!loading || hasProblems) && (
               <>
                 <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
