@@ -133,6 +133,7 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
       _immediate = false,
     ) => {
       if (!isEnabled) return;
+      void _immediate;
       const evt: AnalyticsEvent = {
         ts: Date.now(),
         event_name,
