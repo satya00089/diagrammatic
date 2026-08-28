@@ -33,14 +33,24 @@ interface ProblemsState {
   loadingMore: boolean;
 }
 
-const fallbackProblems = featuredProblems.map((problem) => ({
+export const dedupeProblems = (problems: SystemDesignProblem[]): SystemDesignProblem[] => {
+  const seen = new Set<string>();
+  return problems.filter((problem) => {
+    const key = problem.slug || problem.id || problem.title.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const fallbackProblems = dedupeProblems(featuredProblems.map((problem) => ({
   ...problem,
   id: "",
   domain: "",
   requirements: [],
   constraints: [],
   hints: [],
-})) as SystemDesignProblem[];
+})) as SystemDesignProblem[]);
 
 const initialState: ProblemsState = {
   problems: fallbackProblems,
@@ -191,8 +201,9 @@ const problemsSlice = createSlice({
           action.payload;
         const firstPage = items ?? problems;
 
-        state.problems = firstPage;
-        state.filteredProblems = firstPage;
+        const uniqueProblems = dedupeProblems(firstPage);
+        state.problems = uniqueProblems;
+        state.filteredProblems = uniqueProblems;
         state.nextCursor = next_cursor ?? null;
         state.hasMore = has_more ?? false;
 
@@ -210,12 +221,12 @@ const problemsSlice = createSlice({
       })
       .addCase(fetchMoreProblems.fulfilled, (state, action) => {
         state.loadingMore = false;
-        const knownIds = new Set(state.problems.map((problem) => problem.id));
-        const newProblems = action.payload.items.filter(
-          (problem) => !knownIds.has(problem.id),
-        );
-        state.problems.push(...newProblems);
-        state.filteredProblems = state.problems;
+        const nextProblems = dedupeProblems([
+          ...state.problems,
+          ...action.payload.items,
+        ]);
+        state.problems = nextProblems;
+        state.filteredProblems = nextProblems;
         state.nextCursor = action.payload.next_cursor;
         state.hasMore = action.payload.has_more;
       })

@@ -68,6 +68,7 @@ import { useChatBot } from "../hooks/useChatBot";
 import { useUnifiedCollaboration } from "../hooks/useUnifiedCollaboration";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
+import useAnalytics from "../hooks/useAnalytics";
 
 // Redux store
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -507,6 +508,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
+  const { trackEvent } = useAnalytics({ isEnabled: true });
 
   // Get full components cache for iconUrl support
   const dispatch = useAppDispatch();
@@ -580,6 +582,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // updates can skip redundant requests.
   const lastSavedAttemptContentRef = useRef<string | null>(null);
   const attemptSaveInFlightRef = useRef(false);
+  const firstComponentTrackedRef = useRef(false);
+  const firstConnectionTrackedRef = useRef(false);
+  const challengeStartedTrackedRef = useRef(false);
+  const persistedAssessmentCountRef = useRef(0);
 
   // Get diagramId from query parameters
   const searchParams = new URLSearchParams(globalThis.location.search);
@@ -716,6 +722,29 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     fetchProblem();
   }, [idFromUrl, isSharedView]);
+
+  useEffect(() => {
+    if (
+      challengeStartedTrackedRef.current ||
+      !idFromUrl ||
+      idFromUrl === "free" ||
+      isSharedView ||
+      loading ||
+      !problem
+    ) {
+      return;
+    }
+
+    challengeStartedTrackedRef.current = true;
+    trackEvent("challenge_started", {
+      problem_id: problem.id || idFromUrl,
+      problem_slug: problem.slug,
+      difficulty: problem.difficulty,
+      domain: problem.domain,
+      auth_state: isAuthenticated ? "authenticated" : "anonymous",
+      attempt_kind: isAuthenticated ? "resume_or_new" : "anonymous",
+    });
+  }, [idFromUrl, isAuthenticated, isSharedView, loading, problem, trackEvent]);
 
   const onBack = () => navigate("/");
 
@@ -1091,10 +1120,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             lastAssessment?: ValidationResult;
             reasoningContext?: DesignReasoningContext;
             interviewSession?: InterviewSession;
+            assessmentCount?: number;
             isPublic?: boolean;
           } | null;
 
           if (attempt) {
+            persistedAssessmentCountRef.current = attempt.assessmentCount ?? 0;
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
 
@@ -1438,6 +1469,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   }, [showLayoutMenu]);
 
   const onConnect = (connection: Connection) => {
+    if (!firstConnectionTrackedRef.current) {
+      firstConnectionTrackedRef.current = true;
+      trackEvent("first_connection_added", {
+        problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+        connection_type: "default",
+      });
+    }
+
     // Determine if we're connecting ER nodes (tableNode or erNode types)
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
@@ -1499,6 +1538,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         currentQuestionIndex: 0,
       };
       setAssessment(res);
+      trackEvent("assessment_completed", {
+        problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+        assessment_source: res.source ?? "unknown",
+        score_band:
+          res.score >= 80 ? "strong" : res.score >= 50 ? "needs_work" : "weak",
+        finding_count: res.feedback?.length ?? 0,
+      });
       setInterviewSession(followUpSession);
       setActiveRightTab("assessment");
 
@@ -1516,7 +1562,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             lastAssessment: res,
             reasoningContext,
             interviewSession: followUpSession,
-          })) as { id?: string; isPublic?: boolean };
+          })) as { id?: string; isPublic?: boolean; assessmentCount?: number };
+          persistedAssessmentCountRef.current = savedAttempt.assessmentCount ?? 0;
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
           }
@@ -1563,6 +1610,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const runAssessment = async () => {
     if (isAssessing || isPreparingInterview) return;
+
+    if (persistedAssessmentCountRef.current >= 1) {
+      trackEvent("assessment_retry_started", {
+        problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+        previous_persisted_assessment_count:
+          persistedAssessmentCountRef.current,
+      });
+    }
 
     setIsPreparingInterview(true);
     setAssessmentInterviewError(null);
@@ -1619,6 +1674,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setAssessmentInterviewAnswer("");
 
     if (nextIndex >= assessmentInterviewQuestions.length) {
+      trackEvent("reasoning_submitted", {
+        problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+        field_count: nextSession.exchanges.filter((item) => item.answer.trim()).length,
+        source: "assessment_interview",
+      });
       setShowAssessmentInterview(false);
       void executeAssessment(nextSession);
     }
@@ -3745,6 +3805,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     };
 
     setNodes((nds) => [...nds, newNode]);
+    if (!firstComponentTrackedRef.current) {
+      firstComponentTrackedRef.current = true;
+      trackEvent("first_component_added", {
+        problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+        component_type: realId,
+      });
+    }
   }
 
   // Clear all nodes and edges from canvas
