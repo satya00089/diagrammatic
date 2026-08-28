@@ -1,13 +1,14 @@
-import { useLayoutEffect, type RefObject } from "react";
-import { annotate, annotationGroup } from "rough-notation";
+import { useEffect, type RefObject } from "react";
+type RoughNotationModule = typeof import("rough-notation");
+type Annotate = RoughNotationModule["annotate"];
 type RoughAnnotationConfig = Omit<
-  Parameters<typeof annotate>[1],
+  Parameters<Annotate>[1],
   "brackets" | "padding"
 > & {
   brackets?: string | string[];
   padding?: number | number[];
 };
-type RoughAnnotation = ReturnType<typeof annotate>;
+type RoughAnnotation = ReturnType<Annotate>;
 
 type AnnotationTarget = {
   ref: RefObject<HTMLElement | null>;
@@ -23,32 +24,59 @@ export const useRoughAnnotation = (
   targets: AnnotationTarget[],
   enabled = true,
 ) => {
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!enabled) {
       return;
     }
 
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const annotations: RoughAnnotation[] = targets.flatMap(({ ref, config }) =>
-      ref.current
-        ? [
-            annotate(ref.current, {
-              ...config,
-              animate: config.animate ?? !prefersReducedMotion,
-            } as Parameters<typeof annotate>[1]),
-          ]
-        : [],
-    );
+    let cancelled = false;
+    let frameId: number | undefined;
+    let idleId: number | undefined;
+    let annotations: RoughAnnotation[] = [];
 
-    if (annotations.length === 0) return;
+    const renderAnnotations = async () => {
+      const { annotate, annotationGroup } = await import("rough-notation");
+      if (cancelled) return;
 
-    const group = annotationGroup(annotations);
-    const frameId = window.requestAnimationFrame(() => group.show());
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      annotations = targets.flatMap(({ ref, config }) =>
+        ref.current
+          ? [
+              annotate(ref.current, {
+                ...config,
+                animate: config.animate ?? !prefersReducedMotion,
+              } as Parameters<typeof annotate>[1]),
+            ]
+          : [],
+      );
+
+      if (annotations.length === 0 || cancelled) return;
+      const group = annotationGroup(annotations);
+      frameId = window.requestAnimationFrame(() => group.show());
+    };
+
+    const idleWindow = window as unknown as {
+      requestIdleCallback?: typeof window.requestIdleCallback;
+      cancelIdleCallback?: typeof window.cancelIdleCallback;
+    };
+
+    if (idleWindow.requestIdleCallback) {
+      idleId = idleWindow.requestIdleCallback(
+        () => void renderAnnotations(),
+        {
+        timeout: 4000,
+        },
+      );
+    } else {
+      frameId = window.requestAnimationFrame(() => void renderAnnotations());
+    }
 
     return () => {
-      window.cancelAnimationFrame(frameId);
+      cancelled = true;
+      if (idleId !== undefined) idleWindow.cancelIdleCallback?.(idleId);
+      if (frameId !== undefined) window.cancelAnimationFrame(frameId);
       annotations.forEach((annotation) => annotation.remove());
     };
   }, [enabled, targets]);

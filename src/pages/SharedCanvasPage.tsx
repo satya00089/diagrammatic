@@ -1329,7 +1329,7 @@ const SharedCanvasPage: React.FC = () => {
             to="/"
             className="flex flex-shrink-0 items-center gap-2 font-bold text-theme transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
           >
-            <img src="/logo.png" alt="" className="h-6 w-6 object-contain" />
+            <img src="/logo-64.png" alt="" className="h-6 w-6 object-contain" />
             <span className="hidden sm:inline">Diagrammatic</span>
           </Link>
           <span className="text-muted text-sm">/</span>

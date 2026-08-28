@@ -33,9 +33,18 @@ interface ProblemsState {
   loadingMore: boolean;
 }
 
+const fallbackProblems = featuredProblems.map((problem) => ({
+  ...problem,
+  id: "",
+  domain: "",
+  requirements: [],
+  constraints: [],
+  hints: [],
+})) as SystemDesignProblem[];
+
 const initialState: ProblemsState = {
-  problems: [],
-  filteredProblems: [],
+  problems: fallbackProblems,
+  filteredProblems: fallbackProblems,
   attemptedProblems: new Set(),
   selectedDifficulty: "All",
   selectedCategory: "All",
@@ -45,7 +54,7 @@ const initialState: ProblemsState = {
   error: null,
   lastFetched: null,
   nextCursor: null,
-  hasMore: true,
+  hasMore: false,
   loadingMore: false,
 };
 
@@ -94,17 +103,9 @@ export const fetchProblems = createAsyncThunk(
       const data: ProblemPageResponse = await response.json();
       return { ...data, fromCache: false };
     } catch {
-      const fallback = featuredProblems.map((problem) => ({
-        ...problem,
-        id: "",
-        domain: "",
-        requirements: [],
-        constraints: [],
-        hints: [],
-      })) as SystemDesignProblem[];
       return {
-        problems: fallback,
-        items: fallback,
+        problems: fallbackProblems,
+        items: fallbackProblems,
         next_cursor: null,
         has_more: false,
         fromCache: false,

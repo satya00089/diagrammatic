@@ -1,6 +1,5 @@
 import { useCallback, useRef } from "react";
-import { driver } from "driver.js";
-import "driver.js/dist/driver.css";
+import type { Driver } from "driver.js";
 import { TOURS } from "../config/tours";
 import { useOnboarding } from "./useOnboarding";
 import type { PageId } from "../contexts/OnboardingContext";
@@ -13,9 +12,9 @@ import type { PageId } from "../contexts/OnboardingContext";
 export const useTour = (pageId: PageId) => {
   const { markTourComplete, isTourCompleted, markPageVisited, isNewToPage } =
     useOnboarding();
-  const driverRef = useRef<ReturnType<typeof driver> | null>(null);
+  const driverRef = useRef<Driver | null>(null);
 
-  const startTour = useCallback(() => {
+  const startTour = useCallback(async () => {
     const tourDef = TOURS[pageId];
     if (!tourDef) return;
 
@@ -31,6 +30,11 @@ export const useTour = (pageId: PageId) => {
       driverRef.current.destroy();
     }
 
+    const [{ driver }] = await Promise.all([
+      import("driver.js"),
+      import("driver.js/dist/driver.css"),
+      import("../styles/driver-overrides.css"),
+    ]);
     driverRef.current = driver({
       showProgress: true,
       animate: true,
