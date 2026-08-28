@@ -21,6 +21,7 @@ import { FaLinkedin } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { SiMedium } from "react-icons/si";
 import { apiService } from "../services/api";
+import useAnalytics from "../hooks/useAnalytics";
 import type {
   ValidationResult,
   SystemDesignProblem,
@@ -71,6 +72,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   onVisibilityChange,
 }) => {
   const reduceMotion = useReducedMotion();
+  const { trackEvent } = useAnalytics({ isEnabled: true });
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const previewRequestRef = useRef(0);
@@ -220,6 +222,11 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
           : await apiService.publishDiagram(entityId);
       setPublicUrl(result.publicUrl);
       setPhase("published");
+      trackEvent("public_share_completed", {
+        artifact_type: mode,
+        problem_id: problem?.id,
+        visibility: "public",
+      }, true);
       onVisibilityChange?.(true);
     } catch (publishError) {
       setError(
@@ -229,7 +236,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
       );
       setPhase("error");
     }
-  }, [entityId, mode, onVisibilityChange, phase]);
+  }, [entityId, mode, onVisibilityChange, phase, problem?.id, trackEvent]);
 
   const handleUnpublish = useCallback(async () => {
     if (!mode || !entityId || phase === "unpublishing") return;

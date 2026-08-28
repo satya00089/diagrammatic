@@ -12,6 +12,7 @@ import type {
   SignupCredentials,
 } from "../types/auth";
 import { apiService } from "../services/api";
+import useAnalytics from "../hooks/useAnalytics";
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -36,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     isAuthenticated: false,
     isLoading: true,
   });
+  const { trackEvent } = useAnalytics({ isEnabled: true });
 
   // Check if token is expired
   const isTokenExpired = useCallback((token: string): boolean => {
@@ -107,7 +109,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signup = useCallback(async (credentials: SignupCredentials) => {
     // Email/password accounts must be activated before they receive a session.
     await apiService.signup(credentials);
-  }, []);
+    trackEvent("account_signup_submitted", { method: "password" }, true);
+  }, [trackEvent]);
 
   const googleLogin = useCallback(async (credential: string) => {
     const { user, token } = await apiService.googleLogin(credential);

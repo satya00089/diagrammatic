@@ -18,6 +18,20 @@ export interface AnalyticsEvent {
   time_on_page_ms?: number;
 }
 
+export type ProductEventName =
+  | "page_view"
+  | "time_on_page"
+  | "homepage_cta_clicked"
+  | "challenge_started"
+  | "first_component_added"
+  | "first_connection_added"
+  | "reasoning_submitted"
+  | "assessment_completed"
+  | "assessment_retry_started"
+  | "account_signup_submitted"
+  | "account_signup_completed"
+  | "public_share_completed";
+
 interface AnalyticsBatch {
   user_id?: string;
   anon_id?: string;
@@ -56,6 +70,7 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      keepalive: true,
     }).catch(() => {
       // swallow — non-blocking telemetry
     });
@@ -64,7 +79,7 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
   // Periodic flush and flush on unload/visibilitychange
   useEffect(() => {
     if (!isEnabled) return;
-    const interval = setInterval(flush, 15_000);
+    const interval = setInterval(flush, 10_000);
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
@@ -98,7 +113,7 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
       const parts = attr.split(":");
       const name = parts.length > 1 ? parts[1] : parts[0];
       trackEvent(
-        name || "cta_click",
+        (name || "homepage_cta_clicked") as ProductEventName,
         { label: el.innerText?.slice(0, 200) },
         true,
       );
@@ -111,9 +126,11 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
 
   const trackEvent = useCallback(
     (
-      event_name: string,
+      event_name: ProductEventName,
       event_props?: Record<string, unknown>,
-      immediate = false,
+      // Kept for call-site compatibility. All events are buffered so that
+      // analytics writes are coalesced before reaching the backend.
+      _immediate = false,
     ) => {
       if (!isEnabled) return;
       const evt: AnalyticsEvent = {
@@ -124,21 +141,6 @@ export function useAnalytics({ isEnabled = true }: UseAnalyticsOptions) {
         page_title: document.title,
         event_props,
       };
-
-      if (immediate) {
-        const payload: AnalyticsBatch = {
-          // Do not send user-identifying ids in aggregated mode
-          session_id: sessionIdRef.current,
-          events: [evt],
-        };
-        // Fire-and-forget
-        fetch(`${API_BASE_URL}/api/v1/analytics/event`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }).catch(() => {});
-        return;
-      }
 
       bufferRef.current.push(evt);
     },

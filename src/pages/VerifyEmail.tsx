@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { apiService } from "../services/api";
+import useAnalytics from "../hooks/useAnalytics";
 import Seo from "../components/SEO";
 
 const STATUS_HEADING = {
@@ -11,6 +12,7 @@ const STATUS_HEADING = {
 
 const VerifyEmail: React.FC = () => {
   const [params] = useSearchParams();
+  const { trackEvent } = useAnalytics({ isEnabled: true });
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
@@ -31,6 +33,7 @@ const VerifyEmail: React.FC = () => {
       .then((response) => {
         setStatus("success");
         setMessage(response.message);
+        trackEvent("account_signup_completed", { method: "password" }, true);
       })
       .catch((error: unknown) => {
         setStatus("error");
@@ -40,7 +43,7 @@ const VerifyEmail: React.FC = () => {
             : "Unable to activate your account.",
         );
       });
-  }, [params]);
+  }, [params, trackEvent]);
 
   return (
     <>

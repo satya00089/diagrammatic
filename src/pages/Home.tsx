@@ -239,7 +239,7 @@ const Home: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isAuthenticated, login, signup, googleLogin, logout } =
     useAuth();
-  const { trackPageView } = useAnalytics({ isEnabled: true });
+  const { trackEvent, trackPageView } = useAnalytics({ isEnabled: true });
   const { markPageVisited } = useOnboarding();
   const { startTour } = useTour("home");
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -296,6 +296,10 @@ const Home: React.FC = () => {
   useRoughAnnotation(roughAnnotationTargets);
 
   const handleNavigate = (route: string, requiresAuth = true) => {
+    trackEvent("homepage_cta_clicked", {
+      cta: route === "/problems" ? "start_design_challenge" : route,
+      destination: route,
+    });
     if (requiresAuth && !isAuthenticated) {
       setShowAuthModal(true);
       return;
