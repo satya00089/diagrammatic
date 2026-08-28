@@ -642,8 +642,30 @@ function loadGuideCatalog() {
   const aliases = new Map();
   const guides = new Map();
 
+  const guideDirectory = path.join(
+    __dirname,
+    "src",
+    "data",
+    "public",
+    "problemGuides",
+  );
+  for (const file of fs.readdirSync(guideDirectory)) {
+    if (!file.endsWith(".json")) continue;
+    guides.set(path.basename(file, ".json"), JSON.parse(
+      fs.readFileSync(path.join(guideDirectory, file), "utf-8"),
+    ));
+  }
+
   for (const relativePath of files) {
     const source = fs.readFileSync(path.join(__dirname, relativePath), "utf-8");
+    for (const match of source.matchAll(
+      /"([^"]+)"\s*:\s*"([^"]+\.json)"/g,
+    )) {
+      const guidePath = path.join(guideDirectory, match[2]);
+      if (fs.existsSync(guidePath)) {
+        guides.set(match[1], JSON.parse(fs.readFileSync(guidePath, "utf-8")));
+      }
+    }
     for (const match of source.matchAll(
       /import\s+(\w+)\s+from\s+"\.\/public\/problemGuides\/([^\"]+)"/g,
     )) imports.set(match[1], match[2]);

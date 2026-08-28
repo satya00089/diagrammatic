@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   MdAccessTime,
@@ -12,11 +12,11 @@ import { AuthModal } from "../components/AuthModal";
 import ProblemGuideContent, {
   ProblemGuideNavigation,
 } from "../components/problem-guide/ProblemGuideContent";
-import PublicArchitectureCanvas from "../components/public-design/PublicArchitectureCanvas";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import RollingNavLabel from "../components/RollingNavLabel";
-import { getGuideArchitecture, getProblemGuide } from "../data/problemGuides";
+import { getProblemGuide } from "../data/problemGuides";
+import type { ProblemGuide } from "../types/problemGuide";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
 import type { SystemDesignProblem } from "../types/systemDesign";
@@ -25,6 +25,10 @@ import {
   getFeaturedProblem,
 } from "../utils/problemSlug";
 import NotFound from "./NotFound";
+
+const PublicArchitectureCanvas = lazy(
+  () => import("../components/public-design/PublicArchitectureCanvas"),
+);
 
 type PublicProblem = Partial<SystemDesignProblem> & {
   title: string;
@@ -88,6 +92,7 @@ const ProblemLanding: React.FC = () => {
   const navigate = useNavigate();
   const featured = getFeaturedProblem(slug) as PublicProblem | undefined;
   const [problem, setProblem] = useState<PublicProblem | undefined>(featured);
+  const [guide, setGuide] = useState<ProblemGuide | null>(null);
   const [loading, setLoading] = useState(!featured);
   const [missing, setMissing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -126,6 +131,19 @@ const ProblemLanding: React.FC = () => {
       controller.abort();
     };
   }, [featured, slug]);
+
+  useEffect(() => {
+    let active = true;
+    setGuide(null);
+
+    void getProblemGuide(slug).then((nextGuide) => {
+      if (active) setGuide(nextGuide);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
 
   const related = useMemo(() => {
     if (!problem) return [];
@@ -169,8 +187,7 @@ const ProblemLanding: React.FC = () => {
   const questions = buildQuestions(problem);
   const requirements = problem.requirements?.filter(Boolean) || [];
   const constraints = problem.constraints?.filter(Boolean) || [];
-  const guide = getProblemGuide(slug);
-  const architecture = getGuideArchitecture(slug);
+  const architecture = guide?.architecture ?? null;
   const pageDescription = `${problem.description} Work through the requirements, architecture trade-offs, and an interactive design review.`;
 
   const startProblem = () => {
@@ -418,10 +435,18 @@ const ProblemLanding: React.FC = () => {
                           components to explain your own design choices.
                         </p>
                         <div className="mt-6">
-                          <PublicArchitectureCanvas
-                            architecture={architecture}
-                            onPractice={startProblem}
-                          />
+                          <Suspense
+                            fallback={
+                              <div className="grid min-h-96 place-items-center rounded-2xl bg-[var(--surface)] text-muted">
+                                Loading reference architecture…
+                              </div>
+                            }
+                          >
+                            <PublicArchitectureCanvas
+                              architecture={architecture}
+                              onPractice={startProblem}
+                            />
+                          </Suspense>
                         </div>
                       </section>
                     )}

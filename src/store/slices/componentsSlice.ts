@@ -11,7 +11,6 @@ import {
 import type { CanvasComponent } from "../../types/canvas";
 import type { ComponentDB } from "../../types/componentProvider";
 import { componentProviderService } from "../../services/componentProviderService";
-import { mapComponentsToCanvas } from "../../utils/componentMapper";
 
 // Minimal component data for palette display (without properties)
 export interface MinimalComponent {
@@ -133,7 +132,8 @@ export const fetchFullComponent = createAsyncThunk(
   "components/fetchFull",
   async (id: string) => {
     const response = await componentProviderService.getComponentById(id);
-    return response;
+    const { mapComponentsToCanvas } = await import("../../utils/componentMapper");
+    return mapComponentsToCanvas([response])[0];
   },
 );
 
@@ -219,9 +219,8 @@ const componentsSlice = createSlice({
       })
       // Fetch full component
       .addCase(fetchFullComponent.fulfilled, (state, action) => {
-        const canvasComponent = mapComponentsToCanvas([action.payload])[0];
-        if (canvasComponent) {
-          state.fullComponentsCache[canvasComponent.id] = canvasComponent;
+        if (action.payload) {
+          state.fullComponentsCache[action.payload.id] = action.payload;
         }
       })
       .addCase(fetchFullComponent.rejected, (state, action) => {
