@@ -3,6 +3,7 @@ import type {
   ReviewFinding,
   ReviewFindingSeverity,
 } from "../types/systemDesign";
+import { getReviewFindingId } from "../types/systemDesign";
 
 const SEVERITY_LABELS: Record<ReviewFindingSeverity, string> = {
   critical: "Critical",
@@ -27,10 +28,14 @@ const SEVERITY_BADGE_STYLES: Record<ReviewFindingSeverity, string> = {
 
 type AssessmentFindingsProps = {
   findings: ReviewFinding[];
+  addressedFindingIds?: string[];
+  onToggleAddressed?: (findingId: string) => void;
 };
 
 const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({
   findings,
+  addressedFindingIds = [],
+  onToggleAddressed,
 }) => {
   if (findings.length === 0) return null;
 
@@ -84,6 +89,17 @@ const AssessmentFindings: React.FC<AssessmentFindingsProps> = ({
                   </p>
                 )}
               </div>
+              {onToggleAddressed && severity !== "positive" && (
+                <button
+                  type="button"
+                  onClick={() => onToggleAddressed(getReviewFindingId(finding))}
+                  className="mt-3 rounded-md border border-theme/15 px-2.5 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:bg-[var(--bg-hover)] hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                >
+                  {addressedFindingIds.includes(getReviewFindingId(finding))
+                    ? "Marked addressed"
+                    : "Mark as addressed"}
+                </button>
+              )}
             </article>
           );
         })}

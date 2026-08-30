@@ -53,6 +53,7 @@ import type {
   DesignReasoningContext,
   InterviewExchange,
   InterviewSession,
+  AssessmentHistoryEntry,
 } from "../types/systemDesign";
 import type { SavedDiagram, Collaborator } from "../types/auth";
 import type { ComponentProperty, CanvasComponent } from "../types/canvas";
@@ -175,6 +176,7 @@ type AttemptContentSnapshotInput = {
   edges: Edge[];
   reasoningContext: DesignReasoningContext;
   interviewSession: InterviewSession;
+  addressedFindingIds?: string[];
 };
 
 // elapsedTime is intentionally excluded so timer ticks can trigger the
@@ -188,6 +190,7 @@ const getAttemptContentSnapshot = ({
   edges,
   reasoningContext,
   interviewSession,
+  addressedFindingIds,
 }: AttemptContentSnapshotInput): string =>
   JSON.stringify({
     problemId,
@@ -198,6 +201,7 @@ const getAttemptContentSnapshot = ({
     edges,
     reasoningContext,
     interviewSession,
+    addressedFindingIds,
   });
 
 const getCanvasNodeType = (node: Node): string => {
@@ -610,6 +614,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     exchanges: [],
     currentQuestionIndex: 0,
   });
+  const [assessmentHistory, setAssessmentHistory] = useState<AssessmentHistoryEntry[]>([]);
+  const [addressedFindingIds, setAddressedFindingIds] = useState<string[]>([]);
 
   // Project Intent dialog state (shown when entering Design Studio)
   const [showProjectIntentDialog, setShowProjectIntentDialog] = useState(false);
@@ -1121,11 +1127,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             reasoningContext?: DesignReasoningContext;
             interviewSession?: InterviewSession;
             assessmentCount?: number;
+            assessmentHistory?: AssessmentHistoryEntry[];
+            addressedFindingIds?: string[];
             isPublic?: boolean;
           } | null;
 
           if (attempt) {
             persistedAssessmentCountRef.current = attempt.assessmentCount ?? 0;
+            setAssessmentHistory(attempt.assessmentHistory ?? []);
+            setAddressedFindingIds(attempt.addressedFindingIds ?? []);
             const loadedNodes = attempt.nodes;
             const loadedEdges = attempt.edges;
 
@@ -1207,6 +1217,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             reasoningContext,
             interviewSession,
+            addressedFindingIds,
           })
         : null;
 
@@ -1298,6 +1309,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               elapsedTime,
               reasoningContext,
               interviewSession,
+              addressedFindingIds,
               // Don't save assessment in auto-save, only when assessment is explicitly run
             });
             lastSavedAttemptContentRef.current = attemptContentSnapshot;
@@ -1352,6 +1364,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     userIntent,
     reasoningContext,
     interviewSession,
+    addressedFindingIds,
   ]);
 
   // Apply undo/redo state to React Flow
@@ -1505,7 +1518,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [assessment, setAssessment] = React.useState<ValidationResult | null>(
     null,
   );
-
   const [isAssessing, setIsAssessing] = useState(false);
   const [isPreparingInterview, setIsPreparingInterview] = useState(false);
   const [showAssessmentInterview, setShowAssessmentInterview] = useState(false);
@@ -1562,8 +1574,17 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             lastAssessment: res,
             reasoningContext,
             interviewSession: followUpSession,
-          })) as { id?: string; isPublic?: boolean; assessmentCount?: number };
+            addressedFindingIds,
+          })) as {
+            id?: string;
+            isPublic?: boolean;
+            assessmentCount?: number;
+            assessmentHistory?: AssessmentHistoryEntry[];
+          };
           persistedAssessmentCountRef.current = savedAttempt.assessmentCount ?? 0;
+          if (savedAttempt.assessmentHistory) {
+            setAssessmentHistory(savedAttempt.assessmentHistory);
+          }
           if (savedAttempt?.id) {
             setSavedAttemptId(savedAttempt.id);
           }
@@ -1580,6 +1601,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             edges,
             reasoningContext,
             interviewSession: followUpSession,
+            addressedFindingIds,
           });
         } catch (error) {
           console.error("Failed to save assessment:", error);
@@ -1644,6 +1666,18 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       setShowAssessmentInterview(true);
       setIsPreparingInterview(false);
     }
+  };
+
+  const toggleFindingAddressed = (findingId: string) => {
+    setAddressedFindingIds((current) =>
+      current.includes(findingId)
+        ? current.filter((id) => id !== findingId)
+        : [...current, findingId],
+    );
+    trackEvent("assessment_finding_toggled", {
+      problem_id: idFromUrl === "free" ? undefined : idFromUrl,
+      finding_id: findingId,
+    });
   };
 
   const advanceAssessmentInterview = (skipped: boolean) => {
@@ -5048,6 +5082,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onAddCustomProperty={handleAddCustomProperty}
             handleSave={handleSave}
             assessmentResult={assessment}
+            assessmentHistory={assessmentHistory}
+            addressedFindingIds={addressedFindingIds}
+            onToggleFindingAddressed={toggleFindingAddressed}
+            onReviewAgain={() => {
+              setAssessment(null);
+              void runAssessment();
+            }}
             onDetachFromGroup={handleDetachFromGroup}
             isNodeInGroup={
               inspectedNodeId

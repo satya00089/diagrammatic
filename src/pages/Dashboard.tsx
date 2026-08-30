@@ -265,15 +265,15 @@ const Dashboard: React.FC = () => {
   const getDomainIcon = (domain: string) => {
     switch (domain) {
       case "All":
-        return <MdPublic className="inline" />;
+        return <MdPublic className="inline flex-shrink-0" />;
       case "infra":
-        return <MdBusiness className="inline" />;
+        return <MdBusiness className="inline flex-shrink-0" />;
       case "application":
-        return <MdPhoneAndroid className="inline" />;
+        return <MdPhoneAndroid className="inline flex-shrink-0" />;
       case "aiml":
-        return <MdSmartToy className="inline" />;
+        return <MdSmartToy className="inline flex-shrink-0" />;
       default:
-        return <MdSettings className="inline" />;
+        return <MdSettings className="inline flex-shrink-0" />;
     }
   };
 
@@ -332,10 +332,10 @@ const Dashboard: React.FC = () => {
               >
                 <img
                   src="/logo-64.png"
-                  width="35"
-                  height="35"
+                  width="28"
+                  height="28"
                   alt="Logo"
-                  className="h-7 transition-transform group-hover:scale-110 duration-300"
+                  className="h-7 w-7 flex-shrink-0 object-contain transition-transform group-hover:scale-110 duration-300"
                 />
                 <span className="text-lg font-bold text-white tracking-wide leading-none">
                   Diagrammatic
@@ -784,7 +784,7 @@ const Dashboard: React.FC = () => {
                             )}
                           </div>
 
-                          <div className="mt-auto grid grid-cols-2 gap-2">
+                          <div className="mt-auto grid grid-cols-[5fr_7fr] gap-2">
                             <Link
                               to={`/problems/${getProblemSlug(problem)}/`}
                               aria-label={`View guide for ${problem.title}`}

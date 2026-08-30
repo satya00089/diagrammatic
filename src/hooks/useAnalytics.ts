@@ -28,6 +28,7 @@ export type ProductEventName =
   | "reasoning_submitted"
   | "assessment_completed"
   | "assessment_retry_started"
+  | "assessment_finding_toggled"
   | "account_signup_submitted"
   | "account_signup_completed"
   | "public_share_completed";
