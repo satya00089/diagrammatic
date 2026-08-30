@@ -158,6 +158,18 @@ export interface ReviewFinding {
   severity: ReviewFindingSeverity;
 }
 
+export interface AssessmentHistoryEntry {
+  id: string;
+  score: number;
+  findingCount: number;
+  createdAt: string;
+  source?: "ai" | "rule_based";
+  addressedFindingIds: string[];
+}
+
+export const getReviewFindingId = (finding: ReviewFinding): string =>
+  `${finding.severity}:${finding.title.trim().toLowerCase()}`;
+
 export interface ScoreBreakdown {
   scalability: number;
   reliability: number;

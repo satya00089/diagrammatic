@@ -385,6 +385,7 @@ class ApiService {
     lastAssessment?: unknown;
     reasoningContext?: DesignReasoningContext;
     interviewSession?: InterviewSession;
+    addressedFindingIds?: string[];
   }): Promise<unknown> {
     const response = await fetch(`${API_BASE_URL}/api/v1/attempts`, {
       method: "POST",

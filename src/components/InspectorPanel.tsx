@@ -104,6 +104,10 @@ type InspectorPanelProps = {
   onAddCustomProperty: () => void;
   handleSave: () => void;
   assessmentResult?: import("../types/systemDesign").ValidationResult | null;
+  assessmentHistory?: import("../types/systemDesign").AssessmentHistoryEntry[];
+  addressedFindingIds?: string[];
+  onToggleFindingAddressed?: (findingId: string) => void;
+  onReviewAgain?: () => void;
   onDetachFromGroup?: () => void;
   isNodeInGroup?: boolean;
   onShareToWorld?: () => void;
@@ -135,6 +139,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onAddCustomProperty,
   handleSave,
   assessmentResult,
+  assessmentHistory = [],
+  addressedFindingIds = [],
+  onToggleFindingAddressed,
+  onReviewAgain,
   onDetachFromGroup,
   isNodeInGroup,
   onShareToWorld,
@@ -812,6 +820,39 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           </div>
                         )}
 
+                        {assessmentHistory.length > 1 && (
+                          <div className="rounded-xl border border-theme/10 bg-[var(--surface)] p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div>
+                                <h3 className="text-sm font-semibold text-theme">
+                                  Review progress
+                                </h3>
+                                <p className="mt-1 text-xs text-muted">
+                                  Compare your latest reviews as you improve the design.
+                                </p>
+                              </div>
+                              <span className="text-xs font-semibold text-muted">
+                                {assessmentHistory.length} reviews
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              {assessmentHistory.slice(-5).map((entry, index, entries) => {
+                                const previous = entries[index - 1];
+                                const delta = previous ? entry.score - previous.score : 0;
+                                return (
+                                  <div key={entry.id} className="flex items-center justify-between rounded-lg bg-[var(--bg)] px-3 py-2 text-xs">
+                                    <span className="text-muted">Review {assessmentHistory.length - entries.length + index + 1}</span>
+                                    <span className="font-semibold text-theme">{entry.score}/100</span>
+                                    <span className={delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted"}>
+                                      {delta > 0 ? `+${delta}` : delta || "—"}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {/* ── 3. What Went Well ── */}
                         <div className="p-4 border rounded-xl bg-[var(--surface)]">
                           <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
@@ -843,7 +884,19 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                         <AssessmentFindings
                           findings={assessmentResult.findings ?? []}
+                          addressedFindingIds={addressedFindingIds}
+                          onToggleAddressed={onToggleFindingAddressed}
                         />
+
+                        {onReviewAgain && (
+                          <button
+                            type="button"
+                            onClick={onReviewAgain}
+                            className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                          >
+                            Review again after making changes
+                          </button>
+                        )}
 
                         {/* ── 4. Where to Improve ── */}
                         <div className="p-4 border rounded-xl bg-[var(--surface)]">
