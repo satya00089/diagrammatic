@@ -27,11 +27,9 @@ import { toPng, toJpeg, toSvg } from "html-to-image";
 import dagre from "dagre";
 import {
   MdAccessTime,
-  MdUpload,
   MdUndo,
   MdRedo,
   MdClose,
-  MdDownload,
   MdExpandMore,
   MdSave,
   MdHelpOutline,
@@ -1005,9 +1003,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     resetChatBot,
   ]);
 
-  // State for download menu
-  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
-  const [transparentBg, setTransparentBg] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showExtensionHub, setShowExtensionHub] = useState(false);
@@ -1458,23 +1453,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return `at ${savedAt.toLocaleTimeString()}`;
     }
   };
-
-  // Close download menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showDownloadMenu) {
-        const target = e.target as HTMLElement;
-        if (!target.closest(".relative")) {
-          setShowDownloadMenu(false);
-        }
-      }
-    };
-
-    if (showDownloadMenu) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
-    }
-  }, [showDownloadMenu]);
 
   // Close layout menu when clicking outside
   useEffect(() => {
@@ -4008,7 +3986,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
+  const downloadImage = (
+    format: "png" | "jpeg" | "svg" = "png",
+    useTransparentBg = false,
+  ) => {
     const nodesBounds = getNodesBounds(getNodes());
 
     // Add padding to prevent cropping (100px on each side)
@@ -4039,10 +4020,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       fileExtension = "png";
     }
 
-    // Resolve background color: JPEG always needs a solid color; PNG/SVG respect the transparentBg toggle
+    // JPEG always needs a solid color; PNG/SVG can use the export preference.
     const getExportBgColor = () => {
       if (format === "jpeg") return "#ffffff";
-      if (transparentBg) return "transparent";
+      if (useTransparentBg) return "transparent";
       // Use the computed theme background color
       const docStyle = getComputedStyle(document.documentElement);
       return (
@@ -4152,6 +4133,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       // Clear current diagram ID since this is now a new/imported diagram
       setCurrentDiagramId(null);
+      setShowExtensionHub(false);
 
       // Fit view to show all imported nodes
       setTimeout(() => {
@@ -4744,136 +4726,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </button>
                 </div>
 
-                {/* Import button - only show for Design Studio (free mode) */}
-                {idFromUrl === "free" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowExtensionHub(true)}
-                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                      data-tooltip="Architecture extensions"
-                      aria-label="Open architecture extensions"
-                    >
-                      <MdExtension className="h-5 w-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleImportClick}
-                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                      data-tooltip="Import Design"
-                    >
-                      <MdUpload className="h-5 w-5" />
-                    </button>
-
-                    {/* Hidden file input for import */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".json,.xml"
-                      onChange={handleImportFile}
-                      className="hidden"
-                      aria-label="Import diagram file"
-                    />
-                  </>
-                )}
-
-                {/* Download/Export button with dropdown */}
-                <div className="relative" data-tour="export-btn">
-                  <button
-                    type="button"
-                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                    disabled={nodes.length === 0}
-                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                    data-tooltip="Export Design"
-                  >
-                    <MdDownload className="h-5 w-5" />
-                  </button>
-
-                  {/* Export format dropdown */}
-                  {showDownloadMenu && (
-                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[200px]">
-                      <div className="px-3 py-1 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                          Images
-                        </span>
-                        <label
-                          className="flex items-center gap-1.5 cursor-pointer select-none"
-                          title="When enabled, PNG and SVG exports will have a transparent background instead of the theme background color"
-                        >
-                          <span className="text-xs text-muted">
-                            Transparent
-                          </span>
-                          <input
-                            type="checkbox"
-                            checked={transparentBg}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setTransparentBg(e.target.checked);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
-                          />
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("png");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        PNG Image
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("jpeg");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        JPEG Image
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("svg");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        SVG Vector
-                      </button>
-
-                      <div className="border-t border-theme/10 my-1"></div>
-
-                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
-                        Data Files
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleExportJSON();
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        JSON Format
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleExportXML();
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        XML Format
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowExtensionHub(true)}
+                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  data-tooltip="Extensions: import and export"
+                  data-tour="export-btn"
+                  aria-label="Open extensions"
+                >
+                  <MdExtension className="h-5 w-5" />
+                </button>
 
                 {/* Layout button with dropdown */}
                 <div className="relative">
@@ -5317,10 +5179,24 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           />
         )}
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.xml"
+          onChange={handleImportFile}
+          className="hidden"
+          aria-label="Import diagram file"
+        />
+
         <ExtensionHub
           isOpen={showExtensionHub}
           onClose={() => setShowExtensionHub(false)}
           onImport={handleExtensionImport}
+          onImportDesign={handleImportClick}
+          onExportImage={downloadImage}
+          onExportJSON={handleExportJSON}
+          onExportXML={handleExportXML}
+          canExport={nodes.length > 0}
         />
 
         {/* Save Design Dialog (reuses ProjectIntentDialog) */}
