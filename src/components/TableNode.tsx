@@ -6,12 +6,13 @@ import {
   MdSettings,
   MdDelete,
   MdAdd,
+  MdKey,
   MdOutlineVerticalAlignTop,
   MdOutlineVerticalAlignBottom,
 } from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
-import type { NodeRenderConfig } from "../types/canvas";
+import type { NodeRenderConfig, TableColumn } from "../types/canvas";
 
 export type TableAttribute = {
   id: string;
@@ -70,16 +71,29 @@ const TableNode: React.FC<Props> = React.memo(
     }, [data.attributes]);
 
     // Get column configuration from renderConfig or use defaults
-    const columns = React.useMemo(() => {
+    const columns = React.useMemo<TableColumn[]>(() => {
       if (data.renderConfig?.columns && data.renderConfig.columns.length > 0) {
         return data.renderConfig.columns;
       }
       // Default columns for database table
       return [
-        { key: "pk", label: "PK", width: "w-6" },
-        { key: "name", label: "Column Name", width: "flex-1" },
-        { key: "type", label: "Data Type", width: "w-24" },
-        { key: "actions", label: "", width: "w-8" },
+        { key: "isPrimaryKey", label: "PK", width: "w-7", type: "boolean" },
+        { key: "isForeignKey", label: "FK", width: "w-7", type: "boolean" },
+        {
+          key: "name",
+          label: "Column Name",
+          width: "flex-1",
+          type: "text",
+          editable: true,
+        },
+        {
+          key: "type",
+          label: "Data Type",
+          width: "w-24",
+          type: "text",
+          editable: true,
+        },
+        { key: "actions", label: "", width: "w-8", type: "readonly" },
       ];
     }, [data.renderConfig]);
 
@@ -245,12 +259,19 @@ const TableNode: React.FC<Props> = React.memo(
               onClick={() => handleToggleBoolean(attr.id, col.key)}
               className={`${cellClassName} flex items-center justify-center ${colorClass || ""}`}
               title={col.label}
+              aria-pressed={displayValue}
             >
-              {icon ? (
+              {col.key === "isPrimaryKey" && displayValue ? (
+                <MdKey className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              ) : col.key === "isForeignKey" && displayValue ? (
+                <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">
+                  FK
+                </span>
+              ) : icon ? (
                 <span className="text-xs">{icon}</span>
-              ) : (
+              ) : col.key !== "isPrimaryKey" && col.key !== "isForeignKey" ? (
                 <div className="w-3 h-3 border border-theme/40 rounded" />
-              )}
+              ) : null}
             </button>
           );
         }

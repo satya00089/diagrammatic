@@ -36,6 +36,7 @@ import {
   MdSave,
   MdHelpOutline,
   MdPublic,
+  MdExtension,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 
@@ -142,6 +143,8 @@ import { ProjectIntentDialog } from "../components/ProjectIntentDialog";
 import CustomPropertyInput, {
   type CustomProperty,
 } from "../components/CustomPropertyInput";
+import ExtensionHub from "../components/ExtensionHub";
+import type { ExtensionImportResult } from "../types/extensions";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
@@ -540,7 +543,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const restoredIcon = localComp?.icon || node.data?.icon;
 
         // Fetch full component data if it's a provider component (AWS, Azure, etc.)
-        if (componentId && !localComp && !fullComponentsCache[componentId]) {
+        // Imported extension nodes intentionally use a generic architectureType
+        // instead of a provider-qualified component ID, so they must never
+        // trigger a provider lookup.
+        if (
+          componentId &&
+          !localComp &&
+          !fullComponentsCache[componentId] &&
+          !node.data?.extensionSource
+        ) {
           dispatch(fetchFullComponent(componentId));
         }
 
@@ -999,6 +1010,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [transparentBg, setTransparentBg] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const [showExtensionHub, setShowExtensionHub] = useState(false);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2958,8 +2970,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           : null;
       const fullComp = componentId ? fullComponentsCache[componentId] : null;
 
-      // Use properties from Redux cache (priority) or local COMPONENTS
-      const properties = fullComp?.properties || comp?.properties;
+      // Use properties from Redux cache (priority) or local COMPONENTS.
+      // Mermaid imports also expose their visible subtitle directly, including
+      // generic nodes that do not have a catalog component definition.
+      const componentProperties = fullComp?.properties || comp?.properties || [];
+      const subtitleProperty: ComponentProperty = {
+        key: "subtitle",
+        label: "Subtitle",
+        type: "text",
+        placeholder: "Describe this component",
+        default: "Microservice",
+      };
+      const labelProperty: ComponentProperty = {
+        key: "label",
+        label: "Label",
+        type: "text",
+        placeholder: "Name this component",
+        default: "Component",
+      };
+      const isGenericMermaidNode =
+        node.data.extensionSource === "mermaid" && !componentId;
+      const extensionProperties: ComponentProperty[] = [
+        ...(isGenericMermaidNode ? [labelProperty] : []),
+        ...(node.data.extensionSource === "mermaid" ? [subtitleProperty] : []),
+      ];
+      const properties = [
+        ...componentProperties,
+        ...extensionProperties.filter(
+          (extensionProperty) =>
+            !componentProperties.some(
+              (property) => property.key === extensionProperty.key,
+            ),
+        ),
+      ];
 
       if (properties && properties.length > 0) {
         propertyElements = properties
@@ -4132,6 +4175,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     fileInputRef.current?.click();
   };
 
+  const handleExtensionImport = (
+    result: ExtensionImportResult,
+    sourceName: string,
+  ) => {
+    const restoredNodes = restoreNodeIcons(result.nodes);
+    setNodes(getLayoutedNodes(restoredNodes, result.edges, "LR"));
+    setEdges(result.edges);
+    setCurrentDiagramId(null);
+    setShowExtensionHub(false);
+    setTimeout(() => {
+      fitView({ padding: 0.2, duration: 400 });
+    }, 100);
+    toast.success(`${sourceName} imported: ${result.summary}.`);
+    if (result.warnings.length > 0) {
+      toast.info(
+        `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+      );
+    }
+  };
+
   // Handle sharing diagram with collaborator
   const handleShareDiagram = async () => {
     if (!shareEmail.trim() || !currentDiagramId) return;
@@ -4257,11 +4320,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setShowTitleDialog(true);
   };
 
-  // Auto-layout nodes using Dagre with proper group handling
-  const onLayout = (direction: "TB" | "LR" = "TB") => {
+  // Calculate a Dagre layout while keeping group positioning intact.
+  const getLayoutedNodes = (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR" = "TB",
+  ): Node[] => {
     // Separate groups and regular nodes
-    const groupNodes = nodes.filter((node) => node.type === "group");
-    const regularNodes = nodes.filter(
+    const groupNodes = nodesToLayout.filter((node) => node.type === "group");
+    const regularNodes = nodesToLayout.filter(
       (node) => node.type !== "group" && !node.parentId,
     );
 
@@ -4289,7 +4356,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     >();
 
     for (const groupNode of groupNodes) {
-      const children = nodes.filter((n) => n.parentId === groupNode.id);
+      const children = nodesToLayout.filter((n) => n.parentId === groupNode.id);
       if (children.length === 0) continue;
 
       const childGraph = new dagre.graphlib.Graph();
@@ -4310,7 +4377,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
 
       // Add edges between children
-      const childEdges = edges.filter(
+      const childEdges = edgesToLayout.filter(
         (edge) =>
           children.some((c) => c.id === edge.source) &&
           children.some((c) => c.id === edge.target),
@@ -4363,7 +4430,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     // Add edges between regular nodes
-    const regularEdges = edges.filter(
+    const regularEdges = edgesToLayout.filter(
       (edge) =>
         regularNodes.some((n) => n.id === edge.source) &&
         regularNodes.some((n) => n.id === edge.target),
@@ -4376,7 +4443,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     // Apply positions
-    const layoutedNodes = nodes.map((node) => {
+    return nodesToLayout.map((node) => {
       if (node.type === "group") {
         // Keep group nodes in their current positions - DO NOT MOVE
         return node;
@@ -4416,10 +4483,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
       return node;
     });
+  };
 
-    setNodes(layoutedNodes);
+  // Auto-layout the existing canvas using Dagre with proper group handling.
+  const onLayout = (direction: "TB" | "LR" = "TB") => {
+    setNodes(getLayoutedNodes(nodes, edges, direction));
 
-    // Fit view after layout with some padding
     globalThis.requestAnimationFrame(() => {
       fitView({ padding: 0.2, duration: 400 });
     });
@@ -4678,6 +4747,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 {/* Import button - only show for Design Studio (free mode) */}
                 {idFromUrl === "free" && (
                   <>
+                    <button
+                      type="button"
+                      onClick={() => setShowExtensionHub(true)}
+                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                      data-tooltip="Architecture extensions"
+                      aria-label="Open architecture extensions"
+                    >
+                      <MdExtension className="h-5 w-5" />
+                    </button>
                     <button
                       type="button"
                       onClick={handleImportClick}
@@ -5238,6 +5316,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onSkip={handleProjectIntentSkip}
           />
         )}
+
+        <ExtensionHub
+          isOpen={showExtensionHub}
+          onClose={() => setShowExtensionHub(false)}
+          onImport={handleExtensionImport}
+        />
 
         {/* Save Design Dialog (reuses ProjectIntentDialog) */}
         {showTitleDialog && (
