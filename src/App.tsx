@@ -99,6 +99,7 @@ const GlobalProductChrome: React.FC = () => {
       "/system-design-interview",
       "/system-design-practice",
       "/ai-system-design-interview",
+      "/kubernetes-architecture",
     ].includes(pathname) ||
     ["/learning-paths/", "/playground/", "/problems/"].some((prefix) =>
       pathname.startsWith(prefix),
@@ -167,6 +168,14 @@ const App: React.FC = () => {
                 />
                 <Route
                   path="/ai-system-design-interview"
+                  element={
+                    <StoreBoundary>
+                      <SeoGuide />
+                    </StoreBoundary>
+                  }
+                />
+                <Route
+                  path="/kubernetes-architecture"
                   element={
                     <StoreBoundary>
                       <SeoGuide />

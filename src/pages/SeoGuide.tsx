@@ -132,6 +132,46 @@ const guides = {
     nextHref: "/learning-paths/",
     nextLabel: "Study the underlying foundations",
   },
+  "kubernetes-architecture": {
+    title: "Kubernetes Architecture Guide",
+    seoTitle:
+      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagrammatic",
+    seoKeywords:
+      "kubernetes architecture, kubernetes architecture diagram, kubernetes system design, kubernetes components, kubernetes cluster architecture",
+    description:
+      "Learn how Kubernetes control-plane, workload, networking, storage, and observability components fit together, then practice explaining the trade-offs in an architecture diagram.",
+    intro:
+      "A useful Kubernetes diagram makes the ownership boundaries clear. Start with the request path into a Service and workload, then show how the control plane, storage, networking, and operations concerns support it. The point is not to place every Kubernetes resource; it is to explain what keeps the application available and manageable.",
+    steps: [
+      [
+        "Start with the workload boundary",
+        "Choose the workload type that matches the job: a Deployment for stateless services, a StatefulSet for stable identities and storage, or a Job for finite work.",
+      ],
+      [
+        "Make traffic explicit",
+        "Show how an Ingress reaches a Service and how that Service selects healthy Pods. Call out where TLS, routing, service discovery, and network policy apply.",
+      ],
+      [
+        "Separate control from data paths",
+        "Explain how the API server, scheduler, controllers, and etcd reconcile desired state while application requests continue through the data path.",
+      ],
+      [
+        "Plan state and configuration",
+        "Use PersistentVolumeClaims for durable workload storage, ConfigMaps for non-secret configuration, and Secrets for credentials. State the backup and recovery boundary.",
+      ],
+      [
+        "Design for operations",
+        "Include readiness, resource limits, autoscaling, logs, metrics, alerts, and a rollout strategy so the diagram describes how the system behaves under change and failure.",
+      ],
+    ],
+    problemSlugs: [
+      "design-a-container-based-microservices-architecture",
+      "build-a-multi-cloud-kubernetes-orchestration-platform",
+      "design-a-secure-multi-cloud-kubernetes-architecture",
+    ],
+    nextHref: "/problems/",
+    nextLabel: "Practice a Kubernetes architecture",
+  },
 } as const;
 
 const faq = [
@@ -151,6 +191,11 @@ const SeoGuide: React.FC = () => {
   const data = guides[guide as keyof typeof guides];
   if (!data) return <NotFound />;
 
+  const keywords =
+    "seoKeywords" in data
+      ? data.seoKeywords
+      : `${data.title}, system design questions, architecture interview practice, distributed systems`;
+
   const selectedProblems = data.problemSlugs
     .map((slug) => featuredProblems.find((problem) => problem.slug === slug))
     .filter((problem): problem is (typeof featuredProblems)[number] =>
@@ -163,7 +208,7 @@ const SeoGuide: React.FC = () => {
       <Seo
         title={data.seoTitle}
         description={data.description}
-        keywords={`${data.title}, system design questions, architecture interview practice, distributed systems`}
+        keywords={keywords}
         image="https://diagrammatic.next-zen.dev/og/problems.png"
         imageAlt={`${data.title} on Diagrammatic`}
         url={canonical}
