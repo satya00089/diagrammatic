@@ -12,6 +12,8 @@ import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { MdHub } from "react-icons/md";
+import { COMPONENTS } from "../config/components";
 import NodePropertyDisplay from "./NodePropertyDisplay";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import SpriteIcon from "./SpriteIcon";
@@ -97,6 +99,16 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
   // Use componentName if available, otherwise fall back to label
   const displayLabel = data.componentName || data.label;
+  const defaultMermaidSubtitle = componentId
+    ? COMPONENTS.find((component) => component.id === componentId)?.description
+    : "Microservice";
+  const displaySubtitle =
+    data.extensionSource === "mermaid" &&
+    data.subtitle === "Imported from Mermaid"
+      ? defaultMermaidSubtitle
+      : data.subtitle;
+  const iconComponent =
+    data.icon ?? (data.extensionSource === "mermaid" ? MdHub : undefined);
 
   const onDelete = React.useCallback(
     (e: React.MouseEvent) => {
@@ -236,9 +248,9 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
             data.borderColor ? { color: data.borderColor as string } : undefined
           }
         >
-          {data.icon
+          {iconComponent
             ? React.createElement(
-                data.icon as React.ComponentType<{ size?: number }>,
+                iconComponent as React.ComponentType<{ size?: number }>,
                 { size: 24 },
               )
             : "●"}
@@ -515,8 +527,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
 
           <div className="min-w-0 w-full text-center">
             <div className="truncate font-medium text-sm">{displayLabel}</div>
-            {data.subtitle && (
-              <div className="text-xs opacity-70 truncate">{data.subtitle}</div>
+            {displaySubtitle && (
+              <div className="text-xs opacity-70 truncate">{displaySubtitle}</div>
             )}
           </div>
         </div>

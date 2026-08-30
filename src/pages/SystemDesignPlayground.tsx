@@ -27,15 +27,14 @@ import { toPng, toJpeg, toSvg } from "html-to-image";
 import dagre from "dagre";
 import {
   MdAccessTime,
-  MdUpload,
   MdUndo,
   MdRedo,
   MdClose,
-  MdDownload,
   MdExpandMore,
   MdSave,
   MdHelpOutline,
   MdPublic,
+  MdExtension,
 } from "react-icons/md";
 import { FcFlowChart } from "react-icons/fc";
 
@@ -142,6 +141,8 @@ import { ProjectIntentDialog } from "../components/ProjectIntentDialog";
 import CustomPropertyInput, {
   type CustomProperty,
 } from "../components/CustomPropertyInput";
+import ExtensionHub from "../components/ExtensionHub";
+import type { ExtensionImportResult } from "../types/extensions";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
@@ -540,7 +541,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         const restoredIcon = localComp?.icon || node.data?.icon;
 
         // Fetch full component data if it's a provider component (AWS, Azure, etc.)
-        if (componentId && !localComp && !fullComponentsCache[componentId]) {
+        // Imported extension nodes intentionally use a generic architectureType
+        // instead of a provider-qualified component ID, so they must never
+        // trigger a provider lookup.
+        if (
+          componentId &&
+          !localComp &&
+          !fullComponentsCache[componentId] &&
+          !node.data?.extensionSource
+        ) {
           dispatch(fetchFullComponent(componentId));
         }
 
@@ -994,11 +1003,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     resetChatBot,
   ]);
 
-  // State for download menu
-  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
-  const [transparentBg, setTransparentBg] = useState(false);
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const [showExtensionHub, setShowExtensionHub] = useState(false);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1446,23 +1453,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       return `at ${savedAt.toLocaleTimeString()}`;
     }
   };
-
-  // Close download menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (showDownloadMenu) {
-        const target = e.target as HTMLElement;
-        if (!target.closest(".relative")) {
-          setShowDownloadMenu(false);
-        }
-      }
-    };
-
-    if (showDownloadMenu) {
-      document.addEventListener("click", handleClickOutside);
-      return () => document.removeEventListener("click", handleClickOutside);
-    }
-  }, [showDownloadMenu]);
 
   // Close layout menu when clicking outside
   useEffect(() => {
@@ -2958,8 +2948,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           : null;
       const fullComp = componentId ? fullComponentsCache[componentId] : null;
 
-      // Use properties from Redux cache (priority) or local COMPONENTS
-      const properties = fullComp?.properties || comp?.properties;
+      // Use properties from Redux cache (priority) or local COMPONENTS.
+      // Mermaid imports also expose their visible subtitle directly, including
+      // generic nodes that do not have a catalog component definition.
+      const componentProperties = fullComp?.properties || comp?.properties || [];
+      const subtitleProperty: ComponentProperty = {
+        key: "subtitle",
+        label: "Subtitle",
+        type: "text",
+        placeholder: "Describe this component",
+        default: "Microservice",
+      };
+      const labelProperty: ComponentProperty = {
+        key: "label",
+        label: "Label",
+        type: "text",
+        placeholder: "Name this component",
+        default: "Component",
+      };
+      const isGenericMermaidNode =
+        node.data.extensionSource === "mermaid" && !componentId;
+      const extensionProperties: ComponentProperty[] = [
+        ...(isGenericMermaidNode ? [labelProperty] : []),
+        ...(node.data.extensionSource === "mermaid" ? [subtitleProperty] : []),
+      ];
+      const properties = [
+        ...componentProperties,
+        ...extensionProperties.filter(
+          (extensionProperty) =>
+            !componentProperties.some(
+              (property) => property.key === extensionProperty.key,
+            ),
+        ),
+      ];
 
       if (properties && properties.length > 0) {
         propertyElements = properties
@@ -3965,7 +3986,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  const downloadImage = (format: "png" | "jpeg" | "svg" = "png") => {
+  const downloadImage = (
+    format: "png" | "jpeg" | "svg" = "png",
+    useTransparentBg = false,
+  ) => {
     const nodesBounds = getNodesBounds(getNodes());
 
     // Add padding to prevent cropping (100px on each side)
@@ -3996,10 +4020,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       fileExtension = "png";
     }
 
-    // Resolve background color: JPEG always needs a solid color; PNG/SVG respect the transparentBg toggle
+    // JPEG always needs a solid color; PNG/SVG can use the export preference.
     const getExportBgColor = () => {
       if (format === "jpeg") return "#ffffff";
-      if (transparentBg) return "transparent";
+      if (useTransparentBg) return "transparent";
       // Use the computed theme background color
       const docStyle = getComputedStyle(document.documentElement);
       return (
@@ -4109,6 +4133,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       // Clear current diagram ID since this is now a new/imported diagram
       setCurrentDiagramId(null);
+      setShowExtensionHub(false);
 
       // Fit view to show all imported nodes
       setTimeout(() => {
@@ -4130,6 +4155,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // Trigger file input click
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleExtensionImport = (
+    result: ExtensionImportResult,
+    sourceName: string,
+  ) => {
+    const restoredNodes = restoreNodeIcons(result.nodes);
+    setNodes(getLayoutedNodes(restoredNodes, result.edges, "LR"));
+    setEdges(result.edges);
+    setCurrentDiagramId(null);
+    setShowExtensionHub(false);
+    setTimeout(() => {
+      fitView({ padding: 0.2, duration: 400 });
+    }, 100);
+    toast.success(`${sourceName} imported: ${result.summary}.`);
+    if (result.warnings.length > 0) {
+      toast.info(
+        `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+      );
+    }
   };
 
   // Handle sharing diagram with collaborator
@@ -4257,11 +4302,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setShowTitleDialog(true);
   };
 
-  // Auto-layout nodes using Dagre with proper group handling
-  const onLayout = (direction: "TB" | "LR" = "TB") => {
+  // Calculate a Dagre layout while keeping group positioning intact.
+  const getLayoutedNodes = (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR" = "TB",
+  ): Node[] => {
     // Separate groups and regular nodes
-    const groupNodes = nodes.filter((node) => node.type === "group");
-    const regularNodes = nodes.filter(
+    const groupNodes = nodesToLayout.filter((node) => node.type === "group");
+    const regularNodes = nodesToLayout.filter(
       (node) => node.type !== "group" && !node.parentId,
     );
 
@@ -4289,7 +4338,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     >();
 
     for (const groupNode of groupNodes) {
-      const children = nodes.filter((n) => n.parentId === groupNode.id);
+      const children = nodesToLayout.filter((n) => n.parentId === groupNode.id);
       if (children.length === 0) continue;
 
       const childGraph = new dagre.graphlib.Graph();
@@ -4310,7 +4359,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
 
       // Add edges between children
-      const childEdges = edges.filter(
+      const childEdges = edgesToLayout.filter(
         (edge) =>
           children.some((c) => c.id === edge.source) &&
           children.some((c) => c.id === edge.target),
@@ -4363,7 +4412,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     // Add edges between regular nodes
-    const regularEdges = edges.filter(
+    const regularEdges = edgesToLayout.filter(
       (edge) =>
         regularNodes.some((n) => n.id === edge.source) &&
         regularNodes.some((n) => n.id === edge.target),
@@ -4376,7 +4425,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     // Apply positions
-    const layoutedNodes = nodes.map((node) => {
+    return nodesToLayout.map((node) => {
       if (node.type === "group") {
         // Keep group nodes in their current positions - DO NOT MOVE
         return node;
@@ -4416,10 +4465,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       }
       return node;
     });
+  };
 
-    setNodes(layoutedNodes);
+  // Auto-layout the existing canvas using Dagre with proper group handling.
+  const onLayout = (direction: "TB" | "LR" = "TB") => {
+    setNodes(getLayoutedNodes(nodes, edges, direction));
 
-    // Fit view after layout with some padding
     globalThis.requestAnimationFrame(() => {
       fitView({ padding: 0.2, duration: 400 });
     });
@@ -4675,127 +4726,16 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   </button>
                 </div>
 
-                {/* Import button - only show for Design Studio (free mode) */}
-                {idFromUrl === "free" && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleImportClick}
-                      className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
-                      data-tooltip="Import Design"
-                    >
-                      <MdUpload className="h-5 w-5" />
-                    </button>
-
-                    {/* Hidden file input for import */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".json,.xml"
-                      onChange={handleImportFile}
-                      className="hidden"
-                      aria-label="Import diagram file"
-                    />
-                  </>
-                )}
-
-                {/* Download/Export button with dropdown */}
-                <div className="relative" data-tour="export-btn">
-                  <button
-                    type="button"
-                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                    disabled={nodes.length === 0}
-                    className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                    data-tooltip="Export Design"
-                  >
-                    <MdDownload className="h-5 w-5" />
-                  </button>
-
-                  {/* Export format dropdown */}
-                  {showDownloadMenu && (
-                    <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[200px]">
-                      <div className="px-3 py-1 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                          Images
-                        </span>
-                        <label
-                          className="flex items-center gap-1.5 cursor-pointer select-none"
-                          title="When enabled, PNG and SVG exports will have a transparent background instead of the theme background color"
-                        >
-                          <span className="text-xs text-muted">
-                            Transparent
-                          </span>
-                          <input
-                            type="checkbox"
-                            checked={transparentBg}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              setTransparentBg(e.target.checked);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer"
-                          />
-                        </label>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("png");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        PNG Image
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("jpeg");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        JPEG Image
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          downloadImage("svg");
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        SVG Vector
-                      </button>
-
-                      <div className="border-t border-theme/10 my-1"></div>
-
-                      <div className="px-3 py-1 text-xs font-semibold text-muted uppercase tracking-wider">
-                        Data Files
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleExportJSON();
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        JSON Format
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleExportXML();
-                          setShowDownloadMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        XML Format
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowExtensionHub(true)}
+                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  data-tooltip="Extensions: import and export"
+                  data-tour="export-btn"
+                  aria-label="Open extensions"
+                >
+                  <MdExtension className="h-5 w-5" />
+                </button>
 
                 {/* Layout button with dropdown */}
                 <div className="relative">
@@ -5238,6 +5178,26 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             onSkip={handleProjectIntentSkip}
           />
         )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.xml"
+          onChange={handleImportFile}
+          className="hidden"
+          aria-label="Import diagram file"
+        />
+
+        <ExtensionHub
+          isOpen={showExtensionHub}
+          onClose={() => setShowExtensionHub(false)}
+          onImport={handleExtensionImport}
+          onImportDesign={handleImportClick}
+          onExportImage={downloadImage}
+          onExportJSON={handleExportJSON}
+          onExportXML={handleExportXML}
+          canExport={nodes.length > 0}
+        />
 
         {/* Save Design Dialog (reuses ProjectIntentDialog) */}
         {showTitleDialog && (
