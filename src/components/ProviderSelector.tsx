@@ -19,19 +19,39 @@ export type ProviderOption = {
   name: string;
   icon?: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
   color?: string;
+  tags?: string[];
 };
 
 // Default provider configurations with icons
 export const DEFAULT_PROVIDERS: ProviderOption[] = [
   { id: "all", name: "All Providers", icon: MdApps, color: "#6B7280" },
-  { id: "AWS", name: "AWS", icon: FaAws, color: "#FF9900" },
-  { id: "Azure", name: "Azure", icon: VscAzure, color: "#0078D4" },
-  { id: "GCP", name: "Google Cloud", icon: SiGooglecloud, color: "#4285F4" },
+  {
+    id: "AWS",
+    name: "Amazon Web Services",
+    icon: FaAws,
+    color: "#FF9900",
+    tags: ["aws", "amazon", "ec2", "s3", "lambda", "dynamodb", "sns", "sqs"],
+  },
+  {
+    id: "Azure",
+    name: "Azure",
+    icon: VscAzure,
+    color: "#0078D4",
+    tags: ["azure", "az", "azure-ad"],
+  },
+  {
+    id: "GCP",
+    name: "Google Cloud Platform",
+    icon: SiGooglecloud,
+    color: "#4285F4",
+    tags: ["gcp", "google", "compute", "storage", "functions"],
+  },
   {
     id: "kubernetes",
     name: "Kubernetes",
     icon: SiKubernetes,
     color: "#326CE5",
+    tags: ["k8s", "kubernetes", "pods", "services", "deployments"],
   },
   { id: "docker", name: "Docker", icon: SiDocker, color: "#2496ED" },
   { id: "terraform", name: "Terraform", icon: SiTerraform, color: "#7B42BC" },
