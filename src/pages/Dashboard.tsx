@@ -215,6 +215,17 @@ const Dashboard: React.FC = () => {
 
   const [columnCount, setColumnCount] = useState(1);
 
+  // Keep the desktop grid full while the cursor still has more problems.
+  // The last partial row is only valid once pagination is exhausted.
+  const gridProblems = useMemo(() => {
+    if (!hasMore || columnCount === 1) return prioritizedProblems;
+
+    return prioritizedProblems.slice(
+      0,
+      Math.floor(prioritizedProblems.length / columnCount) * columnCount,
+    );
+  }, [columnCount, hasMore, prioritizedProblems]);
+
   useEffect(() => {
     const updateColumnCount = () => {
       setColumnCount(window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1);
@@ -225,7 +236,9 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const virtualizer = useWindowVirtualizer({
-    count: Math.ceil(prioritizedProblems.length / columnCount),
+    count: hasMore
+      ? Math.max(1, Math.ceil(gridProblems.length / columnCount))
+      : Math.ceil(gridProblems.length / columnCount),
     estimateSize: () => 390,
     overscan: 2,
     getItemKey: (index) => `problem-row-${index}`,
@@ -237,13 +250,17 @@ const Dashboard: React.FC = () => {
     const lastRow = virtualRows[virtualRows.length - 1];
     if (
       lastRow &&
-      lastRow.index >= Math.ceil(prioritizedProblems.length / columnCount) - 2 &&
+      lastRow.index >=
+        (hasMore
+          ? Math.max(1, Math.ceil(gridProblems.length / columnCount))
+          : Math.ceil(gridProblems.length / columnCount)) -
+          2 &&
       hasMore &&
       !loadingMore
     ) {
       dispatch(fetchMoreProblems());
     }
-  }, [columnCount, dispatch, hasMore, loadingMore, prioritizedProblems.length, virtualRows]);
+  }, [columnCount, dispatch, gridProblems.length, hasMore, loadingMore, virtualRows]);
 
   // Fetch problems from API on mount
   useEffect(() => {
@@ -679,7 +696,7 @@ const Dashboard: React.FC = () => {
                       style={{ transform: `translateY(${virtualRow.start}px)` }}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-                  {prioritizedProblems
+                  {gridProblems
                     .slice(
                       virtualRow.index * columnCount,
                       (virtualRow.index + 1) * columnCount,

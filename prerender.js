@@ -227,6 +227,49 @@ const routes = {
     indexable: true,
     kind: "article",
   },
+  "/kubernetes-architecture": {
+    title:
+      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagrammatic",
+    heading: "Kubernetes Architecture Guide",
+    description:
+      "Learn how Kubernetes control-plane, workload, networking, storage, and observability components fit together, then practice explaining the trade-offs in an architecture diagram.",
+    keywords:
+      "kubernetes architecture, kubernetes architecture diagram, kubernetes system design, kubernetes components, kubernetes cluster architecture",
+    image: `${siteUrl}/og/problems.png`,
+    imageAlt: "Kubernetes architecture practice on Diagrammatic",
+    sectionTitle: "Build a Kubernetes architecture you can explain",
+    actions: [{ label: "Browse practice problems", href: "/problems/" }],
+    items: [
+      {
+        title: "Start with the workload boundary",
+        description:
+          "Use Deployments, StatefulSets, or Jobs according to how the workload runs and stores state.",
+      },
+      {
+        title: "Make traffic explicit",
+        description:
+          "Trace Ingress, Service, and Pod routing, including the policy boundaries that protect it.",
+      },
+      {
+        title: "Separate control from data paths",
+        description:
+          "Show how the API server, scheduler, controllers, and etcd reconcile declared state.",
+      },
+      {
+        title: "Plan state and configuration",
+        description:
+          "Use persistent storage, configuration, and secrets with an explicit recovery boundary.",
+      },
+      {
+        title: "Design for operations",
+        description:
+          "Include readiness, scaling, observability, and a safe rollout strategy.",
+      },
+    ],
+    lastmod: "2026-08-30",
+    indexable: true,
+    kind: "article",
+  },
   "/playground/free": {
     title: "Design Studio | Diagrammatic",
     heading: "Design Studio",

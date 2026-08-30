@@ -66,7 +66,10 @@ export default function ComponentPalette({
 
   // Use custom providers or default ones
   const providers = React.useMemo(
-    () => customProviders || DEFAULT_PROVIDERS.slice(0, 4),
+    // Keep the core cloud providers available without requiring a caller to
+    // opt into a custom list. Kubernetes uses the same provider catalog and
+    // sprite contract as AWS, Azure, and GCP.
+    () => customProviders || DEFAULT_PROVIDERS.slice(0, 5),
     [customProviders],
   );
 
@@ -380,9 +383,9 @@ export default function ComponentPalette({
                         className="flex items-center gap-1.5 px-2 py-1 bg-[var(--brand)]/10 border border-[var(--brand)]/20 rounded text-xs"
                       >
                         {Icon && (
-                          <Icon size={12} style={{ color: provider.color }} />
+                          <Icon size={16} style={{ color: provider.color }} />
                         )}
-                        <span className="text-theme font-medium">
+                        <span className="text-theme font-small">
                           {provider.name}
                         </span>
                         <button
@@ -451,25 +454,16 @@ export default function ComponentPalette({
                       <button
                         key={provider.id}
                         type="button"
+                        aria-pressed={isSelected}
                         onClick={() => handleProviderSelect(provider)}
                         className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-theme hover:bg-[var(--bg-hover)] transition-colors ${
-                          isSelected ? "bg-[var(--brand)]/5" : ""
+                          isSelected ? "bg-[var(--brand)]/10" : ""
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          className="pointer-events-none"
-                          onClick={(e) => e.stopPropagation()}
-                        />
                         {Icon && (
                           <Icon size={16} style={{ color: provider.color }} />
                         )}
-                        <span className="font-medium">{provider.name}</span>
-                        <span className="ml-auto text-xs text-muted">
-                          {provider.id}
-                        </span>
+                        <span className="font-small">{provider.name}</span>
                       </button>
                     );
                   })}

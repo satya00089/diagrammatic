@@ -42,6 +42,7 @@ const guideRoutes = [
   "/system-design-interview/",
   "/system-design-practice/",
   "/ai-system-design-interview/",
+  "/kubernetes-architecture/",
 ];
 const expectedRoutes = [
   "/",
