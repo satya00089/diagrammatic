@@ -37,6 +37,15 @@ const layoutNodes = (nodes: Node[]): Node[] => {
 const normalizeComponentName = (value: string): string =>
   value.toLowerCase().replaceAll(/[^a-z0-9]+/g, " ").trim();
 
+const normalizeSqlIdentifier = (value: string): string =>
+  value
+    .trim()
+    .replaceAll(/"|`|\[|\]/g, "")
+    .replaceAll(/\s*\.\s*/g, ".")
+    .toLowerCase();
+
+const sqlIdentifier = String.raw`(?:"(?:[^"]|"")+"|[\w$-]+)(?:\s*\.\s*(?:"(?:[^"]|"")+"|[\w$-]+))*`;
+
 const resolveLocalComponent = (key: string, label: string) => {
   const candidates = [key, label].map(normalizeComponentName);
   const exactMatch = COMPONENTS.find((component) =>
@@ -178,7 +187,13 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     parentTableName: string;
     column: string;
   }> = [];
-  const tableBlocks = source.matchAll(/create\s+table\s+(?:if\s+not\s+exists\s+)?["`]?([\w.-]+)["`]?\s*\(([^;]*)\)\s*;?/gis);
+  const attributesByTableId = new Map<string, TableAttribute[]>();
+  const tableBlocks = source.matchAll(
+    new RegExp(
+      String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?(${sqlIdentifier})\s*\(([^;]*)\)\s*;?`,
+      "gis",
+    ),
+  );
 
   for (const [index, match] of Array.from(tableBlocks).entries()) {
     const tableName = match[1];
@@ -198,10 +213,14 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       }
       const foreignKey = line.match(/foreign\s+key\s*\(([^)]+)\)\s*references\s+["`]?([\w.-]+)/i);
       if (foreignKey) {
-        foreignKey[1].split(",").forEach((column) => {
+        const columns = foreignKey[1].split(",").map((column) => {
           const name = column.trim().replaceAll(/["`]/g, "");
           foreignKeyColumns.add(name);
-          inlineForeignKeys.push({ column: name, target: foreignKey[2] });
+          return name;
+        });
+        inlineForeignKeys.push({
+          column: columns.join(", "),
+          target: foreignKey[2],
         });
         continue;
       }
@@ -232,7 +251,8 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       if (foreignKeyColumns.has(attribute.name)) attribute.isForeignKey = true;
     });
     const id = makeId("table", tableName, index);
-    tableIds.set(tableName.toLowerCase(), id);
+    tableIds.set(normalizeSqlIdentifier(tableName), id);
+    attributesByTableId.set(id, attributes);
     nodes.push({
       id,
       type: "tableNode",
@@ -255,6 +275,41 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     });
   }
 
+  // pgAdmin exports relationships separately, after all CREATE TABLE blocks:
+  // ALTER TABLE IF EXISTS public.orders ADD CONSTRAINT ... FOREIGN KEY (...)
+  // REFERENCES public.users (...). Parse those constraints in a second pass so
+  // forward references and schema-qualified names both resolve correctly.
+  const deferredForeignKeys = source.matchAll(
+    new RegExp(
+      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:"(?:[^"]|"")+"|[\w$-]+)\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
+      "gis",
+    ),
+  );
+  for (const foreignKey of deferredForeignKeys) {
+    const childTable = foreignKey[1];
+    const parentTable = foreignKey[3];
+    const childId = tableIds.get(normalizeSqlIdentifier(childTable));
+    if (!childId) {
+      warnings.push(`Could not find table ${childTable} for a foreign key.`);
+      continue;
+    }
+
+    const attributes = attributesByTableId.get(childId) ?? [];
+    const columns = foreignKey[2].split(",").map((rawColumn) => {
+      const column = normalizeSqlIdentifier(rawColumn);
+      const attribute = attributes.find(
+        (candidate) => normalizeSqlIdentifier(candidate.name) === column,
+      );
+      if (attribute) attribute.isForeignKey = true;
+      return column;
+    });
+    relationships.push({
+      childId,
+      parentTableName: parentTable,
+      column: columns.join(", "),
+    });
+  }
+
   if (nodes.length === 0) {
     throw new Error("No CREATE TABLE statements were recognized. Paste a supported SQL schema.");
   }
@@ -262,7 +317,9 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   const inDegree = new Map(nodes.map((node) => [node.id, 0]));
 
   relationships.forEach((relationship) => {
-    const parentId = tableIds.get(relationship.parentTableName.toLowerCase());
+    const parentId = tableIds.get(
+      normalizeSqlIdentifier(relationship.parentTableName),
+    );
     if (!parentId) {
       warnings.push(
         `Could not link ${relationship.column}: table ${relationship.parentTableName} was not found.`,
@@ -280,8 +337,10 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       label: relationship.column,
       data: {
         extensionSource: "database-schema",
+        label: relationship.column,
         hasLabel: true,
         cardinality: "one-to-many",
+        pathType: "step",
       },
     });
     childIdsByParent.set(parentId, [

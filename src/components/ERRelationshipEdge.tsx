@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
-import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
+import {
+  getBezierPath,
+  getEdgeCenter,
+  getSmoothStepPath,
+  getStraightPath,
+  useStore,
+} from "@xyflow/react";
+import type { EdgePathType } from "./CustomEdge";
 
 /** Resolve a CSS custom property to its actual computed color for html-to-image compatibility. */
 function resolveCssVar(varName: string, fallback: string): string {
@@ -65,6 +72,7 @@ const computeEdgeParams = (
     targetPosition: Position;
   },
   isBiDirectionEdge: boolean,
+  pathType: EdgePathType = "smoothstep",
 ) => {
   const { sourceX, sourceY, targetX, targetY } = params;
 
@@ -78,6 +86,29 @@ const computeEdgeParams = (
     const midY = (sourceY + targetY) / 2;
     const centerX = midX;
     const centerY = midY + offset / 2;
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "straight") {
+    const [edgePath, centerX, centerY] = getStraightPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+    });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "step") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath({
+      ...params,
+      borderRadius: 0,
+    });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "smoothstep") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath(params);
     return { edgePath, centerX, centerY };
   }
 
@@ -180,6 +211,7 @@ interface EREdgeData {
   label?: string;
   hasLabel?: boolean;
   cardinality?: ERCardinality;
+  pathType?: EdgePathType;
 }
 
 const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
@@ -194,12 +226,16 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
     sourcePosition,
     targetPosition,
     data,
+    label,
     selected,
   } = props;
 
   const edgeData = (data as EREdgeData) || {};
+  const pathType = edgeData.pathType ?? "smoothstep";
+  const initialLabel =
+    edgeData.label ?? (typeof label === "string" ? label : "");
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState<string>(edgeData.label ?? "");
+  const [value, setValue] = useState<string>(initialLabel);
   const [hasLabel, setHasLabel] = useState<boolean>(edgeData.hasLabel ?? false);
   const [cardinality, setCardinality] = useState<ERCardinality>(
     edgeData.cardinality ?? "one-to-many",
@@ -252,6 +288,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
   const { edgePath, centerX, centerY } = computeEdgeParams(
     edgePathParams,
     isBiDirectionEdge,
+    pathType,
   );
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
@@ -677,7 +714,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                     if (e.key === "Enter") commit();
                     if (e.key === "Escape") {
                       setEditing(false);
-                      setValue(edgeData.label ?? "");
+                      setValue(initialLabel);
                     }
                   }}
                   style={{
