@@ -64,4 +64,67 @@ describe("database schema extension import", () => {
       ]),
     );
   });
+
+  it.each([
+    [
+      "MySQL",
+      `CREATE TABLE \`customers\` (
+        \`id\` bigint NOT NULL,
+        PRIMARY KEY (\`id\`)
+      ) ENGINE=InnoDB;
+      CREATE TABLE \`orders\` (
+        \`id\` bigint NOT NULL,
+        \`customer_id\` bigint NOT NULL,
+        PRIMARY KEY (\`id\`),
+        CONSTRAINT \`orders_customer_fk\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`)
+      ) ENGINE=InnoDB;`,
+      "customer_id",
+    ],
+    [
+      "Oracle",
+      `CREATE TABLE "APP"."USERS" (
+        "ID" NUMBER(19) NOT NULL,
+        CONSTRAINT "USERS_PK" PRIMARY KEY ("ID")
+      );
+      CREATE TABLE "APP"."ORDERS" (
+        "ID" NUMBER(19) NOT NULL,
+        "USER_ID" NUMBER(19) NOT NULL,
+        CONSTRAINT "ORDERS_PK" PRIMARY KEY ("ID")
+      );
+      ALTER TABLE "APP"."ORDERS" ADD CONSTRAINT "ORDERS_USER_FK"
+        FOREIGN KEY ("USER_ID") REFERENCES "APP"."USERS" ("ID");`,
+      "user_id",
+    ],
+    [
+      "SQL Server",
+      `CREATE TABLE [dbo].[accounts] (
+        [id] int NOT NULL,
+        CONSTRAINT [accounts_pk] PRIMARY KEY ([id])
+      );
+      CREATE TABLE [dbo].[invoices] (
+        [id] int NOT NULL,
+        [account_id] int NOT NULL
+      );
+      ALTER TABLE [dbo].[invoices] ADD CONSTRAINT [invoices_account_fk]
+        FOREIGN KEY ([account_id]) REFERENCES [dbo].[accounts] ([id]);`,
+      "account_id",
+    ],
+  ])("recognizes %s identifiers and foreign keys", (_dialect, schema, column) => {
+    const result = parseExtensionSource("database-schema", schema);
+
+    expect(result.nodes).toHaveLength(2);
+    expect(result.edges).toHaveLength(1);
+    expect(result.edges[0].data).toMatchObject({
+      label: column,
+      pathType: "step",
+      cardinality: "one-to-many",
+    });
+    expect(
+      result.nodes.some((node) =>
+        (node.data.attributes as Array<{ name: string; isForeignKey?: boolean }>).some(
+          (attribute) => attribute.name === column && attribute.isForeignKey,
+        ),
+      ),
+    ).toBe(true);
+  });
 });

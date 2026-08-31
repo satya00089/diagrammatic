@@ -44,7 +44,9 @@ const normalizeSqlIdentifier = (value: string): string =>
     .replaceAll(/\s*\.\s*/g, ".")
     .toLowerCase();
 
-const sqlIdentifier = String.raw`(?:"(?:[^"]|"")+"|[\w$-]+)(?:\s*\.\s*(?:"(?:[^"]|"")+"|[\w$-]+))*`;
+const sqlIdentifierPart =
+  '"(?:[^"]|"")+"|`[^`]+`|\\[[^\\]]+\\]|[\\w$#-]+';
+const sqlIdentifier = `(?:${sqlIdentifierPart})(?:\\s*\\.\\s*(?:${sqlIdentifierPart}))*`;
 
 const resolveLocalComponent = (key: string, label: string) => {
   const candidates = [key, label].map(normalizeComponentName);
@@ -190,7 +192,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   const attributesByTableId = new Map<string, TableAttribute[]>();
   const tableBlocks = source.matchAll(
     new RegExp(
-      String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?(${sqlIdentifier})\s*\(([^;]*)\)\s*;?`,
+      String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?(${sqlIdentifier})\s*\(([^;]*)\)\s*(?:[^;]*)?;?`,
       "gis",
     ),
   );
@@ -208,13 +210,20 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       if (!line) continue;
       const tablePrimaryKey = line.match(/primary\s+key\s*\(([^)]+)\)/i);
       if (tablePrimaryKey) {
-        tablePrimaryKey[1].split(",").forEach((column) => primaryColumns.add(column.trim().replaceAll(/["`]/g, "")));
+        tablePrimaryKey[1]
+          .split(",")
+          .forEach((column) => primaryColumns.add(normalizeSqlIdentifier(column)));
         continue;
       }
-      const foreignKey = line.match(/foreign\s+key\s*\(([^)]+)\)\s*references\s+["`]?([\w.-]+)/i);
+      const foreignKey = line.match(
+        new RegExp(
+          String.raw`foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
+          "i",
+        ),
+      );
       if (foreignKey) {
         const columns = foreignKey[1].split(",").map((column) => {
-          const name = column.trim().replaceAll(/["`]/g, "");
+          const name = normalizeSqlIdentifier(column);
           foreignKeyColumns.add(name);
           return name;
         });
@@ -225,12 +234,17 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         continue;
       }
       if (/^(constraint|unique|check|primary\s+key)/i.test(line)) continue;
-      const column = line.match(/^["`]?([\w.-]+)["`]?\s+([\w]+(?:\s*\([^)]*\))?)/i);
+      const column = line.match(
+        new RegExp(
+          String.raw`^(${sqlIdentifierPart})\s+([\w]+(?:\s*\([^)]*\))?)`,
+          "i",
+        ),
+      );
       if (!column) {
         warnings.push(`Skipped an unrecognized definition in ${tableName}.`);
         continue;
       }
-      const name = column[1];
+      const name = normalizeSqlIdentifier(column[1]);
       attributes.push({
         id: `${tableName}-${name}`,
         name,
@@ -239,7 +253,9 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         isNullable: !/not\s+null/i.test(line),
       });
       if (/primary\s+key/i.test(line)) primaryColumns.add(name);
-      const inlineReference = line.match(/references\s+["`]?([\w.-]+)/i);
+      const inlineReference = line.match(
+        new RegExp(String.raw`references\s+(${sqlIdentifier})`, "i"),
+      );
       if (inlineReference) {
         foreignKeyColumns.add(name);
         inlineForeignKeys.push({ column: name, target: inlineReference[1] });
@@ -281,7 +297,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   // forward references and schema-qualified names both resolve correctly.
   const deferredForeignKeys = source.matchAll(
     new RegExp(
-      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:"(?:[^"]|"")+"|[\w$-]+)\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
+      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:${sqlIdentifierPart})\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
       "gis",
     ),
   );
