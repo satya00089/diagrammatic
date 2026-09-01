@@ -107,9 +107,31 @@ const toFlowNodes = (architecture: GuideArchitecture): Node[] =>
     };
   });
 
-const toFlowEdges = (connections: SystemConnection[]): Edge[] =>
-  connections.map((connection) => {
+const getDefaultHandlePair = (
+  connection: SystemConnection,
+  componentsById: Map<string, GuideArchitectureComponent>,
+) => {
+  const source = componentsById.get(connection.source);
+  const target = componentsById.get(connection.target);
+
+  if (source && target && Math.abs(source.position.x - target.position.x) < 1) {
+    const sourceIsAbove = source.position.y < target.position.y;
+    return sourceIsAbove
+      ? { sourceHandle: "bottom", targetHandle: "top" }
+      : { sourceHandle: "top", targetHandle: "bottom" };
+  }
+
+  return { sourceHandle: "right", targetHandle: "left" };
+};
+
+const toFlowEdges = (architecture: GuideArchitecture): Edge[] => {
+  const componentsById = new Map(
+    architecture.components.map((component) => [component.id, component]),
+  );
+
+  return architecture.connections.map((connection) => {
     const properties = connection.properties ?? {};
+    const defaultHandles = getDefaultHandlePair(connection, componentsById);
 
     return {
       id: connection.id,
@@ -117,12 +139,12 @@ const toFlowEdges = (connections: SystemConnection[]): Edge[] =>
       sourceHandle:
         typeof properties.sourceHandle === "string"
           ? properties.sourceHandle
-          : "right",
+          : defaultHandles.sourceHandle,
       target: connection.target,
       targetHandle:
         typeof properties.targetHandle === "string"
           ? properties.targetHandle
-          : "left",
+          : defaultHandles.targetHandle,
       type: "customEdge",
       data: {
         label: connection.label || connection.type,
@@ -140,9 +162,14 @@ const toFlowEdges = (connections: SystemConnection[]): Edge[] =>
           typeof properties.labelOffset === "number"
             ? properties.labelOffset
             : undefined,
+        labelMaxWidth:
+          typeof properties.labelMaxWidth === "number"
+            ? properties.labelMaxWidth
+            : undefined,
       },
     };
   });
+};
 
 const ArchitectureFlow: React.FC<{
   nodes: Node[];
@@ -333,10 +360,7 @@ const PublicArchitectureCanvas: React.FC<{
   onPractice?: () => void;
 }> = ({ architecture, onPractice }) => {
   const nodes = useMemo(() => toFlowNodes(architecture), [architecture]);
-  const edges = useMemo(
-    () => toFlowEdges(architecture.connections),
-    [architecture],
-  );
+  const edges = useMemo(() => toFlowEdges(architecture), [architecture]);
   const [selection, setSelection] = useState<Selection>(null);
 
   return (

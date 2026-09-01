@@ -1,12 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
 import {
+  EdgeLabelRenderer,
   getBezierPath,
   getEdgeCenter,
   getStraightPath,
   getSmoothStepPath,
   useStore,
 } from "@xyflow/react";
+import {
+  getEdgeLabelLayout,
+  type EdgeLabelNode,
+} from "../utils/edgeLabelLayout";
 
 export type EdgePathType = "bezier" | "straight" | "step" | "smoothstep";
 export type EdgeLabelPosition = "source" | "center" | "target";
@@ -18,6 +23,7 @@ type CustomEdgeData = {
   pathType?: EdgePathType;
   labelPosition?: EdgeLabelPosition;
   labelOffset?: number;
+  labelMaxWidth?: number;
   color?: string;
   strokeWidth?: number;
   animated?: boolean;
@@ -119,144 +125,6 @@ const computeEdgeParams = (
   return { edgePath, centerX, centerY };
 };
 
-type EdgePoint = { x: number; y: number };
-
-const getPathPoints = (edgePath: string): EdgePoint[] => {
-  const points: EdgePoint[] = [];
-  const commandPattern =
-    /([MLQ])\s*(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+)(?:\s+(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+))?/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = commandPattern.exec(edgePath)) !== null) {
-    const isQuadratic = match[1] === "Q";
-    const x = Number(isQuadratic ? match[4] : match[2]);
-    const y = Number(isQuadratic ? match[5] : match[3]);
-
-    if (Number.isFinite(x) && Number.isFinite(y)) {
-      points.push({ x, y });
-    }
-  }
-
-  return points;
-};
-
-const getShiftedLabelCenter = ({
-  edgePath,
-  centerX,
-  centerY,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  labelShift,
-}: {
-  edgePath: string;
-  centerX: number;
-  centerY: number;
-  sourceX: number;
-  sourceY: number;
-  targetX: number;
-  targetY: number;
-  labelShift: number;
-}) => {
-  if (labelShift === 0) return { x: centerX, y: centerY };
-
-  const points = getPathPoints(edgePath);
-  let totalPathLength = 0;
-  const segments = points.slice(1).map((point, index) => {
-    const start = points[index];
-    const deltaX = point.x - start.x;
-    const deltaY = point.y - start.y;
-    const length = Math.hypot(deltaX, deltaY);
-    const pathStart = totalPathLength;
-    totalPathLength += length;
-
-    return {
-      start,
-      end: point,
-      deltaX,
-      deltaY,
-      length,
-      pathStart,
-    };
-  });
-
-  const pathSegments = segments.filter((segment) => segment.length > 0);
-  if (pathSegments.length > 0) {
-    let closestDistance = Number.POSITIVE_INFINITY;
-    let centerPathDistance = 0;
-
-    for (const segment of pathSegments) {
-      const lengthSquared = segment.length ** 2;
-      const projectedProgress = Math.min(
-        Math.max(
-          ((centerX - segment.start.x) * segment.deltaX +
-            (centerY - segment.start.y) * segment.deltaY) /
-            lengthSquared,
-          0,
-        ),
-        1,
-      );
-      const projectedX = segment.start.x + segment.deltaX * projectedProgress;
-      const projectedY = segment.start.y + segment.deltaY * projectedProgress;
-      const distanceToCenter = Math.hypot(
-        projectedX - centerX,
-        projectedY - centerY,
-      );
-
-      if (distanceToCenter < closestDistance) {
-        closestDistance = distanceToCenter;
-        centerPathDistance =
-          segment.pathStart + segment.length * projectedProgress;
-      }
-    }
-
-    const targetPathDistance =
-      labelShift > 0
-        ? centerPathDistance +
-          (totalPathLength - centerPathDistance) * Math.abs(labelShift)
-        : centerPathDistance * (1 - Math.abs(labelShift));
-    let remainingDistance = targetPathDistance;
-
-    for (const segment of pathSegments) {
-      if (remainingDistance <= segment.length) {
-        const progress = remainingDistance / segment.length;
-        return {
-          x: segment.start.x + segment.deltaX * progress,
-          y: segment.start.y + segment.deltaY * progress,
-        };
-      }
-      remainingDistance -= segment.length;
-    }
-
-    const lastSegment = pathSegments[pathSegments.length - 1];
-    return { x: lastSegment.end.x, y: lastSegment.end.y };
-  }
-
-  const directDeltaX = targetX - sourceX;
-  const directDeltaY = targetY - sourceY;
-  const directLengthSquared = directDeltaX ** 2 + directDeltaY ** 2;
-  if (directLengthSquared === 0) return { x: centerX, y: centerY };
-
-  const centerProgress = Math.min(
-    Math.max(
-      ((centerX - sourceX) * directDeltaX +
-        (centerY - sourceY) * directDeltaY) /
-        directLengthSquared,
-      0,
-    ),
-    1,
-  );
-  const endpointProgress = labelShift > 0 ? 1 : 0;
-  const progress =
-    centerProgress + (endpointProgress - centerProgress) * Math.abs(labelShift);
-
-  return {
-    x: sourceX + directDeltaX * progress,
-    y: sourceY + directDeltaY * progress,
-  };
-};
-
 const EdgeLabelContent: React.FC<{
   hasLabel: boolean;
   editing: boolean;
@@ -272,6 +140,7 @@ const EdgeLabelContent: React.FC<{
   onEdit: (event: React.MouseEvent) => void;
   onAdd: (event: React.MouseEvent) => void;
   onRemove: (event: React.MouseEvent) => void;
+  labelWidth: number;
 }> = ({
   hasLabel,
   editing,
@@ -287,6 +156,7 @@ const EdgeLabelContent: React.FC<{
   onEdit,
   onAdd,
   onRemove,
+  labelWidth,
 }) => {
   if (!hasLabel) {
     if (!selected || readOnly) return null;
@@ -329,7 +199,8 @@ const EdgeLabelContent: React.FC<{
           padding: "2px 8px",
           backgroundColor: colors.surface,
           color: colors.text,
-          width: "96px",
+          width: `${Math.max(96, labelWidth)}px`,
+          maxWidth: `${labelWidth}px`,
           textAlign: "center",
           outline: "none",
           boxShadow: `0 0 0 2px ${colors.brand}55`,
@@ -351,12 +222,23 @@ const EdgeLabelContent: React.FC<{
     boxShadow,
     textAlign: "center",
     minWidth: "60px",
-    whiteSpace: "nowrap",
+    width: `${labelWidth}px`,
+    maxWidth: `${labelWidth}px`,
+    boxSizing: "border-box",
+    lineHeight: "14px",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    wordBreak: "normal",
+    display: "block",
   };
 
   if (readOnly) {
     return (
-      <span style={labelStyle} title={description || value}>
+      <span
+        style={labelStyle}
+        title={description || value}
+        aria-label={value || "Connection"}
+      >
         {value || "Connection"}
       </span>
     );
@@ -459,6 +341,7 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
       (e) => e.id !== id && e.source === target && e.target === source,
     ),
   );
+  const flowNodes = useStore((s: ReactFlowState) => s.nodes);
 
   // Calculate path and center using extracted helper
   const pathType: EdgePathType = edgeData?.pathType || "smoothstep";
@@ -494,7 +377,22 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
       : edgeData?.labelPosition === "target"
         ? labelOffset
         : 0;
-  const labelCenter = getShiftedLabelCenter({
+  const labelText = value || "Connection";
+  const textWidth = useMemo(() => {
+    const fallbackWidth = Math.max(6, labelText.length * 6);
+    if (typeof document === "undefined") return fallbackWidth;
+
+    const context = document.createElement("canvas").getContext("2d");
+    if (!context) return fallbackWidth;
+
+    const fontFamily =
+      getComputedStyle(document.body).fontFamily || "Inter, sans-serif";
+    context.font = `11px ${fontFamily}`;
+    return context.measureText(labelText).width;
+  }, [labelText]);
+  const labelVisible = hasLabel || (!readOnly && Boolean(selected));
+  const labelLayout = getEdgeLabelLayout({
+    label: labelText,
     edgePath,
     centerX,
     centerY,
@@ -503,6 +401,9 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     targetX,
     targetY,
     labelShift,
+    textWidth,
+    nodes: flowNodes as EdgeLabelNode[],
+    labelMaxWidth: edgeData?.labelMaxWidth,
   });
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
@@ -547,99 +448,139 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     );
   };
 
-  return (
-    <g
-      className="react-flow__edge"
+  const labelContent = labelVisible ? (
+    <div
       style={{
-        opacity: isDimmed ? 0.22 : 1,
-        transition: "opacity 150ms ease",
+        width: `${labelLayout.width}px`,
+        minHeight: `${labelLayout.height}px`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: readOnly ? "none" : "auto",
+        overflow: "visible",
       }}
     >
-      <defs>
-        <marker
-          id={`arrow-${id}`}
-          viewBox="0 0 10 10"
-          refX="8"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto"
-        >
-          <path d="M 0 0 L 10 5 L 0 10 z" fill={edgeColor} />
-        </marker>
-        {isBidirectional && (
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "4px",
+        }}
+      >
+        <EdgeLabelContent
+          hasLabel={hasLabel}
+          editing={editing}
+          readOnly={readOnly}
+          selected={Boolean(selected || isHighlighted)}
+          value={value}
+          description={edgeData?.description}
+          colors={resolvedColors}
+          inputRef={inputRef}
+          onChange={setValue}
+          onCommit={commit}
+          onCancel={() => {
+            setEditing(false);
+            setValue(edgeData?.label ?? "");
+          }}
+          onEdit={onLabelDoubleClick}
+          onAdd={onAddLabel}
+          onRemove={onRemoveLabel}
+          labelWidth={labelLayout.width}
+        />
+      </div>
+    </div>
+  ) : null;
+  const foreignObjectWidth =
+    labelLayout.width + (!readOnly && selected && hasLabel ? 28 : 0);
+
+  return (
+    <>
+      <g
+        className="react-flow__edge"
+        style={{
+          opacity: isDimmed ? 0.22 : 1,
+          transition: "opacity 150ms ease",
+        }}
+      >
+        <defs>
           <marker
-            id={`arrow-start-${id}`}
+            id={`arrow-${id}`}
             viewBox="0 0 10 10"
-            refX="2"
+            refX="8"
             refY="5"
             markerWidth="6"
             markerHeight="6"
-            orient="auto-start-reverse"
+            orient="auto"
           >
             <path d="M 0 0 L 10 5 L 0 10 z" fill={edgeColor} />
           </marker>
+          {isBidirectional && (
+            <marker
+              id={`arrow-start-${id}`}
+              viewBox="0 0 10 10"
+              refX="2"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={edgeColor} />
+            </marker>
+          )}
+        </defs>
+
+        {/* Wider transparent hit-area for easier clicking */}
+        <path d={edgePath} fill="none" stroke="transparent" strokeWidth={20} />
+
+        <path
+          id={id}
+          d={edgePath}
+          fill="none"
+          stroke={edgeColor}
+          strokeWidth={strokeW}
+          strokeDasharray={edgeData?.animated ? "6 3" : undefined}
+          markerEnd={markerEnd || `url(#arrow-${id})`}
+          markerStart={isBidirectional ? `url(#arrow-start-${id})` : undefined}
+          className="transition-colors"
+        />
+
+        {!readOnly && labelContent && (
+          <foreignObject
+            x={labelLayout.center.x - foreignObjectWidth / 2}
+            y={labelLayout.center.y - labelLayout.height / 2}
+            width={foreignObjectWidth}
+            height={labelLayout.height}
+            style={{ overflow: "visible" }}
+          >
+            {labelContent}
+          </foreignObject>
         )}
-      </defs>
-
-      {/* Wider transparent hit-area for easier clicking */}
-      <path d={edgePath} fill="none" stroke="transparent" strokeWidth={20} />
-
-      <path
-        id={id}
-        d={edgePath}
-        fill="none"
-        stroke={edgeColor}
-        strokeWidth={strokeW}
-        strokeDasharray={edgeData?.animated ? "6 3" : undefined}
-        markerEnd={markerEnd || `url(#arrow-${id})`}
-        markerStart={isBidirectional ? `url(#arrow-start-${id})` : undefined}
-        className="transition-colors"
-      />
-
-      {/* Label area — foreignObject sized generously; inner div centres content */}
-      <foreignObject
-        x={labelCenter.x - 80}
-        y={labelCenter.y - 20}
-        width={160}
-        height={40}
-        style={{ overflow: "visible" }}
-      >
-        <div
-          style={{
-            width: "160px",
-            height: "40px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "auto",
-            overflow: "visible",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <EdgeLabelContent
-              hasLabel={hasLabel}
-              editing={editing}
-              readOnly={readOnly}
-              selected={Boolean(selected || isHighlighted)}
-              value={value}
-              description={edgeData?.description}
-              colors={resolvedColors}
-              inputRef={inputRef}
-              onChange={setValue}
-              onCommit={commit}
-              onCancel={() => {
-                setEditing(false);
-                setValue(edgeData?.label ?? "");
-              }}
-              onEdit={onLabelDoubleClick}
-              onAdd={onAddLabel}
-              onRemove={onRemoveLabel}
-            />
+      </g>
+      {readOnly && labelContent && (
+        <EdgeLabelRenderer>
+          <div
+            className="nodrag nopan"
+            style={{
+              position: "absolute",
+              left: labelLayout.center.x,
+              top: labelLayout.center.y,
+              width: `${labelLayout.width}px`,
+              minHeight: `${labelLayout.height}px`,
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 5,
+              pointerEvents: "none",
+            }}
+          >
+            {labelContent}
           </div>
-        </div>
-      </foreignObject>
-    </g>
+        </EdgeLabelRenderer>
+      )}
+    </>
   );
 };
 
