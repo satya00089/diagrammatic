@@ -47,6 +47,23 @@ describe("database schema extension import", () => {
       "tenant_id",
       "tenant_id, user_id",
     ]);
+    expect(result.edges[0]).toMatchObject({
+      sourceHandle: "field:public.tenants-id:right",
+      targetHandle: "field:public.users-tenant_id:left",
+      data: {
+        sourceFieldId: "public.tenants-id",
+        targetFieldId: "public.users-tenant_id",
+        sourceFieldIds: ["public.tenants-id"],
+        targetFieldIds: ["public.users-tenant_id"],
+      },
+    });
+    expect(result.edges[1].data).toMatchObject({
+      sourceFieldIds: ["public.users-tenant_id", "public.users-id"],
+      targetFieldIds: [
+        "public.api_credentials-tenant_id",
+        "public.api_credentials-user_id",
+      ],
+    });
 
     const users = result.nodes.find(
       (node) => node.data.componentName === "public.users",
@@ -109,22 +126,55 @@ describe("database schema extension import", () => {
         FOREIGN KEY ([account_id]) REFERENCES [dbo].[accounts] ([id]);`,
       "account_id",
     ],
-  ])("recognizes %s identifiers and foreign keys", (_dialect, schema, column) => {
-    const result = parseExtensionSource("database-schema", schema);
+  ])(
+    "recognizes %s identifiers and foreign keys",
+    (_dialect, schema, column) => {
+      const result = parseExtensionSource("database-schema", schema);
 
-    expect(result.nodes).toHaveLength(2);
-    expect(result.edges).toHaveLength(1);
-    expect(result.edges[0].data).toMatchObject({
-      label: column,
-      pathType: "step",
-      cardinality: "one-to-many",
-    });
-    expect(
-      result.nodes.some((node) =>
-        (node.data.attributes as Array<{ name: string; isForeignKey?: boolean }>).some(
-          (attribute) => attribute.name === column && attribute.isForeignKey,
+      expect(result.nodes).toHaveLength(2);
+      expect(result.edges).toHaveLength(1);
+      expect(result.edges[0].data).toMatchObject({
+        label: column,
+        pathType: "step",
+        cardinality: "one-to-many",
+      });
+      const sourceNode = result.nodes.find(
+        (node) => node.id === result.edges[0].source,
+      );
+      const targetNode = result.nodes.find(
+        (node) => node.id === result.edges[0].target,
+      );
+      const sourceAttribute = (
+        sourceNode?.data.attributes as Array<{
+          id: string;
+          isPrimaryKey?: boolean;
+        }>
+      ).find((attribute) => attribute.isPrimaryKey);
+      const targetAttribute = (
+        targetNode?.data.attributes as Array<{
+          id: string;
+          name: string;
+          isForeignKey?: boolean;
+        }>
+      ).find((attribute) => attribute.name === column);
+      expect(result.edges[0].sourceHandle).toBe(
+        sourceAttribute ? `field:${sourceAttribute.id}:right` : "right",
+      );
+      expect(result.edges[0].targetHandle).toBe(
+        targetAttribute ? `field:${targetAttribute.id}:left` : "left",
+      );
+      expect(
+        result.nodes.some((node) =>
+          (
+            node.data.attributes as Array<{
+              name: string;
+              isForeignKey?: boolean;
+            }>
+          ).some(
+            (attribute) => attribute.name === column && attribute.isForeignKey,
+          ),
         ),
-      ),
-    ).toBe(true);
-  });
+      ).toBe(true);
+    },
+  );
 });

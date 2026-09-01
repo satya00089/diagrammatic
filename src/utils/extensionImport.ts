@@ -1,8 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
-import type {
-  ExtensionImportResult,
-  ExtensionKind,
-} from "../types/extensions";
+import type { ExtensionImportResult, ExtensionKind } from "../types/extensions";
 import { COMPONENTS } from "../config/components";
 
 type TableAttribute = {
@@ -13,6 +10,24 @@ type TableAttribute = {
   isForeignKey?: boolean;
   isNullable?: boolean;
 };
+
+type SchemaRelationship = {
+  childId: string;
+  parentTableName: string;
+  childColumns: string[];
+  parentColumns: string[];
+};
+
+const makeFieldHandleId = (attributeId: string, side: "left" | "right") =>
+  `field:${attributeId}:${side}`;
+
+const normalizeColumnList = (value?: string): string[] =>
+  value
+    ? value
+        .split(",")
+        .map((column) => normalizeSqlIdentifier(column))
+        .filter(Boolean)
+    : [];
 
 const cleanLabel = (value: string): string =>
   value
@@ -35,7 +50,10 @@ const layoutNodes = (nodes: Node[]): Node[] => {
 };
 
 const normalizeComponentName = (value: string): string =>
-  value.toLowerCase().replaceAll(/[^a-z0-9]+/g, " ").trim();
+  value
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, " ")
+    .trim();
 
 const normalizeSqlIdentifier = (value: string): string =>
   value
@@ -44,8 +62,7 @@ const normalizeSqlIdentifier = (value: string): string =>
     .replaceAll(/\s*\.\s*/g, ".")
     .toLowerCase();
 
-const sqlIdentifierPart =
-  '"(?:[^"]|"")+"|`[^`]+`|\\[[^\\]]+\\]|[\\w$#-]+';
+const sqlIdentifierPart = '"(?:[^"]|"")+"|`[^`]+`|\\[[^\\]]+\\]|[\\w$#-]+';
 const sqlIdentifier = `(?:${sqlIdentifierPart})(?:\\s*\\.\\s*(?:${sqlIdentifierPart}))*`;
 
 const resolveLocalComponent = (key: string, label: string) => {
@@ -60,14 +77,11 @@ const resolveLocalComponent = (key: string, label: string) => {
   if (exactMatch) return exactMatch;
 
   const haystack = candidates.join(" ");
-  const preferredId =
-    /\b(api gateway|gateway)\b/.test(haystack)
-      ? "api-gateway"
-      : /\b(database|db|postgres|postgresql|mysql|mongodb|redis)\b/.test(
-            haystack,
-          )
-        ? "database"
-        : undefined;
+  const preferredId = /\b(api gateway|gateway)\b/.test(haystack)
+    ? "api-gateway"
+    : /\b(database|db|postgres|postgresql|mysql|mongodb|redis)\b/.test(haystack)
+      ? "database"
+      : undefined;
 
   return preferredId
     ? COMPONENTS.find((component) => component.id === preferredId)
@@ -83,13 +97,20 @@ const parseMermaid = (source: string): ExtensionImportResult => {
     .map((line) => line.replaceAll(/%%.*$/g, "").trim())
     .filter(Boolean);
 
-  if (!lines.some((line) => /^(flowchart|graph|sequenceDiagram|erDiagram)\b/i.test(line))) {
+  if (
+    !lines.some((line) =>
+      /^(flowchart|graph|sequenceDiagram|erDiagram)\b/i.test(line),
+    )
+  ) {
     warnings.push("Add a Mermaid diagram declaration such as `flowchart LR`.");
   }
 
   const ensureNode = (key: string, label?: string) => {
     const normalizedKey = key.trim();
-    if (!normalizedKey || /^(subgraph|end|flowchart|graph)$/i.test(normalizedKey)) {
+    if (
+      !normalizedKey ||
+      /^(subgraph|end|flowchart|graph)$/i.test(normalizedKey)
+    ) {
       return;
     }
     const resolvedLabel = cleanLabel(label || normalizedKey);
@@ -114,23 +135,25 @@ const parseMermaid = (source: string): ExtensionImportResult => {
     }
 
     nodesByKey.set(normalizedKey, {
-        id: makeId("mermaid", normalizedKey, nodesByKey.size),
-        type: "custom",
-        position: { x: 0, y: 0 },
-        data: {
-          label: resolvedLabel,
-          subtitle,
-          ...(localComponent
-            ? { componentId: localComponent.id }
-            : { architectureType: "microservice" }),
-          extensionSource: "mermaid",
-          extensionSourceKey: normalizedKey,
-        },
-      });
+      id: makeId("mermaid", normalizedKey, nodesByKey.size),
+      type: "custom",
+      position: { x: 0, y: 0 },
+      data: {
+        label: resolvedLabel,
+        subtitle,
+        ...(localComponent
+          ? { componentId: localComponent.id }
+          : { architectureType: "microservice" }),
+        extensionSource: "mermaid",
+        extensionSourceKey: normalizedKey,
+      },
+    });
   };
 
-  const declarationPattern = /([A-Za-z0-9_:-]+)\s*(?:\[([^\]]+)\]|\(\(([^)]+)\)\)|\{([^}]+)\}|\(([^)]+)\))/g;
-  const edgePattern = /^([A-Za-z0-9_:-]+).*?(?:-->|-.->|==>|---|--\s+).*?([A-Za-z0-9_:-]+)(?:\s*\|([^|]+)\|)?/;
+  const declarationPattern =
+    /([A-Za-z0-9_:-]+)\s*(?:\[([^\]]+)\]|\(\(([^)]+)\)\)|\{([^}]+)\}|\(([^)]+)\))/g;
+  const edgePattern =
+    /^([A-Za-z0-9_:-]+).*?(?:-->|-.->|==>|---|--\s+).*?([A-Za-z0-9_:-]+)(?:\s*\|([^|]+)\|)?/;
 
   for (const line of lines) {
     for (const declaration of line.matchAll(declarationPattern)) {
@@ -162,7 +185,9 @@ const parseMermaid = (source: string): ExtensionImportResult => {
   }
 
   if (nodesByKey.size === 0) {
-    throw new Error("No Mermaid nodes were recognized. Check the syntax and try again.");
+    throw new Error(
+      "No Mermaid nodes were recognized. Check the syntax and try again.",
+    );
   }
 
   const nodes = layoutNodes(Array.from(nodesByKey.values()));
@@ -184,11 +209,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   const edges: Edge[] = [];
   const warnings: string[] = [];
   const tableIds = new Map<string, string>();
-  const relationships: Array<{
-    childId: string;
-    parentTableName: string;
-    column: string;
-  }> = [];
+  const relationships: SchemaRelationship[] = [];
   const attributesByTableId = new Map<string, TableAttribute[]>();
   const tableBlocks = source.matchAll(
     new RegExp(
@@ -203,7 +224,11 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     const attributes: TableAttribute[] = [];
     const primaryColumns = new Set<string>();
     const foreignKeyColumns = new Set<string>();
-    const inlineForeignKeys: Array<{ column: string; target: string }> = [];
+    const inlineForeignKeys: Array<{
+      columns: string[];
+      parentColumns: string[];
+      target: string;
+    }> = [];
 
     for (const rawLine of body.split(/,(?![^()]*\))/)) {
       const line = rawLine.trim().replaceAll(/[\r\n]+/g, " ");
@@ -212,23 +237,25 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       if (tablePrimaryKey) {
         tablePrimaryKey[1]
           .split(",")
-          .forEach((column) => primaryColumns.add(normalizeSqlIdentifier(column)));
+          .forEach((column) =>
+            primaryColumns.add(normalizeSqlIdentifier(column)),
+          );
         continue;
       }
       const foreignKey = line.match(
         new RegExp(
-          String.raw`foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
+          String.raw`foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
           "i",
         ),
       );
       if (foreignKey) {
-        const columns = foreignKey[1].split(",").map((column) => {
-          const name = normalizeSqlIdentifier(column);
+        const columns = normalizeColumnList(foreignKey[1]);
+        columns.forEach((name) => {
           foreignKeyColumns.add(name);
-          return name;
         });
         inlineForeignKeys.push({
-          column: columns.join(", "),
+          columns,
+          parentColumns: normalizeColumnList(foreignKey[3]),
           target: foreignKey[2],
         });
         continue;
@@ -254,11 +281,18 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       });
       if (/primary\s+key/i.test(line)) primaryColumns.add(name);
       const inlineReference = line.match(
-        new RegExp(String.raw`references\s+(${sqlIdentifier})`, "i"),
+        new RegExp(
+          String.raw`references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
+          "i",
+        ),
       );
       if (inlineReference) {
         foreignKeyColumns.add(name);
-        inlineForeignKeys.push({ column: name, target: inlineReference[1] });
+        inlineForeignKeys.push({
+          columns: [name],
+          parentColumns: normalizeColumnList(inlineReference[2]),
+          target: inlineReference[1],
+        });
       }
     }
 
@@ -286,7 +320,8 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       relationships.push({
         childId: id,
         parentTableName: relation.target,
-        column: relation.column,
+        childColumns: relation.columns,
+        parentColumns: relation.parentColumns,
       });
     });
   }
@@ -297,7 +332,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   // forward references and schema-qualified names both resolve correctly.
   const deferredForeignKeys = source.matchAll(
     new RegExp(
-      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:${sqlIdentifierPart})\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})`,
+      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:${sqlIdentifierPart})\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
       "gis",
     ),
   );
@@ -311,26 +346,50 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     }
 
     const attributes = attributesByTableId.get(childId) ?? [];
-    const columns = foreignKey[2].split(",").map((rawColumn) => {
-      const column = normalizeSqlIdentifier(rawColumn);
+    const columns = normalizeColumnList(foreignKey[2]);
+    columns.forEach((column) => {
       const attribute = attributes.find(
         (candidate) => normalizeSqlIdentifier(candidate.name) === column,
       );
       if (attribute) attribute.isForeignKey = true;
-      return column;
     });
     relationships.push({
       childId,
       parentTableName: parentTable,
-      column: columns.join(", "),
+      childColumns: columns,
+      parentColumns: normalizeColumnList(foreignKey[4]),
     });
   }
 
   if (nodes.length === 0) {
-    throw new Error("No CREATE TABLE statements were recognized. Paste a supported SQL schema.");
+    throw new Error(
+      "No CREATE TABLE statements were recognized. Paste a supported SQL schema.",
+    );
   }
   const childIdsByParent = new Map<string, string[]>();
   const inDegree = new Map(nodes.map((node) => [node.id, 0]));
+
+  const findRelationshipAttributes = (
+    tableId: string,
+    columns: string[],
+    fallbackToPrimary: boolean,
+  ): TableAttribute[] => {
+    const attributes = attributesByTableId.get(tableId) ?? [];
+    const matches = columns.flatMap((column) => {
+      const attribute = attributes.find(
+        (candidate) => normalizeSqlIdentifier(candidate.name) === column,
+      );
+      return attribute ? [attribute] : [];
+    });
+    if (matches.length > 0 || !fallbackToPrimary) return matches;
+
+    const primaryAttributes = attributes.filter(
+      (attribute) => attribute.isPrimaryKey,
+    );
+    return (
+      primaryAttributes.length > 0 ? primaryAttributes : attributes
+    ).slice(0, 1);
+  };
 
   relationships.forEach((relationship) => {
     const parentId = tableIds.get(
@@ -338,25 +397,49 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     );
     if (!parentId) {
       warnings.push(
-        `Could not link ${relationship.column}: table ${relationship.parentTableName} was not found.`,
+        `Could not link ${relationship.childColumns.join(", ")}: table ${relationship.parentTableName} was not found.`,
       );
       return;
     }
 
+    const sourceAttributes = findRelationshipAttributes(
+      parentId,
+      relationship.parentColumns,
+      true,
+    );
+    const targetAttributes = findRelationshipAttributes(
+      relationship.childId,
+      relationship.childColumns,
+      false,
+    );
+    const sourceFieldIds = sourceAttributes.map((attribute) => attribute.id);
+    const targetFieldIds = targetAttributes.map((attribute) => attribute.id);
+    const relationshipLabel = relationship.childColumns.join(", ");
+
     edges.push({
       id: `schema-edge-${edges.length}`,
       source: parentId,
-      sourceHandle: "right",
+      sourceHandle: sourceFieldIds[0]
+        ? makeFieldHandleId(sourceFieldIds[0], "right")
+        : "right",
       target: relationship.childId,
-      targetHandle: "left",
+      targetHandle: targetFieldIds[0]
+        ? makeFieldHandleId(targetFieldIds[0], "left")
+        : "left",
       type: "erRelationship",
-      label: relationship.column,
+      label: relationshipLabel,
       data: {
         extensionSource: "database-schema",
-        label: relationship.column,
+        label: relationshipLabel,
         hasLabel: true,
         cardinality: "one-to-many",
         pathType: "step",
+        ...(sourceFieldIds.length > 0
+          ? { sourceFieldId: sourceFieldIds[0], sourceFieldIds }
+          : {}),
+        ...(targetFieldIds.length > 0
+          ? { targetFieldId: targetFieldIds[0], targetFieldIds }
+          : {}),
       },
     });
     childIdsByParent.set(parentId, [
@@ -393,7 +476,9 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   });
 
   if (relationships.length > 0 && edges.length === 0) {
-    warnings.push("Foreign keys were found, but no referenced tables could be linked.");
+    warnings.push(
+      "Foreign keys were found, but no referenced tables could be linked.",
+    );
   }
 
   return {
@@ -410,5 +495,7 @@ export const parseExtensionSource = (
   source: string,
 ): ExtensionImportResult => {
   if (!source.trim()) throw new Error("Paste source code before importing.");
-  return kind === "mermaid" ? parseMermaid(source) : parseDatabaseSchema(source);
+  return kind === "mermaid"
+    ? parseMermaid(source)
+    : parseDatabaseSchema(source);
 };

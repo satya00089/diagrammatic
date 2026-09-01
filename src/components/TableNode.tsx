@@ -55,6 +55,7 @@ const TableNode: React.FC<Props> = React.memo(
 
     const [editingAttrId, setEditingAttrId] = useState<string | null>(null);
     const [editingValue, setEditingValue] = useState({ name: "", type: "" });
+    const [isHovered, setIsHovered] = useState(false);
     const updateNodeInternals = useUpdateNodeInternals();
     const attributeScrollRef = React.useRef<HTMLDivElement | null>(null);
     const attributeRowRefs = React.useRef(new Map<string, HTMLDivElement>());
@@ -470,6 +471,8 @@ const TableNode: React.FC<Props> = React.memo(
           whileTap={{ scale: 0.985 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
           className="min-w-[220px] max-h-[500px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           onContextMenu={handleContextMenu}
         >
           {/* Connection Handles */}
@@ -634,13 +637,39 @@ const TableNode: React.FC<Props> = React.memo(
                   top: `${position.top}px`,
                   width: "10px",
                   height: "18px",
-                  background: "var(--brand)",
-                  border: "2px solid var(--surface)",
-                  borderRadius: "9999px",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: 0,
                   zIndex: 10,
                   pointerEvents: "all" as const,
                   visibility: visibility as "visible" | "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 };
+
+                const connectionCross = (side: "left" | "right") => (
+                  <svg
+                    aria-hidden="true"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                    className="pointer-events-none transition-opacity duration-100"
+                    style={{
+                      opacity: isHovered ? 1 : 0,
+                      transform: `translateX(${side === "left" ? -0.6 : 0.6}px)`,
+                    }}
+                  >
+                    <path
+                      d="M5 1v8M1 5h8"
+                      transform="rotate(45 5 5)"
+                      stroke="var(--brand)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                );
 
                 return (
                   <React.Fragment key={position.id}>
@@ -651,8 +680,10 @@ const TableNode: React.FC<Props> = React.memo(
                       isConnectable={true}
                       aria-label={`Connect ${label} on the left`}
                       className="opacity-100 transition-opacity"
-                      style={{ left: "-5px", ...handleStyle }}
-                    />
+                      style={{ left: "-1px", ...handleStyle }}
+                    >
+                      {connectionCross("left")}
+                    </Handle>
                     <Handle
                       id={getAttributeHandleId(position.id, "right")}
                       type="source"
@@ -660,8 +691,10 @@ const TableNode: React.FC<Props> = React.memo(
                       isConnectable={true}
                       aria-label={`Connect ${label} on the right`}
                       className="opacity-100 transition-opacity"
-                      style={{ right: "-5px", ...handleStyle }}
-                    />
+                      style={{ right: "-1px", ...handleStyle }}
+                    >
+                      {connectionCross("right")}
+                    </Handle>
                   </React.Fragment>
                 );
               })}
