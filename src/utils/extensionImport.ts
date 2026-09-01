@@ -21,6 +21,24 @@ type SchemaRelationship = {
 const makeFieldHandleId = (attributeId: string, side: "left" | "right") =>
   `field:${attributeId}:${side}`;
 
+const getRelationshipHandle = (
+  fieldIds: string[],
+  side: "left" | "right",
+): string => (fieldIds[0] ? makeFieldHandleId(fieldIds[0], side) : side);
+
+const getFieldRelationshipData = (
+  fieldIds: string[],
+  prefix: "source" | "target",
+): Record<string, unknown> => {
+  const fieldId = fieldIds[0];
+  return fieldId
+    ? {
+        [`${prefix}FieldId`]: fieldId,
+        [`${prefix}FieldIds`]: fieldIds,
+      }
+    : {};
+};
+
 const normalizeColumnList = (value?: string): string[] =>
   value
     ? value
@@ -58,12 +76,33 @@ const normalizeComponentName = (value: string): string =>
 const normalizeSqlIdentifier = (value: string): string =>
   value
     .trim()
-    .replaceAll(/"|`|\[|\]/g, "")
-    .replaceAll(/\s*\.\s*/g, ".")
+    .replaceAll(/["`[\]]/g, "")
+    .split(".")
+    .map((part) => part.trim())
+    .join(".")
     .toLowerCase();
 
 const sqlIdentifierPart = '"(?:[^"]|"")+"|`[^`]+`|\\[[^\\]]+\\]|[\\w$#-]+';
-const sqlIdentifier = `(?:${sqlIdentifierPart})(?:\\s*\\.\\s*(?:${sqlIdentifierPart}))*`;
+const sqlIdentifier = String.raw`(?:${sqlIdentifierPart})(?:\s*\.\s*(?:${sqlIdentifierPart}))*`;
+const sqlReferenceClause = String.raw`references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`;
+const createTablePattern = new RegExp(
+  String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?(${sqlIdentifier})\s*\(([^;]*)\)\s*(?:[^;]*)?;?`,
+  "gis",
+);
+const tablePrimaryKeyPattern = /primary\s+key\s*\(([^)]+)\)/i;
+const foreignKeyPattern = new RegExp(
+  String.raw`foreign\s+key\s*\(([^)]+)\)\s*${sqlReferenceClause}`,
+  "i",
+);
+const columnPattern = new RegExp(
+  String.raw`^(${sqlIdentifierPart})\s+([\w]+(?:\s*\([^)]*\))?)`,
+  "i",
+);
+const inlineReferencePattern = new RegExp(sqlReferenceClause, "i");
+const deferredForeignKeyPattern = new RegExp(
+  String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:${sqlIdentifierPart})\s+)?foreign\s+key\s*\(([^)]+)\)\s*${sqlReferenceClause}`,
+  "gis",
+);
 
 const resolveLocalComponent = (key: string, label: string) => {
   const candidates = [key, label].map(normalizeComponentName);
@@ -77,11 +116,14 @@ const resolveLocalComponent = (key: string, label: string) => {
   if (exactMatch) return exactMatch;
 
   const haystack = candidates.join(" ");
-  const preferredId = /\b(api gateway|gateway)\b/.test(haystack)
-    ? "api-gateway"
-    : /\b(database|db|postgres|postgresql|mysql|mongodb|redis)\b/.test(haystack)
-      ? "database"
-      : undefined;
+  let preferredId: "api-gateway" | "database" | undefined;
+  if (/\b(api gateway|gateway)\b/.test(haystack)) {
+    preferredId = "api-gateway";
+  } else if (
+    /\b(database|db|postgres|postgresql|mysql|mongodb|redis)\b/.test(haystack)
+  ) {
+    preferredId = "database";
+  }
 
   return preferredId
     ? COMPONENTS.find((component) => component.id === preferredId)
@@ -151,7 +193,7 @@ const parseMermaid = (source: string): ExtensionImportResult => {
   };
 
   const declarationPattern =
-    /([A-Za-z0-9_:-]+)\s*(?:\[([^\]]+)\]|\(\(([^)]+)\)\)|\{([^}]+)\}|\(([^)]+)\))/g;
+    /([A-Za-z0-9_:-]+)[ \t]*(?:\[([^\]\r\n]+)\]|\(\(([^)\r\n]+)\)\)|\{([^}\r\n]+)\}|\(([^)\r\n]+)\))/g;
   const edgePattern =
     /^([A-Za-z0-9_:-]+).*?(?:-->|-.->|==>|---|--\s+).*?([A-Za-z0-9_:-]+)(?:\s*\|([^|]+)\|)?/;
 
@@ -160,7 +202,7 @@ const parseMermaid = (source: string): ExtensionImportResult => {
       ensureNode(declaration[1], declaration.slice(2).find(Boolean));
     }
 
-    const edge = line.match(edgePattern);
+    const edge = edgePattern.exec(line);
     if (edge && edge[1] !== edge[2]) {
       ensureNode(edge[1]);
       ensureNode(edge[2]);
@@ -211,12 +253,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   const tableIds = new Map<string, string>();
   const relationships: SchemaRelationship[] = [];
   const attributesByTableId = new Map<string, TableAttribute[]>();
-  const tableBlocks = source.matchAll(
-    new RegExp(
-      String.raw`create\s+table\s+(?:if\s+not\s+exists\s+)?(${sqlIdentifier})\s*\(([^;]*)\)\s*(?:[^;]*)?;?`,
-      "gis",
-    ),
-  );
+  const tableBlocks = source.matchAll(createTablePattern);
 
   for (const [index, match] of Array.from(tableBlocks).entries()) {
     const tableName = match[1];
@@ -233,7 +270,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     for (const rawLine of body.split(/,(?![^()]*\))/)) {
       const line = rawLine.trim().replaceAll(/[\r\n]+/g, " ");
       if (!line) continue;
-      const tablePrimaryKey = line.match(/primary\s+key\s*\(([^)]+)\)/i);
+      const tablePrimaryKey = tablePrimaryKeyPattern.exec(line);
       if (tablePrimaryKey) {
         tablePrimaryKey[1]
           .split(",")
@@ -242,12 +279,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
           );
         continue;
       }
-      const foreignKey = line.match(
-        new RegExp(
-          String.raw`foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
-          "i",
-        ),
-      );
+      const foreignKey = foreignKeyPattern.exec(line);
       if (foreignKey) {
         const columns = normalizeColumnList(foreignKey[1]);
         columns.forEach((name) => {
@@ -261,12 +293,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         continue;
       }
       if (/^(constraint|unique|check|primary\s+key)/i.test(line)) continue;
-      const column = line.match(
-        new RegExp(
-          String.raw`^(${sqlIdentifierPart})\s+([\w]+(?:\s*\([^)]*\))?)`,
-          "i",
-        ),
-      );
+      const column = columnPattern.exec(line);
       if (!column) {
         warnings.push(`Skipped an unrecognized definition in ${tableName}.`);
         continue;
@@ -280,12 +307,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         isNullable: !/not\s+null/i.test(line),
       });
       if (/primary\s+key/i.test(line)) primaryColumns.add(name);
-      const inlineReference = line.match(
-        new RegExp(
-          String.raw`references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
-          "i",
-        ),
-      );
+      const inlineReference = inlineReferencePattern.exec(line);
       if (inlineReference) {
         foreignKeyColumns.add(name);
         inlineForeignKeys.push({
@@ -330,12 +352,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   // ALTER TABLE IF EXISTS public.orders ADD CONSTRAINT ... FOREIGN KEY (...)
   // REFERENCES public.users (...). Parse those constraints in a second pass so
   // forward references and schema-qualified names both resolve correctly.
-  const deferredForeignKeys = source.matchAll(
-    new RegExp(
-      String.raw`alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?(${sqlIdentifier})\s+add\s+(?:constraint\s+(?:${sqlIdentifierPart})\s+)?foreign\s+key\s*\(([^)]+)\)\s*references\s+(${sqlIdentifier})\s*(?:\(([^)]+)\))?`,
-      "gis",
-    ),
-  );
+  const deferredForeignKeys = source.matchAll(deferredForeignKeyPattern);
   for (const foreignKey of deferredForeignKeys) {
     const childTable = foreignKey[1];
     const parentTable = foreignKey[3];
@@ -419,13 +436,9 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
     edges.push({
       id: `schema-edge-${edges.length}`,
       source: parentId,
-      sourceHandle: sourceFieldIds[0]
-        ? makeFieldHandleId(sourceFieldIds[0], "right")
-        : "right",
+      sourceHandle: getRelationshipHandle(sourceFieldIds, "right"),
       target: relationship.childId,
-      targetHandle: targetFieldIds[0]
-        ? makeFieldHandleId(targetFieldIds[0], "left")
-        : "left",
+      targetHandle: getRelationshipHandle(targetFieldIds, "left"),
       type: "erRelationship",
       label: relationshipLabel,
       data: {
@@ -434,12 +447,8 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         hasLabel: true,
         cardinality: "one-to-many",
         pathType: "step",
-        ...(sourceFieldIds.length > 0
-          ? { sourceFieldId: sourceFieldIds[0], sourceFieldIds }
-          : {}),
-        ...(targetFieldIds.length > 0
-          ? { targetFieldId: targetFieldIds[0], targetFieldIds }
-          : {}),
+        ...getFieldRelationshipData(sourceFieldIds, "source"),
+        ...getFieldRelationshipData(targetFieldIds, "target"),
       },
     });
     childIdsByParent.set(parentId, [

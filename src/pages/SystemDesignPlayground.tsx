@@ -4220,16 +4220,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     setCurrentDiagramId(null);
     setShowExtensionHub(false);
 
-    void layoutCanvasNodes(restoredNodes, result.edges, "LR")
-      .then((layoutedNodes) => {
-        setNodes(layoutedNodes);
+    void layoutAndFitCanvas(restoredNodes, result.edges, "LR", (callback) =>
+      window.setTimeout(callback, 100),
+    )
+      .then(() => {
         setEdges(result.edges);
-        setTimeout(() => {
-          fitView({
-            ...getAdaptiveFitViewOptions(layoutedNodes, result.edges, "LR"),
-            duration: 400,
-          });
-        }, 100);
         toast.success(`${sourceName} imported: ${result.summary}.`);
         if (result.warnings.length > 0) {
           toast.info(
@@ -4550,22 +4545,34 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
   };
 
+  const layoutAndFitCanvas = async (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR",
+    scheduleFit: (callback: () => void) => void = (callback) =>
+      globalThis.requestAnimationFrame(callback),
+  ): Promise<Node[]> => {
+    const layoutedNodes = await layoutCanvasNodes(
+      nodesToLayout,
+      edgesToLayout,
+      direction,
+    );
+    setNodes(layoutedNodes);
+    scheduleFit(() => {
+      fitView({
+        ...getAdaptiveFitViewOptions(layoutedNodes, edgesToLayout, direction),
+        duration: 400,
+      });
+    });
+    return layoutedNodes;
+  };
+
   // Auto-layout the existing canvas with the appropriate graph layout engine.
   const onLayout = (direction: "TB" | "LR" = "TB") => {
-    void layoutCanvasNodes(nodes, edges, direction)
-      .then((layoutedNodes) => {
-        setNodes(layoutedNodes);
-        globalThis.requestAnimationFrame(() => {
-          fitView({
-            ...getAdaptiveFitViewOptions(layoutedNodes, edges, direction),
-            duration: 400,
-          });
-        });
-      })
-      .catch((error) => {
-        console.error("Failed to auto-layout diagram:", error);
-        toast.error("Automatic layout failed. Your current layout was kept.");
-      });
+    void layoutAndFitCanvas(nodes, edges, direction).catch((error) => {
+      console.error("Failed to auto-layout diagram:", error);
+      toast.error("Automatic layout failed. Your current layout was kept.");
+    });
   };
 
   // Persist nodeProps back into node data.

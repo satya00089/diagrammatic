@@ -16,31 +16,25 @@ type EntityAttribute = {
   id: string;
 };
 
+const isEntityAttribute = (attribute: unknown): attribute is EntityAttribute =>
+  typeof attribute === "object" &&
+  attribute !== null &&
+  typeof (attribute as { id?: unknown }).id === "string";
+
+const filterEntityAttributes = (value: unknown): EntityAttribute[] =>
+  Array.isArray(value) ? value.filter(isEntityAttribute) : [];
+
 const getNodeData = (node: Node): Record<string, unknown> =>
   (node.data ?? {}) as Record<string, unknown>;
 
 const getAttributes = (node: Node): EntityAttribute[] => {
   const rawAttributes = getNodeData(node).attributes;
-  if (Array.isArray(rawAttributes)) {
-    return rawAttributes.filter(
-      (attribute): attribute is EntityAttribute =>
-        typeof attribute === "object" &&
-        attribute !== null &&
-        typeof (attribute as { id?: unknown }).id === "string",
-    );
-  }
+  if (Array.isArray(rawAttributes))
+    return filterEntityAttributes(rawAttributes);
 
   if (typeof rawAttributes === "string") {
     try {
-      const parsed = JSON.parse(rawAttributes);
-      return Array.isArray(parsed)
-        ? parsed.filter(
-            (attribute): attribute is EntityAttribute =>
-              typeof attribute === "object" &&
-              attribute !== null &&
-              typeof (attribute as { id?: unknown }).id === "string",
-          )
-        : [];
+      return filterEntityAttributes(JSON.parse(rawAttributes));
     } catch {
       return [];
     }

@@ -174,17 +174,20 @@ export const getAdaptiveEdgeGeometry = ({
     targetHandleId,
     targetPosition,
   );
+  const baseGeometry = {
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  };
 
   // Version one intentionally adapts only horizontal-to-horizontal edges.
   // Existing vertical connections remain owned by their original handles.
   if (!currentSourceSide || !currentTargetSide) {
     return {
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourcePosition,
-      targetPosition,
+      ...baseGeometry,
       adapted: false,
     };
   }
@@ -193,12 +196,7 @@ export const getAdaptiveEdgeGeometry = ({
   const targetCenterX = getNodeCenterX(targetNode);
   if (sourceCenterX === undefined || targetCenterX === undefined) {
     return {
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourcePosition,
-      targetPosition,
+      ...baseGeometry,
       sourceSide: currentSourceSide,
       targetSide: currentTargetSide,
       adapted: false,
