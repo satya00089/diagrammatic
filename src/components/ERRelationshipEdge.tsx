@@ -1,6 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import type { EdgeProps, ReactFlowState, Position } from "@xyflow/react";
-import { getBezierPath, getEdgeCenter, useStore } from "@xyflow/react";
+import {
+  getBezierPath,
+  getEdgeCenter,
+  getSmoothStepPath,
+  getStraightPath,
+  useStore,
+} from "@xyflow/react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { EdgePathType } from "./CustomEdge";
+import {
+  getAdaptiveEdgeGeometry,
+  type AdaptiveHorizontalSide,
+} from "../utils/adaptiveEdgeRouting";
 
 /** Resolve a CSS custom property to its actual computed color for html-to-image compatibility. */
 function resolveCssVar(varName: string, fallback: string): string {
@@ -65,6 +77,7 @@ const computeEdgeParams = (
     targetPosition: Position;
   },
   isBiDirectionEdge: boolean,
+  pathType: EdgePathType = "smoothstep",
 ) => {
   const { sourceX, sourceY, targetX, targetY } = params;
 
@@ -78,6 +91,29 @@ const computeEdgeParams = (
     const midY = (sourceY + targetY) / 2;
     const centerX = midX;
     const centerY = midY + offset / 2;
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "straight") {
+    const [edgePath, centerX, centerY] = getStraightPath({
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+    });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "step") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath({
+      ...params,
+      borderRadius: 0,
+    });
+    return { edgePath, centerX, centerY };
+  }
+
+  if (pathType === "smoothstep") {
+    const [edgePath, centerX, centerY] = getSmoothStepPath(params);
     return { edgePath, centerX, centerY };
   }
 
@@ -180,6 +216,7 @@ interface EREdgeData {
   label?: string;
   hasLabel?: boolean;
   cardinality?: ERCardinality;
+  pathType?: EdgePathType;
 }
 
 const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
@@ -193,18 +230,26 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
     targetY,
     sourcePosition,
     targetPosition,
+    sourceHandleId,
+    targetHandleId,
     data,
+    label,
     selected,
   } = props;
 
   const edgeData = (data as EREdgeData) || {};
+  const pathType = edgeData.pathType ?? "smoothstep";
+  const initialLabel =
+    edgeData.label ?? (typeof label === "string" ? label : "");
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState<string>(edgeData.label ?? "");
+  const [value, setValue] = useState<string>(initialLabel);
   const [hasLabel, setHasLabel] = useState<boolean>(edgeData.hasLabel ?? false);
   const [cardinality, setCardinality] = useState<ERCardinality>(
     edgeData.cardinality ?? "one-to-many",
   );
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const reduceMotion = useReducedMotion();
+  const [routeAnimationId, setRouteAnimationId] = useState(0);
 
   // Resolve CSS variables to real colors so html-to-image captures them correctly.
   const [rc, setRc] = useState({
@@ -240,18 +285,68 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
     return edgeExists;
   });
 
-  // Calculate path and center
-  const edgePathParams = {
+  const sourceNode = useStore((s: ReactFlowState) => s.nodeLookup.get(source));
+  const targetNode = useStore((s: ReactFlowState) => s.nodeLookup.get(target));
+  const previousSourceSideRef = useRef<AdaptiveHorizontalSide | undefined>(
+    undefined,
+  );
+  const handleSignature = [
+    source,
+    target,
+    sourceHandleId ?? "",
+    targetHandleId ?? "",
+    sourcePosition,
+    targetPosition,
+  ].join("|");
+  const lastHandleSignatureRef = useRef(handleSignature);
+  if (lastHandleSignatureRef.current !== handleSignature) {
+    lastHandleSignatureRef.current = handleSignature;
+    previousSourceSideRef.current = undefined;
+  }
+
+  const adaptiveGeometry = getAdaptiveEdgeGeometry({
     sourceX,
     sourceY,
-    sourcePosition,
     targetX,
     targetY,
+    sourcePosition,
     targetPosition,
+    sourceHandleId,
+    targetHandleId,
+    sourceNode,
+    targetNode,
+    previousSourceSide: previousSourceSideRef.current,
+  });
+
+  useLayoutEffect(() => {
+    const previousSourceSide = previousSourceSideRef.current;
+    const nextSourceSide = adaptiveGeometry.sourceSide;
+
+    if (
+      previousSourceSide &&
+      nextSourceSide &&
+      previousSourceSide !== nextSourceSide &&
+      !reduceMotion
+    ) {
+      setRouteAnimationId((currentId) => currentId + 1);
+    }
+
+    previousSourceSideRef.current = nextSourceSide;
+  }, [adaptiveGeometry.sourceSide, handleSignature, reduceMotion]);
+
+  // Calculate path and center
+  const edgePathParams = {
+    sourceX: adaptiveGeometry.sourceX,
+    sourceY: adaptiveGeometry.sourceY,
+    sourcePosition: adaptiveGeometry.sourcePosition,
+    targetX: adaptiveGeometry.targetX,
+    targetY: adaptiveGeometry.targetY,
+    targetPosition: adaptiveGeometry.targetPosition,
   };
   const { edgePath, centerX, centerY } = computeEdgeParams(
     edgePathParams,
     isBiDirectionEdge,
+    pathType,
   );
 
   const onLabelDoubleClick = (e: React.MouseEvent) => {
@@ -632,12 +727,24 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         </marker>
       </defs>
 
-      <path
+      <motion.path
+        key={routeAnimationId}
         id={id}
         d={edgePath}
         fill="none"
         stroke={selected ? "var(--brand)" : "var(--muted)"}
         strokeWidth={selected ? 3 : 2}
+        initial={
+          routeAnimationId > 0 && !reduceMotion
+            ? { opacity: 0.45, pathLength: 0.82 }
+            : false
+        }
+        animate={{ opacity: 1, pathLength: 1 }}
+        transition={
+          routeAnimationId > 0 && !reduceMotion
+            ? { duration: 0.18, ease: [0.16, 1, 0.3, 1] }
+            : { duration: 0 }
+        }
         markerEnd={`url(#er-${targetMarkerType}-${id})`}
         markerStart={`url(#er-${sourceMarkerType}-source-${id})`}
         className="transition-colors"
@@ -677,7 +784,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                     if (e.key === "Enter") commit();
                     if (e.key === "Escape") {
                       setEditing(false);
-                      setValue(edgeData.label ?? "");
+                      setValue(initialLabel);
                     }
                   }}
                   style={{

@@ -5,9 +5,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 
-const OnboardingChecklist = lazy(
-  () => import("./components/OnboardingChecklist"),
-);
 const FeatureAnnouncement = lazy(
   () => import("./components/FeatureAnnouncement"),
 );
@@ -116,7 +113,6 @@ const GlobalProductChrome: React.FC = () => {
 
   return (
     <Suspense fallback={null}>
-      <OnboardingChecklist />
       <FeatureAnnouncement />
       <QuickSetupModal />
     </Suspense>

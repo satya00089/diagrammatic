@@ -143,6 +143,8 @@ import CustomPropertyInput, {
 } from "../components/CustomPropertyInput";
 import ExtensionHub from "../components/ExtensionHub";
 import type { ExtensionImportResult } from "../types/extensions";
+import { getAdaptiveFitViewOptions } from "../utils/adaptiveFitView";
+import { canUseERDLayout, getERDLayoutedNodes } from "../utils/erdLayout";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
@@ -1036,7 +1038,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           });
           setCanvasState({ nodes: restoredNodes, edges: restoredEdges });
           window.setTimeout(
-            () => fitView({ padding: 0.2, duration: 400 }),
+            () =>
+              fitView({
+                ...getAdaptiveFitViewOptions(restoredNodes, restoredEdges),
+                duration: 400,
+              }),
             100,
           );
           toast.success(
@@ -1487,18 +1493,44 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Only use ER relationship edge for entity-to-entity connections
     // Exclude triggers, notes, and views - they should use default customEdge
     const isEntityNode = (node: Node | undefined) => {
-      const componentId = node?.data?.componentId;
-      return componentId === "entity" || componentId === "weak-entity";
+      const data = (node?.data ?? {}) as {
+        componentId?: unknown;
+        nodeType?: unknown;
+      };
+      return (
+        data.componentId === "entity" ||
+        data.componentId === "weak-entity" ||
+        data.nodeType === "entity" ||
+        data.nodeType === "weak-entity"
+      );
     };
 
     const isERConnection = isEntityNode(sourceNode) && isEntityNode(targetNode);
+    const getFieldIdFromHandle = (handle: string | null | undefined) => {
+      if (!handle?.startsWith("field:")) return undefined;
+      const lastSeparator = handle.lastIndexOf(":");
+      if (lastSeparator <= "field:".length) return undefined;
+      const side = handle.slice(lastSeparator + 1);
+      return side === "left" || side === "right"
+        ? handle.slice("field:".length, lastSeparator)
+        : undefined;
+    };
+
+    const sourceFieldId = getFieldIdFromHandle(connection.sourceHandle);
+    const targetFieldId = getFieldIdFromHandle(connection.targetHandle);
 
     // Use ER relationship edge for ER diagrams, custom edge for others
     const newEdge = {
       ...connection,
       type: isERConnection ? "erRelationship" : "customEdge",
       data: isERConnection
-        ? { label: "", hasLabel: false, cardinality: "one-to-many" }
+        ? {
+            label: "",
+            hasLabel: false,
+            cardinality: "one-to-many",
+            ...(sourceFieldId ? { sourceFieldId } : {}),
+            ...(targetFieldId ? { targetFieldId } : {}),
+          }
         : { label: "", hasLabel: false },
     } as unknown as Edge;
     setEdges((eds) => addEdge(newEdge, eds));
@@ -2461,6 +2493,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const deleteAttributeListener = (e: Event) => {
       const evt = e as CustomEvent<{ nodeId: string; attributeId: string }>;
+      const fieldHandlePrefix = `field:${evt.detail.attributeId}:`;
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === evt.detail.nodeId) {
@@ -2477,6 +2510,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
+        }),
+      );
+      setEdges((eds) =>
+        eds.filter((edge) => {
+          const data = (edge.data ?? {}) as {
+            sourceFieldId?: unknown;
+            targetFieldId?: unknown;
+          };
+          const sourceMatches =
+            edge.source === evt.detail.nodeId &&
+            ((typeof edge.sourceHandle === "string" &&
+              edge.sourceHandle.startsWith(fieldHandlePrefix)) ||
+              data.sourceFieldId === evt.detail.attributeId);
+          const targetMatches =
+            edge.target === evt.detail.nodeId &&
+            ((typeof edge.targetHandle === "string" &&
+              edge.targetHandle.startsWith(fieldHandlePrefix)) ||
+              data.targetFieldId === evt.detail.attributeId);
+          return !sourceMatches && !targetMatches;
         }),
       );
     };
@@ -2577,7 +2629,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         updateAttributeListener as EventListener,
       );
     };
-  }, [setNodes]);
+  }, [setEdges, setNodes]);
 
   React.useEffect(() => {
     if (!inspectedNodeId) return;
@@ -4137,7 +4189,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       // Fit view to show all imported nodes
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 400 });
+        fitView({
+          ...getAdaptiveFitViewOptions(restoredNodes, importedData.edges),
+          duration: 400,
+        });
       }, 100);
     } catch (error) {
       console.error("Import error:", error);
@@ -4162,19 +4217,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     sourceName: string,
   ) => {
     const restoredNodes = restoreNodeIcons(result.nodes);
-    setNodes(getLayoutedNodes(restoredNodes, result.edges, "LR"));
-    setEdges(result.edges);
     setCurrentDiagramId(null);
     setShowExtensionHub(false);
-    setTimeout(() => {
-      fitView({ padding: 0.2, duration: 400 });
-    }, 100);
-    toast.success(`${sourceName} imported: ${result.summary}.`);
-    if (result.warnings.length > 0) {
-      toast.info(
-        `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
-      );
-    }
+
+    void layoutAndFitCanvas(restoredNodes, result.edges, "LR", (callback) =>
+      window.setTimeout(callback, 100),
+    )
+      .then(() => {
+        setEdges(result.edges);
+        toast.success(`${sourceName} imported: ${result.summary}.`);
+        if (result.warnings.length > 0) {
+          toast.info(
+            `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to lay out imported diagram:", error);
+        toast.error(`${sourceName} was imported, but automatic layout failed.`);
+      });
   };
 
   // Handle sharing diagram with collaborator
@@ -4467,12 +4528,50 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  // Auto-layout the existing canvas using Dagre with proper group handling.
-  const onLayout = (direction: "TB" | "LR" = "TB") => {
-    setNodes(getLayoutedNodes(nodes, edges, direction));
+  const layoutCanvasNodes = async (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR",
+  ): Promise<Node[]> => {
+    if (!canUseERDLayout(nodesToLayout)) {
+      return getLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    }
 
-    globalThis.requestAnimationFrame(() => {
-      fitView({ padding: 0.2, duration: 400 });
+    try {
+      return await getERDLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    } catch (error) {
+      console.error("ELK ERD layout failed; falling back to Dagre:", error);
+      return getLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    }
+  };
+
+  const layoutAndFitCanvas = async (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR",
+    scheduleFit: (callback: () => void) => void = (callback) =>
+      globalThis.requestAnimationFrame(callback),
+  ): Promise<Node[]> => {
+    const layoutedNodes = await layoutCanvasNodes(
+      nodesToLayout,
+      edgesToLayout,
+      direction,
+    );
+    setNodes(layoutedNodes);
+    scheduleFit(() => {
+      fitView({
+        ...getAdaptiveFitViewOptions(layoutedNodes, edgesToLayout, direction),
+        duration: 400,
+      });
+    });
+    return layoutedNodes;
+  };
+
+  // Auto-layout the existing canvas with the appropriate graph layout engine.
+  const onLayout = (direction: "TB" | "LR" = "TB") => {
+    void layoutAndFitCanvas(nodes, edges, direction).catch((error) => {
+      console.error("Failed to auto-layout diagram:", error);
+      toast.error("Automatic layout failed. Your current layout was kept.");
     });
   };
 
