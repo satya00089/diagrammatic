@@ -1487,18 +1487,44 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     // Only use ER relationship edge for entity-to-entity connections
     // Exclude triggers, notes, and views - they should use default customEdge
     const isEntityNode = (node: Node | undefined) => {
-      const componentId = node?.data?.componentId;
-      return componentId === "entity" || componentId === "weak-entity";
+      const data = (node?.data ?? {}) as {
+        componentId?: unknown;
+        nodeType?: unknown;
+      };
+      return (
+        data.componentId === "entity" ||
+        data.componentId === "weak-entity" ||
+        data.nodeType === "entity" ||
+        data.nodeType === "weak-entity"
+      );
     };
 
     const isERConnection = isEntityNode(sourceNode) && isEntityNode(targetNode);
+    const getFieldIdFromHandle = (handle: string | null | undefined) => {
+      if (!handle?.startsWith("field:")) return undefined;
+      const lastSeparator = handle.lastIndexOf(":");
+      if (lastSeparator <= "field:".length) return undefined;
+      const side = handle.slice(lastSeparator + 1);
+      return side === "left" || side === "right"
+        ? handle.slice("field:".length, lastSeparator)
+        : undefined;
+    };
+
+    const sourceFieldId = getFieldIdFromHandle(connection.sourceHandle);
+    const targetFieldId = getFieldIdFromHandle(connection.targetHandle);
 
     // Use ER relationship edge for ER diagrams, custom edge for others
     const newEdge = {
       ...connection,
       type: isERConnection ? "erRelationship" : "customEdge",
       data: isERConnection
-        ? { label: "", hasLabel: false, cardinality: "one-to-many" }
+        ? {
+            label: "",
+            hasLabel: false,
+            cardinality: "one-to-many",
+            ...(sourceFieldId ? { sourceFieldId } : {}),
+            ...(targetFieldId ? { targetFieldId } : {}),
+          }
         : { label: "", hasLabel: false },
     } as unknown as Edge;
     setEdges((eds) => addEdge(newEdge, eds));
@@ -2461,6 +2487,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     const deleteAttributeListener = (e: Event) => {
       const evt = e as CustomEvent<{ nodeId: string; attributeId: string }>;
+      const fieldHandlePrefix = `field:${evt.detail.attributeId}:`;
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === evt.detail.nodeId) {
@@ -2477,6 +2504,25 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             };
           }
           return n;
+        }),
+      );
+      setEdges((eds) =>
+        eds.filter((edge) => {
+          const data = (edge.data ?? {}) as {
+            sourceFieldId?: unknown;
+            targetFieldId?: unknown;
+          };
+          const sourceMatches =
+            edge.source === evt.detail.nodeId &&
+            ((typeof edge.sourceHandle === "string" &&
+              edge.sourceHandle.startsWith(fieldHandlePrefix)) ||
+              data.sourceFieldId === evt.detail.attributeId);
+          const targetMatches =
+            edge.target === evt.detail.nodeId &&
+            ((typeof edge.targetHandle === "string" &&
+              edge.targetHandle.startsWith(fieldHandlePrefix)) ||
+              data.targetFieldId === evt.detail.attributeId);
+          return !sourceMatches && !targetMatches;
         }),
       );
     };
@@ -2577,7 +2623,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         updateAttributeListener as EventListener,
       );
     };
-  }, [setNodes]);
+  }, [setEdges, setNodes]);
 
   React.useEffect(() => {
     if (!inspectedNodeId) return;

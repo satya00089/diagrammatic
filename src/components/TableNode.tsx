@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, useUpdateNodeInternals } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
   MdSettings,
@@ -35,6 +35,9 @@ export type TableNodeData = {
   [key: string]: unknown;
 };
 
+const getAttributeHandleId = (attributeId: string, side: "left" | "right") =>
+  `field:${attributeId}:${side}`;
+
 type Props = {
   id: string;
   data: TableNodeData;
@@ -52,8 +55,20 @@ const TableNode: React.FC<Props> = React.memo(
 
     const [editingAttrId, setEditingAttrId] = useState<string | null>(null);
     const [editingValue, setEditingValue] = useState({ name: "", type: "" });
+    const updateNodeInternals = useUpdateNodeInternals();
+    const attributeScrollRef = React.useRef<HTMLDivElement | null>(null);
+    const attributeRowRefs = React.useRef(new Map<string, HTMLDivElement>());
+    const [attributePortPositions, setAttributePortPositions] = useState<
+      Array<{ id: string; top: number; visible: boolean }>
+    >([]);
+    const [attributePortLayer, setAttributePortLayer] = useState({
+      top: 0,
+      height: 0,
+    });
 
     const displayLabel = data.componentName || data.label;
+    const isEntityTable =
+      data.componentId === "entity" || data.nodeType === "entity";
 
     // Parse attributes - it might be a JSON string or already an array
     const attributes = React.useMemo(() => {
@@ -69,6 +84,54 @@ const TableNode: React.FC<Props> = React.memo(
       }
       return [];
     }, [data.attributes]);
+
+    const updateAttributePortPositions = useCallback(() => {
+      const scrollElement = attributeScrollRef.current;
+      if (!scrollElement) return;
+
+      const viewportHeight = scrollElement.clientHeight;
+      setAttributePortLayer({
+        top: scrollElement.offsetTop,
+        height: viewportHeight,
+      });
+      const nextPositions = attributes.map((attribute) => {
+        const row = attributeRowRefs.current.get(attribute.id);
+        if (!row) return null;
+
+        const top =
+          row.offsetTop -
+          scrollElement.offsetTop -
+          scrollElement.scrollTop +
+          row.offsetHeight / 2;
+        return {
+          id: attribute.id,
+          top,
+          visible: top >= -12 && top <= viewportHeight + 12,
+        };
+      });
+
+      setAttributePortPositions(
+        nextPositions.filter(
+          (position): position is NonNullable<typeof position> =>
+            position !== null,
+        ),
+      );
+    }, [attributes]);
+
+    React.useLayoutEffect(() => {
+      updateAttributePortPositions();
+
+      const scrollElement = attributeScrollRef.current;
+      if (!scrollElement || typeof ResizeObserver === "undefined") return;
+
+      const observer = new ResizeObserver(updateAttributePortPositions);
+      observer.observe(scrollElement);
+      return () => observer.disconnect();
+    }, [editingAttrId, updateAttributePortPositions]);
+
+    React.useLayoutEffect(() => {
+      updateNodeInternals(id);
+    }, [attributePortPositions, id, updateNodeInternals]);
 
     // Get column configuration from renderConfig or use defaults
     const columns = React.useMemo<TableColumn[]>(() => {
@@ -406,7 +469,7 @@ const TableNode: React.FC<Props> = React.memo(
           whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
           whileTap={{ scale: 0.985 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className="min-w-[220px] max-h-[500px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-hidden flex flex-col"
+          className="min-w-[220px] max-h-[500px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col"
           onContextMenu={handleContextMenu}
         >
           {/* Connection Handles */}
@@ -468,7 +531,7 @@ const TableNode: React.FC<Props> = React.memo(
           />
 
           {/* Table Header */}
-          <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0">
+          <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0 rounded-t-md">
             <div className="flex items-center gap-2">
               {data.icon && <span className="text-lg">{data.icon}</span>}
               <span>{displayLabel}</span>
@@ -497,12 +560,23 @@ const TableNode: React.FC<Props> = React.memo(
           </div>
 
           {/* Attributes List */}
-          <div className="divide-y divide-theme/10 overflow-y-auto flex-1 table-node-scroll">
+          <div
+            ref={attributeScrollRef}
+            onScroll={updateAttributePortPositions}
+            className="min-h-0 flex-1 divide-y divide-theme/10 overflow-y-auto table-node-scroll"
+          >
             {attributes.map((attr) => {
               const isEditing = editingAttrId === attr.id;
               return (
                 <div
                   key={attr.id}
+                  ref={(row) => {
+                    if (row) {
+                      attributeRowRefs.current.set(attr.id, row);
+                    } else {
+                      attributeRowRefs.current.delete(attr.id);
+                    }
+                  }}
                   className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-hover)] group"
                   role="group"
                   aria-label={
@@ -540,6 +614,59 @@ const TableNode: React.FC<Props> = React.memo(
               );
             })}
           </div>
+
+          {isEntityTable && (
+            <div
+              className="pointer-events-none absolute left-0 right-0 z-20"
+              aria-label="Entity attribute connection ports"
+              style={{
+                top: `${attributePortLayer.top}px`,
+                height: `${attributePortLayer.height}px`,
+              }}
+            >
+              {attributePortPositions.map((position) => {
+                const attribute = attributes.find(
+                  (attr) => attr.id === position.id,
+                );
+                const label = attribute?.name || "attribute";
+                const visibility = position.visible ? "visible" : "hidden";
+                const handleStyle = {
+                  top: `${position.top}px`,
+                  width: "10px",
+                  height: "18px",
+                  background: "var(--brand)",
+                  border: "2px solid var(--surface)",
+                  borderRadius: "9999px",
+                  zIndex: 10,
+                  pointerEvents: "all" as const,
+                  visibility: visibility as "visible" | "hidden",
+                };
+
+                return (
+                  <React.Fragment key={position.id}>
+                    <Handle
+                      id={getAttributeHandleId(position.id, "left")}
+                      type="source"
+                      position={Position.Left}
+                      isConnectable={true}
+                      aria-label={`Connect ${label} on the left`}
+                      className="opacity-100 transition-opacity"
+                      style={{ left: "-5px", ...handleStyle }}
+                    />
+                    <Handle
+                      id={getAttributeHandleId(position.id, "right")}
+                      type="source"
+                      position={Position.Right}
+                      isConnectable={true}
+                      aria-label={`Connect ${label} on the right`}
+                      className="opacity-100 transition-opacity"
+                      style={{ right: "-5px", ...handleStyle }}
+                    />
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          )}
 
           {/* Empty state */}
           {attributes.length === 0 && (
