@@ -143,6 +143,8 @@ import CustomPropertyInput, {
 } from "../components/CustomPropertyInput";
 import ExtensionHub from "../components/ExtensionHub";
 import type { ExtensionImportResult } from "../types/extensions";
+import { getAdaptiveFitViewOptions } from "../utils/adaptiveFitView";
+import { canUseERDLayout, getERDLayoutedNodes } from "../utils/erdLayout";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
@@ -1036,7 +1038,11 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           });
           setCanvasState({ nodes: restoredNodes, edges: restoredEdges });
           window.setTimeout(
-            () => fitView({ padding: 0.2, duration: 400 }),
+            () =>
+              fitView({
+                ...getAdaptiveFitViewOptions(restoredNodes, restoredEdges),
+                duration: 400,
+              }),
             100,
           );
           toast.success(
@@ -4183,7 +4189,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
       // Fit view to show all imported nodes
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 400 });
+        fitView({
+          ...getAdaptiveFitViewOptions(restoredNodes, importedData.edges),
+          duration: 400,
+        });
       }, 100);
     } catch (error) {
       console.error("Import error:", error);
@@ -4208,19 +4217,30 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     sourceName: string,
   ) => {
     const restoredNodes = restoreNodeIcons(result.nodes);
-    setNodes(getLayoutedNodes(restoredNodes, result.edges, "LR"));
-    setEdges(result.edges);
     setCurrentDiagramId(null);
     setShowExtensionHub(false);
-    setTimeout(() => {
-      fitView({ padding: 0.2, duration: 400 });
-    }, 100);
-    toast.success(`${sourceName} imported: ${result.summary}.`);
-    if (result.warnings.length > 0) {
-      toast.info(
-        `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
-      );
-    }
+
+    void layoutCanvasNodes(restoredNodes, result.edges, "LR")
+      .then((layoutedNodes) => {
+        setNodes(layoutedNodes);
+        setEdges(result.edges);
+        setTimeout(() => {
+          fitView({
+            ...getAdaptiveFitViewOptions(layoutedNodes, result.edges, "LR"),
+            duration: 400,
+          });
+        }, 100);
+        toast.success(`${sourceName} imported: ${result.summary}.`);
+        if (result.warnings.length > 0) {
+          toast.info(
+            `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to lay out imported diagram:", error);
+        toast.error(`${sourceName} was imported, but automatic layout failed.`);
+      });
   };
 
   // Handle sharing diagram with collaborator
@@ -4513,13 +4533,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
-  // Auto-layout the existing canvas using Dagre with proper group handling.
-  const onLayout = (direction: "TB" | "LR" = "TB") => {
-    setNodes(getLayoutedNodes(nodes, edges, direction));
+  const layoutCanvasNodes = async (
+    nodesToLayout: Node[],
+    edgesToLayout: Edge[],
+    direction: "TB" | "LR",
+  ): Promise<Node[]> => {
+    if (!canUseERDLayout(nodesToLayout)) {
+      return getLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    }
 
-    globalThis.requestAnimationFrame(() => {
-      fitView({ padding: 0.2, duration: 400 });
-    });
+    try {
+      return await getERDLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    } catch (error) {
+      console.error("ELK ERD layout failed; falling back to Dagre:", error);
+      return getLayoutedNodes(nodesToLayout, edgesToLayout, direction);
+    }
+  };
+
+  // Auto-layout the existing canvas with the appropriate graph layout engine.
+  const onLayout = (direction: "TB" | "LR" = "TB") => {
+    void layoutCanvasNodes(nodes, edges, direction)
+      .then((layoutedNodes) => {
+        setNodes(layoutedNodes);
+        globalThis.requestAnimationFrame(() => {
+          fitView({
+            ...getAdaptiveFitViewOptions(layoutedNodes, edges, direction),
+            duration: 400,
+          });
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to auto-layout diagram:", error);
+        toast.error("Automatic layout failed. Your current layout was kept.");
+      });
   };
 
   // Persist nodeProps back into node data.

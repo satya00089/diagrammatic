@@ -72,6 +72,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           nodesConnectable={!readOnly}
           elementsSelectable={!readOnly}
           connectionMode={ConnectionMode.Loose}
+          minZoom={0.18}
           fitView
           proOptions={{ hideAttribution: true }}
         >

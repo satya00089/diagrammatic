@@ -470,7 +470,7 @@ const TableNode: React.FC<Props> = React.memo(
           whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
           whileTap={{ scale: 0.985 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className="min-w-[220px] max-h-[500px] bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col"
+          className={`min-w-[220px] ${isEntityTable ? "" : "max-h-[500px]"} bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onContextMenu={handleContextMenu}
@@ -566,7 +566,11 @@ const TableNode: React.FC<Props> = React.memo(
           <div
             ref={attributeScrollRef}
             onScroll={updateAttributePortPositions}
-            className="min-h-0 flex-1 divide-y divide-theme/10 overflow-y-auto table-node-scroll"
+            className={`divide-y divide-theme/10 ${
+              isEntityTable
+                ? "overflow-visible"
+                : "min-h-0 flex-1 overflow-y-auto table-node-scroll"
+            }`}
           >
             {attributes.map((attr) => {
               const isEditing = editingAttrId === attr.id;
