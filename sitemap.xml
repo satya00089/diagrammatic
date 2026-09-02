@@ -85,31 +85,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/document-management-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
     <loc>https://diagrammatic.next-zen.dev/problems/job-scheduler/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/twitter-system-design/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/instagram-system-design/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/pastebin-system-design/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/ci-cd-pipeline/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -117,31 +93,11 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/google-calendar-system-design/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/hotel-booking-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
     <loc>https://diagrammatic.next-zen.dev/problems/distributed-file-storage/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/web-crawler/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
     <loc>https://diagrammatic.next-zen.dev/problems/distributed-cache/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/serverless-event-driven-architecture/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/url-shortener/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -153,26 +109,6 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/payment-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/ride-sharing-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/netflix-concurrent-stream-limits/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/uber-rider-matching/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
     <loc>https://diagrammatic.next-zen.dev/problems/web-search-engine/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
@@ -181,35 +117,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/recommendation-engine/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
     <loc>https://diagrammatic.next-zen.dev/problems/real-time-chat-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/real-time-recommendation-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/rate-limiter/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/semantic-search-engine/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/rag-conversational-ai/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/observability-platform/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/eta-location-sharing/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -225,7 +133,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/create-a-document-management-system-like-wikipedia-notion-or-google-docs/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/document-management-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -233,11 +141,11 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-twitter-for-millions-of-users/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/twitter-system-design/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/top-k-elements-app-store-rankings-amazon-bestsellers/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/top-k-ranking-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -245,11 +153,11 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-instagram/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/instagram-system-design/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-pastebin/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/pastebin-system-design/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -265,11 +173,11 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-a-complete-ci-cd-pipeline/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/ci-cd-pipeline/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-google-calendar/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/google-calendar-system-design/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -309,7 +217,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-web-crawler/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/web-crawler/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -318,10 +226,6 @@
   </url>
   <url>
     <loc>https://diagrammatic.next-zen.dev/problems/design-a-model-registry-and-versioning-system/</loc>
-    <lastmod>2026-08-23</lastmod>
-  </url>
-  <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/distributed-cache-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -341,7 +245,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/build-a-serverless-event-driven-architecture/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/serverless-event-driven-architecture/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -405,7 +309,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/digital-payment-system/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/payment-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -449,7 +353,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/ride-sharing-service/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/ride-sharing-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -473,7 +377,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-a-video-processing-and-transcoding-pipeline/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/video-transcoding-pipeline/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -493,7 +397,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/netflix-limit-the-number-of-screens-each-user-can-watch/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/netflix-concurrent-stream-limits/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -509,7 +413,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/find-a-rider-for-uber-or-uber-eats/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/uber-rider-matching/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -529,7 +433,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-a-personalized-recommendation-engine/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/recommendation-engine/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -577,7 +481,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-a-real-time-recommendation-system/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/real-time-recommendation-system/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -585,7 +489,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-an-ai-powered-semantic-search-engine/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/semantic-search-engine/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -733,7 +637,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-an-eta-service-and-location-sharing-between-driver-and-rider/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/eta-location-sharing/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
@@ -745,7 +649,7 @@
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
-    <loc>https://diagrammatic.next-zen.dev/problems/design-an-intelligent-observability-platform/</loc>
+    <loc>https://diagrammatic.next-zen.dev/problems/observability-platform/</loc>
     <lastmod>2026-08-23</lastmod>
   </url>
   <url>
