@@ -201,7 +201,7 @@
         "label": "Operations API gateway",
         "description": "Authenticates services and operators, validates signal schemas, and scopes tenants.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Signal intake stream",
         "description": "Carries alerts, incidents, service health, demand, and policy events with deduplication identity.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Service and dependency graph",
         "description": "Stores ownership, dependencies, runbooks, schedules, and capacity relationships.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Incident and policy service",
         "description": "Groups signals, applies severity and suppression policy, and owns incident lifecycle.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 440
         },
         "properties": {}
@@ -249,7 +249,7 @@
         "label": "Escalation and capacity planner",
         "description": "Schedules responders, forecasts demand, and creates bounded actions or recommendations.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -261,7 +261,7 @@
         "label": "Incident and decision timeline",
         "description": "Stores durable state, evidence, acknowledgements, and capacity decisions for audit.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 260
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Escalation and status delivery",
         "description": "Delivers pages, updates, and reminders with quiet hours and deduplication.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 80
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Reliability analytics",
         "description": "Computes alert quality, response time, SLO, capacity, and post-incident metrics.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 440
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Operations of operations",
         "description": "Tracks intake loss, grouping quality, escalation lag, planner backlog, and action failures.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

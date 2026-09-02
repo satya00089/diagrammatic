@@ -146,5 +146,15 @@ export const getDefaultArchitectureHandlePair = (
       : { sourceHandle: "left", targetHandle: "right" };
   }
 
-  return { sourceHandle: "right", targetHandle: "left" };
+  if (deltaX > 0) {
+    return { sourceHandle: "right", targetHandle: "left" };
+  }
+
+  if (deltaX < 0) {
+    return { sourceHandle: "left", targetHandle: "right" };
+  }
+
+  return deltaY > 0
+    ? { sourceHandle: "bottom", targetHandle: "top" }
+    : { sourceHandle: "top", targetHandle: "bottom" };
 };

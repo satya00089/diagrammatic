@@ -218,7 +218,7 @@
         "label": "Upload and playback gateway",
         "description": "Authenticates users, issues scoped upload/download URLs, validates metadata, and protects playback and upload quotas.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -232,7 +232,7 @@
         "label": "Original media object store",
         "description": "Stores immutable originals and intermediate assets with checksum, encryption, lifecycle, and tenant ownership metadata.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": -40
         },
         "properties": {
@@ -246,7 +246,7 @@
         "label": "Media metadata and entitlement store",
         "description": "Stores ownership, privacy, captions, renditions, processing state, playback policy, and deletion tombstones.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 420
         },
         "properties": {
@@ -260,7 +260,7 @@
         "label": "Media processing queue",
         "description": "Buffers thumbnail, waveform, caption, transcode, moderation, and packaging work with priority and retry isolation.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -274,7 +274,7 @@
         "label": "Transcoding and media processing",
         "description": "Generates codec/bitrate renditions, thumbnails, captions, and manifests while reporting progress and content safety results.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 260
         },
         "properties": {
@@ -288,7 +288,7 @@
         "label": "Rendition and playback catalog",
         "description": "Records available renditions, codecs, bitrates, segment manifests, captions, checksums, and processing versions.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 260
         },
         "properties": {
@@ -302,7 +302,7 @@
         "label": "Playback and download CDN",
         "description": "Serves signed, cacheable media segments and downloads from the rendition catalog while enforcing entitlement and expiry.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 260
         },
         "properties": {
@@ -316,7 +316,7 @@
         "label": "Media pipeline and delivery operations",
         "description": "Tracks upload success, processing backlog, rendition failures, storage growth, CDN errors, playback startup, abuse, and deletion completion.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

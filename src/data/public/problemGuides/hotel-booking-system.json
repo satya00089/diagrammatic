@@ -201,7 +201,7 @@
         "label": "Booking API gateway",
         "description": "Authenticates users and partners, applies quotas, validates idempotency, and protects payment flows.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Property and rate catalog",
         "description": "Owns normalized property, room, rate, policy, and partner mapping data.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Availability search index",
         "description": "Serves geo, date-range, occupancy, and amenity candidate searches from derived inventory.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 440
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Inventory and hold store",
         "description": "Authoritative room or seat inventory with short-lived holds and conditional decrement.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -249,19 +249,19 @@
         "label": "Reservation service",
         "description": "Owns booking state, cancellation policy, confirmation numbers, and partner reconciliation.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
       },
       {
         "id": "payments",
-        "type": "external-api",
-        "componentId": "external-api",
+        "type": "microservice",
+        "componentId": "payment-service",
         "label": "Payment provider adapter",
         "description": "Tokenized authorization and capture boundary with unknown-outcome reconciliation.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Reservation event bus",
         "description": "Publishes holds, bookings, cancellations, and inventory changes for asynchronous work.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Partner sync workers",
         "description": "Reconcile rate and inventory feeds, confirmations, cancellations, and late partner responses.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 440
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Confirmation delivery",
         "description": "Sends confirmation, change, cancellation, and support messages with delivery audit.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 80
         },
         "properties": {}
@@ -309,7 +309,7 @@
         "label": "Booking reliability operations",
         "description": "Tracks oversells, hold expiry, payment uncertainty, partner lag, and search freshness.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

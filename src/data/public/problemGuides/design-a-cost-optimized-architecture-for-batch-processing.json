@@ -239,7 +239,7 @@
         "label": "Cost-optimized batch-processing platform gateway",
         "description": "Authenticates tenants, enforces quotas, validates payloads, and rate-limits control operations.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -253,7 +253,7 @@
         "label": "Job service",
         "description": "Owns job lifecycle, DAG validation, cancellation, authorization, and idempotent transitions.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 280
         },
         "properties": {
@@ -267,7 +267,7 @@
         "label": "Job metadata store",
         "description": "Authoritative job state for submissions, tasks, attempts, policies, and terminal results.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 280
         },
         "properties": {
@@ -281,7 +281,7 @@
         "label": "DAG planner",
         "description": "Expands dependencies and creates only dependency-ready task batches.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 100
         },
         "properties": {
@@ -295,7 +295,7 @@
         "label": "Partitioned task queues",
         "description": "Prioritized queues partitioned by tenant, resource class, locality, and deadline risk.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 100
         },
         "properties": {
@@ -309,7 +309,7 @@
         "label": "Cost-aware scheduler",
         "description": "Matches tasks to capacity using price, preemption risk, locality, fairness, and deadline slack.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 100
         },
         "properties": {
@@ -323,7 +323,7 @@
         "label": "Elastic capacity manager",
         "description": "Requests, drains, and rightsizes preemptible and on-demand worker pools.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 100
         },
         "properties": {
@@ -337,7 +337,7 @@
         "label": "Checkpointable workers",
         "description": "Execute leased tasks, heartbeat progress, checkpoint state, and commit outputs idempotently.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 280
         },
         "properties": {
@@ -351,7 +351,7 @@
         "label": "Artifact object store",
         "description": "Stores immutable inputs, outputs, logs, and manifests with checksums and lifecycle tiers.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 280
         },
         "properties": {
@@ -365,7 +365,7 @@
         "label": "Checkpoint and lease store",
         "description": "Stores task progress, lease ownership, checkpoint pointers, and attempt fencing state.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 560
         },
         "properties": {
@@ -379,7 +379,7 @@
         "label": "Reconciler",
         "description": "Expires leases, retries safe failures, detects stuck DAGs, and repairs incomplete state.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": -220
         },
         "properties": {
@@ -393,7 +393,7 @@
         "label": "Cost and usage meter",
         "description": "Attributes compute, storage, and egress cost by tenant, job, pool, and policy.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": -220
         },
         "properties": {
@@ -407,7 +407,7 @@
         "label": "SLA and operations",
         "description": "Tracks queue age, deadline risk, utilization, preemption, cost, and correctness.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": -220
         },
         "properties": {

@@ -201,19 +201,19 @@
         "label": "Weather API gateway",
         "description": "Authenticates callers, normalizes location, applies quotas, and serves freshness metadata.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
       },
       {
         "id": "collectors",
-        "type": "external-api",
-        "componentId": "external-api",
+        "type": "microservice",
+        "componentId": "backend-server",
         "label": "Provider collectors",
         "description": "Fetches forecast and observation feeds with provider cursors, signatures, and rate limits.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Forecast normalizer",
         "description": "Maps provider-specific observations and forecasts into a versioned canonical model.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Forecast and observation store",
         "description": "Stores spatial, time-indexed observations, forecasts, provider versions, and quality flags.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -249,7 +249,7 @@
         "label": "Freshness-aware forecast cache",
         "description": "Caches location and time-window responses with provider watermark and TTL.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 260
         },
         "properties": {}
@@ -261,7 +261,7 @@
         "label": "Weather alert service",
         "description": "Evaluates severe-weather rules and sends deduplicated alerts.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Observation event stream",
         "description": "Carries normalized updates, forecast revisions, alert decisions, and replay offsets.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 440
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Forecast quality analytics",
         "description": "Compares forecasts to observations and tracks provider gaps or bias.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 440
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Weather reliability operations",
         "description": "Tracks feed freshness, spatial gaps, forecast revision, alert lag, and cache correctness.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": -140
         },
         "properties": {}

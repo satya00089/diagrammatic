@@ -201,7 +201,7 @@
         "label": "Commerce API gateway",
         "description": "Authenticates users, applies bot and quota controls, and binds request idempotency.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Catalog and offer service",
         "description": "Serves product, offer, eligibility, and campaign inventory with explicit versioning.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Catalog search index",
         "description": "Provides text, facet, and eligibility candidate retrieval.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 440
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Inventory and reservation store",
         "description": "Tracks stock, capacity, or one-time campaign redemption with conditional claims.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -249,7 +249,7 @@
         "label": "Order and fulfillment service",
         "description": "Owns order state, allocation, delivery workflow, and cancellation semantics.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -261,19 +261,19 @@
         "label": "Order event bus",
         "description": "Carries order, inventory, campaign, and fulfillment events with replay offsets.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
       },
       {
         "id": "payment",
-        "type": "external-api",
-        "componentId": "external-api",
+        "type": "microservice",
+        "componentId": "payment-service",
         "label": "Payment adapter",
         "description": "Tokenized payment authorization and capture boundary.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Fulfillment workers",
         "description": "Processes packing, delivery, partner handoff, or campaign dispatch asynchronously.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 440
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Order notifications",
         "description": "Sends confirmation, delivery, failure, and support updates with deduplication.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 80
         },
         "properties": {}
@@ -309,7 +309,7 @@
         "label": "Commerce reliability operations",
         "description": "Tracks checkout latency, stock correctness, redemption rate, payment uncertainty, and worker backlog.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

@@ -218,7 +218,7 @@
         "label": "Search API gateway",
         "description": "Authenticates callers, applies tenant and query quotas, normalizes language and filters, and routes reads separately from indexing.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -232,7 +232,7 @@
         "label": "Query understanding service",
         "description": "Tokenizes and expands queries, applies spelling or semantic interpretation, validates filters, and creates a bounded retrieval plan.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -246,7 +246,7 @@
         "label": "Document and source ingestion",
         "description": "Fetches or accepts source changes, extracts searchable fields, applies ACLs and deduplication, and emits versioned index work.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": -40
         },
         "properties": {
@@ -260,7 +260,7 @@
         "label": "Document and source store",
         "description": "Retains canonical documents, crawl/import metadata, ACL snapshots, and source versions for reindexing and audit.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": -40
         },
         "properties": {
@@ -274,7 +274,7 @@
         "label": "Inverted and vector index",
         "description": "Indexes token, field, facet, and embedding representations with tenant and ACL filters and atomic generation aliases.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 420
         },
         "properties": {
@@ -288,7 +288,7 @@
         "label": "Relevance and ranking service",
         "description": "Combines lexical, semantic, freshness, popularity, personalization, and business rules while recording explainable ranking features.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 260
         },
         "properties": {
@@ -302,7 +302,7 @@
         "label": "Query and suggestion cache",
         "description": "Caches normalized query results and prefixes with ACL-aware keys, short TTLs, and generation invalidation after index updates.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 260
         },
         "properties": {
@@ -316,7 +316,7 @@
         "label": "Search quality and operations",
         "description": "Tracks indexing lag, freshness, zero-result rate, relevance quality, ACL leaks, shard health, cache hit rate, and query tail latency.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

@@ -248,7 +248,7 @@
         "label": "Edge gateway",
         "description": "Terminates TLS, authenticates users, applies quotas, and routes by user or post key.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -262,7 +262,7 @@
         "label": "Post service",
         "description": "Validates, authorizes, stores, and deletes posts while emitting durable publication events.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 120
         },
         "properties": {
@@ -276,7 +276,7 @@
         "label": "Post store",
         "description": "Partitioned durable source of truth for post metadata, visibility, and moderation state.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 120
         },
         "properties": {
@@ -290,7 +290,7 @@
         "label": "Social graph service",
         "description": "Manages follow edges, blocks, privacy, and recipient lookups with versioned changes.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 440
         },
         "properties": {
@@ -304,7 +304,7 @@
         "label": "Follow graph",
         "description": "Durable adjacency lists optimized for follower enumeration and relationship checks.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 440
         },
         "properties": {
@@ -318,7 +318,7 @@
         "label": "Feed event stream",
         "description": "Retained, partitioned events for fanout, indexing, notifications, analytics, and replay.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 120
         },
         "properties": {
@@ -332,7 +332,7 @@
         "label": "Hybrid fanout service",
         "description": "Chooses push, pull, or hybrid delivery from follower count, backlog, and account policy.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 120
         },
         "properties": {
@@ -346,7 +346,7 @@
         "label": "Timeline projections",
         "description": "Sharded, rebuildable feed entries keyed by recipient with cursor-friendly rank keys.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 120
         },
         "properties": {
@@ -360,7 +360,7 @@
         "label": "Feed cache",
         "description": "Caches recent pages and post summaries with version or lag metadata to absorb read bursts.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 440
         },
         "properties": {
@@ -374,7 +374,7 @@
         "label": "Timeline service",
         "description": "Reads projections, merges pull sources for hot authors, filters visibility, and creates opaque cursors.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 280
         },
         "properties": {
@@ -388,7 +388,7 @@
         "label": "Live update gateway",
         "description": "Tracks feed subscribers and coalesces new-post notifications; clients fetch the authoritative page on refresh.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 280
         },
         "properties": {
@@ -402,7 +402,7 @@
         "label": "Media pipeline",
         "description": "Scans, resizes, and publishes media through object storage and a CDN without blocking post metadata.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": -220
         },
         "properties": {
@@ -416,7 +416,7 @@
         "label": "Search index",
         "description": "Indexes eligible posts and accounts asynchronously for discovery and search queries.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": -220
         },
         "properties": {
@@ -430,7 +430,7 @@
         "label": "Notification service",
         "description": "Delivers mentions, follows, and selected post notifications with dedupe and provider retries.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": -220
         },
         "properties": {
@@ -444,7 +444,7 @@
         "label": "Analytics and abuse",
         "description": "Consumes events for trends, ranking signals, abuse detection, and product reporting.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": -220
         },
         "properties": {
@@ -458,7 +458,7 @@
         "label": "Design Twitter monitoring",
         "description": "Tracks feed lag, fanout backlog, cache hit rate, hot partitions, read latency, and projection drift.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": -220
         },
         "properties": {

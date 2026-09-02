@@ -217,7 +217,7 @@
         "label": "Pastebin-like service where users create text pa gateway",
         "description": "Authenticates users, limits abuse, and routes read and write traffic.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -231,7 +231,7 @@
         "label": "Regional cache",
         "description": "Caches authorized public metadata and immutable body responses with bounded TTLs.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 80
         },
         "properties": {
@@ -245,7 +245,7 @@
         "label": "Content CDN",
         "description": "Serves public immutable bodies close to readers.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 80
         },
         "properties": {
@@ -259,7 +259,7 @@
         "label": "Paste service",
         "description": "Owns IDs, validation, authorization, metadata, and lifecycle state.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 360
         },
         "properties": {
@@ -273,7 +273,7 @@
         "label": "Metadata store",
         "description": "Stores paste metadata, ownership, hashes, expiry, and tombstones.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 360
         },
         "properties": {
@@ -287,7 +287,7 @@
         "label": "Immutable blob store",
         "description": "Stores paste bodies under checksummed, versioned content keys.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 600
         },
         "properties": {
@@ -301,7 +301,7 @@
         "label": "Lifecycle event stream",
         "description": "Publishes create, delete, expiry, report, and moderation events for replay.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 360
         },
         "properties": {
@@ -315,7 +315,7 @@
         "label": "Expiry and purge workers",
         "description": "Tombstone expired records, purge caches, and delete eligible blobs.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 160
         },
         "properties": {
@@ -329,7 +329,7 @@
         "label": "Moderation service",
         "description": "Processes abuse reports and applies quarantine or removal decisions.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 400
         },
         "properties": {
@@ -343,7 +343,7 @@
         "label": "Audit and analytics",
         "description": "Consumes sampled reads and security events without blocking requests.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 640
         },
         "properties": {

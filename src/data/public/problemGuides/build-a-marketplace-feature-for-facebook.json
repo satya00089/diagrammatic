@@ -247,7 +247,7 @@
         "label": "Marketplace gateway",
         "description": "Authenticates users, applies quotas, and routes commands and queries.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -261,7 +261,7 @@
         "label": "Listing service",
         "description": "Owns listing lifecycle, seller authorization, price, location, and policy state.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 360
         },
         "properties": {
@@ -275,7 +275,7 @@
         "label": "Listing store",
         "description": "Stores authoritative listing versions, seller state, and lifecycle tombstones.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 360
         },
         "properties": {
@@ -289,7 +289,7 @@
         "label": "Media metadata",
         "description": "Tracks upload ownership, renditions, and processing status.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 80
         },
         "properties": {
@@ -303,7 +303,7 @@
         "label": "Photo object store",
         "description": "Stores originals and resized listing images with lifecycle policies.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -317,7 +317,7 @@
         "label": "Marketplace event stream",
         "description": "Retains listing, report, message, and lifecycle events for projections and replay.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 360
         },
         "properties": {
@@ -331,7 +331,7 @@
         "label": "Geo-text search index",
         "description": "Indexes listing text, category, geo cells, price, freshness, and ranking features.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 160
         },
         "properties": {
@@ -345,7 +345,7 @@
         "label": "Search service",
         "description": "Parses queries, retrieves candidates, ranks them, and applies bounded policy filters.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 280
         },
         "properties": {
@@ -359,7 +359,7 @@
         "label": "Media CDN",
         "description": "Serves authorized listing photos close to viewers.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 80
         },
         "properties": {
@@ -373,7 +373,7 @@
         "label": "Messaging service",
         "description": "Creates conversations and delivers buyer-seller messages with abuse controls.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 600
         },
         "properties": {
@@ -387,7 +387,7 @@
         "label": "Conversation store",
         "description": "Stores participant membership, messages, read state, and moderation holds.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 600
         },
         "properties": {
@@ -401,7 +401,7 @@
         "label": "Moderation service",
         "description": "Scans text and images, processes reports, and issues takedown decisions.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 360
         },
         "properties": {
@@ -415,7 +415,7 @@
         "label": "Fraud and risk",
         "description": "Detects scams, account abuse, duplicate listings, and suspicious conversations.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 360
         },
         "properties": {
@@ -429,7 +429,7 @@
         "label": "Notifications",
         "description": "Delivers relevant messages, listing, and moderation notifications with preferences.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 600
         },
         "properties": {
@@ -443,7 +443,7 @@
         "label": "Recommendations and analytics",
         "description": "Builds discovery features and aggregates marketplace events.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 80
         },
         "properties": {
@@ -457,7 +457,7 @@
         "label": "Marketplace observability",
         "description": "Tracks index lag, search latency, stale results, fraud queues, and notification failures.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 280
         },
         "properties": {

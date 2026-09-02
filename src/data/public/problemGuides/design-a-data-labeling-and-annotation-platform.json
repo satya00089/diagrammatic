@@ -217,7 +217,7 @@
         "label": "Data platform gateway",
         "description": "Authenticates producers and analysts, validates contracts, applies query/export quotas, and routes batch and streaming operations.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -231,7 +231,7 @@
         "label": "Source connectors and ingestion",
         "description": "Collects files, APIs, events, or database changes with cursors, schema validation, replay-safe manifests, and backpressure.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -245,7 +245,7 @@
         "label": "Raw immutable data lake",
         "description": "Retains source data, failed records, manifests, and schema versions for replay, audit, and reprocessing.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 80
         },
         "properties": {
@@ -259,7 +259,7 @@
         "label": "Schema, lineage, and quality catalog",
         "description": "Records datasets, schemas, ownership, retention, lineage, quality results, and access policy for each published version.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 440
         },
         "properties": {
@@ -273,7 +273,7 @@
         "label": "Batch and stream processing",
         "description": "Runs windowed stream jobs and bounded batch transforms with checkpointing, late-data policy, deduplication, and dead-letter handling.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 260
         },
         "properties": {
@@ -287,7 +287,7 @@
         "label": "Curated analytical store",
         "description": "Stores canonical facts, dimensions, aggregates, and correction versions optimized for historical analysis and reconciliation.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 80
         },
         "properties": {
@@ -301,7 +301,7 @@
         "label": "Serving and query index",
         "description": "Provides low-latency filtered views, recent aggregates, or search-oriented projections with dataset version and freshness metadata.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 440
         },
         "properties": {
@@ -315,7 +315,7 @@
         "label": "Data quality and pipeline operations",
         "description": "Tracks source freshness, schema drift, completeness, duplicates, late data, checkpoint lag, query latency, cost, and lineage gaps.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

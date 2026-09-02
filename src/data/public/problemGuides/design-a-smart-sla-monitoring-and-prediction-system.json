@@ -201,7 +201,7 @@
         "label": "SLO intelligence API",
         "description": "Authenticates telemetry producers and operators, validates service scope, and applies query quotas.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Request and dependency telemetry",
         "description": "Carries latency, error, availability, trace, and dependency events with event-time metadata.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Service dependency graph",
         "description": "Stores service ownership, dependency edges, SLO policies, and topology versions.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 440
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "SLI window engine",
         "description": "Computes windowed SLIs, burn rates, error budgets, and composite dependency measures.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -249,7 +249,7 @@
         "label": "SLO and evidence store",
         "description": "Stores versioned SLI windows, SLO calculations, evidence links, and freshness watermarks.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -261,7 +261,7 @@
         "label": "Breach prediction engine",
         "description": "Forecasts SLO breach probability across dependency chains with model version and confidence.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Mitigation recommendation service",
         "description": "Turns predicted breaches into evidence-backed, policy-gated recommendations rather than unreviewed changes.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "SLO alert delivery",
         "description": "Sends deduplicated burn-rate, forecast, and approval notifications with receipts.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 260
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "SLO intelligence operations",
         "description": "Tracks telemetry gaps, calculation freshness, forecast quality, notification lag, and policy safety.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

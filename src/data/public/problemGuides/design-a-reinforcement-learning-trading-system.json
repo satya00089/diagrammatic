@@ -202,7 +202,7 @@
         "label": "Trading API gateway",
         "description": "Authenticates principals, validates strategy permissions, and enforces risk and rate limits.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -214,7 +214,7 @@
         "label": "Market data stream",
         "description": "Normalizes exchange or market events with timestamps, sequence, and replay retention.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -226,7 +226,7 @@
         "label": "Feature and policy store",
         "description": "Stores point-in-time features, strategy versions, limits, and model decisions.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -238,7 +238,7 @@
         "label": "Pre-trade risk service",
         "description": "Checks exposure, position, price, liquidity, and kill-switch policy before routing an order.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 440
         },
         "properties": {}
@@ -250,19 +250,19 @@
         "label": "Order and position manager",
         "description": "Owns idempotent order state, fills, positions, and reconciliation transitions.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
       },
       {
         "id": "execution",
-        "type": "external-api",
-        "componentId": "external-api",
+        "type": "microservice",
+        "componentId": "backend-server",
         "label": "Venue execution adapters",
         "description": "Routes approved orders and normalizes acknowledgements, fills, and rejects.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -274,7 +274,7 @@
         "label": "Execution event log",
         "description": "Records decisions, orders, fills, and replay offsets for audit and recovery.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -286,7 +286,7 @@
         "label": "Training and simulation workers",
         "description": "Runs backtests or policy evaluation from immutable market data without touching live execution.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 440
         },
         "properties": {}
@@ -298,7 +298,7 @@
         "label": "Trading safety operations",
         "description": "Tracks risk rejects, feed gaps, order latency, position drift, PnL, and kill switches.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

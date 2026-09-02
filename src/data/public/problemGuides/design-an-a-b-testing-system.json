@@ -195,7 +195,7 @@
         "label": "Experiment API gateway",
         "description": "Authenticates callers, validates experiment scope, and applies assignment and event quotas.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -207,7 +207,7 @@
         "label": "Experiment catalog",
         "description": "Stores hypotheses, variants, eligibility, allocation, metric definitions, and lifecycle state.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -219,7 +219,7 @@
         "label": "Assignment service",
         "description": "Produces sticky, deterministic assignments with exposure and override metadata.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -231,7 +231,7 @@
         "label": "Exposure and outcome stream",
         "description": "Collects deduplicated experiment events with schema and privacy controls.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 440
         },
         "properties": {}
@@ -243,7 +243,7 @@
         "label": "Metric computation workers",
         "description": "Builds windows, cohorts, guardrail metrics, and sequential analysis inputs.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -255,7 +255,7 @@
         "label": "Experiment analysis store",
         "description": "Retains curated event and metric data for reproducible analysis.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 440
         },
         "properties": {}
@@ -267,7 +267,7 @@
         "label": "Decision dashboard",
         "description": "Shows allocation, sample ratio mismatch, lift, confidence, and guardrail state.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -279,7 +279,7 @@
         "label": "Experiment reliability operations",
         "description": "Tracks assignment latency, exposure loss, metric freshness, and safety violations.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

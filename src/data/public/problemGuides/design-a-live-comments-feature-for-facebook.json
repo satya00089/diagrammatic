@@ -216,7 +216,7 @@
         "label": "Realtime edge gateway",
         "description": "Terminates connections, authenticates sessions, applies quotas, and routes commands and subscriptions to the correct partition.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -230,7 +230,7 @@
         "label": "Interaction and write service",
         "description": "Validates feature-specific commands, applies authorization and idempotency, and commits the canonical interaction state.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -244,7 +244,7 @@
         "label": "Canonical interaction store",
         "description": "Stores users, objects, memberships, interaction state, and tombstones using the partition key needed for the hot path.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -258,7 +258,7 @@
         "label": "Interaction event backbone",
         "description": "Publishes committed interaction, membership, deletion, and moderation events with ordering keys and replay offsets.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -272,7 +272,7 @@
         "label": "Fanout and aggregation workers",
         "description": "Updates counters, feeds, membership projections, and notification intents asynchronously with hot-key isolation and coalescing.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 80
         },
         "properties": {
@@ -286,7 +286,7 @@
         "label": "Low-latency read projection",
         "description": "Serves the latest acceptable aggregate or feed view with a version and freshness marker while preserving a durable fallback.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 260
         },
         "properties": {
@@ -300,7 +300,7 @@
         "label": "Live update gateway",
         "description": "Maintains subscription membership, coalesces rapid changes, and broadcasts scoped deltas while clients can resync from the read projection.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 80
         },
         "properties": {
@@ -314,7 +314,7 @@
         "label": "Interaction analytics",
         "description": "Consumes privacy-scoped events for engagement, abuse, and product metrics without making analytics part of correctness.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 440
         },
         "properties": {
@@ -328,7 +328,7 @@
         "label": "Realtime reliability operations",
         "description": "Tracks commit latency, hot partitions, consumer lag, fanout backlog, connection health, dropped updates, resync rate, and privacy failures.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

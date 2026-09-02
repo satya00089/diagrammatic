@@ -201,7 +201,7 @@
         "label": "Capacity planning API",
         "description": "Authenticates metric producers and planners, validates scope, and applies quotas.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Resource and demand stream",
         "description": "Carries resource utilization, traffic, business demand, deployment, and failure signals.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Resource and ownership catalog",
         "description": "Stores resource topology, owners, quotas, cost rates, and dependency versions.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 440
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Demand forecast engine",
         "description": "Builds baseline and scenario forecasts with intervals, seasonality, and model version.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -249,7 +249,7 @@
         "label": "Forecast and scenario store",
         "description": "Stores forecast versions, assumptions, confidence, corrections, and what-if outputs.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -261,7 +261,7 @@
         "label": "Headroom and capacity planner",
         "description": "Calculates saturation risk, procurement or scaling options, cost, and dependency impact.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Governed capacity decision service",
         "description": "Routes recommendations through owner approval, policy, execution, and rollback state.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Capacity risk delivery",
         "description": "Sends saturation, forecast, approval, and execution status notifications.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 260
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Capacity planning operations",
         "description": "Tracks forecast freshness, confidence, cost, saturation risk, approval lag, and action outcomes.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

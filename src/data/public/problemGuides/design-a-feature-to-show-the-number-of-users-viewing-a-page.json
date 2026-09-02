@@ -232,7 +232,7 @@
       {
         "id": "room-router",
         "type": "load-balancer",
-        "componentId": "load-balancer",
+        "componentId": "loadbalancer",
         "label": "Room router",
         "description": "Consistent-hashes page keys so all members of a room meet at the same presence shard.",
         "position": {

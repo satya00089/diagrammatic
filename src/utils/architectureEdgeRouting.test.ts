@@ -52,4 +52,13 @@ describe("getDefaultArchitectureHandlePair", () => {
       ]),
     ).toEqual({ sourceHandle: "left", targetHandle: "left" });
   });
+
+  it("points reverse diagonal edges toward a target on the left", () => {
+    expect(
+      getDefaultArchitectureHandlePair(connection("right", "left"), [
+        component("right", 960, 80),
+        component("left", 0, 260),
+      ]),
+    ).toEqual({ sourceHandle: "left", targetHandle: "right" });
+  });
 });

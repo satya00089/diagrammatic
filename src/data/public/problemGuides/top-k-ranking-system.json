@@ -236,7 +236,7 @@
         "label": "Edge gateway",
         "description": "Authenticates producers and readers, applies quotas, and routes requests by scope key.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -250,7 +250,7 @@
         "label": "Score event API",
         "description": "Validates event shape, timestamps, eligibility, and producer permissions before durable append.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 120
         },
         "properties": {
@@ -264,7 +264,7 @@
         "label": "Score event stream",
         "description": "Durably retains partitioned events for aggregation, replay, analytics, and correction workflows.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 120
         },
         "properties": {
@@ -278,7 +278,7 @@
         "label": "Ranking rules",
         "description": "Stores versioned weights, windows, eligibility policies, and deterministic tie-break rules.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": -180
         },
         "properties": {
@@ -292,7 +292,7 @@
         "label": "Windowed aggregators",
         "description": "Deduplicate events, apply score rules, handle late data, and maintain candidate score state by scope and window.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 120
         },
         "properties": {
@@ -306,7 +306,7 @@
         "label": "Candidate score store",
         "description": "Stores bounded active scores and indexes candidates near each scope's ranking boundary.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 120
         },
         "properties": {
@@ -320,7 +320,7 @@
         "label": "Top-K projector",
         "description": "Maintains heaps or ordered sets per scope shard, merges hot-scope shards, and advances ranking versions.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 120
         },
         "properties": {
@@ -334,7 +334,7 @@
         "label": "Ranking snapshots",
         "description": "Persists versioned bounded snapshots for warm recovery, auditing, and cache refill.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 120
         },
         "properties": {
@@ -348,7 +348,7 @@
         "label": "Serving cache",
         "description": "Serves recent snapshots with stale markers, stampede protection, and scope-aware TTLs.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 440
         },
         "properties": {
@@ -362,7 +362,7 @@
         "label": "Ranking API",
         "description": "Returns bounded snapshots and item rank lookups, enforcing K limits and freshness policy.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 280
         },
         "properties": {
@@ -376,7 +376,7 @@
         "label": "Replay and repair jobs",
         "description": "Rebuilds windows from retained events, validates score corrections, and repairs projection drift in a shadow path.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": -220
         },
         "properties": {
@@ -390,7 +390,7 @@
         "label": "Large-query jobs",
         "description": "Runs large K, historical, and export requests asynchronously with quotas and progress tracking.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": -220
         },
         "properties": {
@@ -404,7 +404,7 @@
         "label": "Analytics and experiments",
         "description": "Consumes events and snapshots for trends, offline evaluation, and ranking experiments without affecting serving latency.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": -220
         },
         "properties": {
@@ -418,7 +418,7 @@
         "label": "Ranking observability",
         "description": "Tracks event lag, watermark age, boundary churn, cache hit rate, projection drift, and hot-scope saturation.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": -220
         },
         "properties": {

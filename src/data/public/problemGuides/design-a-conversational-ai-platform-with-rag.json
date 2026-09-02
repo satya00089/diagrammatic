@@ -233,7 +233,7 @@
         "label": "Enterprise RAG platform gateway",
         "description": "Authenticates Enterprise RAG platform requests, enforces tenant isolation, quotas, and idempotency, and routes by resource key.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -247,7 +247,7 @@
         "label": "Enterprise RAG platform service",
         "description": "Owns ingestion, ACL enforcement, retrieval, conversation policy, citations, tools, and answer contracts.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -261,7 +261,7 @@
         "label": "ACL and safety policy",
         "description": "Applies tenant and document ACL filters at retrieval time, redacts sensitive content, detects prompt injection, and enforces answer policy.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 500
         },
         "properties": {
@@ -275,7 +275,7 @@
         "label": "Enterprise RAG platform state",
         "description": "Stores document versions, chunks/embeddings, ACL metadata, conversations, citations, and tool results.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -289,7 +289,7 @@
         "label": "Document/object store",
         "description": "Stores immutable source documents and extracted artifacts by tenant and document version for reprocessing, export, and deletion.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 80
         },
         "properties": {
@@ -303,7 +303,7 @@
         "label": "Enterprise RAG platform event backbone",
         "description": "Publishes document-version, indexing, retrieval, conversation, citation, safety, and feedback events.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 100
         },
         "properties": {
@@ -317,7 +317,7 @@
         "label": "Enterprise RAG platform workers",
         "description": "Chunks/embeds documents, updates lexical/vector indexes, evaluates retrieval, and runs asynchronous enrichment.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 100
         },
         "properties": {
@@ -331,7 +331,7 @@
         "label": "Hybrid search indexes",
         "description": "Maintains versioned lexical and vector indexes with tenant, ACL-version, document-version, and freshness filters.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 500
         },
         "properties": {
@@ -345,7 +345,7 @@
         "label": "Retriever and context builder",
         "description": "Runs hybrid retrieval, reranks candidates, applies freshness and ACL filters, budgets context tokens, and returns evidence with citation IDs.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 500
         },
         "properties": {
@@ -359,7 +359,7 @@
         "label": "Model gateway",
         "description": "Routes requests across approved models, applies token and cost budgets, supports fallback, and streams cancellable generation.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 680
         },
         "properties": {
@@ -373,7 +373,7 @@
         "label": "Enterprise RAG platform projection",
         "description": "Serves conversations, citations, document/index status, retrieval evidence, and usage views.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 260
         },
         "properties": {
@@ -387,7 +387,7 @@
         "label": "Enterprise RAG platform monitoring",
         "description": "Tracks Enterprise RAG platform latency, backlog, freshness, correctness, and saturation.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": -180
         },
         "properties": {
