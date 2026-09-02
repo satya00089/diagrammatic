@@ -41,8 +41,8 @@ const guides = {
       ],
     ],
     problemSlugs: [
-      "url-shortener",
-      "rate-limiter",
+      "url-shortener-like-bit-ly",
+      "design-an-api-rate-limiter",
       "notification-system",
       "distributed-cache",
       "video-streaming-platform",
@@ -85,7 +85,7 @@ const guides = {
       "job-scheduler",
       "pastebin-system-design",
       "google-calendar-system-design",
-      "hotel-booking-system",
+      "design-a-hotel-booking-system",
       "web-crawler",
       "payment-system",
     ],
@@ -122,7 +122,7 @@ const guides = {
       ],
     ],
     problemSlugs: [
-      "rag-conversational-ai",
+      "design-a-conversational-ai-platform-with-rag",
       "semantic-search-engine",
       "recommendation-engine",
       "real-time-recommendation-system",

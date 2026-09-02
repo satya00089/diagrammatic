@@ -139,7 +139,7 @@
     },
     {
       "title": "Publish fulfillment work",
-      "description": "The committed hotel booking system intent emits an event for partner, packing, delivery, or campaign dispatch workers."
+      "description": "The committed reservation emits an event for confirmation delivery, partner inventory synchronization, cancellation handling, and reconciliation workers."
     },
     {
       "title": "Expire, cancel, and reconcile",

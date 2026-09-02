@@ -5,7 +5,7 @@ import type { SystemDesignProblem } from "../../types/systemDesign";
 const problem = (overrides: Partial<SystemDesignProblem> = {}) =>
   ({
     title: "Design a URL shortener",
-    slug: "url-shortener",
+    slug: "url-shortener-like-bit-ly",
     description: "A problem",
     difficulty: "Medium",
     category: "Systems",

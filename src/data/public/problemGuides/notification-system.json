@@ -1,197 +1,243 @@
 {
   "prompt": {
-    "brief": "Design multi-channel notification delivery with preferences, retries, and provider limits so users can send a notification reliably at scale.",
+    "brief": "Design a multi-channel notification system that delivers email, SMS, and push messages reliably with preferences, templates, retries, provider limits, and observable status.",
     "successSignals": [
-      "Define the source of truth for notification intent and delivery ledger and make retries idempotent.",
-      "Use bounded, partitioned state to meet 100M notifications per day across email, SMS, and push and enqueue acknowledgement <=100ms.",
-      "Separate the critical request path from template rendering, provider delivery, retries, and analytics.",
-      "Explain consistency, failure recovery, authorization, observability, and a degraded mode."
+      "Define notification intent, user preferences, templates, delivery attempts, and idempotency as separate domain records.",
+      "Use a durable queue and channel-specific workers to absorb 100M notifications per day without making the API wait for providers.",
+      "Keep provider delivery, retries, dead letters, and analytics off the request acknowledgement path while exposing delivery status.",
+      "Explain opt-out and quiet-hour policy, provider throttling, duplicate suppression, security, and degraded behavior."
     ]
   },
   "requirements": {
     "functional": [
-      "Support the core workflow to send a notification.",
-      "Expose status, results, and freshness appropriate to multi-channel notification delivery with preferences, retries, and provider limits.",
-      "Support authorization, validation, updates, deletion, and recovery semantics."
+      "Accept a notification request for one or more users, channels, templates, and data variables.",
+      "Resolve user preferences, consent, quiet hours, locale, and channel eligibility before delivery.",
+      "Render versioned templates and send through email, SMS, and push providers.",
+      "Retry transient provider failures with backoff, enforce provider rate limits, and route exhausted work to a dead-letter queue.",
+      "Expose request and per-channel delivery status, provider message identifiers, and timestamps.",
+      "Support idempotent submission, cancellation before send, scheduled delivery, and authenticated administration."
     ],
     "nonFunctional": [
-      "Meet enqueue acknowledgement <=100ms under normal load.",
-      "Scale to 100M notifications per day across email, SMS, and push without a single hot key or unbounded synchronous work.",
-      "Do not lose committed state; make retries and duplicate events safe.",
-      "Degrade safely when downstream workers, caches, or external dependencies fail."
+      "Acknowledge an accepted notification request within 100ms under normal load.",
+      "Process 100M notifications per day with burst capacity and independent channel scaling.",
+      "Never send after a durable opt-out or violate channel-specific consent and quiet-hour policy.",
+      "Make provider timeouts and callbacks safe to retry without creating duplicate sends or status regressions.",
+      "Keep a provider outage isolated to its channel and expose pending or degraded status instead of silently dropping work."
     ],
     "scaleAssumptions": [
-      "100M notifications per day across email, SMS, and push",
-      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
-      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+      "Process 100M notifications per day, roughly 1.2K per second on average, with a planning peak of 10K per second.",
+      "Assume email, SMS, and push have different payload sizes, provider quotas, latency, and retry policies.",
+      "Partition requests and delivery attempts by tenant and recipient, while isolating a broadcast or celebrity recipient from ordinary traffic.",
+      "Retain delivery attempts and consent evidence according to policy; keep rendered payloads and provider responses access-controlled."
     ],
     "metrics": [
       {
-        "label": "Peak scale",
-        "value": "100M notifications per day across email, SMS,",
-        "description": "Capacity assumption that drives partitioning and backpressure."
+        "label": "Daily volume",
+        "value": "100M notifications/day",
+        "description": "Capacity assumption for queue partitions, worker pools, provider quotas, and storage retention."
       },
       {
-        "label": "Latency target",
-        "value": "enqueue acknowledgement <=100ms",
-        "description": "User-facing budget for the primary request or read path."
+        "label": "Peak intake",
+        "value": "10K requests/second",
+        "description": "Burst planning target that the API and durable queue must absorb without synchronous provider calls."
       },
       {
-        "label": "Durable boundary",
-        "value": "Committed before async",
-        "description": "The source of truth is notification intent and delivery ledger."
+        "label": "API acknowledgement",
+        "value": "p99 < 100ms",
+        "description": "Budget to validate, persist, and enqueue the request; provider delivery is asynchronous."
       },
       {
-        "label": "Async boundary",
-        "value": "At-least-once workers",
-        "description": "Keep template rendering, provider delivery, retries, and analytics off the synchronous path."
+        "label": "Delivery freshness",
+        "value": "p95 < 60s for healthy providers",
+        "description": "Example end-to-end target from accepted request to provider acceptance, measured per channel."
+      },
+      {
+        "label": "Duplicate rate",
+        "value": "< 0.01% retried sends",
+        "description": "Operational target for idempotency and provider callback reconciliation, not an end-to-end exactly-once promise."
       }
     ]
   },
   "entities": [
     {
-      "name": "Interaction",
+      "name": "NotificationRequest",
       "fields": [
-        "interactionId",
-        "actorId",
-        "objectId",
-        "type",
-        "version",
-        "occurredAt"
+        "requestId (PK)",
+        "tenantId",
+        "recipientId",
+        "templateId",
+        "channels",
+        "variables",
+        "idempotencyKey",
+        "status",
+        "createdAt"
       ],
-      "notes": "Canonical notification system interaction with an idempotency key and ordering version."
+      "notes": "The durable intent to notify a recipient. It records the caller's request and policy version without storing an unbounded rendered payload."
     },
     {
-      "name": "ConnectionSession",
+      "name": "UserPreference",
       "fields": [
-        "sessionId",
-        "userId",
-        "deviceId",
-        "roomKey",
-        "lastHeartbeat",
+        "recipientId (PK)",
+        "channel",
+        "category",
+        "optIn",
+        "quietHours",
+        "locale",
+        "updatedAt",
+        "version"
+      ],
+      "notes": "The current consent and delivery policy used before enqueueing or sending a channel attempt."
+    },
+    {
+      "name": "Template",
+      "fields": [
+        "templateId (PK)",
+        "version",
+        "channel",
+        "locale",
+        "subject",
+        "body",
+        "variableSchema",
         "status"
       ],
-      "notes": "Ephemeral but observable notification system connection registration used for routing and presence."
+      "notes": "An immutable, reviewed channel-specific template version. Rendering uses the version captured by the notification request."
     },
     {
-      "name": "FanoutCursor",
-      "fields": ["streamKey", "shard", "offset", "consumerGroup", "updatedAt"],
-      "notes": "Durable progress marker for notification system fan-out and replay."
-    },
-    {
-      "name": "DeliveryReceipt",
+      "name": "DeliveryAttempt",
       "fields": [
-        "interactionId",
+        "attemptId (PK)",
+        "requestId",
         "recipientId",
         "channel",
-        "attempt",
+        "attemptNumber",
         "status",
-        "deliveredAt"
+        "nextRetryAt",
+        "providerMessageId",
+        "updatedAt"
       ],
-      "notes": "Deduplicated notification system delivery state for reconnects, retries, or acknowledgements."
+      "notes": "The idempotent state machine for one channel delivery, including retry timing, provider outcome, and a monotonic status transition."
+    },
+    {
+      "name": "ProviderMessage",
+      "fields": [
+        "providerMessageId (PK)",
+        "providerId",
+        "requestId",
+        "channel",
+        "acceptedAt",
+        "status",
+        "callbackAt"
+      ],
+      "notes": "External provider evidence used to reconcile timeouts, callbacks, and delivery status without trusting a single response forever."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/interactions",
-      "contract": "{ objectId, type, idempotencyKey } -> { interactionId, version }",
-      "notes": "Commit an authorized notification system interaction idempotently."
+      "path": "/v1/notifications",
+      "contract": "{ recipientId, templateId, channels?, variables, idempotencyKey, scheduledAt? } -> { requestId, status }",
+      "notes": "Validate the request, persist notification intent, evaluate policy, and enqueue work. A repeated idempotency key returns the original result or a payload-conflict error."
     },
     {
       "method": "GET",
-      "path": "/v1/streams/{streamKey}?cursor=",
-      "contract": "{ events[], nextCursor, streamVersion, freshness }",
-      "notes": "Read replayable notification system events from a stable cursor."
+      "path": "/v1/notifications/{requestId}",
+      "contract": "{ requestId, status, attempts[], acceptedAt?, completedAt?, freshness }",
+      "notes": "Return aggregate and per-channel status with a freshness watermark; pending delivery is a valid state while workers or providers are unavailable."
     },
     {
-      "method": "GET",
-      "path": "/v1/connections",
-      "contract": "{ sessionId, resumeToken, capabilities } -> { websocketUrl, expiresAt }",
-      "notes": "Open or resume a notification system connection with an explicit replay position."
+      "method": "PUT",
+      "path": "/v1/recipients/{recipientId}/preferences",
+      "contract": "{ preferences[], expectedVersion } -> { version, effectiveAt }",
+      "notes": "Update consent and quiet-hour policy with optimistic concurrency, and ensure queued work rechecks the effective policy before sending."
     },
     {
       "method": "POST",
-      "path": "/v1/deliveries/ack",
-      "contract": "{ interactionId, channel, receiptId } -> { accepted }",
-      "notes": "Record a deduplicated notification system delivery acknowledgement without changing the source event."
+      "path": "/v1/notifications/{requestId}/cancel",
+      "contract": "{ expectedVersion } -> { requestId, status: \"cancelled\" }",
+      "notes": "Cancel pending attempts conditionally; a worker that already handed a message to a provider must report the external outcome rather than claiming recall."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/providers/{providerId}/callbacks",
+      "contract": "{ providerMessageId, eventId, status, occurredAt } -> { accepted }",
+      "notes": "Authenticate and deduplicate provider callbacks, then apply only valid monotonic status transitions to the delivery attempt."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept and commit the interaction",
-      "description": "The notification system gateway authenticates the actor, validates room or object membership, applies rate limits, and conditionally commits the interaction."
+      "title": "Accept and persist notification intent",
+      "description": "The API authenticates the tenant, validates template variables and channels, writes NotificationRequest with its idempotency key, and returns an accepted request before contacting a provider."
     },
     {
-      "title": "Publish an ordered event",
-      "description": "An outbox emits the committed notification system transition with an event ID, partition key, sequence, and replay retention."
+      "title": "Apply consent and scheduling policy",
+      "description": "A policy step reads the recipient's preferences, quiet hours, locale, suppression lists, and scheduledAt value, then creates only eligible channel work."
     },
     {
-      "title": "Fan out by partition",
-      "description": "Consumers route notification system events to connected recipients, durable inboxes, or notification channels without making the origin write wait for every recipient."
+      "title": "Render and enqueue channel work",
+      "description": "Workers pin a reviewed Template version, render a bounded payload, create a DeliveryAttempt, and enqueue it to a channel-specific queue with a deduplication key."
     },
     {
-      "title": "Resume and reconcile connections",
-      "description": "Clients reconnect with a cursor; the notification system service replays missed events, deduplicates delivery, and exposes stale or degraded state."
+      "title": "Send with provider-aware retries",
+      "description": "Email, SMS, and push workers enforce per-provider quotas, call an adapter, classify transient versus permanent errors, and back off or dead-letter without blocking other channels."
     },
     {
-      "title": "Measure latency and recover",
-      "description": "Operations tracks notification system publish-to-deliver latency, hot partitions, reconnect storms, dropped events, and consumer lag for replay or repair."
+      "title": "Reconcile status and measure delivery",
+      "description": "Provider callbacks and timeout reconciliation update attempts monotonically; dashboards aggregate delivery latency, failure reason, consent decisions, queue lag, and freshness asynchronously."
     }
   ],
   "architecture": {
-    "title": "Notification System realtime architecture",
-    "summary": "Design multi-channel notification delivery with preferences, retries, and provider limits so users can send a notification reliably at scale. The design commits the canonical interaction before publishing a replayable event, separates hot-key fanout and aggregate projections from the write path, and treats live delivery as recoverable through versioned resynchronization.",
+    "title": "Notification System reference architecture",
+    "summary": "The API commits notification intent quickly, while policy evaluation, template rendering, provider delivery, retries, and analytics run behind durable queues. Channel workers own provider quotas and idempotent attempt state, making a provider outage visible and isolated instead of coupling every notification to one synchronous dependency.",
     "layers": [
       {
         "id": "experience",
-        "label": "Interactive client and edge plane",
-        "description": "Commands, reads, and live subscriptions share authentication and quotas but have separate latency budgets.",
-        "componentIds": ["client", "edge", "write-service"]
+        "label": "Client and request edge",
+        "description": "Applications submit authenticated notification intents and inspect status through a bounded API.",
+        "componentIds": ["client", "gateway", "notification-service"]
       },
       {
         "id": "truth",
-        "label": "Canonical interaction plane",
-        "description": "Versioned durable state and committed events provide the correctness boundary.",
-        "componentIds": ["primary-store", "events"]
+        "label": "Notification truth and policy",
+        "description": "Intent, preference, template, and delivery state form the correctness boundary.",
+        "componentIds": ["notification-store", "preference-store", "template-store"]
       },
       {
         "id": "delivery",
-        "label": "Fanout and live serving plane",
-        "description": "Workers build projections and scoped live deltas while clients can recover missed updates.",
-        "componentIds": ["fanout", "read-cache", "realtime"]
+        "label": "Asynchronous delivery plane",
+        "description": "Durable work and channel workers absorb bursts and enforce provider-specific behavior.",
+        "componentIds": ["notification-queue", "channel-workers", "provider-adapters"]
       },
       {
-        "id": "insight",
-        "label": "Analytics plane",
-        "description": "Engagement and abuse analytics are asynchronous and isolated from feature correctness.",
-        "componentIds": ["analytics"]
+        "id": "providers",
+        "label": "External channel providers",
+        "description": "Email, SMS, and push providers accept messages and later report delivery evidence.",
+        "componentIds": ["providers", "notification-store"]
       },
       {
         "id": "operations",
-        "label": "Realtime safety operations",
-        "description": "Backlog, hot keys, connection saturation, and update loss are visible and actionable.",
+        "label": "Delivery operations",
+        "description": "Per-channel SLOs, consent decisions, queue lag, retries, and duplicate signals remain observable.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "interaction",
-        "label": "Interaction commit path",
-        "description": "Client -> edge -> write service -> canonical store -> committed event.",
-        "componentIds": [
-          "client",
-          "edge",
-          "write-service",
-          "primary-store",
-          "events"
-        ]
+        "id": "accept-path",
+        "label": "Request acknowledgement path",
+        "description": "Client -> gateway -> notification service -> notification store -> durable queue.",
+        "componentIds": ["client", "gateway", "notification-service", "notification-store", "notification-queue"]
       },
       {
-        "id": "live",
-        "label": "Live update and recovery path",
-        "description": "Event -> fanout -> read projection and live gateway -> client, with cursor-based resync.",
-        "componentIds": ["events", "fanout", "read-cache", "realtime", "client"]
+        "id": "delivery-path",
+        "label": "Channel delivery path",
+        "description": "Queue -> channel workers -> provider adapters -> external providers -> delivery state.",
+        "componentIds": ["notification-queue", "channel-workers", "provider-adapters", "providers", "notification-store"]
+      },
+      {
+        "id": "policy-path",
+        "label": "Policy and template path",
+        "description": "Notification service -> preference and template stores -> channel work, with policy rechecked before send.",
+        "componentIds": ["notification-service", "preference-store", "template-store", "channel-workers"]
       }
     ],
     "components": [
@@ -199,334 +245,340 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Interactive clients",
-        "description": "Users connect from web, mobile, or device clients and receive durable state plus live updates for the feature.",
-        "position": {
-          "x": 0,
-          "y": 260
-        },
-        "properties": {
-          "protocol": "HTTPS for commands; WebSocket/SSE for updates"
-        }
+        "label": "Product services",
+        "description": "Applications submit events or direct notification requests and query delivery status.",
+        "position": { "x": 0, "y": 260 },
+        "properties": { "traffic": "Transactional, scheduled, and batch notification intents" }
       },
       {
-        "id": "edge",
+        "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Realtime edge gateway",
-        "description": "Terminates connections, authenticates sessions, applies quotas, and routes commands and subscriptions to the correct partition.",
-        "position": {
-          "x": 480,
-          "y": 260
-        },
-        "properties": {
-          "protection": "Session auth, connection limits, and backpressure"
-        }
+        "label": "Notification API gateway",
+        "description": "Authenticates callers, validates payloads, applies tenant quotas, and protects the enqueue path.",
+        "position": { "x": 480, "y": 260 },
+        "properties": { "protection": "Tenant auth, payload limits, idempotency, and admission control" }
       },
       {
-        "id": "write-service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Interaction and write service",
-        "description": "Validates feature-specific commands, applies authorization and idempotency, and commits the canonical interaction state.",
-        "position": {
-          "x": 960,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Conditional writes and monotonic entity versions"
-        }
+        "id": "notification-service",
+        "type": "notification-service",
+        "componentId": "notification-service",
+        "label": "Notification orchestration service",
+        "description": "Commits intent, resolves eligible channels, manages cancellation, and exposes aggregate status.",
+        "position": { "x": 960, "y": 260 },
+        "properties": { "criticalPath": "Persist intent and enqueue bounded work; no provider call" }
       },
       {
-        "id": "primary-store",
+        "id": "notification-store",
         "type": "database",
         "componentId": "database",
-        "label": "Canonical interaction store",
-        "description": "Stores users, objects, memberships, interaction state, and tombstones using the partition key needed for the hot path.",
-        "position": {
-          "x": 1440,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Tenant/object partitioning with versioned state"
-        }
+        "label": "Notification and delivery store",
+        "description": "Stores NotificationRequest, DeliveryAttempt, ProviderMessage evidence, idempotency records, and status transitions.",
+        "position": { "x": 1440, "y": 260 },
+        "properties": { "consistency": "Conditional writes and monotonic status transitions per request and channel" }
       },
       {
-        "id": "events",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Interaction event backbone",
-        "description": "Publishes committed interaction, membership, deletion, and moderation events with ordering keys and replay offsets.",
-        "position": {
-          "x": 1920,
-          "y": 80
-        },
-        "properties": {
-          "delivery": "At least once with event IDs and deduplication"
-        }
+        "id": "preference-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Preference and consent store",
+        "description": "Stores channel opt-in, category policy, quiet hours, locale, suppression, and policy versions.",
+        "position": { "x": 960, "y": 560 },
+        "properties": { "correctness": "A send worker rechecks effective policy before provider handoff" }
       },
       {
-        "id": "fanout",
+        "id": "template-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Versioned template store",
+        "description": "Stores reviewed channel and locale templates with bounded variable schemas and immutable versions.",
+        "position": { "x": 1440, "y": 560 },
+        "properties": { "safety": "Validation, review, version pinning, and output-size limits" }
+      },
+      {
+        "id": "notification-queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Durable notification queues",
+        "description": "Buffers accepted work and separates email, SMS, push, retry, scheduled, and dead-letter capacity.",
+        "position": { "x": 1920, "y": 260 },
+        "properties": { "delivery": "At least once with request/channel deduplication and replay" }
+      },
+      {
+        "id": "channel-workers",
         "type": "microservice",
         "componentId": "processing-worker",
-        "label": "Fanout and aggregation workers",
-        "description": "Updates counters, feeds, membership projections, and notification intents asynchronously with hot-key isolation and coalescing.",
-        "position": {
-          "x": 2400,
-          "y": 80
-        },
-        "properties": {
-          "scaling": "Partitioned workers with hot-object isolation"
-        }
+        "label": "Channel delivery workers",
+        "description": "Render templates, recheck policy, enforce quotas, call adapters, and schedule bounded retries per channel.",
+        "position": { "x": 2400, "y": 260 },
+        "properties": { "isolation": "Independent pools and rate limits for email, SMS, and push" }
       },
       {
-        "id": "read-cache",
-        "type": "cache",
-        "componentId": "cache",
-        "label": "Low-latency read projection",
-        "description": "Serves the latest acceptable aggregate or feed view with a version and freshness marker while preserving a durable fallback.",
-        "position": {
-          "x": 2880,
-          "y": 260
-        },
-        "properties": {
-          "latency": "Cache-aside reads with version/freshness metadata"
-        }
-      },
-      {
-        "id": "realtime",
+        "id": "provider-adapters",
         "type": "microservice",
         "componentId": "backend-server",
-        "label": "Live update gateway",
-        "description": "Maintains subscription membership, coalesces rapid changes, and broadcasts scoped deltas while clients can resync from the read projection.",
-        "position": {
-          "x": 2880,
-          "y": 80
-        },
-        "properties": {
-          "delivery": "Reconnect, cursor, coalescing, and resync support"
-        }
+        "label": "Provider adapter layer",
+        "description": "Normalizes provider APIs, error classes, idempotency capabilities, quotas, and callback verification.",
+        "position": { "x": 2880, "y": 260 },
+        "properties": { "failover": "Provider-specific circuit breakers and controlled failover" }
       },
       {
-        "id": "analytics",
-        "type": "analytics",
-        "componentId": "analytics",
-        "label": "Interaction analytics",
-        "description": "Consumes privacy-scoped events for engagement, abuse, and product metrics without making analytics part of correctness.",
-        "position": {
-          "x": 2400,
-          "y": 440
-        },
-        "properties": {
-          "processing": "Asynchronous aggregates with retention controls"
-        }
+        "id": "providers",
+        "type": "api-call",
+        "componentId": "email-service",
+        "label": "Email, SMS, and push providers",
+        "description": "External channel providers accept messages and emit provider message IDs and delivery callbacks.",
+        "position": { "x": 3360, "y": 260 },
+        "properties": { "behavior": "Different quotas, latency, error semantics, and callback guarantees" }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Realtime reliability operations",
-        "description": "Tracks commit latency, hot partitions, consumer lag, fanout backlog, connection health, dropped updates, resync rate, and privacy failures.",
-        "position": {
-          "x": 1920,
-          "y": -180
-        },
-        "properties": {
-          "alerts": "Lag, hot keys, stale projections, and connection saturation"
-        }
+        "label": "Notification reliability monitoring",
+        "description": "Tracks intake, queue lag, provider errors, delivery latency, consent suppressions, retries, and duplicate signals.",
+        "position": { "x": 2880, "y": 620 },
+        "properties": { "signals": "Per-channel SLOs, freshness, cost, DLQ depth, and provider saturation" }
       }
     ],
     "connections": [
       {
-        "id": "client-edge",
+        "id": "client-gateway",
         "source": "client",
-        "target": "edge",
+        "target": "gateway",
         "type": "http",
-        "label": "Command or live subscription",
-        "description": "Clients send idempotent interaction commands and open authenticated subscriptions with a resume cursor."
+        "label": "Submit notification",
+        "description": "Product services submit an authenticated notification intent."
       },
       {
-        "id": "edge-write",
-        "source": "edge",
-        "target": "write-service",
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "notification-service",
         "type": "api-call",
-        "label": "Validated interaction",
-        "description": "The edge validates identity, object scope, payload size, and rate limits before routing by object or conversation key."
+        "label": "Validate and accept",
+        "description": "The gateway passes a bounded, idempotent request to the orchestration service."
       },
       {
-        "id": "write-store",
-        "source": "write-service",
-        "target": "primary-store",
+        "id": "service-store",
+        "source": "notification-service",
+        "target": "notification-store",
         "type": "database-connection",
-        "label": "Canonical state commit",
-        "description": "The write service conditionally commits the interaction and version before returning success; duplicate retries return the existing result."
+        "label": "Commit intent and status",
+        "description": "Intent, idempotency, and aggregate status are committed before asynchronous delivery."
       },
       {
-        "id": "store-events",
-        "source": "primary-store",
-        "target": "events",
+        "id": "service-preferences",
+        "source": "notification-service",
+        "target": "preference-store",
+        "type": "database-connection",
+        "label": "Resolve consent",
+        "description": "The service resolves channel eligibility, quiet hours, and suppression policy."
+      },
+      {
+        "id": "service-templates",
+        "source": "notification-service",
+        "target": "template-store",
+        "type": "database-connection",
+        "label": "Pin template version",
+        "description": "A reviewed template version and variable schema are selected for eligible channel work."
+      },
+      {
+        "id": "service-queue",
+        "source": "notification-service",
+        "target": "notification-queue",
+        "type": "message-queue",
+        "label": "Enqueue channel work",
+        "description": "The accepted request becomes durable, replayable channel work."
+      },
+      {
+        "id": "queue-workers",
+        "source": "notification-queue",
+        "target": "channel-workers",
+        "type": "message-queue",
+        "label": "Consume by channel",
+        "description": "Workers consume email, SMS, push, retry, or dead-letter partitions independently."
+      },
+      {
+        "id": "workers-adapters",
+        "source": "channel-workers",
+        "target": "provider-adapters",
+        "type": "api-call",
+        "label": "Send with retry policy",
+        "description": "Workers call an adapter after a final policy check and classify the provider outcome."
+      },
+      {
+        "id": "adapters-providers",
+        "source": "provider-adapters",
+        "target": "providers",
+        "type": "external-api",
+        "label": "Email / SMS / push",
+        "description": "Adapters translate the normalized attempt into a channel-provider request."
+      },
+      {
+        "id": "providers-store",
+        "source": "providers",
+        "target": "notification-store",
+        "type": "http",
+        "label": "Callback evidence",
+        "description": "Provider callbacks or reconciliation evidence update attempts monotonically."
+      },
+      {
+        "id": "workers-store",
+        "source": "channel-workers",
+        "target": "notification-store",
+        "type": "database-connection",
+        "label": "Attempt status",
+        "description": "Workers record accepted, retryable, suppressed, failed, and pending states with conditional writes."
+      },
+      {
+        "id": "workers-monitoring",
+        "source": "channel-workers",
+        "target": "monitoring",
         "type": "event-stream",
-        "label": "Committed interaction event",
-        "description": "An outbox publishes the durable transition with an event ID, entity version, and privacy classification."
-      },
-      {
-        "id": "events-fanout",
-        "source": "events",
-        "target": "fanout",
-        "type": "message-queue",
-        "label": "Projection and fanout work",
-        "description": "Workers consume at least once, deduplicate events, isolate hot keys, and coalesce rapid updates."
-      },
-      {
-        "id": "fanout-read-cache",
-        "source": "fanout",
-        "target": "read-cache",
-        "type": "data-flow",
-        "label": "Aggregate or feed projection",
-        "description": "Workers update the read projection with a version and freshness watermark; rebuilds replay the event log."
-      },
-      {
-        "id": "fanout-realtime",
-        "source": "fanout",
-        "target": "realtime",
-        "type": "message-queue",
-        "label": "Live delta",
-        "description": "The live gateway receives scoped deltas, coalesces bursts, and drops only updates that clients can recover through resync."
-      },
-      {
-        "id": "read-cache-edge",
-        "source": "read-cache",
-        "target": "edge",
-        "type": "database-connection",
-        "label": "Read projection",
-        "description": "The edge serves a versioned projection and exposes a resync path when it is stale or unavailable.",
-        "properties": {
-          "sourceHandle": "bottom",
-          "targetHandle": "bottom"
-        }
-      },
-      {
-        "id": "realtime-client",
-        "source": "realtime",
-        "target": "client",
-        "type": "websocket",
-        "label": "Live update",
-        "description": "Connected clients receive scoped updates and reconnect with a cursor when a connection or delivery gap occurs.",
-        "properties": {
-          "sourceHandle": "top-left",
-          "targetHandle": "top-right"
-        }
-      },
-      {
-        "id": "events-analytics",
-        "source": "events",
-        "target": "analytics",
-        "type": "data-flow",
-        "label": "Privacy-scoped analytics",
-        "description": "Analytics consumes a separate projection of interactions and cannot delay the canonical commit or live feature path."
-      },
-      {
-        "id": "events-monitoring",
-        "source": "events",
-        "target": "monitoring",
-        "type": "data-flow",
-        "label": "Lag and fanout telemetry",
-        "description": "Operations measures consumer lag, event gaps, projection freshness, hot partitions, and replay parity."
-      },
-      {
-        "id": "realtime-monitoring",
-        "source": "realtime",
-        "target": "monitoring",
-        "type": "data-flow",
-        "label": "Connection and delivery health",
-        "description": "The live gateway reports connection counts, send latency, coalescing, drops, reconnects, and resync rates.",
-        "properties": {
-          "sourceHandle": "left-top",
-          "targetHandle": "right-bottom"
-        }
+        "label": "Delivery telemetry",
+        "description": "Workers emit per-channel latency, queue, retry, consent, and provider health signals."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Ordering, idempotency, and hot keys",
+      "title": "Intent, attempt, and idempotency",
       "points": [
-        "Choose a notification system partition key that preserves required order while distributing high-volume rooms, users, or objects.",
-        "Use event IDs, inboxes, consumer offsets, and conditional state transitions for at-least-once delivery.",
-        "Split or isolate hot partitions without changing the client-visible sequence contract."
+        "NotificationRequest represents what the product asked for; DeliveryAttempt represents one channel state machine. Keeping them separate prevents a provider retry from mutating the original intent.",
+        "Use tenant plus idempotencyKey and a request hash for intake, then tenant plus requestId plus channel for delivery deduplication.",
+        "A timeout after provider handoff is unknown, not automatically failed. Reconcile by provider message ID or a provider-specific idempotency key before retrying."
       ]
     },
     {
-      "title": "Reconnect and replay semantics",
+      "title": "Preferences, consent, and quiet hours",
       "points": [
-        "Issue resumable notification system cursors with an expiry and a clear snapshot-plus-delta fallback.",
-        "Bound replay windows and rebuild from durable state when a cursor is too old.",
-        "Expose version and freshness so a client can distinguish current, catching up, and degraded state."
+        "Store category and channel policy with versions and effective times; a request accepted before an opt-out still needs a send-time policy check.",
+        "Separate mandatory transactional notices from marketing or engagement notices, and make that classification explicit in the request.",
+        "A quiet-hour decision can reschedule work, suppress it, or choose another eligible channel, but the outcome should be visible in status and audit data."
       ]
     },
     {
-      "title": "Backpressure and presence",
+      "title": "Provider quotas and channel isolation",
       "points": [
-        "Keep connection heartbeats and ephemeral presence separate from durable notification system interactions.",
-        "Coalesce safe updates, shed low-value work, and protect critical events during reconnect storms.",
-        "Measure end-to-end delivery, not only broker publish latency."
+        "Email, SMS, and push have different throughput, payload, cost, and callback semantics; use separate queues and worker pools.",
+        "Token buckets or leaky buckets at provider and tenant scope prevent a retry storm from exhausting a provider quota.",
+        "Circuit breakers and controlled provider failover should preserve consent and idempotency semantics rather than blindly duplicating a send."
+      ]
+    },
+    {
+      "title": "Retries, dead letters, and unknown outcomes",
+      "points": [
+        "Retry timeouts and rate limits with exponential backoff and jitter; do not retry invalid addresses, revoked tokens, or policy suppressions forever.",
+        "Persist attempt number, nextRetryAt, error class, and provider evidence so workers can resume after a crash.",
+        "Dead-letter exhausted or malformed work with an operator replay path that rechecks current consent and template policy."
+      ]
+    },
+    {
+      "title": "Template rendering and versioning",
+      "points": [
+        "Validate variables and output size before enqueueing, pin a template version, and keep rendering bounded and deterministic.",
+        "Do not let template edits change the meaning of an in-flight request silently; store the version used by each attempt.",
+        "Sanitize user-provided variables, protect secrets, and restrict administrative template changes with review and audit."
+      ]
+    },
+    {
+      "title": "Delivery status and reconciliation",
+      "points": [
+        "Expose accepted, queued, suppressed, sending, provider-accepted, delivered, failed, and unknown states with per-channel detail.",
+        "Callbacks are at least once and can arrive out of order; deduplicate event IDs and reject status regressions using conditional transitions.",
+        "Reconciliation jobs query provider evidence for stale unknown attempts and publish a freshness watermark for dashboards."
+      ]
+    },
+    {
+      "title": "Burst protection and fairness",
+      "points": [
+        "Partition queues by tenant and recipient class, enforce batch bounds, and reserve worker capacity for transactional messages.",
+        "A single broadcast should not monopolize all channel workers or provider quota; use weighted fairness and separate bulk capacity.",
+        "Backpressure should stop or defer intake before queue retention and provider limits are exceeded, with an explicit response contract."
+      ]
+    },
+    {
+      "title": "Privacy and abuse controls",
+      "points": [
+        "Encrypt recipient addresses, tokens, and rendered content at rest and restrict access to operational roles that need it.",
+        "Rate-limit senders, detect spam and bounce abuse, and maintain suppression lists without exposing whether a recipient exists.",
+        "Retain consent evidence and delivery metadata only as long as policy requires, and avoid logging full message bodies by default."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Direct fan-out versus pull-based reads",
-      "recommendation": "Use push for latency-sensitive notification system deltas and pull or replay for reconnect, history, and recovery.",
-      "caution": "A push-only design loses state when clients disconnect and a pull-only design wastes latency and bandwidth."
+      "title": "Synchronous provider calls versus durable enqueue",
+      "recommendation": "Acknowledge after intent and queue commit; keep provider calls asynchronous so provider latency and outages do not break the product request path.",
+      "caution": "The user sees an accepted or pending state rather than immediate delivery, so status freshness and operational alerts become part of the product."
     },
     {
-      "title": "Per-recipient queues versus shared streams",
-      "recommendation": "Use shared partitioned streams with per-recipient cursors where fan-out is large, and isolate exceptional high-fanout objects.",
-      "caution": "A queue per recipient becomes expensive and hard to inspect at large scale."
+      "title": "One queue versus channel-specific queues",
+      "recommendation": "Use a shared intake boundary with channel-specific queues and workers so quotas, retries, and outages remain isolated.",
+      "caution": "More queues require more operations and routing logic; a single queue makes one provider or campaign more likely to create head-of-line blocking."
     },
     {
-      "title": "Strong ordering versus availability",
-      "recommendation": "Guarantee ordering only within the scope the product needs, such as a room, object, or conversation.",
-      "caution": "Global ordering introduces a bottleneck and still does not solve duplicate delivery or reconnect recovery."
+      "title": "Provider failover versus duplicate-send risk",
+      "recommendation": "Fail over only when provider evidence and idempotency semantics are understood; otherwise mark the attempt unknown and reconcile it.",
+      "caution": "Immediate failover after a timeout can send two messages because the first provider may have accepted the request."
+    },
+    {
+      "title": "Immediate suppression versus scheduled delivery",
+      "recommendation": "Recheck consent and quiet hours immediately before provider handoff and reschedule only when the policy permits it.",
+      "caution": "Checking only at intake can violate a later opt-out; checking only at send can make queue work more expensive but is safer."
+    },
+    {
+      "title": "Exact counts versus rebuildable analytics",
+      "recommendation": "Use delivery state as the operational record and derive dashboards asynchronously with a freshness watermark.",
+      "caution": "Aggregates can lag or be corrected, so they should not be presented as stronger evidence than the per-attempt state."
     }
   ],
   "commonMistakes": [
-    "Making every notification system recipient part of the synchronous write transaction.",
-    "Assuming a websocket send means the event was durably delivered.",
-    "Using a global sequence or hot celebrity key without partition isolation.",
-    "Failing to provide cursor replay and forcing clients to reload the entire state after reconnect.",
-    "Measuring only connection count while missing delivery lag, dropped events, and reconnect storms."
+    "Treating notification acceptance as delivery success or calling a provider before the intent is durable.",
+    "Using one generic recipient or interaction entity instead of modeling consent, template version, and per-channel attempts.",
+    "Retrying every provider error indefinitely without classifying permanent failures, rate limits, unknown outcomes, or dead letters.",
+    "Checking preferences only once and allowing queued work to ignore a later opt-out or quiet-hour change.",
+    "Sharing worker pools and provider quotas across transactional and bulk campaigns without fairness or isolation.",
+    "Logging full message content or sensitive recipient data in every attempt and callback for convenience."
   ],
   "followUps": [
     {
-      "question": "How do you recover a disconnected notification system client?",
-      "answer": "Persist a bounded event stream, issue a cursor, replay missed deltas, and fall back to a versioned snapshot when the cursor has expired."
+      "question": "What if the provider times out after accepting the message?",
+      "answer": "Mark the attempt unknown, retain the provider request identity, query or await callback evidence, and retry only when the provider's idempotency or reconciliation contract makes that safe."
     },
     {
-      "question": "How do you handle a hot notification system object?",
-      "answer": "Separate the object’s authoritative commit from fan-out, shard or coalesce recipients, and report lag while preserving event identity."
+      "question": "How does an opt-out affect queued work?",
+      "answer": "Version preferences, recheck them before provider handoff, suppress or reschedule the attempt according to notification category, and record the policy decision for audit."
     },
     {
-      "question": "Can delivery be exactly once?",
-      "answer": "The network cannot guarantee it end to end; provide at-least-once delivery with idempotent event IDs, client deduplication, and replayable cursors."
+      "question": "How do you isolate an SMS provider outage?",
+      "answer": "Use channel-specific queues and worker pools, trip the SMS adapter circuit breaker, preserve pending status, and keep email and push capacity independent while reconciliation proceeds."
+    },
+    {
+      "question": "Can the system guarantee exactly-once delivery?",
+      "answer": "Not across arbitrary networks and providers. Provide at-least-once processing, idempotent intake and attempts where supported, deduplicated callbacks, and explicit unknown status instead of claiming an impossible guarantee."
     }
   ],
   "rubric": [
     {
-      "criterion": "Requirements",
-      "description": "The answer addresses the notification system workflow, scale, latency, durability, authorization, and failure contract."
+      "criterion": "Requirements and scale",
+      "description": "The answer states daily and peak volume, acknowledgement latency, per-channel differences, consent requirements, and delivery freshness targets."
     },
     {
-      "criterion": "Correctness",
-      "description": "The answer identifies the authoritative notification system state, versioning or deduplication boundary, and how derived views converge."
+      "criterion": "Domain model",
+      "description": "The answer distinguishes notification intent, preferences, versioned templates, delivery attempts, provider evidence, and idempotency."
     },
     {
-      "criterion": "Scale",
-      "description": "The answer partitions notification system traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
+      "criterion": "Asynchronous delivery",
+      "description": "The answer commits intent before provider work, uses durable channel queues, isolates worker pools, and keeps retries and analytics off the request path."
     },
     {
-      "criterion": "Operations",
-      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the notification system user experience."
+      "criterion": "Reliability and correctness",
+      "description": "The answer handles provider limits, unknown outcomes, callbacks, monotonic status, opt-outs, quiet hours, dead letters, and reconciliation."
+    },
+    {
+      "criterion": "Security and trade-offs",
+      "description": "The answer covers privacy, abuse controls, template safety, fairness, failover risk, and the trade-offs behind its queue and provider choices."
     }
   ]
 }

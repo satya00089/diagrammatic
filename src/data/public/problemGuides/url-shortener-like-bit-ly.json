@@ -1,197 +1,214 @@
 {
   "prompt": {
-    "brief": "Design Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. so users can Shorten long URLs to short URLs reliably at scale.",
+    "brief": "Design a URL shortening service like bit.ly that creates compact links for valid destination URLs and redirects them with low, predictable latency at high read volume.",
     "successSignals": [
-      "Define the source of truth for Shorten long URLs to short URLs; Redirect short URLs to original URLs and make retries idempotent.",
-      "Use bounded, partitioned state to meet 99.9% availability and Short URLs should be as short as possible.",
-      "Separate the critical request path from Consider using base62 encoding for short URLs, Think about database partitioning strategies, Cache frequently accessed URLs.",
-      "Explain consistency, failure recovery, authorization, observability, and a degraded mode."
+      "Separate the link-creation path from the read-heavy redirect path and give each path an explicit latency and availability budget.",
+      "Choose a short-code strategy, explain its capacity and collision behavior, and make creation retries idempotent.",
+      "Keep redirect resolution cache-first and move click analytics, aggregation, and other non-critical work off the redirect path.",
+      "Cover aliases, expiration, deletion, privacy, destination safety, hot links, and degraded behavior."
     ]
   },
   "requirements": {
     "functional": [
-      "Support the core workflow to Shorten long URLs to short URLs.",
-      "Expose status, results, and freshness appropriate to Design a URL shortening service that can handle millions of URLs and redirect requests efficiently..",
-      "Support authorization, validation, updates, deletion, and recovery semantics."
+      "Create a compact short URL for a valid destination URL.",
+      "Redirect a short code to its current destination while enforcing status and expiration.",
+      "Support optional custom aliases and expiration dates.",
+      "Provide aggregate click analytics by time, referrer, device, and coarse location.",
+      "Let an authenticated owner update, disable, or delete a link.",
+      "Make create requests safe to retry with an idempotency key."
     ],
     "nonFunctional": [
-      "Meet Short URLs should be as short as possible under normal load.",
-      "Scale to 99.9% availability without a single hot key or unbounded synchronous work.",
-      "Do not lose committed state; make retries and duplicate events safe.",
-      "Degrade safely when downstream workers, caches, or external dependencies fail."
+      "Keep redirect p99 latency below 100 ms for the normal cache-first path.",
+      "Target 99.99% availability for redirects and 99.9% availability for link creation.",
+      "Make newly created links readable after the create response and keep updates ordered per link.",
+      "Make private or unlisted codes difficult to enumerate and rate-limit abuse without slowing healthy redirects.",
+      "Treat analytics as eventually consistent and never block a redirect on analytics availability."
     ],
     "scaleAssumptions": [
-      "99.9% availability",
-      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
-      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+      "Create 100 million new links per month and serve 10 billion redirects per month, with sharp viral peaks.",
+      "The redirect-to-create ratio is approximately 100:1; a hot code can receive a disproportionate share of traffic.",
+      "Retain links for five years by default, or until a configured expiration date; raw click events use a separate retention policy.",
+      "Use a seven- or eight-character Base62 code space and partition durable lookups by a hash of the short code."
     ],
     "metrics": [
       {
-        "label": "Peak scale",
-        "value": "99.9% availability",
-        "description": "Capacity assumption that drives partitioning and backpressure."
+        "label": "Create traffic",
+        "value": "~40 req/s average",
+        "description": "100 million link creations per month before burst and regional capacity headroom."
       },
       {
-        "label": "Latency target",
-        "value": "Short URLs should be as short as possible",
-        "description": "User-facing budget for the primary request or read path."
+        "label": "Redirect traffic",
+        "value": "~3.9K req/s average",
+        "description": "10 billion redirects per month; viral links and campaigns determine peak sizing."
       },
       {
-        "label": "Durable boundary",
-        "value": "Committed before async",
-        "description": "The source of truth is Shorten long URLs to short URLs; Redirect short URLs to original URLs."
+        "label": "Availability",
+        "value": "99.99% redirects / 99.9% creates",
+        "description": "The read-heavy redirect path has the stricter availability objective."
       },
       {
-        "label": "Async boundary",
-        "value": "At-least-once workers",
-        "description": "Keep Consider using base62 encoding for short URLs, Think about database partitioning strategies, Cache frequently accessed URLs off the synchronous path."
+        "label": "Redirect latency",
+        "value": "p99 < 100 ms",
+        "description": "The cache-first redirect budget excludes slow analytics and dashboard work."
+      },
+      {
+        "label": "Code capacity",
+        "value": "62^7 = 3.5T",
+        "description": "Seven Base62 characters provide a large namespace; eight characters leave additional growth room."
       }
     ]
   },
   "entities": [
     {
-      "name": "Interaction",
+      "name": "ShortURL",
       "fields": [
-        "interactionId",
-        "actorId",
-        "objectId",
-        "type",
-        "version",
-        "occurredAt"
-      ],
-      "notes": "Canonical url shortener interaction with an idempotency key and ordering version."
-    },
-    {
-      "name": "ConnectionSession",
-      "fields": [
-        "sessionId",
-        "userId",
-        "deviceId",
-        "roomKey",
-        "lastHeartbeat",
-        "status"
-      ],
-      "notes": "Ephemeral but observable url shortener connection registration used for routing and presence."
-    },
-    {
-      "name": "FanoutCursor",
-      "fields": ["streamKey", "shard", "offset", "consumerGroup", "updatedAt"],
-      "notes": "Durable progress marker for url shortener fan-out and replay."
-    },
-    {
-      "name": "DeliveryReceipt",
-      "fields": [
-        "interactionId",
-        "recipientId",
-        "channel",
-        "attempt",
+        "shortCode (PK)",
+        "originalUrl",
+        "userId (nullable)",
+        "createdAt",
+        "expiresAt (nullable)",
         "status",
-        "deliveredAt"
+        "version"
       ],
-      "notes": "Deduplicated url shortener delivery state for reconnects, retries, or acknowledgements."
+      "notes": "Authoritative link metadata and lifecycle state. The primary read is shortCode to originalUrl; owner and status indexes support management and revocation."
+    },
+    {
+      "name": "ClickEvent",
+      "fields": [
+        "eventId",
+        "shortCode",
+        "timestamp",
+        "country",
+        "device",
+        "referrer"
+      ],
+      "notes": "Privacy-scoped redirect telemetry emitted asynchronously after the redirect decision; it is not part of redirect correctness."
+    },
+    {
+      "name": "AnalyticsAggregate",
+      "fields": [
+        "shortCode",
+        "bucket",
+        "clicks",
+        "uniqueEstimate",
+        "updatedAt"
+      ],
+      "notes": "Rebuildable time-bucketed click totals served to dashboards with an explicit processing watermark."
+    },
+    {
+      "name": "IdempotencyRecord",
+      "fields": [
+        "userId",
+        "idempotencyKey",
+        "requestHash",
+        "shortCode",
+        "createdAt",
+        "expiresAt"
+      ],
+      "notes": "Bounded record that maps a retried create request to its original result and rejects reuse with a different payload."
     }
   ],
   "apis": [
     {
       "method": "POST",
-      "path": "/v1/interactions",
-      "contract": "{ objectId, type, idempotencyKey } -> { interactionId, version }",
-      "notes": "Commit an authorized url shortener interaction idempotently."
+      "path": "/v1/links",
+      "contract": "{ originalUrl, customAlias?, expiresAt?, idempotencyKey } -> { linkId, shortCode, status }",
+      "notes": "Validate the destination and policy, reserve a collision-free code or alias, commit link metadata, and return the existing result for a safe retry."
     },
     {
       "method": "GET",
-      "path": "/v1/streams/{streamKey}?cursor=",
-      "contract": "{ events[], nextCursor, streamVersion, freshness }",
-      "notes": "Read replayable url shortener events from a stable cursor."
+      "path": "/{shortCode}",
+      "contract": "302/301 with Location: originalUrl and cache headers",
+      "notes": "Resolve from edge or Redis first, fall back to the link store on a miss, enforce status and expiry, and emit click telemetry without waiting for analytics."
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/links/{linkId}",
+      "contract": "{ originalUrl?, expiresAt?, status?, expectedVersion } -> { shortCode, version }",
+      "notes": "Authorize the owner, apply an optimistic version check, update the authoritative row, and invalidate the old redirect projection."
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/links/{linkId}",
+      "contract": "{ expectedVersion } -> { shortCode, status: \"deleted\" }",
+      "notes": "Write a tombstone or disabled state before invalidating caches so a deleted link cannot be recreated or served from a stale cache accidentally."
     },
     {
       "method": "GET",
-      "path": "/v1/connections",
-      "contract": "{ sessionId, resumeToken, capabilities } -> { websocketUrl, expiresAt }",
-      "notes": "Open or resume a url shortener connection with an explicit replay position."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/deliveries/ack",
-      "contract": "{ interactionId, channel, receiptId } -> { accepted }",
-      "notes": "Record a deduplicated url shortener delivery acknowledgement without changing the source event."
+      "path": "/v1/links/{linkId}/analytics?from=&to=",
+      "contract": "{ buckets[], totals, freshness }",
+      "notes": "Read asynchronous click aggregates with a processing watermark rather than scanning raw redirect events."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept and commit the interaction",
-      "description": "The url shortener gateway authenticates the actor, validates room or object membership, applies rate limits, and conditionally commits the interaction."
+      "title": "Create and commit a short link",
+      "description": "The gateway validates the destination, applies abuse and rate-limit policy, allocates a unique code, and commits ShortURL metadata with an idempotency record before returning success."
     },
     {
-      "title": "Publish an ordered event",
-      "description": "An outbox emits the committed url shortener transition with an event ID, partition key, sequence, and replay retention."
+      "title": "Prime the read path",
+      "description": "After the durable write, the service writes or invalidates the redirect cache and returns the code only after the create result is readable from the authoritative region."
     },
     {
-      "title": "Fan out by partition",
-      "description": "Consumers route url shortener events to connected recipients, durable inboxes, or notification channels without making the origin write wait for every recipient."
+      "title": "Resolve a redirect",
+      "description": "For GET /{shortCode}, the edge or redirect cache checks status and expiry on a hit; a miss reads the link store, fills the cache, and returns a 302 by default or a 301 when the link is intentionally immutable."
     },
     {
-      "title": "Resume and reconcile connections",
-      "description": "Clients reconnect with a cursor; the url shortener service replays missed events, deduplicates delivery, and exposes stale or degraded state."
+      "title": "Emit click telemetry asynchronously",
+      "description": "The redirect decision returns immediately while a buffered event is sent to a durable queue; analytics workers deduplicate events and build time-bucketed aggregates."
     },
     {
-      "title": "Measure latency and recover",
-      "description": "Operations tracks url shortener publish-to-deliver latency, hot partitions, reconnect storms, dropped events, and consumer lag for replay or repair."
+      "title": "Expire, update, or delete safely",
+      "description": "Owner commands and lifecycle workers change the authoritative status, invalidate edge and regional caches, and retain only policy-approved link, click, and audit data."
     }
   ],
   "architecture": {
-    "title": "Url Shortener realtime architecture",
-    "summary": "Design Design a URL shortening service that can handle millions of URLs and redirect requests efficiently. so users can Shorten long URLs to short URLs reliably at scale. The design commits the canonical interaction before publishing a replayable event, separates hot-key fanout and aggregate projections from the write path, and treats live delivery as recoverable through versioned resynchronization.",
+    "title": "URL Shortener reference architecture",
+    "summary": "A cache-first redirect path keeps hot links fast, while link creation, lifecycle changes, and click analytics use durable boundaries that do not make redirects depend on slow secondary systems.",
     "layers": [
       {
-        "id": "experience",
-        "label": "Interactive client and edge plane",
-        "description": "Commands, reads, and live subscriptions share authentication and quotas but have separate latency budgets.",
-        "componentIds": ["client", "edge", "write-service"]
+        "id": "serving",
+        "label": "Serving layer",
+        "description": "Clients, edge routing, and synchronous services that create links or resolve redirects.",
+        "componentIds": ["client", "edge", "gateway", "link-service", "id-generator", "redirect-cache"]
       },
       {
-        "id": "truth",
-        "label": "Canonical interaction plane",
-        "description": "Versioned durable state and committed events provide the correctness boundary.",
-        "componentIds": ["primary-store", "events"]
+        "id": "state",
+        "label": "Authoritative state",
+        "description": "Durable link metadata and lifecycle state behind the cache-first lookup.",
+        "componentIds": ["link-store"]
       },
       {
-        "id": "delivery",
-        "label": "Fanout and live serving plane",
-        "description": "Workers build projections and scoped live deltas while clients can recover missed updates.",
-        "componentIds": ["fanout", "read-cache", "realtime"]
-      },
-      {
-        "id": "insight",
-        "label": "Analytics plane",
-        "description": "Engagement and abuse analytics are asynchronous and isolated from feature correctness.",
-        "componentIds": ["analytics"]
+        "id": "analytics",
+        "label": "Async analytics layer",
+        "description": "Click events are buffered and aggregated independently from redirect availability.",
+        "componentIds": ["click-queue", "analytics-worker", "analytics-store"]
       },
       {
         "id": "operations",
-        "label": "Realtime safety operations",
-        "description": "Backlog, hot keys, connection saturation, and update loss are visible and actionable.",
+        "label": "Safety and operations",
+        "description": "SLOs, cache health, abuse signals, and queue lag are observable without joining the redirect critical path.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "interaction",
-        "label": "Interaction commit path",
-        "description": "Client -> edge -> write service -> canonical store -> committed event.",
-        "componentIds": [
-          "client",
-          "edge",
-          "write-service",
-          "primary-store",
-          "events"
-        ]
+        "id": "create-path",
+        "label": "Link creation path",
+        "description": "Client -> edge -> gateway -> link service -> ID generator and link store.",
+        "componentIds": ["client", "edge", "gateway", "link-service", "id-generator", "link-store"]
       },
       {
-        "id": "live",
-        "label": "Live update and recovery path",
-        "description": "Event -> fanout -> read projection and live gateway -> client, with cursor-based resync.",
-        "componentIds": ["events", "fanout", "read-cache", "realtime", "client"]
+        "id": "redirect-path",
+        "label": "Redirect path",
+        "description": "Edge -> gateway -> link service -> redirect cache, with a link-store fallback on a miss.",
+        "componentIds": ["edge", "gateway", "link-service", "redirect-cache", "link-store"]
+      },
+      {
+        "id": "analytics-path",
+        "label": "Click analytics path",
+        "description": "Link service -> click queue -> analytics worker -> analytics store without waiting for aggregation.",
+        "componentIds": ["link-service", "click-queue", "analytics-worker", "analytics-store"]
       }
     ],
     "components": [
@@ -199,140 +216,154 @@
         "id": "client",
         "type": "client",
         "componentId": "web-app",
-        "label": "Interactive clients",
-        "description": "Users connect from web, mobile, or device clients and receive durable state plus live updates for the feature.",
+        "label": "Browsers and API clients",
+        "description": "Owners create and manage links; browsers and crawlers follow short URLs.",
         "position": {
           "x": 0,
           "y": 260
         },
         "properties": {
-          "protocol": "HTTPS for commands; WebSocket/SSE for updates"
+          "traffic": "Create, manage, and redirect requests"
         }
       },
       {
         "id": "edge",
-        "type": "api-gateway",
-        "componentId": "api-gateway",
-        "label": "Realtime edge gateway",
-        "description": "Terminates connections, authenticates sessions, applies quotas, and routes commands and subscriptions to the correct partition.",
+        "type": "cdn",
+        "componentId": "edge-server",
+        "label": "Edge / CDN",
+        "description": "Terminates connections, applies coarse protection, and serves globally cacheable hot redirects close to users.",
         "position": {
           "x": 480,
           "y": 260
         },
         "properties": {
-          "protection": "Session auth, connection limits, and backpressure"
+          "responsibility": "Routing, edge caching, and DDoS protection"
         }
       },
       {
-        "id": "write-service",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Interaction and write service",
-        "description": "Validates feature-specific commands, applies authorization and idempotency, and commits the canonical interaction state.",
+        "id": "gateway",
+        "type": "api-gateway",
+        "componentId": "api-gateway",
+        "label": "API gateway",
+        "description": "Validates request shape, authenticates owners, applies quotas, and routes create, manage, and redirect traffic.",
         "position": {
           "x": 960,
           "y": 260
         },
         "properties": {
-          "consistency": "Conditional writes and monotonic entity versions"
+          "protection": "Authentication, URL policy, rate limits, and request size limits"
         }
       },
       {
-        "id": "primary-store",
-        "type": "database",
-        "componentId": "database",
-        "label": "Canonical interaction store",
-        "description": "Stores users, objects, memberships, interaction state, and tombstones using the partition key needed for the hot path.",
+        "id": "link-service",
+        "type": "application-server",
+        "componentId": "backend-server",
+        "label": "URL Shortener Service",
+        "description": "Creates codes, resolves redirects, enforces lifecycle state, and emits click events.",
         "position": {
           "x": 1440,
           "y": 260
         },
         "properties": {
-          "storage": "Tenant/object partitioning with versioned state"
+          "criticalPath": "Cache-first shortCode lookup with a bounded database fallback"
         }
       },
       {
-        "id": "events",
-        "type": "message-broker",
-        "componentId": "message-broker",
-        "label": "Interaction event backbone",
-        "description": "Publishes committed interaction, membership, deletion, and moderation events with ordering keys and replay offsets.",
+        "id": "id-generator",
+        "type": "microservice",
+        "componentId": "id-generator",
+        "label": "ID and alias allocator",
+        "description": "Reserves unique numeric IDs or custom aliases and encodes generated IDs as compact Base62 codes.",
         "position": {
           "x": 1920,
-          "y": 80
+          "y": 40
         },
         "properties": {
-          "delivery": "At least once with event IDs and deduplication"
+          "strategy": "Sequence or distributed unique ID plus Base62; conditional uniqueness for aliases"
         }
       },
       {
-        "id": "fanout",
-        "type": "microservice",
-        "componentId": "processing-worker",
-        "label": "Fanout and aggregation workers",
-        "description": "Updates counters, feeds, membership projections, and notification intents asynchronously with hot-key isolation and coalescing.",
-        "position": {
-          "x": 2400,
-          "y": 80
-        },
-        "properties": {
-          "scaling": "Partitioned workers with hot-object isolation"
-        }
-      },
-      {
-        "id": "read-cache",
+        "id": "redirect-cache",
         "type": "cache",
         "componentId": "cache",
-        "label": "Low-latency read projection",
-        "description": "Serves the latest acceptable aggregate or feed view with a version and freshness marker while preserving a durable fallback.",
+        "label": "Redirect cache",
+        "description": "Caches shortCode-to-destination mappings for the read-heavy path with TTLs, version metadata, and targeted invalidation.",
         "position": {
-          "x": 2880,
+          "x": 1920,
           "y": 260
         },
         "properties": {
-          "latency": "Cache-aside reads with version/freshness metadata"
+          "strategy": "Edge plus regional cache-aside lookup; stampede protection for hot codes"
         }
       },
       {
-        "id": "realtime",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Live update gateway",
-        "description": "Maintains subscription membership, coalesces rapid changes, and broadcasts scoped deltas while clients can resync from the read projection.",
-        "position": {
-          "x": 2880,
-          "y": 80
-        },
-        "properties": {
-          "delivery": "Reconnect, cursor, coalescing, and resync support"
-        }
-      },
-      {
-        "id": "analytics",
-        "type": "analytics",
-        "componentId": "analytics",
-        "label": "Interaction analytics",
-        "description": "Consumes privacy-scoped events for engagement, abuse, and product metrics without making analytics part of correctness.",
+        "id": "link-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Link store",
+        "description": "Authoritative store for ShortURL metadata, ownership, status, versions, idempotency records, and expiry.",
         "position": {
           "x": 2400,
-          "y": 440
+          "y": 260
         },
         "properties": {
-          "processing": "Asynchronous aggregates with retention controls"
+          "accessPattern": "Primary lookup by hashed shortCode with owner and expiry indexes"
+        }
+      },
+      {
+        "id": "click-queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Click event queue",
+        "description": "Buffers privacy-scoped redirect events so analytics outages and bursts do not take down redirects.",
+        "position": {
+          "x": 1920,
+          "y": 620
+        },
+        "properties": {
+          "delivery": "Durable, asynchronous, and at least once"
+        }
+      },
+      {
+        "id": "analytics-worker",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Analytics workers",
+        "description": "Normalize click events, apply retention and privacy rules, and roll events into time buckets.",
+        "position": {
+          "x": 2400,
+          "y": 620
+        },
+        "properties": {
+          "output": "Minute, hour, referrer, device, and coarse-location aggregates"
+        }
+      },
+      {
+        "id": "analytics-store",
+        "type": "analytics",
+        "componentId": "analytics",
+        "label": "Analytics store",
+        "description": "Serves link-owner dashboards from rebuildable aggregates rather than scanning raw click events.",
+        "position": {
+          "x": 2880,
+          "y": 620
+        },
+        "properties": {
+          "dimensions": "Time, device, referrer, coarse geography, and processing freshness"
         }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Realtime reliability operations",
-        "description": "Tracks commit latency, hot partitions, consumer lag, fanout backlog, connection health, dropped updates, resync rate, and privacy failures.",
+        "label": "Reliability and abuse monitoring",
+        "description": "Tracks redirect SLOs, cache health, store errors, code collisions, abuse decisions, and analytics lag.",
         "position": {
-          "x": 1920,
-          "y": -140
+          "x": 2880,
+          "y": 260
         },
         "properties": {
-          "alerts": "Lag, hot keys, stale projections, and connection saturation"
+          "signals": "Redirect p99, availability, cache hit rate, hot codes, errors, abuse rate, and queue lag"
         }
       }
     ],
@@ -342,179 +373,252 @@
         "source": "client",
         "target": "edge",
         "type": "http",
-        "label": "Command or live subscription",
-        "description": "Clients send idempotent interaction commands and open authenticated subscriptions with a resume cursor."
+        "label": "HTTPS",
+        "description": "Create, manage, or follow a short link."
       },
       {
-        "id": "edge-write",
+        "id": "edge-gateway",
         "source": "edge",
-        "target": "write-service",
+        "target": "gateway",
+        "type": "http",
+        "label": "Route",
+        "description": "Forward cache misses, creates, and management requests to the API layer."
+      },
+      {
+        "id": "gateway-service",
+        "source": "gateway",
+        "target": "link-service",
         "type": "api-call",
-        "label": "Validated interaction",
-        "description": "The edge validates identity, object scope, payload size, and rate limits before routing by object or conversation key."
+        "label": "Create or resolve",
+        "description": "Route validated link operations to the URL Shortener Service."
       },
       {
-        "id": "write-store",
-        "source": "write-service",
-        "target": "primary-store",
+        "id": "service-generator",
+        "source": "link-service",
+        "target": "id-generator",
+        "type": "api-call",
+        "label": "Allocate code",
+        "description": "Reserve a unique ID or custom alias before committing a new link."
+      },
+      {
+        "id": "service-cache",
+        "source": "link-service",
+        "target": "redirect-cache",
+        "type": "data-flow",
+        "label": "Cache lookup",
+        "description": "Read the current destination and lifecycle metadata from the cache first."
+      },
+      {
+        "id": "cache-store",
+        "source": "redirect-cache",
+        "target": "link-store",
         "type": "database-connection",
-        "label": "Canonical state commit",
-        "description": "The write service conditionally commits the interaction and version before returning success; duplicate retries return the existing result."
+        "label": "Cache miss",
+        "description": "Fall back to authoritative storage, then refill the cache with the current version and expiry."
       },
       {
-        "id": "store-events",
-        "source": "primary-store",
-        "target": "events",
+        "id": "service-store",
+        "source": "link-service",
+        "target": "link-store",
+        "type": "database-connection",
+        "label": "Commit link",
+        "description": "Persist link metadata, lifecycle changes, and idempotency records with conditional writes.",
+        "properties": {
+          "sourceHandle": "right-bottom",
+          "targetHandle": "left-bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.7
+        }
+      },
+      {
+        "id": "service-queue",
+        "source": "link-service",
+        "target": "click-queue",
+        "type": "message-queue",
+        "label": "Click event",
+        "description": "Publish privacy-scoped redirect telemetry without waiting for analytics processing."
+      },
+      {
+        "id": "queue-worker",
+        "source": "click-queue",
+        "target": "analytics-worker",
         "type": "event-stream",
-        "label": "Committed interaction event",
-        "description": "An outbox publishes the durable transition with an event ID, entity version, and privacy classification."
+        "label": "Consume clicks",
+        "description": "Process click events independently from redirect traffic and deduplicate retries."
       },
       {
-        "id": "events-fanout",
-        "source": "events",
-        "target": "fanout",
-        "type": "message-queue",
-        "label": "Projection and fanout work",
-        "description": "Workers consume at least once, deduplicate events, isolate hot keys, and coalesce rapid updates."
-      },
-      {
-        "id": "fanout-read-cache",
-        "source": "fanout",
-        "target": "read-cache",
+        "id": "worker-store",
+        "source": "analytics-worker",
+        "target": "analytics-store",
         "type": "data-flow",
-        "label": "Aggregate or feed projection",
-        "description": "Workers update the read projection with a version and freshness watermark; rebuilds replay the event log."
+        "label": "Aggregate",
+        "description": "Write queryable time-bucketed aggregates and update the freshness watermark."
       },
       {
-        "id": "fanout-realtime",
-        "source": "fanout",
-        "target": "realtime",
-        "type": "message-queue",
-        "label": "Live delta",
-        "description": "The live gateway receives scoped deltas, coalesces bursts, and drops only updates that clients can recover through resync."
-      },
-      {
-        "id": "read-cache-edge",
-        "source": "read-cache",
-        "target": "edge",
-        "type": "database-connection",
-        "label": "Read projection",
-        "description": "The edge serves a versioned projection and exposes a resync path when it is stale or unavailable."
-      },
-      {
-        "id": "realtime-client",
-        "source": "realtime",
-        "target": "client",
-        "type": "websocket",
-        "label": "Live update",
-        "description": "Connected clients receive scoped updates and reconnect with a cursor when a connection or delivery gap occurs."
-      },
-      {
-        "id": "events-analytics",
-        "source": "events",
-        "target": "analytics",
-        "type": "data-flow",
-        "label": "Privacy-scoped analytics",
-        "description": "Analytics consumes a separate projection of interactions and cannot delay the canonical commit or live feature path."
-      },
-      {
-        "id": "events-monitoring",
-        "source": "events",
+        "id": "service-monitoring",
+        "source": "link-service",
         "target": "monitoring",
-        "type": "data-flow",
-        "label": "Lag and fanout telemetry",
-        "description": "Operations measures consumer lag, event gaps, projection freshness, hot partitions, and replay parity."
-      },
-      {
-        "id": "realtime-monitoring",
-        "source": "realtime",
-        "target": "monitoring",
-        "type": "data-flow",
-        "label": "Connection and delivery health",
-        "description": "The live gateway reports connection counts, send latency, coalescing, drops, reconnects, and resync rates."
+        "type": "event-stream",
+        "label": "SLO and abuse signals",
+        "description": "Emit redirect latency, cache, error, collision, lifecycle, and destination-safety telemetry."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Ordering, idempotency, and hot keys",
+      "title": "Short-code generation and collision handling",
       "points": [
-        "Choose a url shortener partition key that preserves required order while distributing high-volume rooms, users, or objects.",
-        "Use event IDs, inboxes, consumer offsets, and conditional state transitions for at-least-once delivery.",
-        "Split or isolate hot partitions without changing the client-visible sequence contract."
+        "A sequence, Snowflake-style ID, or another unique numeric allocator can be Base62 encoded into seven or eight characters; a random opaque ID reduces enumeration but needs collision retries.",
+        "Enforce uniqueness with a database constraint or conditional write. Custom aliases should return a conflict when already reserved, and the same idempotency key should return the original create result.",
+        "Do not hash only the destination URL if two owners need separate links, expiry, or analytics; the identity of the link is a product decision, not just an encoding trick."
       ]
     },
     {
-      "title": "Reconnect and replay semantics",
+      "title": "301 versus 302 redirects",
       "points": [
-        "Issue resumable url shortener cursors with an expiry and a clear snapshot-plus-delta fallback.",
-        "Bound replay windows and rebuild from durable state when a cursor is too old.",
-        "Expose version and freshness so a client can distinguish current, catching up, and degraded state."
+        "Use 302 or 307 when the destination may change, because clients and intermediaries should not cache the mapping as permanently; use 301 only for intentionally immutable links.",
+        "Redirect status and Cache-Control headers affect how quickly updates, deletion, and revocation take effect, so cache policy belongs in the lifecycle design.",
+        "Analytics should describe the redirect decision and accepted event, not depend on the browser making a second request or on a synchronous analytics write."
       ]
     },
     {
-      "title": "Backpressure and presence",
+      "title": "Database choice and access patterns",
       "points": [
-        "Keep connection heartbeats and ephemeral presence separate from durable url shortener interactions.",
-        "Coalesce safe updates, shed low-value work, and protect critical events during reconnect storms.",
-        "Measure end-to-end delivery, not only broker publish latency."
+        "A key-value or wide-column store fits the dominant shortCode-to-URL lookup and horizontal redirect scale; a relational store is attractive when owner queries, transactions, and alias constraints dominate.",
+        "Keep the authoritative ShortURL row small and index owner/status/expiry operations separately from the hot redirect key.",
+        "Whichever store is chosen, require conditional writes for alias allocation, optimistic version checks for updates, and multi-zone replication for the redirect SLO."
+      ]
+    },
+    {
+      "title": "Caching and cache stampedes",
+      "points": [
+        "Use edge caching plus a regional Redis-style cache-aside layer for active mappings, with TTLs that balance hit rate against revocation speed.",
+        "Coalesce concurrent misses, add jitter to expirations, and replicate or isolate exceptionally hot codes so one viral link does not overload one cache shard or origin row.",
+        "Negative-cache unknown or disabled codes for a short period, but keep the TTL bounded so a newly created or re-enabled link is not hidden for long."
+      ]
+    },
+    {
+      "title": "Partitioning and hot links",
+      "points": [
+        "Partition durable lookups by a hash of shortCode rather than raw sequential IDs, which distributes writes and avoids sequential-key hotspots.",
+        "A single viral code can still be hot after hashing; absorb it with edge and regional cache replicas, request coalescing, and per-key rate protection.",
+        "Keep code allocation and redirect lookup independently scalable because creation volume is much smaller than redirect volume."
+      ]
+    },
+    {
+      "title": "Availability and degraded redirects",
+      "points": [
+        "The redirect path should require only edge/cache and a replicated link store; analytics, dashboards, abuse re-scoring, and cleanup workers must not be synchronous dependencies.",
+        "On a regional cache failure, fail over to another cache or the authoritative store with bounded retries and circuit breakers rather than retrying a slow dependency indefinitely.",
+        "Do not serve an unbounded stale destination after explicit deletion or disablement; use versioned invalidation and a bounded stale policy."
+      ]
+    },
+    {
+      "title": "Read-after-write and eventual consistency",
+      "points": [
+        "After creating a link, return success only when the authoritative write is committed and the serving region can resolve the new code, or route the first read to that authority.",
+        "Use a per-link version or conditional update so cache refreshes cannot overwrite a newer destination with an older one.",
+        "Click totals and dashboard dimensions can be eventually consistent as long as the UI exposes a freshness watermark and the raw event stream remains replayable."
+      ]
+    },
+    {
+      "title": "Expiration, updates, and deletion",
+      "points": [
+        "Treat expiration as a serving decision based on expiresAt, with background TTL cleanup as storage maintenance rather than the only enforcement mechanism.",
+        "Updates and deletes write the authoritative status first, then invalidate edge and regional caches; tombstones prevent stale replicas from resurrecting a code.",
+        "Retain audit and click data only for the configured policy, and make cache invalidation observable so operators can measure revocation delay."
+      ]
+    },
+    {
+      "title": "Abuse, security, and enumeration",
+      "points": [
+        "Allow only supported URL schemes, normalize destinations, scan or score suspicious domains, and provide reporting and takedown controls for phishing or malware.",
+        "Rate-limit creation, custom-alias attempts, and redirect abuse separately; do not let a bad destination or bot campaign exhaust the redirect budget for healthy links.",
+        "Use opaque codes where privacy matters, avoid exposing sequential volume through the public namespace, and minimize or hash analytics identifiers before retention."
+      ]
+    },
+    {
+      "title": "Asynchronous click analytics",
+      "points": [
+        "Emit a compact ClickEvent after the redirect decision through a durable buffer or queue; the user-visible 302 must not wait for a broker, worker, or analytics database.",
+        "Use event IDs and idempotent aggregation so at-least-once delivery does not inflate counts; late events should update a bounded correction window.",
+        "Separate raw-event retention from dashboard aggregates and publish processing lag so owners understand when analytics is delayed."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Direct fan-out versus pull-based reads",
-      "recommendation": "Use push for latency-sensitive url shortener deltas and pull or replay for reconnect, history, and recovery.",
-      "caution": "A push-only design loses state when clients disconnect and a pull-only design wastes latency and bandwidth."
+      "title": "Sequential IDs versus random codes",
+      "recommendation": "Use a unique ID plus Base62 for compact capacity, then add an opaque permutation or random allocation when enumeration resistance is a stronger requirement.",
+      "caution": "Purely sequential public codes reveal volume and can create hot allocation patterns; purely random codes require collision checks and retries."
     },
     {
-      "title": "Per-recipient queues versus shared streams",
-      "recommendation": "Use shared partitioned streams with per-recipient cursors where fan-out is large, and isolate exceptional high-fanout objects.",
-      "caution": "A queue per recipient becomes expensive and hard to inspect at large scale."
+      "title": "301 versus 302 by link lifecycle",
+      "recommendation": "Use 302 or 307 for mutable links and 301 for links explicitly declared immutable, with cache headers that match revocation expectations.",
+      "caution": "Permanent caching improves repeat latency but makes destination updates and deletion harder to propagate quickly."
     },
     {
-      "title": "Strong ordering versus availability",
-      "recommendation": "Guarantee ordering only within the scope the product needs, such as a room, object, or conversation.",
-      "caution": "Global ordering introduces a bottleneck and still does not solve duplicate delivery or reconnect recovery."
+      "title": "Key-value store versus relational database",
+      "recommendation": "Choose a key-value store when shortCode lookup and scale dominate; choose relational storage when owner workflows, transactions, and reporting relationships justify it.",
+      "caution": "A key-value design needs deliberate secondary indexes and management queries, while a relational design needs careful partitioning and read replicas at redirect scale."
+    },
+    {
+      "title": "Cache TTL versus immediate revocation",
+      "recommendation": "Use cache-aside TTLs with targeted invalidation and a versioned status check for updates, deletes, and abuse takedowns.",
+      "caution": "Long TTLs improve hit rate but extend stale-destination risk; short TTLs reduce that risk at the cost of origin load."
+    },
+    {
+      "title": "Synchronous versus asynchronous click logging",
+      "recommendation": "Buffer click events and process them asynchronously so redirect availability and latency remain independent of analytics health.",
+      "caution": "Async processing can delay or correct totals, so the product must expose freshness and accept at-least-once aggregation semantics."
     }
   ],
   "commonMistakes": [
-    "Making every url shortener recipient part of the synchronous write transaction.",
-    "Assuming a websocket send means the event was durably delivered.",
-    "Using a global sequence or hot celebrity key without partition isolation.",
-    "Failing to provide cursor replay and forcing clients to reload the entire state after reconnect.",
-    "Measuring only connection count while missing delivery lag, dropped events, and reconnect storms."
+    "Treating availability, traffic, latency, and code length as interchangeable scale assumptions.",
+    "Generating aliases without a uniqueness constraint, collision strategy, or idempotency boundary.",
+    "Putting a database or analytics transaction on every redirect without a cache-first or degraded path.",
+    "Caching a redirect forever without an expiration, version, or revocation policy.",
+    "Allowing open redirects or malicious destinations without validation, reporting, and rate limits.",
+    "Treating analytics aggregates as exact source-of-truth events or allowing duplicate queue delivery to inflate counts."
   ],
   "followUps": [
     {
-      "question": "How do you recover a disconnected url shortener client?",
-      "answer": "Persist a bounded event stream, issue a cursor, replay missed deltas, and fall back to a versioned snapshot when the cursor has expired."
+      "question": "What if two requests choose the same custom alias?",
+      "answer": "Reserve the alias with a conditional uniqueness write, return a conflict to the losing request, and make a retry with the same idempotency key return the original link."
     },
     {
-      "question": "How do you handle a hot url shortener object?",
-      "answer": "Separate the object’s authoritative commit from fan-out, shard or coalesce recipients, and report lag while preserving event identity."
+      "question": "How do you handle a viral short code?",
+      "answer": "Replicate the mapping at the edge and regional caches, coalesce origin misses, and isolate per-code traffic so one hot key does not overload a cache shard or database partition."
     },
     {
-      "question": "Can delivery be exactly once?",
-      "answer": "The network cannot guarantee it end to end; provide at-least-once delivery with idempotent event IDs, client deduplication, and replayable cursors."
+      "question": "How do you revoke a link quickly?",
+      "answer": "Write a disabled or tombstone state first, invalidate edge and regional caches, and keep a bounded cache TTL and version check so stale destinations cannot persist indefinitely."
+    },
+    {
+      "question": "What happens when analytics is down?",
+      "answer": "Return the redirect, buffer or durably queue the click event when possible, alert on queue lag, and show a delayed analytics watermark instead of blocking healthy redirect traffic."
     }
   ],
   "rubric": [
     {
       "criterion": "Requirements",
-      "description": "The answer addresses the url shortener workflow, scale, latency, durability, authorization, and failure contract."
+      "description": "The answer separates create and redirect traffic, states traffic, latency, availability, retention, and code-space assumptions, and defines lifecycle and abuse behavior."
     },
     {
-      "criterion": "Correctness",
-      "description": "The answer identifies the authoritative url shortener state, versioning or deduplication boundary, and how derived views converge."
+      "criterion": "Data model",
+      "description": "The answer makes ShortURL authority, shortCode lookup, ownership, status, expiry, versioning, idempotency, click events, and rebuildable aggregates explicit."
     },
     {
-      "criterion": "Scale",
-      "description": "The answer partitions url shortener traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
+      "criterion": "Scalability",
+      "description": "The answer uses cache-first redirects, hashed partitions, hot-code isolation, bounded retries, and independently scalable asynchronous analytics."
     },
     {
-      "criterion": "Operations",
-      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the url shortener user experience."
+      "criterion": "Reliability",
+      "description": "The answer covers read-after-write creation, conditional updates, cache invalidation, degraded redirects, multi-zone state, replay, and observable freshness."
+    },
+    {
+      "criterion": "Tradeoffs",
+      "description": "The candidate can explain code allocation, redirect status, database choice, cache policy, revocation, and why analytics stays off the critical path."
     }
   ]
 }
