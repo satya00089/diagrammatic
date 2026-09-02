@@ -241,6 +241,7 @@ const ProblemLanding: React.FC = () => {
   const related = useMemo(() => {
     if (!problem) return [];
     const tags = new Set(problem.tags);
+    const seenTitles = new Set<string>();
     return featuredProblems
       .filter((entry) => entry.slug !== slug)
       .map((entry) => ({
@@ -251,6 +252,12 @@ const ProblemLanding: React.FC = () => {
       }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score)
+      .filter((entry) => {
+        const titleKey = entry.title.trim().toLowerCase();
+        if (seenTitles.has(titleKey)) return false;
+        seenTitles.add(titleKey);
+        return true;
+      })
       .slice(0, 4);
   }, [problem, slug]);
 

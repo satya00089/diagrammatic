@@ -1,66 +1,17 @@
 [
   {
-    "slug": "document-management-system",
-    "title": "Create a Document Management System like Wikipedia, Notion or Google Docs",
-    "description": "Design a collaborative document editing and management system with version control.",
-    "difficulty": "Easy",
-    "category": "Productivity",
-    "estimated_time": "45-60 minutes",
-    "tags": ["collaboration", "documents", "real-time"]
-  },
-  {
     "slug": "job-scheduler",
     "title": "Distributed Job Scheduler",
     "description": "Design a reliable job scheduling service that runs one-time and recurring jobs at scale with retries, deduplication, and observable execution.",
     "difficulty": "Hard",
     "category": "Distributed Systems",
     "estimated_time": "60-90 minutes",
-    "tags": ["scheduling", "queues", "reliability", "distributed-systems"]
-  },
-  {
-    "slug": "twitter-system-design",
-    "title": "Design Twitter for millions of users",
-    "description": "Design a microblogging platform like Twitter/X that handles millions of users posting and reading short messages.",
-    "difficulty": "Easy",
-    "category": "Social Media",
-    "estimated_time": "45-60 minutes",
-    "tags": ["social-media", "real-time", "feeds"]
-  },
-  {
-    "slug": "top-k-ranking-system",
-    "title": "Top K Elements: App Store Rankings, Amazon Bestsellers",
-    "description": "Design a system to track and display top K items based on changing metrics in real time.",
-    "difficulty": "Easy",
-    "category": "Rankings",
-    "estimated_time": "30-45 minutes",
-    "tags": ["ranking", "top-k", "heap"]
-  },
-  {
-    "slug": "instagram-system-design",
-    "title": "Design Instagram",
-    "description": "Design a photo-sharing social media platform like Instagram with feed, stories, and user interactions.",
-    "difficulty": "Easy",
-    "category": "Social Media",
-    "estimated_time": "45-60 minutes",
-    "tags": ["social-media", "photo-sharing", "cdn"]
-  },
-  {
-    "slug": "pastebin-system-design",
-    "title": "Design Pastebin",
-    "description": "Design a web service where users can store plain text and share it with others through a generated URL.",
-    "difficulty": "Easy",
-    "category": "Web Services",
-    "estimated_time": "30-45 minutes",
-    "tags": ["web-services", "storage", "caching"]
-  },
-  {
-    "slug": "ci-cd-pipeline",
-    "title": "Design a Complete CI/CD Pipeline",
-    "description": "Design a CI/CD pipeline that automates build, test, and deployment with container orchestration and monitoring.",
-    "difficulty": "Medium",
-    "category": "Azure - DevOps",
-    "estimated_time": "45-60 minutes",
-    "tags": ["azure", "azure-devops", "ci-cd"]
+    "tags": [
+      "scheduling",
+      "queues",
+      "reliability",
+      "distributed-systems"
+    ]
   },
   {
     "slug": "notification-system",
@@ -69,25 +20,11 @@
     "difficulty": "Medium",
     "category": "Communication Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["notifications", "messaging", "queues"]
-  },
-  {
-    "slug": "google-calendar-system-design",
-    "title": "Design Google Calendar",
-    "description": "Design a calendar application that allows users to create, manage, and share events and appointments.",
-    "difficulty": "Medium",
-    "category": "Productivity",
-    "estimated_time": "45-60 minutes",
-    "tags": ["productivity", "scheduling", "calendar"]
-  },
-  {
-    "slug": "hotel-booking-system",
-    "title": "Design a Hotel Booking System",
-    "description": "Design a reservation system for booking hotel rooms with availability management and payment processing.",
-    "difficulty": "Medium",
-    "category": "Booking Systems",
-    "estimated_time": "45-60 minutes",
-    "tags": ["booking", "inventory", "transactions"]
+    "tags": [
+      "notifications",
+      "messaging",
+      "queues"
+    ]
   },
   {
     "slug": "distributed-file-storage",
@@ -96,16 +33,11 @@
     "difficulty": "Medium",
     "category": "Storage Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["file-storage", "synchronization", "versioning"]
-  },
-  {
-    "slug": "web-crawler",
-    "title": "Design Web Crawler",
-    "description": "Design a web crawler that can discover and download billions of web pages efficiently.",
-    "difficulty": "Medium",
-    "category": "Data Collection",
-    "estimated_time": "45-60 minutes",
-    "tags": ["crawling", "distributed-systems", "web-scraping"]
+    "tags": [
+      "file-storage",
+      "synchronization",
+      "versioning"
+    ]
   },
   {
     "slug": "distributed-cache",
@@ -114,25 +46,11 @@
     "difficulty": "Medium",
     "category": "Caching Systems",
     "estimated_time": "30-45 minutes",
-    "tags": ["caching", "distributed-systems", "performance"]
-  },
-  {
-    "slug": "serverless-event-driven-architecture",
-    "title": "Build a Serverless Event-Driven Architecture",
-    "description": "Design a system that triggers functions from events, processes messages asynchronously, and integrates cloud services.",
-    "difficulty": "Medium",
-    "category": "GCP - Serverless",
-    "estimated_time": "45-60 minutes",
-    "tags": ["gcp", "cloud-functions", "eventarc"]
-  },
-  {
-    "slug": "url-shortener",
-    "title": "URL Shortener (like bit.ly)",
-    "description": "Design a URL shortening service that can handle millions of URLs and redirect requests efficiently.",
-    "difficulty": "Medium",
-    "category": "Web Services",
-    "estimated_time": "45-60 minutes",
-    "tags": ["web-services", "scalability", "caching"]
+    "tags": [
+      "caching",
+      "distributed-systems",
+      "performance"
+    ]
   },
   {
     "slug": "design-a-price-alert-system",
@@ -141,7 +59,12 @@
     "difficulty": "Hard",
     "category": "Event-Driven Systems",
     "estimated_time": "60-90 minutes",
-    "tags": ["event-driven", "notifications", "scheduling", "scalability"]
+    "tags": [
+      "event-driven",
+      "notifications",
+      "scheduling",
+      "scalability"
+    ]
   },
   {
     "slug": "design-a-feature-to-show-the-number-of-users-viewing-a-page",
@@ -150,52 +73,12 @@
     "difficulty": "Medium",
     "category": "Real-Time Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["real-time", "presence", "websockets", "scalability"]
-  },
-  {
-    "slug": "payment-system",
-    "title": "Digital Payment System",
-    "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",
-    "difficulty": "Hard",
-    "category": "Financial Systems",
-    "estimated_time": "60-90 minutes",
-    "tags": ["payments", "security", "compliance"]
-  },
-  {
-    "slug": "ride-sharing-system",
-    "title": "Ride Sharing Service",
-    "description": "Design a ride-sharing platform like Uber or Lyft that matches drivers with passengers in real time.",
-    "difficulty": "Hard",
-    "category": "Location-based Services",
-    "estimated_time": "60-90 minutes",
-    "tags": ["location-services", "real-time", "geospatial"]
-  },
-  {
-    "slug": "video-transcoding-pipeline",
-    "title": "Design a Video Processing and Transcoding Pipeline",
-    "description": "Design a pipeline that uploads videos, transcodes multiple formats, generates thumbnails, and delivers content through a CDN.",
-    "difficulty": "Hard",
-    "category": "GCP - Media",
-    "estimated_time": "60-90 minutes",
-    "tags": ["gcp", "transcoding", "media-processing"]
-  },
-  {
-    "slug": "netflix-concurrent-stream-limits",
-    "title": "Netflix: Limit the Number of Screens Each User Can Watch",
-    "description": "Design a system to enforce concurrent streaming limits per user account.",
-    "difficulty": "Hard",
-    "category": "Access Control",
-    "estimated_time": "45-60 minutes",
-    "tags": ["session-management", "access-control", "distributed-systems"]
-  },
-  {
-    "slug": "uber-rider-matching",
-    "title": "Find a Rider for Uber or Uber Eats",
-    "description": "Design a matching algorithm to efficiently connect riders or customers with drivers in real time.",
-    "difficulty": "Hard",
-    "category": "Location-based Services",
-    "estimated_time": "60-90 minutes",
-    "tags": ["matching", "location-services", "real-time"]
+    "tags": [
+      "real-time",
+      "presence",
+      "websockets",
+      "scalability"
+    ]
   },
   {
     "slug": "web-search-engine",
@@ -204,7 +87,11 @@
     "difficulty": "Hard",
     "category": "Search Systems",
     "estimated_time": "90+ minutes",
-    "tags": ["search", "indexing", "crawling"]
+    "tags": [
+      "search",
+      "indexing",
+      "crawling"
+    ]
   },
   {
     "slug": "video-streaming-platform",
@@ -213,16 +100,11 @@
     "difficulty": "Hard",
     "category": "Media Streaming",
     "estimated_time": "60-90 minutes",
-    "tags": ["video-streaming", "cdn", "transcoding"]
-  },
-  {
-    "slug": "recommendation-engine",
-    "title": "Design a Personalized Recommendation Engine",
-    "description": "Design a system that analyzes user behavior, trains ML models, generates recommendations, and serves predictions through an API.",
-    "difficulty": "Hard",
-    "category": "GCP - Recommendations",
-    "estimated_time": "60-90 minutes",
-    "tags": ["gcp", "recommendations-ai", "machine-learning"]
+    "tags": [
+      "video-streaming",
+      "cdn",
+      "transcoding"
+    ]
   },
   {
     "slug": "real-time-chat-system",
@@ -231,61 +113,11 @@
     "difficulty": "Hard",
     "category": "Real-time Systems",
     "estimated_time": "60-90 minutes",
-    "tags": ["real-time", "websockets", "messaging"]
-  },
-  {
-    "slug": "real-time-recommendation-system",
-    "title": "Design a Real-time Recommendation System",
-    "description": "Design a recommendation system that combines multiple modeling approaches and serves predictions with sub-100ms latency.",
-    "difficulty": "Hard",
-    "category": "ML - Recommendation Systems",
-    "estimated_time": "60-90 minutes",
-    "tags": ["ml", "recommendation-systems", "collaborative-filtering"]
-  },
-  {
-    "slug": "rate-limiter",
-    "title": "Design an API Rate Limiter",
-    "description": "Design a rate limiting system to control the number of requests a user can make to an API.",
-    "difficulty": "Hard",
-    "category": "Infrastructure",
-    "estimated_time": "30-45 minutes",
-    "tags": ["rate-limiting", "infrastructure", "distributed-systems"]
-  },
-  {
-    "slug": "semantic-search-engine",
-    "title": "Design an AI-Powered Semantic Search Engine",
-    "description": "Design a search engine that understands natural-language queries, uses vector embeddings, supports hybrid search, and ranks results.",
-    "difficulty": "Hard",
-    "category": "AI - Search & Retrieval",
-    "estimated_time": "60-90 minutes",
-    "tags": ["ai", "search", "embeddings"]
-  },
-  {
-    "slug": "rag-conversational-ai",
-    "title": "Design a Conversational AI Platform with RAG",
-    "description": "Design a conversational AI platform that retrieves enterprise knowledge, maintains context, and provides cited responses.",
-    "difficulty": "Hard",
-    "category": "AI - Conversational AI",
-    "estimated_time": "60-90 minutes",
-    "tags": ["ai", "rag", "llm"]
-  },
-  {
-    "slug": "observability-platform",
-    "title": "Design an Intelligent Observability Platform",
-    "description": "Design a platform that correlates metrics, logs, and traces, discovers service topology, and helps reduce detection time.",
-    "difficulty": "Very Hard",
-    "category": "AIOps - Observability",
-    "estimated_time": "90+ minutes",
-    "tags": ["aiops", "observability", "monitoring"]
-  },
-  {
-    "slug": "eta-location-sharing",
-    "title": "Design an ETA Service and Location Sharing Between Driver and Rider",
-    "description": "Design a system to calculate ETA and share real-time location between drivers and riders.",
-    "difficulty": "Very Hard",
-    "category": "Location-based Services",
-    "estimated_time": "90+ minutes",
-    "tags": ["location", "eta", "real-time"]
+    "tags": [
+      "real-time",
+      "websockets",
+      "messaging"
+    ]
   },
   {
     "slug": "design-a-parts-compatibility-feature-for-an-ecommerce-site",
@@ -294,7 +126,13 @@
     "difficulty": "Hard",
     "category": "E-commerce",
     "estimated_time": "60-90 minutes",
-    "tags": ["e-commerce", "catalog", "search", "data-modeling", "consistency"]
+    "tags": [
+      "e-commerce",
+      "catalog",
+      "search",
+      "data-modeling",
+      "consistency"
+    ]
   },
   {
     "slug": "design-facebook-likes-feature-with-live-updates",
@@ -327,7 +165,7 @@
     ]
   },
   {
-    "slug": "create-a-document-management-system-like-wikipedia-notion-or-google-docs",
+    "slug": "document-management-system",
     "title": "Create a Document Management System like Wikipedia, Notion or Google Docs",
     "description": "Design a collaborative document editing and management system with version control.",
     "difficulty": "Easy",
@@ -336,9 +174,7 @@
     "tags": [
       "collaboration",
       "documents",
-      "real-time",
-      "version-control",
-      "search"
+      "real-time"
     ]
   },
   {
@@ -348,25 +184,38 @@
     "difficulty": "Easy",
     "category": "Infrastructure",
     "estimated_time": "30-45 minutes",
-    "tags": ["scheduling", "distributed-systems", "background-jobs", "cron"]
+    "tags": [
+      "scheduling",
+      "distributed-systems",
+      "background-jobs",
+      "cron"
+    ]
   },
   {
-    "slug": "design-twitter-for-millions-of-users",
+    "slug": "twitter-system-design",
     "title": "Design Twitter for millions of users",
     "description": "Design a microblogging platform like Twitter/X that handles millions of users posting and reading short messages.",
     "difficulty": "Easy",
     "category": "Social Media",
     "estimated_time": "45-60 minutes",
-    "tags": ["social-media", "real-time", "feeds", "scalability", "messaging"]
+    "tags": [
+      "social-media",
+      "real-time",
+      "feeds"
+    ]
   },
   {
-    "slug": "top-k-elements-app-store-rankings-amazon-bestsellers",
+    "slug": "top-k-ranking-system",
     "title": "Top K Elements: App Store Rankings, Amazon Bestsellers",
-    "description": "Design a system to track and display top K items (products, apps, etc.) based on various metrics in real-time.",
+    "description": "Design a system to track and display top K items based on changing metrics in real time.",
     "difficulty": "Easy",
     "category": "Rankings",
     "estimated_time": "30-45 minutes",
-    "tags": ["ranking", "top-k", "heap", "real-time", "aggregation"]
+    "tags": [
+      "ranking",
+      "top-k",
+      "heap"
+    ]
   },
   {
     "slug": "design-a-system-to-view-latest-stock-prices-worldwide",
@@ -384,22 +233,30 @@
     ]
   },
   {
-    "slug": "design-instagram",
+    "slug": "instagram-system-design",
     "title": "Design Instagram",
     "description": "Design a photo-sharing social media platform like Instagram with feed, stories, and user interactions.",
     "difficulty": "Easy",
     "category": "Social Media",
     "estimated_time": "45-60 minutes",
-    "tags": ["social-media", "photo-sharing", "cdn", "feeds", "storage"]
+    "tags": [
+      "social-media",
+      "photo-sharing",
+      "cdn"
+    ]
   },
   {
-    "slug": "design-pastebin",
+    "slug": "pastebin-system-design",
     "title": "Design Pastebin",
-    "description": "Design a web service where users can store plain text and share it with others via a generated URL.",
+    "description": "Design a web service where users can store plain text and share it with others through a generated URL.",
     "difficulty": "Easy",
     "category": "Web Services",
     "estimated_time": "30-45 minutes",
-    "tags": ["web-services", "storage", "caching", "text-storage"]
+    "tags": [
+      "web-services",
+      "storage",
+      "caching"
+    ]
   },
   {
     "slug": "design-a-system-for-sorting-large-data-sets",
@@ -438,19 +295,28 @@
     "difficulty": "Easy",
     "category": "Consumer Apps",
     "estimated_time": "30-45 minutes",
-    "tags": ["api-integration", "caching", "location-services", "mobile"]
+    "tags": [
+      "api-integration",
+      "caching",
+      "location-services",
+      "mobile"
+    ]
   },
   {
-    "slug": "design-a-complete-ci-cd-pipeline",
+    "slug": "ci-cd-pipeline",
     "title": "Design a Complete CI/CD Pipeline",
-    "description": "Design a complete CI/CD pipeline that automates build, test, and deployment processes with container orchestration and monitoring.",
+    "description": "Design a CI/CD pipeline that automates build, test, and deployment with container orchestration and monitoring.",
     "difficulty": "Medium",
     "category": "Azure - DevOps",
     "estimated_time": "45-60 minutes",
-    "tags": ["azure", "azure-devops", "ci-cd", "aks", "containers", "devops"]
+    "tags": [
+      "azure",
+      "azure-devops",
+      "ci-cd"
+    ]
   },
   {
-    "slug": "design-google-calendar",
+    "slug": "google-calendar-system-design",
     "title": "Design Google Calendar",
     "description": "Design a calendar application that allows users to create, manage, and share events and appointments.",
     "difficulty": "Medium",
@@ -459,9 +325,7 @@
     "tags": [
       "productivity",
       "scheduling",
-      "calendar",
-      "synchronization",
-      "notifications"
+      "calendar"
     ]
   },
   {
@@ -501,7 +365,14 @@
     "difficulty": "Medium",
     "category": "AWS - Gaming",
     "estimated_time": "45-60 minutes",
-    "tags": ["aws", "gaming", "elasticache", "redis", "lambda", "leaderboard"]
+    "tags": [
+      "aws",
+      "gaming",
+      "elasticache",
+      "redis",
+      "lambda",
+      "leaderboard"
+    ]
   },
   {
     "slug": "design-a-hotel-booking-system",
@@ -510,7 +381,13 @@
     "difficulty": "Medium",
     "category": "Booking Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["booking", "inventory", "transactions", "payments", "concurrency"]
+    "tags": [
+      "booking",
+      "inventory",
+      "transactions",
+      "payments",
+      "concurrency"
+    ]
   },
   {
     "slug": "build-a-cognitive-ai-application",
@@ -519,7 +396,13 @@
     "difficulty": "Medium",
     "category": "Azure - AI/ML",
     "estimated_time": "45-60 minutes",
-    "tags": ["azure", "cognitive-services", "ai", "bot-service", "nlp"]
+    "tags": [
+      "azure",
+      "cognitive-services",
+      "ai",
+      "bot-service",
+      "nlp"
+    ]
   },
   {
     "slug": "design-an-ml-experiment-tracking-system",
@@ -585,7 +468,7 @@
     ]
   },
   {
-    "slug": "design-web-crawler",
+    "slug": "web-crawler",
     "title": "Design Web Crawler",
     "description": "Design a web crawler that can discover and download billions of web pages efficiently.",
     "difficulty": "Medium",
@@ -594,8 +477,7 @@
     "tags": [
       "crawling",
       "distributed-systems",
-      "web-scraping",
-      "data-collection"
+      "web-scraping"
     ]
   },
   {
@@ -605,7 +487,15 @@
     "difficulty": "Medium",
     "category": "AWS - Security",
     "estimated_time": "45-60 minutes",
-    "tags": ["aws", "vpc", "security", "elb", "auto-scaling", "rds", "waf"]
+    "tags": [
+      "aws",
+      "vpc",
+      "security",
+      "elb",
+      "auto-scaling",
+      "rds",
+      "waf"
+    ]
   },
   {
     "slug": "design-a-model-registry-and-versioning-system",
@@ -624,28 +514,19 @@
     ]
   },
   {
-    "slug": "distributed-cache-system",
-    "title": "Distributed Cache System",
-    "description": "Design a distributed caching system like Redis or Memcached that provides fast data access.",
-    "difficulty": "Medium",
-    "category": "Caching Systems",
-    "estimated_time": "30-45 minutes",
-    "tags": [
-      "caching",
-      "distributed-systems",
-      "performance",
-      "memory",
-      "consistency"
-    ]
-  },
-  {
     "slug": "design-a-user-login-and-authentication-system",
     "title": "Design a User Login and Authentication System",
     "description": "Design a secure authentication system with login, registration, and session management.",
     "difficulty": "Medium",
     "category": "Security",
     "estimated_time": "45-60 minutes",
-    "tags": ["security", "authentication", "sessions", "oauth", "passwords"]
+    "tags": [
+      "security",
+      "authentication",
+      "sessions",
+      "oauth",
+      "passwords"
+    ]
   },
   {
     "slug": "design-a-key-value-store",
@@ -684,22 +565,25 @@
     "difficulty": "Medium",
     "category": "GCP - Document Processing",
     "estimated_time": "45-60 minutes",
-    "tags": ["gcp", "document-ai", "ocr", "cloud-functions", "ml"]
+    "tags": [
+      "gcp",
+      "document-ai",
+      "ocr",
+      "cloud-functions",
+      "ml"
+    ]
   },
   {
-    "slug": "build-a-serverless-event-driven-architecture",
+    "slug": "serverless-event-driven-architecture",
     "title": "Build a Serverless Event-Driven Architecture",
-    "description": "Design an event-driven system that triggers functions based on events, processes messages asynchronously, and integrates with multiple cloud services.",
+    "description": "Design a system that triggers functions from events, processes messages asynchronously, and integrates cloud services.",
     "difficulty": "Medium",
     "category": "GCP - Serverless",
     "estimated_time": "45-60 minutes",
     "tags": [
       "gcp",
       "cloud-functions",
-      "eventarc",
-      "pub-sub",
-      "serverless",
-      "event-driven"
+      "eventarc"
     ]
   },
   {
@@ -709,7 +593,13 @@
     "difficulty": "Medium",
     "category": "Media Sharing",
     "estimated_time": "45-60 minutes",
-    "tags": ["photo-sharing", "storage", "cdn", "image-processing", "search"]
+    "tags": [
+      "photo-sharing",
+      "storage",
+      "cdn",
+      "image-processing",
+      "search"
+    ]
   },
   {
     "slug": "build-a-real-time-analytics-dashboard",
@@ -734,7 +624,13 @@
     "difficulty": "Medium",
     "category": "GCP - Web Applications",
     "estimated_time": "45-60 minutes",
-    "tags": ["gcp", "app-engine", "cloud-sql", "cloud-storage", "cdn"]
+    "tags": [
+      "gcp",
+      "app-engine",
+      "cloud-sql",
+      "cloud-storage",
+      "cdn"
+    ]
   },
   {
     "slug": "design-a-data-labeling-and-annotation-platform",
@@ -759,7 +655,14 @@
     "difficulty": "Medium",
     "category": "AWS - CDN",
     "estimated_time": "30-45 minutes",
-    "tags": ["aws", "cloudfront", "cdn", "s3", "lambda-edge", "route53"]
+    "tags": [
+      "aws",
+      "cloudfront",
+      "cdn",
+      "s3",
+      "lambda-edge",
+      "route53"
+    ]
   },
   {
     "slug": "design-a-real-time-sentiment-analysis-platform",
@@ -831,7 +734,14 @@
     "difficulty": "Medium",
     "category": "AWS - Serverless",
     "estimated_time": "45-60 minutes",
-    "tags": ["aws", "lambda", "api-gateway", "dynamodb", "s3", "serverless"]
+    "tags": [
+      "aws",
+      "lambda",
+      "api-gateway",
+      "dynamodb",
+      "s3",
+      "serverless"
+    ]
   },
   {
     "slug": "url-shortener-like-bit-ly",
@@ -871,7 +781,13 @@
     "difficulty": "Hard",
     "category": "Azure - Virtual Desktop",
     "estimated_time": "60-90 minutes",
-    "tags": ["azure", "virtual-desktop", "vdi", "fslogix", "remote-work"]
+    "tags": [
+      "azure",
+      "virtual-desktop",
+      "vdi",
+      "fslogix",
+      "remote-work"
+    ]
   },
   {
     "slug": "build-a-large-scale-data-migration-solution",
@@ -880,7 +796,13 @@
     "difficulty": "Hard",
     "category": "AWS - Migration",
     "estimated_time": "60-90 minutes",
-    "tags": ["aws", "data-migration", "dms", "snowball", "datasync"]
+    "tags": [
+      "aws",
+      "data-migration",
+      "dms",
+      "snowball",
+      "datasync"
+    ]
   },
   {
     "slug": "identify-the-k-most-shared-articles-in-various-time-windows",
@@ -889,10 +811,16 @@
     "difficulty": "Hard",
     "category": "Analytics",
     "estimated_time": "45-60 minutes",
-    "tags": ["analytics", "real-time", "ranking", "streaming", "top-k"]
+    "tags": [
+      "analytics",
+      "real-time",
+      "ranking",
+      "streaming",
+      "top-k"
+    ]
   },
   {
-    "slug": "digital-payment-system",
+    "slug": "payment-system",
     "title": "Digital Payment System",
     "description": "Design a payment processing system like PayPal or Stripe that handles financial transactions securely.",
     "difficulty": "Hard",
@@ -901,9 +829,7 @@
     "tags": [
       "payments",
       "security",
-      "compliance",
-      "transactions",
-      "fraud-detection"
+      "compliance"
     ]
   },
   {
@@ -929,7 +855,13 @@
     "difficulty": "Hard",
     "category": "Financial Systems",
     "estimated_time": "60-90 minutes",
-    "tags": ["payments", "wire-transfer", "financial", "security", "compliance"]
+    "tags": [
+      "payments",
+      "wire-transfer",
+      "financial",
+      "security",
+      "compliance"
+    ]
   },
   {
     "slug": "design-an-intelligent-incident-management-system",
@@ -970,7 +902,13 @@
     "difficulty": "Hard",
     "category": "GCP - AI/ML",
     "estimated_time": "60-90 minutes",
-    "tags": ["gcp", "contact-center-ai", "dialogflow", "speech-to-text", "nlp"]
+    "tags": [
+      "gcp",
+      "contact-center-ai",
+      "dialogflow",
+      "speech-to-text",
+      "nlp"
+    ]
   },
   {
     "slug": "design-a-log-anomaly-detection-system",
@@ -1053,18 +991,16 @@
     ]
   },
   {
-    "slug": "ride-sharing-service",
+    "slug": "ride-sharing-system",
     "title": "Ride Sharing Service",
-    "description": "Design a ride-sharing platform like Uber or Lyft that matches drivers with passengers in real-time.",
+    "description": "Design a ride-sharing platform like Uber or Lyft that matches drivers with passengers in real time.",
     "difficulty": "Hard",
     "category": "Location-based Services",
     "estimated_time": "60-90 minutes",
     "tags": [
       "location-services",
       "real-time",
-      "geospatial",
-      "payments",
-      "mobile"
+      "geospatial"
     ]
   },
   {
@@ -1074,7 +1010,14 @@
     "difficulty": "Hard",
     "category": "AWS - Data Lake",
     "estimated_time": "60-90 minutes",
-    "tags": ["aws", "data-lake", "s3", "glue", "athena", "analytics"]
+    "tags": [
+      "aws",
+      "data-lake",
+      "s3",
+      "glue",
+      "athena",
+      "analytics"
+    ]
   },
   {
     "slug": "build-a-machine-learning-model-deployment-pipeline",
@@ -1083,7 +1026,14 @@
     "difficulty": "Hard",
     "category": "AWS - Machine Learning",
     "estimated_time": "60-90 minutes",
-    "tags": ["aws", "sagemaker", "machine-learning", "lambda", "mlops", "ci-cd"]
+    "tags": [
+      "aws",
+      "sagemaker",
+      "machine-learning",
+      "lambda",
+      "mlops",
+      "ci-cd"
+    ]
   },
   {
     "slug": "design-an-a-b-testing-system",
@@ -1092,7 +1042,12 @@
     "difficulty": "Hard",
     "category": "Experimentation",
     "estimated_time": "45-60 minutes",
-    "tags": ["experimentation", "ab-testing", "analytics", "feature-flags"]
+    "tags": [
+      "experimentation",
+      "ab-testing",
+      "analytics",
+      "feature-flags"
+    ]
   },
   {
     "slug": "build-a-secure-identity-management-solution-for-customers",
@@ -1101,7 +1056,14 @@
     "difficulty": "Hard",
     "category": "Azure - Identity",
     "estimated_time": "45-60 minutes",
-    "tags": ["azure", "azure-ad", "b2c", "identity", "security", "mfa"]
+    "tags": [
+      "azure",
+      "azure-ad",
+      "b2c",
+      "identity",
+      "security",
+      "mfa"
+    ]
   },
   {
     "slug": "social-media-news-feed",
@@ -1110,21 +1072,25 @@
     "difficulty": "Hard",
     "category": "Social Media",
     "estimated_time": "60-90 minutes",
-    "tags": ["social-media", "feeds", "scalability", "personalization", "media"]
+    "tags": [
+      "social-media",
+      "feeds",
+      "scalability",
+      "personalization",
+      "media"
+    ]
   },
   {
-    "slug": "design-a-video-processing-and-transcoding-pipeline",
+    "slug": "video-transcoding-pipeline",
     "title": "Design a Video Processing and Transcoding Pipeline",
-    "description": "Design a video transcoding and processing pipeline that uploads videos, transcodes to multiple formats, generates thumbnails, and delivers content via CDN.",
+    "description": "Design a pipeline that uploads videos, transcodes multiple formats, generates thumbnails, and delivers content through a CDN.",
     "difficulty": "Hard",
     "category": "GCP - Media",
     "estimated_time": "60-90 minutes",
     "tags": [
       "gcp",
       "transcoding",
-      "media-processing",
-      "cloud-storage",
-      "cloud-run"
+      "media-processing"
     ]
   },
   {
@@ -1150,7 +1116,14 @@
     "difficulty": "Hard",
     "category": "AWS - Containers",
     "estimated_time": "60-90 minutes",
-    "tags": ["aws", "ecs", "eks", "kubernetes", "microservices", "containers"]
+    "tags": [
+      "aws",
+      "ecs",
+      "eks",
+      "kubernetes",
+      "microservices",
+      "containers"
+    ]
   },
   {
     "slug": "design-google-analytics-user-analytics-dashboard-and-pipeline",
@@ -1159,7 +1132,13 @@
     "difficulty": "Hard",
     "category": "Analytics",
     "estimated_time": "60-90 minutes",
-    "tags": ["analytics", "data-pipeline", "real-time", "reporting", "big-data"]
+    "tags": [
+      "analytics",
+      "data-pipeline",
+      "real-time",
+      "reporting",
+      "big-data"
+    ]
   },
   {
     "slug": "design-a-real-time-model-monitoring-and-drift-detection-system",
@@ -1178,7 +1157,7 @@
     ]
   },
   {
-    "slug": "netflix-limit-the-number-of-screens-each-user-can-watch",
+    "slug": "netflix-concurrent-stream-limits",
     "title": "Netflix: Limit the Number of Screens Each User Can Watch",
     "description": "Design a system to enforce concurrent streaming limits per user account.",
     "difficulty": "Hard",
@@ -1187,9 +1166,7 @@
     "tags": [
       "session-management",
       "access-control",
-      "distributed-systems",
-      "redis",
-      "concurrency"
+      "distributed-systems"
     ]
   },
   {
@@ -1231,21 +1208,25 @@
     "difficulty": "Hard",
     "category": "Messaging",
     "estimated_time": "60-90 minutes",
-    "tags": ["messaging", "queues", "distributed-systems", "async", "pub-sub"]
+    "tags": [
+      "messaging",
+      "queues",
+      "distributed-systems",
+      "async",
+      "pub-sub"
+    ]
   },
   {
-    "slug": "find-a-rider-for-uber-or-uber-eats",
+    "slug": "uber-rider-matching",
     "title": "Find a Rider for Uber or Uber Eats",
-    "description": "Design a matching algorithm to efficiently connect riders/customers with drivers in real-time.",
+    "description": "Design a matching algorithm to efficiently connect riders or customers with drivers in real time.",
     "difficulty": "Hard",
     "category": "Location-based Services",
     "estimated_time": "60-90 minutes",
     "tags": [
       "matching",
       "location-services",
-      "real-time",
-      "optimization",
-      "geospatial"
+      "real-time"
     ]
   },
   {
@@ -1271,7 +1252,13 @@
     "difficulty": "Hard",
     "category": "File Transfer",
     "estimated_time": "45-60 minutes",
-    "tags": ["file-download", "http", "chunking", "resume", "concurrency"]
+    "tags": [
+      "file-download",
+      "http",
+      "chunking",
+      "resume",
+      "concurrency"
+    ]
   },
   {
     "slug": "design-an-ai-driven-change-risk-assessment-system",
@@ -1306,18 +1293,16 @@
     ]
   },
   {
-    "slug": "design-a-personalized-recommendation-engine",
+    "slug": "recommendation-engine",
     "title": "Design a Personalized Recommendation Engine",
-    "description": "Design a recommendation system that analyzes user behavior, trains ML models, generates personalized recommendations, and serves predictions via API.",
+    "description": "Design a system that analyzes user behavior, trains ML models, generates recommendations, and serves predictions through an API.",
     "difficulty": "Hard",
     "category": "GCP - Recommendations",
     "estimated_time": "60-90 minutes",
     "tags": [
       "gcp",
       "recommendations-ai",
-      "machine-learning",
-      "bigquery-ml",
-      "personalization"
+      "machine-learning"
     ]
   },
   {
@@ -1374,7 +1359,13 @@
     "difficulty": "Hard",
     "category": "GCP - Machine Learning",
     "estimated_time": "60-90 minutes",
-    "tags": ["gcp", "vertex-ai", "automl", "machine-learning", "mlops"]
+    "tags": [
+      "gcp",
+      "vertex-ai",
+      "automl",
+      "machine-learning",
+      "mlops"
+    ]
   },
   {
     "slug": "design-a-feature-store-for-machine-learning",
@@ -1415,7 +1406,14 @@
     "difficulty": "Hard",
     "category": "GCP - Data Processing",
     "estimated_time": "60-90 minutes",
-    "tags": ["gcp", "dataflow", "pub-sub", "bigquery", "big-data", "streaming"]
+    "tags": [
+      "gcp",
+      "dataflow",
+      "pub-sub",
+      "bigquery",
+      "big-data",
+      "streaming"
+    ]
   },
   {
     "slug": "design-typeahead-suggestion-autocomplete",
@@ -1424,7 +1422,13 @@
     "difficulty": "Hard",
     "category": "Search Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["search", "autocomplete", "trie", "real-time", "caching"]
+    "tags": [
+      "search",
+      "autocomplete",
+      "trie",
+      "real-time",
+      "caching"
+    ]
   },
   {
     "slug": "design-a-live-comments-feature-for-facebook",
@@ -1433,7 +1437,13 @@
     "difficulty": "Hard",
     "category": "Real-time Systems",
     "estimated_time": "45-60 minutes",
-    "tags": ["real-time", "comments", "websockets", "social-media", "threading"]
+    "tags": [
+      "real-time",
+      "comments",
+      "websockets",
+      "social-media",
+      "threading"
+    ]
   },
   {
     "slug": "design-a-predictive-maintenance-system",
@@ -1468,19 +1478,16 @@
     ]
   },
   {
-    "slug": "design-a-real-time-recommendation-system",
+    "slug": "real-time-recommendation-system",
     "title": "Design a Real-time Recommendation System",
-    "description": "Design a recommendation system that generates personalized recommendations using collaborative filtering, content-based approaches, and deep learning, serving predictions with sub-100ms latency.",
+    "description": "Design a recommendation system that combines multiple modeling approaches and serves predictions with sub-100ms latency.",
     "difficulty": "Hard",
     "category": "ML - Recommendation Systems",
     "estimated_time": "60-90 minutes",
     "tags": [
       "ml",
       "recommendation-systems",
-      "collaborative-filtering",
-      "deep-learning",
-      "embedding",
-      "ranking"
+      "collaborative-filtering"
     ]
   },
   {
@@ -1490,22 +1497,24 @@
     "difficulty": "Hard",
     "category": "Infrastructure",
     "estimated_time": "30-45 minutes",
-    "tags": ["rate-limiting", "infrastructure", "distributed-systems", "redis"]
+    "tags": [
+      "rate-limiting",
+      "infrastructure",
+      "distributed-systems",
+      "redis"
+    ]
   },
   {
-    "slug": "design-an-ai-powered-semantic-search-engine",
+    "slug": "semantic-search-engine",
     "title": "Design an AI-Powered Semantic Search Engine",
-    "description": "Design a search engine that understands natural language queries, uses vector embeddings for semantic similarity, supports hybrid search with keyword matching, and provides relevance ranking.",
+    "description": "Design a search engine that understands natural-language queries, uses vector embeddings, supports hybrid search, and ranks results.",
     "difficulty": "Hard",
     "category": "AI - Search & Retrieval",
     "estimated_time": "60-90 minutes",
     "tags": [
       "ai",
       "search",
-      "embeddings",
-      "vector-database",
-      "nlp",
-      "retrieval"
+      "embeddings"
     ]
   },
   {
@@ -1595,7 +1604,13 @@
     "difficulty": "Hard",
     "category": "Distributed Systems",
     "estimated_time": "60-90 minutes",
-    "tags": ["distributed-systems", "p2p", "security", "networking", "research"]
+    "tags": [
+      "distributed-systems",
+      "p2p",
+      "security",
+      "networking",
+      "research"
+    ]
   },
   {
     "slug": "design-a-real-time-ai-translation-and-localization-service",
@@ -1667,7 +1682,14 @@
     "difficulty": "Very Hard",
     "category": "AI - Multi-Modal",
     "estimated_time": "90+ minutes",
-    "tags": ["ai", "multi-modal", "vision", "speech", "llm", "assistant"]
+    "tags": [
+      "ai",
+      "multi-modal",
+      "vision",
+      "speech",
+      "llm",
+      "assistant"
+    ]
   },
   {
     "slug": "design-a-self-healing-infrastructure-platform",
@@ -1722,7 +1744,14 @@
     "difficulty": "Very Hard",
     "category": "Multi-Cloud",
     "estimated_time": "90+ minutes",
-    "tags": ["multi-cloud", "data-sync", "aws", "azure", "gcp", "storage"]
+    "tags": [
+      "multi-cloud",
+      "data-sync",
+      "aws",
+      "azure",
+      "gcp",
+      "storage"
+    ]
   },
   {
     "slug": "design-a-hybrid-cloud-infrastructure-solution",
@@ -1808,7 +1837,13 @@
     "difficulty": "Very Hard",
     "category": "Location-based Services",
     "estimated_time": "60-90 minutes",
-    "tags": ["location-services", "geospatial", "search", "mobile", "real-time"]
+    "tags": [
+      "location-services",
+      "geospatial",
+      "search",
+      "mobile",
+      "real-time"
+    ]
   },
   {
     "slug": "build-a-multi-cloud-kubernetes-orchestration-platform",
@@ -1817,7 +1852,14 @@
     "difficulty": "Very Hard",
     "category": "Multi-Cloud",
     "estimated_time": "90+ minutes",
-    "tags": ["multi-cloud", "kubernetes", "eks", "aks", "gke", "orchestration"]
+    "tags": [
+      "multi-cloud",
+      "kubernetes",
+      "eks",
+      "aks",
+      "gke",
+      "orchestration"
+    ]
   },
   {
     "slug": "design-an-autonomous-vehicle-perception-system",
@@ -1889,7 +1931,13 @@
     "difficulty": "Very Hard",
     "category": "Azure - Security",
     "estimated_time": "90+ minutes",
-    "tags": ["azure", "confidential-computing", "security", "tee", "encryption"]
+    "tags": [
+      "azure",
+      "confidential-computing",
+      "security",
+      "tee",
+      "encryption"
+    ]
   },
   {
     "slug": "design-a-large-language-model-serving-platform",
@@ -1898,7 +1946,14 @@
     "difficulty": "Very Hard",
     "category": "AI - LLM Infrastructure",
     "estimated_time": "90+ minutes",
-    "tags": ["ai", "llm", "gpu", "inference", "serving", "transformers"]
+    "tags": [
+      "ai",
+      "llm",
+      "gpu",
+      "inference",
+      "serving",
+      "transformers"
+    ]
   },
   {
     "slug": "design-a-knowledge-graph-construction-and-query-system",
@@ -1923,7 +1978,13 @@
     "difficulty": "Very Hard",
     "category": "Advertising",
     "estimated_time": "90+ minutes",
-    "tags": ["advertising", "real-time-bidding", "targeting", "analytics", "ml"]
+    "tags": [
+      "advertising",
+      "real-time-bidding",
+      "targeting",
+      "analytics",
+      "ml"
+    ]
   },
   {
     "slug": "design-a-high-performance-computing-cluster",
@@ -1932,7 +1993,13 @@
     "difficulty": "Very Hard",
     "category": "Azure - HPC",
     "estimated_time": "90+ minutes",
-    "tags": ["azure", "hpc", "batch", "cyclecloud", "high-performance"]
+    "tags": [
+      "azure",
+      "hpc",
+      "batch",
+      "cyclecloud",
+      "high-performance"
+    ]
   },
   {
     "slug": "design-a-generative-ai-image-and-video-platform",
@@ -1973,7 +2040,13 @@
     "difficulty": "Very Hard",
     "category": "Pricing Systems",
     "estimated_time": "90+ minutes",
-    "tags": ["pricing", "real-time", "stream-processing", "geospatial", "ml"]
+    "tags": [
+      "pricing",
+      "real-time",
+      "stream-processing",
+      "geospatial",
+      "ml"
+    ]
   },
   {
     "slug": "design-an-ioc-dependency-injection-framework",
@@ -2007,13 +2080,17 @@
     ]
   },
   {
-    "slug": "design-an-eta-service-and-location-sharing-between-driver-and-rider",
+    "slug": "eta-location-sharing",
     "title": "Design an ETA Service and Location Sharing Between Driver and Rider",
     "description": "Design a system to calculate ETA and share real-time location between drivers and riders.",
     "difficulty": "Very Hard",
     "category": "Location-based Services",
     "estimated_time": "90+ minutes",
-    "tags": ["location", "eta", "real-time", "geospatial", "routing", "ml"]
+    "tags": [
+      "location",
+      "eta",
+      "real-time"
+    ]
   },
   {
     "slug": "build-a-global-gaming-backend-system",
@@ -2047,19 +2124,16 @@
     ]
   },
   {
-    "slug": "design-an-intelligent-observability-platform",
+    "slug": "observability-platform",
     "title": "Design an Intelligent Observability Platform",
-    "description": "Design a unified observability platform that uses AI to correlate metrics, logs, and traces, provides intelligent querying, automatically discovers service topologies, and reduces mean time to detection.",
+    "description": "Design a platform that correlates metrics, logs, and traces, discovers service topology, and helps reduce detection time.",
     "difficulty": "Very Hard",
     "category": "AIOps - Observability",
     "estimated_time": "90+ minutes",
     "tags": [
       "aiops",
       "observability",
-      "monitoring",
-      "opentelemetry",
-      "metrics",
-      "tracing"
+      "monitoring"
     ]
   },
   {

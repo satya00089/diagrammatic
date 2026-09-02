@@ -158,8 +158,9 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   onPractice,
   problemSlug,
 }) => {
-  const isDocumentManagement = problemSlug === "document-management-system";
-  const isUrlShortener = problemSlug === "url-shortener";
+  const isDocumentManagement =
+    problemSlug === "document-management-system";
+  const isUrlShortener = problemSlug === "url-shortener-like-bit-ly";
   const isJobScheduler = problemSlug === "job-scheduler";
   const isPartsCompatibility =
     problemSlug ===
@@ -170,13 +171,14 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     "design-a-feature-to-show-the-number-of-users-viewing-a-page";
   const isFacebookLikesLiveUpdates =
     problemSlug === "design-facebook-likes-feature-with-live-updates";
-  const isTwitterSystemDesign = problemSlug === "twitter-system-design";
-  const isTopKRankingSystem = problemSlug === "top-k-ranking-system";
+  const isTwitterSystemDesign =
+    problemSlug === "twitter-system-design";
+  const isTopKRankingSystem =
+    problemSlug === "top-k-ranking-system";
   const isCostOptimizedBatchProcessing =
     problemSlug === "design-a-cost-optimized-architecture-for-batch-processing";
   const isInstagramSystemDesign = problemSlug === "instagram-system-design";
-  const isDesignInstagram = problemSlug === "design-instagram";
-  const isDesignPastebin = problemSlug === "design-pastebin";
+  const isDesignPastebin = problemSlug === "pastebin-system-design";
   const isSortLargeDataSets =
     problemSlug === "design-a-system-for-sorting-large-data-sets";
   const isFacebookMarketplace =
@@ -194,7 +196,6 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
     isTopKRankingSystem ||
     isCostOptimizedBatchProcessing ||
     isInstagramSystemDesign ||
-    isDesignInstagram ||
     isDesignPastebin ||
     isSortLargeDataSets ||
     isFacebookMarketplace ||
@@ -219,17 +220,15 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                     ? "Peak runnable tasks"
                     : isInstagramSystemDesign
                       ? "Media upload rate"
-                      : isDesignInstagram
-                        ? "Media upload rate"
-                        : isDesignPastebin
-                          ? "Paste create rate"
-                          : isSortLargeDataSets
-                            ? "Input throughput"
-                            : isFacebookMarketplace
-                              ? "Search throughput"
-                              : isCatalogProblem
-                                ? guide.requirements.metrics[0]?.label
-                                : "Peak dispatch rate";
+                      : isDesignPastebin
+                        ? "Paste create rate"
+                        : isSortLargeDataSets
+                          ? "Input throughput"
+                          : isFacebookMarketplace
+                            ? "Search throughput"
+                            : isCatalogProblem
+                              ? guide.requirements.metrics[0]?.label
+                              : "Peak dispatch rate";
   const durableStepTitle = isDocumentManagement
     ? "Accept and fan out an edit"
     : isUrlShortener
@@ -248,10 +247,8 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ? "Maintain the Top-K"
                   : isCostOptimizedBatchProcessing
                     ? "Commit the durable state"
-                    : isInstagramSystemDesign
-                      ? "Commit content metadata"
-                      : isDesignInstagram
-                        ? "Commit the content record"
+                      : isInstagramSystemDesign
+                        ? "Commit content metadata"
                         : isDesignPastebin
                           ? "Commit immutable content"
                           : isSortLargeDataSets
@@ -279,19 +276,17 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
                   ? "Serve or rebuild asynchronously"
                   : isCostOptimizedBatchProcessing
                     ? "Reconcile and report asynchronously"
-                    : isInstagramSystemDesign
-                      ? "Serve and invalidate asynchronously"
-                      : isDesignInstagram
-                        ? "Process media asynchronously"
-                        : isDesignPastebin
-                          ? "Invalidate and expire asynchronously"
-                          : isSortLargeDataSets
-                            ? "Commit the output manifest"
-                            : isFacebookMarketplace
-                              ? "Notify and moderate asynchronously"
-                              : isCatalogProblem
-                                ? guide.dataFlow[4]?.title
-                                : "Enqueue an execution";
+                      : isInstagramSystemDesign
+                        ? "Serve and invalidate asynchronously"
+                      : isDesignPastebin
+                        ? "Invalidate and expire asynchronously"
+                        : isSortLargeDataSets
+                          ? "Commit the output manifest"
+                          : isFacebookMarketplace
+                            ? "Notify and moderate asynchronously"
+                            : isCatalogProblem
+                              ? guide.dataFlow[4]?.title
+                              : "Enqueue an execution";
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);

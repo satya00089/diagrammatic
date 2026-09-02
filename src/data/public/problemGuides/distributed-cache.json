@@ -1,347 +1,317 @@
 {
   "prompt": {
-    "brief": "Design low-latency key-value caching with partitioning, eviction, replication, and recovery so users can read or write a cache key reliably at scale.",
+    "brief": "Design a distributed cache like Redis or Memcached that serves key-value reads and writes with predictable low latency, bounded memory, replication, and recovery.",
     "successSignals": [
-      "Define the source of truth for optional snapshots and invalidation intent and make retries idempotent.",
-      "Use bounded, partitioned state to meet 10M requests per second and 1TB working set and p99 <=5ms cache operations.",
-      "Separate the critical request path from replication, eviction telemetry, and warmup.",
-      "Explain consistency, failure recovery, authorization, observability, and a degraded mode."
+      "Define key ownership, TTL behavior, eviction policy, and the consistency contract for reads, writes, and deletes.",
+      "Use partitioning and hot-key isolation to serve 10M operations per second over a 1TB working set without a single-node bottleneck.",
+      "Separate cache operations from replication, rebalancing, eviction telemetry, and warmup so background work cannot stall requests.",
+      "Explain node failure, quorum or primary-replica choices, cache stampede protection, security, and degraded behavior."
     ]
   },
   "requirements": {
     "functional": [
-      "Support the core workflow to read or write a cache key.",
-      "Expose status, results, and freshness appropriate to low-latency key-value caching with partitioning, eviction, replication, and recovery.",
-      "Support authorization, validation, updates, deletion, and recovery semantics."
+      "Store, retrieve, overwrite, and delete values by namespace and key.",
+      "Support per-entry TTL, explicit expiration, and an observable miss or expired result.",
+      "Provide atomic compare-and-set and increment operations for callers that need coordination.",
+      "Distribute entries across cache nodes and replicate selected partitions for failure recovery.",
+      "Expose node, partition, memory, eviction, and replication health to operators.",
+      "Allow authenticated clients to use namespaces, quotas, and encryption in transit."
     ],
     "nonFunctional": [
-      "Meet p99 <=5ms cache operations under normal load.",
-      "Scale to 10M requests per second and 1TB working set without a single hot key or unbounded synchronous work.",
-      "Do not lose committed state; make retries and duplicate events safe.",
-      "Degrade safely when downstream workers, caches, or external dependencies fail."
+      "Keep the normal GET, SET, and DELETE path below p99 5ms inside a region.",
+      "Handle 10M cache operations per second and a 1TB working set with horizontal partitioning.",
+      "Keep a node failure from losing acknowledged writes beyond the declared durability contract.",
+      "Bound memory, queue depth, replication lag, and recovery work so overload is visible and controlled.",
+      "Degrade predictably during a partition, backing-store failure, or hot-key event."
     ],
     "scaleAssumptions": [
-      "10M requests per second and 1TB working set",
-      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
-      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+      "Serve 10M operations per second at peak over approximately 1TB of active values.",
+      "Assume a roughly 90:10 read-to-write ratio, with a small set of keys capable of becoming extremely hot.",
+      "Partition by a hash of namespace and key; keep replicas in separate failure zones and reserve headroom for rebalancing.",
+      "Treat the cache as the serving layer unless the product explicitly requires durable writes to a backing database."
     ],
     "metrics": [
       {
-        "label": "Peak scale",
-        "value": "10M requests per second",
-        "description": "Capacity assumption that drives partitioning and backpressure."
+        "label": "Peak throughput",
+        "value": "10M operations/second",
+        "description": "Capacity assumption that drives shard count, connection limits, and backpressure."
       },
       {
-        "label": "Latency target",
-        "value": "p99 <=5ms cache operations",
-        "description": "User-facing budget for the primary request or read path."
+        "label": "Working set",
+        "value": "1TB active values",
+        "description": "Memory and replica capacity must include metadata, fragmentation, and failover headroom."
       },
       {
-        "label": "Durable boundary",
-        "value": "Committed before async",
-        "description": "The source of truth is optional snapshots and invalidation intent."
+        "label": "Operation latency",
+        "value": "p99 < 5ms",
+        "description": "Budget for the regional cache path, excluding optional asynchronous telemetry."
       },
       {
-        "label": "Async boundary",
-        "value": "At-least-once workers",
-        "description": "Keep replication, eviction telemetry, and warmup off the synchronous path."
+        "label": "Replica freshness",
+        "value": "p99 lag < 1s",
+        "description": "Operational target for asynchronous replicas when the chosen consistency mode permits it."
+      },
+      {
+        "label": "Cache effectiveness",
+        "value": ">= 95% hit rate for hot working set",
+        "description": "A product-specific target that must be measured by namespace and key class, not only globally."
       }
     ]
   },
   "entities": [
     {
-      "name": "ResourceSpec",
+      "name": "CacheEntry",
       "fields": [
-        "resourceId",
-        "tenantId",
-        "desiredState",
+        "namespace (PK)",
+        "key (SK)",
+        "value or valuePointer",
         "version",
-        "policyVersion",
-        "updatedAt"
+        "expiresAt",
+        "sizeBytes",
+        "lastAccessedAt"
       ],
-      "notes": "Versioned desired state for a distributed cache managed resource."
+      "notes": "The serving record returned by a cache read. Version and expiry travel with the value so stale replicas and expired entries can be rejected."
     },
     {
-      "name": "Operation",
+      "name": "CacheNode",
       "fields": [
-        "operationId",
-        "resourceId",
-        "requestHash",
-        "step",
-        "attempt",
+        "nodeId",
+        "zone",
+        "endpoint",
+        "capacityBytes",
+        "usedBytes",
+        "status",
+        "membershipEpoch"
+      ],
+      "notes": "A cache process or shard host that owns partitions and reports capacity, health, and membership state."
+    },
+    {
+      "name": "Partition",
+      "fields": [
+        "partitionId",
+        "hashRange",
+        "primaryNodeId",
+        "replicaNodeIds",
+        "epoch",
+        "state"
+      ],
+      "notes": "The routing and failover unit. Its epoch prevents an old owner from accepting writes after rebalancing."
+    },
+    {
+      "name": "Replica",
+      "fields": [
+        "partitionId",
+        "nodeId",
+        "role",
+        "replicationOffset",
+        "lastHeartbeatAt",
         "status"
       ],
-      "notes": "Durable distributed cache reconciliation operation with per-step progress."
+      "notes": "Replication state for a partition copy, including whether it can be promoted and how far it has caught up."
     },
     {
-      "name": "PolicyVersion",
+      "name": "EvictionRecord",
       "fields": [
-        "policyId",
-        "scope",
-        "version",
-        "rules",
-        "effectiveAt",
-        "status"
+        "recordId",
+        "namespace",
+        "key",
+        "reason",
+        "bytesFreed",
+        "evictedAt"
       ],
-      "notes": "Auditable distributed cache policy evaluated before provisioning or mutation."
-    },
-    {
-      "name": "ReconciliationCheckpoint",
-      "fields": [
-        "resourceId",
-        "provider",
-        "observedVersion",
-        "cursor",
-        "lastError",
-        "updatedAt"
-      ],
-      "notes": "Provider-specific distributed cache observation and recovery cursor."
+      "notes": "Bounded telemetry for TTL and memory-pressure evictions; it is not part of the cache read critical path."
     }
   ],
   "apis": [
     {
+      "method": "GET",
+      "path": "/v1/cache/{namespace}/{key}",
+      "contract": "{ consistency?, version? } -> { hit, value?, version, expiresAt?, servedBy }",
+      "notes": "Route the key to its current owner, return a hit or miss, and apply the requested consistency mode without reading an unrelated control-plane resource."
+    },
+    {
       "method": "PUT",
-      "path": "/v1/resources/{resourceId}",
-      "contract": "{ desiredState, expectedVersion, idempotencyKey } -> { version, operationId }",
-      "notes": "Update distributed cache desired state with optimistic concurrency."
+      "path": "/v1/cache/{namespace}/{key}",
+      "contract": "{ value, ttlSeconds?, expectedVersion?, writeMode } -> { version, expiresAt, replicationStatus }",
+      "notes": "Write at the partition primary with an atomic version check, then acknowledge according to the configured primary-only or replica-quorum contract."
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1/cache/{namespace}/{key}",
+      "contract": "{ expectedVersion? } -> { deleted, version }",
+      "notes": "Write a tombstone or deletion version through the same partition owner so a delayed replica cannot resurrect the value."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/cache/{namespace}/batch",
+      "contract": "{ operations[] } -> { results[], partialFailure?, retryToken? }",
+      "notes": "Bound batch size and preserve per-key partition ordering; never turn a batch into unbounded synchronous fan-out."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{resourceId}",
-      "contract": "{ desiredState, observedState, version, health, operationStatus }",
-      "notes": "Return distributed cache desired and observed state with reconciliation freshness."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/operations/{operationId}/cancel",
-      "contract": "{ reason, expectedVersion } -> { status }",
-      "notes": "Request a safe cancellation or rollback of an in-flight distributed cache operation."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/resources/{resourceId}/reconcile",
-      "contract": "{ provider, observedState, idempotencyKey } -> { operationId, status }",
-      "notes": "Trigger an auditable distributed cache reconciliation or repair."
+      "path": "/v1/cache/health?namespace=",
+      "contract": "{ nodes[], partitions[], hitRate, evictionRate, replicationLag, freshness }",
+      "notes": "Return operational health and freshness separately from data reads so clients do not mistake a healthy cache process for a fresh replica."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept a desired-state command",
-      "description": "The distributed cache control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state."
+      "title": "Route the key to a partition",
+      "description": "The gateway authenticates the namespace, hashes namespace plus key, and uses a versioned partition map to select the primary or an eligible replica."
     },
     {
-      "title": "Plan a safe operation",
-      "description": "A planner turns distributed cache desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata."
+      "title": "Serve a cache hit",
+      "description": "The cache node checks the entry version and expiresAt in memory, returns the value immediately, and increments bounded local hit telemetry."
     },
     {
-      "title": "Reconcile providers asynchronously",
-      "description": "Workers apply distributed cache operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state."
+      "title": "Read or write the primary",
+      "description": "A miss reads the current partition owner and fills the local entry; a SET, DELETE, or atomic operation updates the primary with a conditional version check."
     },
     {
-      "title": "Publish observed health",
-      "description": "The serving projection joins desired and observed distributed cache state with operation status, policy version, freshness, and actionable errors."
+      "title": "Replicate the partition change",
+      "description": "The primary appends the mutation to a per-partition replication log and acknowledges after the selected consistency boundary, while replicas apply mutations in order."
     },
     {
-      "title": "Recover and audit",
-      "description": "Retries, dead letters, drift detection, and operator approvals repair distributed cache resources without losing the original command or provider evidence."
+      "title": "Evict, rebalance, and recover asynchronously",
+      "description": "Background workers expire or evict entries, move hash ranges, warm replicas, and promote a caught-up copy after failure without blocking healthy cache operations."
     }
   ],
   "architecture": {
-    "title": "Distributed Cache control-plane architecture",
-    "summary": "Design low-latency key-value caching with partitioning, eviction, replication, and recovery so users can read or write a cache key reliably at scale. The design separates versioned desired state from leased reconciliation work and provider mutations, making drift, retries, approvals, and audit history explicit while keeping operators responsive during execution backlogs.",
+    "title": "Distributed Cache reference architecture",
+    "summary": "A partitioned in-memory serving tier handles the key-value critical path, while a membership store, replication log, and bounded background workers handle consistency, eviction, rebalancing, and recovery. The cache contract makes durability and stale-read behavior explicit instead of treating every cache as an implicit database.",
     "layers": [
       {
         "id": "experience",
-        "label": "Operator and automation plane",
-        "description": "Authenticated clients submit desired state and inspect versioned status and audit outcomes.",
-        "componentIds": ["client", "gateway", "control"]
+        "label": "Client and request edge",
+        "description": "Authenticated clients enter through a bounded API boundary that applies namespace policy and rate limits.",
+        "componentIds": ["client", "gateway", "router"]
+      },
+      {
+        "id": "serving",
+        "label": "Partitioned serving tier",
+        "description": "Routing and cache nodes serve reads and writes from memory with per-partition ownership.",
+        "componentIds": ["router", "cache-cluster"]
       },
       {
         "id": "control",
-        "label": "Desired state and planning plane",
-        "description": "Versioned state, planning, leases, and policy determine safe execution order.",
-        "componentIds": ["state", "scheduler"]
+        "label": "Membership and replication",
+        "description": "The partition map and replication log provide epochs, ordered mutations, and recovery evidence.",
+        "componentIds": ["membership-store", "replication-log"]
       },
       {
-        "id": "execution",
-        "label": "Reconciliation and provider plane",
-        "description": "Durable queues and partitioned workers apply idempotent provider operations.",
-        "componentIds": ["queue", "workers", "providers"]
-      },
-      {
-        "id": "events",
-        "label": "Audit and integration plane",
-        "description": "Replayable events feed status, audit, and external integrations.",
-        "componentIds": ["events"]
+        "id": "background",
+        "label": "Async maintenance",
+        "description": "Eviction, rebalancing, warmup, and repair remain bounded background work.",
+        "componentIds": ["maintenance-workers", "warmup-workers"]
       },
       {
         "id": "operations",
-        "label": "Infrastructure safety operations",
-        "description": "Drift, lag, failed actions, provider limits, and rollout risk are observable.",
+        "label": "Reliability operations",
+        "description": "Operators can see latency, hit rate, memory pressure, hot keys, and replica freshness.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "control",
-        "label": "Desired state path",
-        "description": "Client -> gateway -> control plane -> versioned state -> plan and lease.",
-        "componentIds": ["client", "gateway", "control", "state", "scheduler"]
+        "id": "request-path",
+        "label": "Cache operation path",
+        "description": "Client -> gateway -> router -> cache cluster, with the membership store supplying the partition map.",
+        "componentIds": ["client", "gateway", "router", "cache-cluster", "membership-store"]
       },
       {
-        "id": "execute",
-        "label": "Reconciliation path",
-        "description": "Plan -> queue -> worker -> provider adapter -> observed state and audit event.",
-        "componentIds": [
-          "scheduler",
-          "queue",
-          "workers",
-          "providers",
-          "state",
-          "events"
-        ]
+        "id": "replication-path",
+        "label": "Replication path",
+        "description": "Cache cluster -> replication log -> cache replicas, with ordered offsets and a declared acknowledgement policy.",
+        "componentIds": ["cache-cluster", "replication-log"]
+      },
+      {
+        "id": "recovery-path",
+        "label": "Maintenance and recovery path",
+        "description": "Monitoring -> maintenance and warmup workers -> partitioned cache cluster for eviction, movement, and repair.",
+        "componentIds": ["monitoring", "maintenance-workers", "warmup-workers", "cache-cluster"]
       }
     ],
     "components": [
       {
         "id": "client",
         "type": "client",
-        "componentId": "admin-console",
-        "label": "Operators and automation clients",
-        "description": "Operators and automation submit desired state, inspect status, approve changes, and consume audit events.",
-        "position": {
-          "x": 0,
-          "y": 260
-        },
-        "properties": {
-          "protocol": "HTTPS, CLI, and automation API"
-        }
+        "componentId": "web-app",
+        "label": "Application clients",
+        "description": "Services use GET, SET, DELETE, and atomic cache operations with namespace credentials.",
+        "position": { "x": 0, "y": 260 },
+        "properties": { "traffic": "Reads, writes, invalidations, and bounded batches" }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Infrastructure control gateway",
-        "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
-        "position": {
-          "x": 480,
-          "y": 260
-        },
-        "properties": {
-          "protection": "RBAC, tenant isolation, quotas, and admission policy"
-        }
+        "label": "Cache API gateway",
+        "description": "Authenticates namespaces, validates payload size and TTL, applies quotas, and bounds request fan-out.",
+        "position": { "x": 480, "y": 260 },
+        "properties": { "protection": "mTLS or tokens, quotas, payload limits, and abuse controls" }
       },
       {
-        "id": "control",
-        "type": "microservice",
+        "id": "router",
+        "type": "application-server",
         "componentId": "backend-server",
-        "label": "Domain control plane",
-        "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
-        "position": {
-          "x": 960,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Versioned desired state and idempotent reconciliation"
-        }
+        "label": "Partition router",
+        "description": "Hashes namespace and key, caches the partition map, and routes to an owner using the current epoch.",
+        "position": { "x": 960, "y": 260 },
+        "properties": { "strategy": "Consistent hashing or fixed hash slots with epoch-aware ownership" }
       },
       {
-        "id": "state",
+        "id": "cache-cluster",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Partitioned cache cluster",
+        "description": "In-memory primaries and replicas execute bounded key operations, enforce TTL, and maintain per-partition versions.",
+        "position": { "x": 1440, "y": 260 },
+        "properties": { "capacity": "1TB working set plus replica and failover headroom", "hotKeys": "Request coalescing, replication, and per-key protection" }
+      },
+      {
+        "id": "membership-store",
         "type": "database",
         "componentId": "database",
-        "label": "Desired state and audit store",
-        "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
-        "position": {
-          "x": 1440,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Versioned state with optimistic concurrency and audit retention"
-        }
+        "label": "Membership and partition store",
+        "description": "Stores node membership, hash ranges, epochs, replica assignments, namespace policy, and recovery state.",
+        "position": { "x": 1440, "y": 520 },
+        "properties": { "consistency": "Quorum or strongly consistent updates for ownership changes" }
       },
       {
-        "id": "scheduler",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Placement and work scheduler",
-        "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
-        "position": {
-          "x": 1920,
-          "y": 80
-        },
-        "properties": {
-          "scheduling": "Leases, fairness, dependency ordering, and backpressure"
-        }
-      },
-      {
-        "id": "queue",
-        "type": "queue",
-        "componentId": "queue",
-        "label": "Reconciliation and execution queue",
-        "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
-        "position": {
-          "x": 1920,
-          "y": 440
-        },
-        "properties": {
-          "delivery": "Durable jobs with bounded retries and dead letters"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "processing-worker",
-        "label": "Partitioned execution workers",
-        "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
-        "position": {
-          "x": 2400,
-          "y": 260
-        },
-        "properties": {
-          "scaling": "Partitioned workers with leases and idempotency"
-        }
-      },
-      {
-        "id": "providers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Infrastructure provider adapters",
-        "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
-        "position": {
-          "x": 2880,
-          "y": 80
-        },
-        "properties": {
-          "providers": "Provider-qualified credentials and capability adapters"
-        }
-      },
-      {
-        "id": "events",
+        "id": "replication-log",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Control-plane event stream",
-        "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
-        "position": {
-          "x": 2880,
-          "y": 440
-        },
-        "properties": {
-          "delivery": "At least once with ordering keys and replay"
-        }
+        "label": "Partition replication log",
+        "description": "Carries ordered mutations and checkpoints so replicas can catch up, be audited, or be rebuilt.",
+        "position": { "x": 1920, "y": 520 },
+        "properties": { "ordering": "Per-partition ordering", "delivery": "At least once with offset deduplication" }
+      },
+      {
+        "id": "maintenance-workers",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Eviction and rebalance workers",
+        "description": "Apply TTL cleanup, LRU or LFU policy, partition movement, throttled repair, and failure promotion.",
+        "position": { "x": 1920, "y": 760 },
+        "properties": { "safety": "Bounded concurrency, leases, epochs, and resumable checkpoints" }
+      },
+      {
+        "id": "warmup-workers",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Replica warmup workers",
+        "description": "Preload selected keys after movement or promotion without allowing warmup traffic to starve foreground requests.",
+        "position": { "x": 2400, "y": 760 },
+        "properties": { "backpressure": "Priority and rate limits per namespace and partition" }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Control-plane operations",
-        "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
-        "position": {
-          "x": 1920,
-          "y": -140
-        },
-        "properties": {
-          "alerts": "Drift, queue lag, failed actions, and unsafe changes"
-        }
+        "label": "Cache reliability monitoring",
+        "description": "Tracks p99 latency, hit rate, memory pressure, evictions, hot keys, ownership churn, and replica lag.",
+        "position": { "x": 2400, "y": 260 },
+        "properties": { "signals": "SLOs, saturation, freshness, failovers, and namespace-level quotas" }
       }
     ],
     "connections": [
@@ -350,179 +320,230 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Desired-state or status request",
-        "description": "Operators and automation submit a versioned desired state or inspect a tenant-scoped operation and audit history."
+        "label": "Cache API",
+        "description": "Clients send authenticated key-value operations."
       },
       {
-        "id": "gateway-control",
+        "id": "gateway-router",
         "source": "gateway",
-        "target": "control",
+        "target": "router",
         "type": "api-call",
-        "label": "Authorized control command",
-        "description": "The gateway applies RBAC, admission policy, quotas, and idempotency before creating a plan."
+        "label": "Validate and route",
+        "description": "The gateway passes a bounded operation to the partition router."
       },
       {
-        "id": "control-state",
-        "source": "control",
-        "target": "state",
+        "id": "router-cache",
+        "source": "router",
+        "target": "cache-cluster",
+        "type": "tcp",
+        "label": "GET / SET / DELETE",
+        "description": "The router sends the operation to the current partition owner."
+      },
+      {
+        "id": "router-membership",
+        "source": "router",
+        "target": "membership-store",
         "type": "database-connection",
-        "label": "Desired state commit",
-        "description": "The control plane stores the accepted version and lifecycle state before scheduling reconciliation."
+        "label": "Partition map",
+        "description": "The router refreshes ownership and epoch metadata when its local map is stale."
       },
       {
-        "id": "state-scheduler",
-        "source": "state",
-        "target": "scheduler",
-        "type": "message-queue",
-        "label": "Reconciliation intent",
-        "description": "A durable event or lease makes new, changed, or drifted resources eligible for partition-local planning."
-      },
-      {
-        "id": "scheduler-queue",
-        "source": "scheduler",
-        "target": "queue",
-        "type": "message-queue",
-        "label": "Execution plan",
-        "description": "The scheduler emits dependency-ordered work with a lease, policy version, retry budget, and provider target."
-      },
-      {
-        "id": "queue-workers",
-        "source": "queue",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Partitioned work item",
-        "description": "Workers claim jobs idempotently, report progress, and isolate provider or tenant failures with dead letters."
-      },
-      {
-        "id": "workers-providers",
-        "source": "workers",
-        "target": "providers",
-        "type": "api-call",
-        "label": "Provider operation",
-        "description": "Adapters perform a capability-checked operation with a provider idempotency token and observed-state precondition."
-      },
-      {
-        "id": "workers-state",
-        "source": "workers",
-        "target": "state",
+        "id": "cache-membership",
+        "source": "cache-cluster",
+        "target": "membership-store",
         "type": "database-connection",
-        "label": "Observed state and result",
-        "description": "Execution records observed state, drift, errors, and operation version without overwriting a newer desired state."
+        "label": "Ownership heartbeat",
+        "description": "Nodes publish health and ownership acknowledgements for failover decisions."
       },
       {
-        "id": "state-events",
-        "source": "state",
-        "target": "events",
+        "id": "cache-replication",
+        "source": "cache-cluster",
+        "target": "replication-log",
         "type": "event-stream",
-        "label": "Control-plane event",
-        "description": "An outbox publishes desired-state, execution, drift, and audit events for replayable consumers."
+        "label": "Ordered mutations",
+        "description": "Primary mutations enter the per-partition replication stream after validation."
       },
       {
-        "id": "events-client",
-        "source": "events",
-        "target": "client",
-        "type": "http",
-        "label": "Status or audit update",
-        "description": "Operators and automation receive versioned status, drift, and audit results through polling, webhook, or subscription APIs."
+        "id": "log-maintenance",
+        "source": "replication-log",
+        "target": "maintenance-workers",
+        "type": "event-stream",
+        "label": "Offsets and repair",
+        "description": "Workers consume mutation offsets and repair or promote replicas."
       },
       {
-        "id": "queue-monitoring",
-        "source": "queue",
+        "id": "maintenance-cache",
+        "source": "maintenance-workers",
+        "target": "cache-cluster",
+        "type": "tcp",
+        "label": "Evict or rebalance",
+        "description": "Maintenance changes are throttled and checked against the current ownership epoch."
+      },
+      {
+        "id": "maintenance-warmup",
+        "source": "maintenance-workers",
+        "target": "warmup-workers",
+        "type": "message-queue",
+        "label": "Warmup jobs",
+        "description": "Selected keys are scheduled for bounded preloading after movement or promotion."
+      },
+      {
+        "id": "warmup-cache",
+        "source": "warmup-workers",
+        "target": "cache-cluster",
+        "type": "tcp",
+        "label": "Throttled preload",
+        "description": "Warmup restores hot data without taking priority over foreground operations."
+      },
+      {
+        "id": "cache-monitoring",
+        "source": "cache-cluster",
         "target": "monitoring",
-        "type": "data-flow",
-        "label": "Execution health telemetry",
-        "description": "Operations measures queue age, lease expiry, retry storms, dead letters, worker capacity, and provider throttling."
-      },
-      {
-        "id": "events-monitoring",
-        "source": "events",
-        "target": "monitoring",
-        "type": "data-flow",
-        "label": "Drift and audit telemetry",
-        "description": "Monitoring checks event gaps, reconciliation parity, rollout safety, and audit completeness."
+        "type": "event-stream",
+        "label": "Latency and freshness",
+        "description": "Nodes emit bounded metrics for SLOs, saturation, hit rate, and replica lag."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Desired versus observed state",
+      "title": "Partitioning and consistent hashing",
       "points": [
-        "Keep distributed cache desired state separate from provider-observed state and show both to operators.",
-        "Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects.",
-        "Version policy and resource state so old operations cannot overwrite newer intent."
+        "Hash namespace plus key into fixed slots or a consistent-hash ring so adding a node moves a bounded fraction of entries.",
+        "Keep the partition map versioned. A request carrying an old epoch must refresh or fail rather than write to a previous owner.",
+        "Use virtual nodes or fixed slots to spread uneven key sizes, and reserve capacity for a node or zone failure."
       ]
     },
     {
-      "title": "Provider failures and unknown outcomes",
+      "title": "Replication and consistency",
       "points": [
-        "Use provider-specific idempotency tokens and query-after-timeout behavior for distributed cache operations.",
-        "Bound retries with exponential backoff, circuit breakers, and per-provider quotas.",
-        "Route irreconcilable drift to an approval or quarantine path instead of retrying forever."
+        "Primary-replica replication is simple for ordered writes; quorum acknowledgements improve durability but add latency and reduce availability during a partition.",
+        "Offer an explicit consistency mode such as primary, session, or quorum read instead of hiding stale-read behavior in the client library.",
+        "Replicate deletes as versioned tombstones so delayed data cannot resurrect after expiry or invalidation."
       ]
     },
     {
-      "title": "Blast radius and operations",
+      "title": "TTL, eviction, and memory pressure",
       "points": [
-        "Partition distributed cache work by tenant, region, cluster, or resource class and cap concurrent mutations.",
-        "Audit who changed desired state, which policy allowed it, and what provider evidence was observed.",
-        "Alert on drift age, operation backlog, failed steps, policy denials, and stale observations."
+        "Enforce expiresAt on reads even if lazy cleanup has not run; background TTL scans are storage maintenance, not correctness.",
+        "Choose LRU, LFU, or a sampled hybrid based on workload, and reserve memory for metadata, replication buffers, and fragmentation.",
+        "Expose eviction reason and namespace so a hit-rate drop is distinguishable from an origin or routing failure."
+      ]
+    },
+    {
+      "title": "Hot keys and cache stampedes",
+      "points": [
+        "A balanced hash ring does not prevent one viral key from overloading its owner; replicate hot entries and coalesce concurrent misses.",
+        "Use jittered TTLs, request collapsing, stale-while-revalidate where allowed, and per-key rate limits to avoid synchronized expiry.",
+        "Do not let warmup or repair consume the same connection and CPU budget as foreground requests."
+      ]
+    },
+    {
+      "title": "Failure recovery and rebalancing",
+      "points": [
+        "Use leases, heartbeats, and fencing epochs to decide when a replica can be promoted and to prevent split-brain owners.",
+        "Rebalance gradually with per-partition checkpoints, admission control, and rollback or pause points.",
+        "After a failover, mark freshness and missing ranges explicitly; do not claim that a cache hit is durable data unless the contract says so."
+      ]
+    },
+    {
+      "title": "Durability boundary",
+      "points": [
+        "If the cache is only a derived layer, a miss can reload from the backing store; if it is the source of truth, acknowledged writes need a durable log or replicated storage.",
+        "Keep the product decision visible in the API and metrics because it changes whether node loss is a cache miss or data loss.",
+        "Backups and snapshots should be asynchronous and rate-limited so they do not consume the foreground latency budget."
+      ]
+    },
+    {
+      "title": "Security and multi-tenancy",
+      "points": [
+        "Authenticate clients, isolate namespaces, enforce maximum value size and TTL, and prevent one tenant from exhausting memory or connections.",
+        "Encrypt traffic between clients and nodes, and avoid placing secrets or regulated data in a cache without an explicit retention policy.",
+        "Audit administrative flush, failover, and topology operations separately from high-volume data operations."
+      ]
+    },
+    {
+      "title": "Degraded operation",
+      "points": [
+        "When a replica is stale, return a miss or a clearly bounded stale value according to the namespace contract; never silently turn a correctness-sensitive read into arbitrary stale data.",
+        "Use circuit breakers and bounded retries for unavailable nodes, and protect the backing store from a miss storm.",
+        "Alert on partition unavailability, replica lag, and origin load before the global cache hit rate makes the problem obvious."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Push versus pull reconciliation",
-      "recommendation": "Use event triggers for fast response and periodic scans for missed events, drift, and recovery.",
-      "caution": "A push-only distributed cache controller silently misses changes when a provider event is lost."
+      "title": "Cache-aside versus write-through",
+      "recommendation": "Use cache-aside when the backing store owns durability and write-through when a shared cache abstraction must coordinate writes consistently.",
+      "caution": "Cache-aside can create stampedes and stale entries; write-through couples cache availability and write latency to the backing store."
     },
     {
-      "title": "Central control plane versus provider-native controllers",
-      "recommendation": "Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters.",
-      "caution": "A monolithic controller becomes hard to scale and couples unrelated provider failure domains."
+      "title": "Primary-replica versus quorum replication",
+      "recommendation": "Start with primary-replica ordering and a documented acknowledgement mode; add quorum only for namespaces that need stronger durability or read guarantees.",
+      "caution": "Quorum improves failure semantics but consumes latency and availability budget during network partitions."
     },
     {
-      "title": "Automatic repair versus approval",
-      "recommendation": "Automate low-risk, reversible distributed cache changes and require approval for destructive or high-blast-radius operations.",
-      "caution": "Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage."
+      "title": "Fixed slots versus a hash ring",
+      "recommendation": "Use fixed hash slots for predictable ownership and tooling, or a consistent-hash ring when incremental node movement is the dominant concern.",
+      "caution": "Both need hot-key isolation, versioned membership, and a migration strategy; the hashing algorithm alone is not a rebalancing plan."
+    },
+    {
+      "title": "LRU versus LFU eviction",
+      "recommendation": "Use LRU for recency-heavy workloads and LFU or a sampled hybrid when long-lived popular keys should survive bursts of one-time traffic.",
+      "caution": "An eviction policy can optimize memory but cannot repair a bad TTL, oversized value, or hot-key distribution."
+    },
+    {
+      "title": "Stale reads versus fail-closed reads",
+      "recommendation": "Choose per namespace: tolerate bounded stale data for feeds and metadata, but fail closed or reload from an authority for authorization and inventory decisions.",
+      "caution": "A global fail-open or fail-closed policy makes unrelated workloads absorb each other’s failure semantics."
     }
   ],
   "commonMistakes": [
-    "Treating a distributed cache API response as proof that the provider has reached the desired state.",
-    "Overwriting desired state with stale observed state after an out-of-order worker response.",
-    "Retrying timed-out provider mutations without an idempotency token or status lookup.",
-    "Running every tenant or region through one queue and allowing a hot failure domain to block all work.",
-    "Omitting policy version, operator identity, provider evidence, and drift age from the audit trail."
+    "Treating a cache as durable storage without defining how acknowledged writes survive node and zone loss.",
+    "Using a hash ring without versioned ownership, fencing, rebalancing checkpoints, or hot-key protection.",
+    "Checking TTL only in a background cleanup job, which allows expired values to be served between scans.",
+    "Allowing synchronized expiry, uncoordinated misses, or warmup traffic to create a backing-store stampede.",
+    "Reporting only global hit rate while hiding namespace memory pressure, eviction reason, partition skew, and replica lag.",
+    "Retrying indefinitely on a failed node and turning a local cache outage into a larger dependency outage."
   ],
   "followUps": [
     {
-      "question": "How do you handle a distributed cache provider timeout?",
-      "answer": "Persist the operation as unknown, query provider state using the idempotency token, and only retry or compensate after the result is known."
+      "question": "What happens when a cache node fails during a write?",
+      "answer": "Return success only after the configured acknowledgement boundary, use the partition epoch to promote an eligible replica, and reconcile uncertain writes from the replication log or backing store before retrying."
     },
     {
-      "question": "How do you stop a bad rollout?",
-      "answer": "Use policy gates, concurrency limits, canary scopes, operation cancellation, and a versioned last-known-good desired state."
+      "question": "How do you prevent one hot key from taking down a shard?",
+      "answer": "Detect per-key skew, replicate or locally duplicate the hot value, coalesce misses, and apply per-key protection without moving every ordinary key or adding synchronous fan-out."
     },
     {
-      "question": "How do you detect drift?",
-      "answer": "Compare periodic provider observations with desired state, record the observed version and age, and route policy-compliant repair separately from manual exceptions."
+      "question": "How do you rebalance without a long outage?",
+      "answer": "Move partitions incrementally with a new ownership epoch, copy or stream data to the destination, fence the old owner, and switch traffic only after the destination is ready."
+    },
+    {
+      "question": "Is a stale value acceptable during an outage?",
+      "answer": "Make it a namespace-level contract. Serve only bounded stale data for tolerant consumers, and fail closed or consult the authoritative store for correctness-sensitive decisions."
     }
   ],
   "rubric": [
     {
-      "criterion": "Requirements",
-      "description": "The answer addresses the distributed cache workflow, scale, latency, durability, authorization, and failure contract."
+      "criterion": "Requirements and scale",
+      "description": "The answer states throughput, working set, latency, read/write mix, TTL, hit-rate, and durability assumptions that drive the design."
     },
     {
-      "criterion": "Correctness",
-      "description": "The answer identifies the authoritative distributed cache state, versioning or deduplication boundary, and how derived views converge."
+      "criterion": "Data model and routing",
+      "description": "The answer makes CacheEntry, partition ownership, node membership, replica state, versions, and hot-key access patterns explicit."
     },
     {
-      "criterion": "Scale",
-      "description": "The answer partitions distributed cache traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
+      "criterion": "Consistency and failure handling",
+      "description": "The answer explains acknowledgement modes, stale reads, tombstones, epochs, promotion, rebalancing, and degraded behavior."
     },
     {
-      "criterion": "Operations",
-      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the distributed cache user experience."
+      "criterion": "Performance and memory",
+      "description": "The answer covers eviction, TTL enforcement, stampede protection, hot keys, bounded background work, and per-namespace isolation."
+    },
+    {
+      "criterion": "Operations and trade-offs",
+      "description": "The answer ties monitoring to cache SLOs and can defend the choices between cache-aside, replication, partitioning, eviction, and stale-read policies."
     }
   ]
 }

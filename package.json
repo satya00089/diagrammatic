@@ -17,7 +17,8 @@
     "deploy": "npm run build && gh-pages -d dist",
     "tw:init": "tailwindcss init -p",
     "seo:check": "node scripts/seo-check.js",
-    "catalog:check": "node scripts/validate-problem-catalog.mjs"
+    "catalog:check": "node scripts/validate-problem-catalog.mjs",
+    "guides:check": "node scripts/validate-problem-guides.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

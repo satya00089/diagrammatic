@@ -2,346 +2,330 @@
   "prompt": {
     "brief": "Design a distributed API rate limiter that enforces tenant, user, credential, IP, and endpoint quotas with predictable burst behavior, low overhead, and safe degradation.",
     "successSignals": [
-      "Define quota identity, policy precedence, token/refill semantics, burst capacity, response headers, time source, and scope inheritance.",
-      "Partition counters by policy key, isolate hot tenants/endpoints, and choose strict versus approximate enforcement for multi-region traffic.",
+      "Define quota identity, policy precedence, token or refill semantics, burst capacity, response headers, time source, and scope inheritance.",
+      "Partition counters by policy key, isolate hot tenants and endpoints, and choose strict versus approximate enforcement for multi-region traffic.",
       "Keep the decision path bounded and atomic; handle clock skew, retries, failover, counter loss, policy updates, and cache stampedes.",
-      "Explain fail-open/closed choices by endpoint risk, abuse resistance, observability, auditability, and degraded local limits."
+      "Explain fail-open or fail-closed behavior by endpoint risk, abuse resistance, observability, auditability, and degraded local limits."
     ]
   },
   "requirements": {
     "functional": [
-      "Evaluate requests against hierarchical quotas, return allow/deny/retry-after metadata, and support fixed, sliding, and token-bucket policies.",
-      "Manage plans and overrides, apply endpoint/tenant/user/IP dimensions, expose usage, and support distributed or regional enforcement.",
-      "Make decisions safe under retries, expire counters, audit policy changes, protect trusted traffic, and recover from limiter-store failure."
+      "Decide whether a request is allowed for a tenant, user, credential, IP, endpoint, or combined policy key.",
+      "Support token-bucket, leaky-bucket, fixed-window, or sliding-window policies with explicit burst behavior.",
+      "Return remaining quota, reset time, policy identity, and a retry hint when a request is rejected.",
+      "Create, version, validate, and roll out policies without leaving counters in an ambiguous state.",
+      "Support batch decisions for bounded requests and separate administrative policy reads from the hot path.",
+      "Expose counter, policy, latency, rejection, and failover health to operators and policy owners."
     ],
     "nonFunctional": [
-      "Keep limiter decision p99 overhead under 10ms for the normal path and make endpoint-specific degradation explicit.",
-      "Handle 1M decisions per second and hot public endpoints without a single hot key or unbounded synchronous work.",
-      "Do not lose committed state; make retries and duplicate events safe.",
-      "Degrade safely when downstream workers, caches, or external dependencies fail."
+      "Keep a single decision below p99 5ms at the regional edge under normal load.",
+      "Handle 1M decisions per second and 10M active policy keys with partitioned counters.",
+      "Make each decision atomic for its key and document whether multi-region enforcement is strict or approximate.",
+      "Prevent a limiter outage from taking down healthy traffic while preserving stricter protection for abuse-sensitive endpoints.",
+      "Bound counter memory, policy propagation lag, retry work, and hot-key amplification."
     ],
     "scaleAssumptions": [
-      "1M decisions/second across 100k tenants and 10k endpoints",
-      "Partition by the primary tenant, user, item, or geographic key and isolate hot partitions.",
-      "Keep serving state bounded; retain raw events or durable records for replay and auditing."
+      "Serve 1M rate-limit decisions per second over approximately 10M active tenant, user, credential, IP, and endpoint keys.",
+      "Assume a 90:10 allow-to-reject mix, with a few public endpoints and tenants producing disproportionate hot-key traffic.",
+      "Replicate policy configuration globally, but keep the counter decision local when the product accepts bounded cross-region approximation.",
+      "Expire inactive counters and retain policy versions, decision samples, and administrative audit records separately from hot counters."
     ],
     "metrics": [
       {
-        "label": "Peak scale",
-        "value": "1M decisions/s; 100k tenants",
-        "description": "Capacity assumption that drives partitioning and backpressure."
+        "label": "Decision throughput",
+        "value": "1M decisions/second",
+        "description": "Capacity assumption that drives counter shards, connection pools, and local admission control."
       },
       {
-        "label": "Latency target",
-        "value": "p99 overhead < 10ms; retry-after accurate",
-        "description": "User-facing budget for the primary request or read path."
+        "label": "Active keys",
+        "value": "10M policy keys",
+        "description": "Working-set estimate for counters and policy scopes, excluding expired keys."
       },
       {
-        "label": "Durable boundary",
-        "value": "Committed before async",
-        "description": "Versioned quota policies and monotonic counter decisions are authoritative; local caches are bounded accelerators."
+        "label": "Decision latency",
+        "value": "p99 < 5ms",
+        "description": "Budget for the atomic counter operation and policy lookup on the regional path."
       },
       {
-        "label": "Async boundary",
-        "value": "At-least-once workers",
-        "description": "Keep Token bucket or leaky bucket algorithm, Redis for distributed counters, Sliding window log or fixed window counter off the synchronous path."
+        "label": "Policy freshness",
+        "value": "p99 < 30s",
+        "description": "Example propagation target for policy versions; high-risk changes may require a stronger barrier."
+      },
+      {
+        "label": "Enforcement error",
+        "value": "< 1% approximate drift where allowed",
+        "description": "Explicit bound for local multi-region approximation, measured against sampled authoritative decisions."
       }
     ]
   },
   "entities": [
     {
-      "name": "ResourceSpec",
+      "name": "RateLimitPolicy",
       "fields": [
-        "resourceId",
-        "tenantId",
-        "desiredState",
+        "policyId (PK)",
+        "scope",
+        "dimensions",
+        "algorithm",
+        "limit",
+        "windowOrRefillRate",
+        "burst",
         "version",
-        "policyVersion",
-        "updatedAt"
+        "effectiveAt"
       ],
-      "notes": "Versioned desired state for a api rate limiter managed resource."
+      "notes": "Versioned rules that map an endpoint request to one or more quota dimensions and specify the enforcement and failure contract."
     },
     {
-      "name": "Operation",
+      "name": "CounterBucket",
       "fields": [
-        "operationId",
-        "resourceId",
-        "requestHash",
-        "step",
-        "attempt",
-        "status"
+        "counterKey (PK)",
+        "policyId",
+        "windowStart or lastRefillAt",
+        "remaining",
+        "version",
+        "expiresAt",
+        "region"
       ],
-      "notes": "Durable api rate limiter reconciliation operation with per-step progress."
+      "notes": "Hot mutable state updated atomically by the decision service. Its expiration prevents inactive keys from consuming unbounded memory."
+    },
+    {
+      "name": "RateLimitDecision",
+      "fields": [
+        "decisionId",
+        "counterKey",
+        "requestId",
+        "allowed",
+        "remaining",
+        "retryAfterMs",
+        "policyVersion",
+        "decidedAt"
+      ],
+      "notes": "The response and sampled audit record for an allow or reject decision; high-volume raw decisions are sampled or aggregated."
     },
     {
       "name": "PolicyVersion",
       "fields": [
         "policyId",
-        "scope",
         "version",
-        "rules",
-        "effectiveAt",
-        "status"
+        "checksum",
+        "status",
+        "publishedAt",
+        "retiredAt"
       ],
-      "notes": "Auditable api rate limiter policy evaluated before provisioning or mutation."
+      "notes": "Propagation and rollout metadata that lets a region report which rules were actually enforced."
     },
     {
-      "name": "ReconciliationCheckpoint",
+      "name": "QuotaOverride",
       "fields": [
-        "resourceId",
-        "provider",
-        "observedVersion",
-        "cursor",
-        "lastError",
-        "updatedAt"
+        "overrideId",
+        "policyId",
+        "subjectKey",
+        "limit",
+        "expiresAt",
+        "reason",
+        "approvedBy"
       ],
-      "notes": "Provider-specific api rate limiter observation and recovery cursor."
+      "notes": "A bounded, audited exception for a subject or incident; it must not bypass global safety limits or authorization."
     }
   ],
   "apis": [
     {
+      "method": "POST",
+      "path": "/v1/limits/check",
+      "contract": "{ tenantId, subject, endpoint, cost?, requestId } -> { allowed, remaining, resetAt, retryAfterMs?, policyVersion }",
+      "notes": "Resolve applicable policies and atomically consume the requested cost from the relevant counter buckets. Return a deterministic decision for a retried request when the product requires it."
+    },
+    {
+      "method": "POST",
+      "path": "/v1/limits/check-batch",
+      "contract": "{ decisions[] } -> { results[], partialFailure?, policyVersion }",
+      "notes": "Evaluate a bounded batch with per-key atomicity; do not claim that unrelated keys commit as one global transaction."
+    },
+    {
       "method": "PUT",
-      "path": "/v1/resources/{resourceId}",
-      "contract": "{ desiredState, expectedVersion, idempotencyKey } -> { version, operationId }",
-      "notes": "Update api rate limiter desired state with optimistic concurrency."
+      "path": "/v1/policies/{policyId}",
+      "contract": "{ rules, expectedVersion, effectiveAt } -> { policyId, version, rolloutStatus }",
+      "notes": "Validate and publish a policy with optimistic concurrency, then propagate a versioned update to regional decision services."
     },
     {
       "method": "GET",
-      "path": "/v1/resources/{resourceId}",
-      "contract": "{ desiredState, observedState, version, health, operationStatus }",
-      "notes": "Return api rate limiter desired and observed state with reconciliation freshness."
+      "path": "/v1/policies/{policyId}",
+      "contract": "{ policyId, rules, version, effectiveAt, regionalFreshness[] }",
+      "notes": "Return configuration and rollout freshness for operators; policy reads are not a substitute for the atomic hot-path counter."
     },
     {
       "method": "POST",
-      "path": "/v1/operations/{operationId}/cancel",
-      "contract": "{ reason, expectedVersion } -> { status }",
-      "notes": "Request a safe cancellation or rollback of an in-flight api rate limiter operation."
-    },
-    {
-      "method": "POST",
-      "path": "/v1/resources/{resourceId}/reconcile",
-      "contract": "{ provider, observedState, idempotencyKey } -> { operationId, status }",
-      "notes": "Trigger an auditable api rate limiter reconciliation or repair."
+      "path": "/v1/policies/{policyId}/overrides",
+      "contract": "{ subjectKey, limit, expiresAt, reason } -> { overrideId, version }",
+      "notes": "Create a time-bounded, authorized exception with an audit record and a safety ceiling."
     }
   ],
   "dataFlow": [
     {
-      "title": "Accept a desired-state command",
-      "description": "The api rate limiter control plane authenticates the tenant, validates policy and quotas, checks the expected version, and records the desired state."
+      "title": "Resolve the quota identity",
+      "description": "The gateway extracts tenant, user, credential, IP, endpoint, and request cost, normalizes them, and selects the applicable policy dimensions without trusting client-supplied identity."
     },
     {
-      "title": "Plan a safe operation",
-      "description": "A planner turns api rate limiter desired state into ordered, bounded steps with dependency checks, blast-radius limits, and rollback metadata."
+      "title": "Load the effective policy",
+      "description": "The decision service reads a locally cached policy version and rejects or falls back according to endpoint risk when policy freshness is outside the allowed bound."
     },
     {
-      "title": "Reconcile providers asynchronously",
-      "description": "Workers apply api rate limiter operations through provider adapters, persist checkpoints, rate-limit calls, and treat unknown outcomes as observable state."
+      "title": "Atomically update counters",
+      "description": "The service evaluates each token, refill, or window bucket in one atomic operation per key and consumes cost only when the policy allows the request."
     },
     {
-      "title": "Publish observed health",
-      "description": "The serving projection joins desired and observed api rate limiter state with operation status, policy version, freshness, and actionable errors."
+      "title": "Return an actionable decision",
+      "description": "The response includes allowed, remaining, resetAt, retryAfter, and policy version so clients and operators can distinguish quota rejection from service failure."
     },
     {
-      "title": "Recover and audit",
-      "description": "Retries, dead letters, drift detection, and operator approvals repair api rate limiter resources without losing the original command or provider evidence."
+      "title": "Propagate, expire, and audit asynchronously",
+      "description": "Policy versions propagate to regions, inactive counters expire, hot-key and rejection metrics aggregate, and sampled decisions feed audit without slowing every check."
     }
   ],
   "architecture": {
-    "title": "Api Rate Limiter control-plane architecture",
-    "summary": "Design a distributed API rate limiter that enforces tenant, user, credential, IP, and endpoint quotas with predictable burst behavior, low overhead, and safe degradation. The design separates versioned desired state from leased reconciliation work and provider mutations, making drift, retries, approvals, and audit history explicit while keeping operators responsive during execution backlogs.",
+    "title": "API Rate Limiter reference architecture",
+    "summary": "A regional decision service resolves versioned policy and performs an atomic counter operation on the request path. Policy distribution, counter expiration, sampled audit, and observability stay asynchronous, while fail-open or fail-closed behavior is selected by endpoint risk rather than applied globally.",
     "layers": [
       {
-        "id": "experience",
-        "label": "Operator and automation plane",
-        "description": "Authenticated clients submit desired state and inspect versioned status and audit outcomes.",
-        "componentIds": ["client", "gateway", "control"]
+        "id": "edge",
+        "label": "Request and policy edge",
+        "description": "Requests enter through an authenticated boundary that identifies the subject and applies coarse protection.",
+        "componentIds": ["client", "gateway", "decision-service"]
+      },
+      {
+        "id": "decision",
+        "label": "Regional decision plane",
+        "description": "The decision service evaluates policy and atomically updates partitioned counters.",
+        "componentIds": ["decision-service", "counter-store", "policy-cache"]
       },
       {
         "id": "control",
-        "label": "Desired state and planning plane",
-        "description": "Versioned state, planning, leases, and policy determine safe execution order.",
-        "componentIds": ["state", "scheduler"]
+        "label": "Policy control plane",
+        "description": "Versioned policies and propagation events keep regional enforcement explainable and auditable.",
+        "componentIds": ["policy-store", "policy-stream"]
       },
       {
-        "id": "execution",
-        "label": "Reconciliation and provider plane",
-        "description": "Durable queues and partitioned workers apply idempotent provider operations.",
-        "componentIds": ["queue", "workers", "providers"]
-      },
-      {
-        "id": "events",
-        "label": "Audit and integration plane",
-        "description": "Replayable events feed status, audit, and external integrations.",
-        "componentIds": ["events"]
+        "id": "async",
+        "label": "Async lifecycle and audit",
+        "description": "Expiration, sampling, reporting, and anomaly analysis remain off the decision path.",
+        "componentIds": ["audit-queue", "audit-workers"]
       },
       {
         "id": "operations",
-        "label": "Infrastructure safety operations",
-        "description": "Drift, lag, failed actions, provider limits, and rollout risk are observable.",
+        "label": "Reliability operations",
+        "description": "Latency, drift, hot keys, rejections, and failover decisions are measurable by policy and region.",
         "componentIds": ["monitoring"]
       }
     ],
     "keyPaths": [
       {
-        "id": "control",
-        "label": "Desired state path",
-        "description": "Client -> gateway -> control plane -> versioned state -> plan and lease.",
-        "componentIds": ["client", "gateway", "control", "state", "scheduler"]
+        "id": "decision-path",
+        "label": "Allow or reject path",
+        "description": "Client -> gateway -> decision service -> policy cache and counter store -> response.",
+        "componentIds": ["client", "gateway", "decision-service", "policy-cache", "counter-store"]
       },
       {
-        "id": "execute",
-        "label": "Reconciliation path",
-        "description": "Plan -> queue -> worker -> provider adapter -> observed state and audit event.",
-        "componentIds": [
-          "scheduler",
-          "queue",
-          "workers",
-          "providers",
-          "state",
-          "events"
-        ]
+        "id": "policy-path",
+        "label": "Policy propagation path",
+        "description": "Policy store -> policy stream -> regional policy cache and decision services.",
+        "componentIds": ["policy-store", "policy-stream", "policy-cache", "decision-service"]
+      },
+      {
+        "id": "audit-path",
+        "label": "Async audit path",
+        "description": "Decision service -> audit queue -> audit workers -> monitoring for sampled decisions and drift.",
+        "componentIds": ["decision-service", "audit-queue", "audit-workers", "monitoring"]
       }
     ],
     "components": [
       {
         "id": "client",
         "type": "client",
-        "componentId": "admin-console",
-        "label": "Operators and automation clients",
-        "description": "Operators and automation submit desired state, inspect status, approve changes, and consume audit events.",
-        "position": {
-          "x": 0,
-          "y": 260
-        },
-        "properties": {
-          "protocol": "HTTPS, CLI, and automation API"
-        }
+        "componentId": "web-app",
+        "label": "API callers",
+        "description": "Services send requests through an SDK or gateway integration and consume quota headers.",
+        "position": { "x": 0, "y": 260 },
+        "properties": { "traffic": "Tenant, user, credential, IP, and endpoint requests" }
       },
       {
         "id": "gateway",
         "type": "api-gateway",
         "componentId": "api-gateway",
-        "label": "Infrastructure control gateway",
-        "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
-        "position": {
-          "x": 480,
-          "y": 260
-        },
-        "properties": {
-          "protection": "RBAC, tenant isolation, quotas, and admission policy"
-        }
+        "label": "API gateway",
+        "description": "Authenticates callers, normalizes identity, applies coarse admission limits, and forwards a bounded decision request.",
+        "position": { "x": 480, "y": 260 },
+        "properties": { "protection": "Authentication, request cost, payload bounds, and emergency limits" }
       },
       {
-        "id": "control",
-        "type": "microservice",
+        "id": "decision-service",
+        "type": "application-server",
         "componentId": "backend-server",
-        "label": "Domain control plane",
-        "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
-        "position": {
-          "x": 960,
-          "y": 260
-        },
-        "properties": {
-          "consistency": "Versioned desired state and idempotent reconciliation"
-        }
+        "label": "Rate-limit decision service",
+        "description": "Resolves policy dimensions, evaluates buckets, and returns an allow or reject decision with quota metadata.",
+        "position": { "x": 960, "y": 260 },
+        "properties": { "criticalPath": "Local policy plus atomic counter operation with bounded retries" }
       },
       {
-        "id": "state",
+        "id": "policy-cache",
+        "type": "cache",
+        "componentId": "cache",
+        "label": "Regional policy cache",
+        "description": "Serves the latest validated policy version locally with freshness and rollout metadata.",
+        "position": { "x": 1440, "y": 80 },
+        "properties": { "consistency": "Versioned propagation with endpoint-specific stale policy" }
+      },
+      {
+        "id": "counter-store",
         "type": "database",
         "componentId": "database",
-        "label": "Desired state and audit store",
-        "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
-        "position": {
-          "x": 1440,
-          "y": 260
-        },
-        "properties": {
-          "storage": "Versioned state with optimistic concurrency and audit retention"
-        }
+        "label": "Partitioned counter store",
+        "description": "Performs atomic token, refill, or window updates for active quota keys with TTL expiration.",
+        "position": { "x": 1440, "y": 260 },
+        "properties": { "accessPattern": "Counter key lookup and conditional update; shard hot keys separately" }
       },
       {
-        "id": "scheduler",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Placement and work scheduler",
-        "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
-        "position": {
-          "x": 1920,
-          "y": 80
-        },
-        "properties": {
-          "scheduling": "Leases, fairness, dependency ordering, and backpressure"
-        }
+        "id": "policy-store",
+        "type": "database",
+        "componentId": "database",
+        "label": "Policy and audit store",
+        "description": "Stores authorized policy versions, overrides, approvals, effective times, and rollout history.",
+        "position": { "x": 960, "y": 560 },
+        "properties": { "correctness": "Optimistic versioning and append-only administrative audit" }
       },
       {
-        "id": "queue",
-        "type": "queue",
-        "componentId": "queue",
-        "label": "Reconciliation and execution queue",
-        "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
-        "position": {
-          "x": 1920,
-          "y": 440
-        },
-        "properties": {
-          "delivery": "Durable jobs with bounded retries and dead letters"
-        }
-      },
-      {
-        "id": "workers",
-        "type": "microservice",
-        "componentId": "processing-worker",
-        "label": "Partitioned execution workers",
-        "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
-        "position": {
-          "x": 2400,
-          "y": 260
-        },
-        "properties": {
-          "scaling": "Partitioned workers with leases and idempotency"
-        }
-      },
-      {
-        "id": "providers",
-        "type": "microservice",
-        "componentId": "backend-server",
-        "label": "Infrastructure provider adapters",
-        "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
-        "position": {
-          "x": 2880,
-          "y": 80
-        },
-        "properties": {
-          "providers": "Provider-qualified credentials and capability adapters"
-        }
-      },
-      {
-        "id": "events",
+        "id": "policy-stream",
         "type": "message-broker",
         "componentId": "message-broker",
-        "label": "Control-plane event stream",
-        "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
-        "position": {
-          "x": 2880,
-          "y": 440
-        },
-        "properties": {
-          "delivery": "At least once with ordering keys and replay"
-        }
+        "label": "Policy update stream",
+        "description": "Distributes validated policy versions and invalidations to regional caches.",
+        "position": { "x": 1440, "y": 560 },
+        "properties": { "delivery": "At least once with policy version deduplication" }
+      },
+      {
+        "id": "audit-queue",
+        "type": "queue",
+        "componentId": "queue",
+        "label": "Decision audit queue",
+        "description": "Buffers sampled decisions, rejection signals, and counter anomalies for asynchronous processing.",
+        "position": { "x": 1920, "y": 560 },
+        "properties": { "delivery": "Durable, sampled, and partitioned by tenant and policy" }
+      },
+      {
+        "id": "audit-workers",
+        "type": "microservice",
+        "componentId": "processing-worker",
+        "label": "Expiry and audit workers",
+        "description": "Expire inactive state, aggregate decisions, detect drift and abuse, and build operational reports.",
+        "position": { "x": 2400, "y": 560 },
+        "properties": { "safety": "Bounded retention, sampling, and replayable processing" }
       },
       {
         "id": "monitoring",
         "type": "monitoring",
         "componentId": "monitoring",
-        "label": "Control-plane operations",
-        "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
-        "position": {
-          "x": 1920,
-          "y": -140
-        },
-        "properties": {
-          "alerts": "Drift, queue lag, failed actions, and unsafe changes"
-        }
+        "label": "Limiter reliability monitoring",
+        "description": "Tracks decision latency, policy freshness, counter errors, hot keys, rejection rate, and fail-open events.",
+        "position": { "x": 2400, "y": 260 },
+        "properties": { "signals": "Per-policy SLOs, drift, saturation, abuse, and regional health" }
       }
     ],
     "connections": [
@@ -350,179 +334,222 @@
         "source": "client",
         "target": "gateway",
         "type": "http",
-        "label": "Desired-state or status request",
-        "description": "Operators and automation submit a versioned desired state or inspect a tenant-scoped operation and audit history."
+        "label": "API request",
+        "description": "A caller sends a request that needs a quota decision."
       },
       {
-        "id": "gateway-control",
+        "id": "gateway-decision",
         "source": "gateway",
-        "target": "control",
+        "target": "decision-service",
         "type": "api-call",
-        "label": "Authorized control command",
-        "description": "The gateway applies RBAC, admission policy, quotas, and idempotency before creating a plan."
+        "label": "Check quota",
+        "description": "The gateway passes normalized identity and request cost to the regional decision service."
       },
       {
-        "id": "control-state",
-        "source": "control",
-        "target": "state",
+        "id": "decision-policy",
+        "source": "decision-service",
+        "target": "policy-cache",
+        "type": "data-flow",
+        "label": "Effective policy",
+        "description": "The decision service reads the current validated policy version locally."
+      },
+      {
+        "id": "decision-counters",
+        "source": "decision-service",
+        "target": "counter-store",
         "type": "database-connection",
-        "label": "Desired state commit",
-        "description": "The control plane stores the accepted version and lifecycle state before scheduling reconciliation."
+        "label": "Atomic bucket update",
+        "description": "The service consumes or rejects cost with an atomic operation on the quota key."
       },
       {
-        "id": "state-scheduler",
-        "source": "state",
-        "target": "scheduler",
-        "type": "message-queue",
-        "label": "Reconciliation intent",
-        "description": "A durable event or lease makes new, changed, or drifted resources eligible for partition-local planning."
-      },
-      {
-        "id": "scheduler-queue",
-        "source": "scheduler",
-        "target": "queue",
-        "type": "message-queue",
-        "label": "Execution plan",
-        "description": "The scheduler emits dependency-ordered work with a lease, policy version, retry budget, and provider target."
-      },
-      {
-        "id": "queue-workers",
-        "source": "queue",
-        "target": "workers",
-        "type": "message-queue",
-        "label": "Partitioned work item",
-        "description": "Workers claim jobs idempotently, report progress, and isolate provider or tenant failures with dead letters."
-      },
-      {
-        "id": "workers-providers",
-        "source": "workers",
-        "target": "providers",
-        "type": "api-call",
-        "label": "Provider operation",
-        "description": "Adapters perform a capability-checked operation with a provider idempotency token and observed-state precondition."
-      },
-      {
-        "id": "workers-state",
-        "source": "workers",
-        "target": "state",
-        "type": "database-connection",
-        "label": "Observed state and result",
-        "description": "Execution records observed state, drift, errors, and operation version without overwriting a newer desired state."
-      },
-      {
-        "id": "state-events",
-        "source": "state",
-        "target": "events",
+        "id": "policy-store-stream",
+        "source": "policy-store",
+        "target": "policy-stream",
         "type": "event-stream",
-        "label": "Control-plane event",
-        "description": "An outbox publishes desired-state, execution, drift, and audit events for replayable consumers."
+        "label": "Publish policy version",
+        "description": "A committed policy change becomes a versioned propagation event."
       },
       {
-        "id": "events-client",
-        "source": "events",
-        "target": "client",
-        "type": "http",
-        "label": "Status or audit update",
-        "description": "Operators and automation receive versioned status, drift, and audit results through polling, webhook, or subscription APIs."
+        "id": "stream-policy-cache",
+        "source": "policy-stream",
+        "target": "policy-cache",
+        "type": "event-stream",
+        "label": "Propagate rules",
+        "description": "Regional caches apply policy versions idempotently and report freshness."
       },
       {
-        "id": "queue-monitoring",
-        "source": "queue",
+        "id": "decision-audit",
+        "source": "decision-service",
+        "target": "audit-queue",
+        "type": "message-queue",
+        "label": "Sample decision",
+        "description": "High-value or sampled decisions leave the hot path for audit and analysis."
+      },
+      {
+        "id": "audit-workers",
+        "source": "audit-queue",
+        "target": "audit-workers",
+        "type": "message-queue",
+        "label": "Aggregate and expire",
+        "description": "Workers process sampled decisions, expire inactive records, and detect anomalies."
+      },
+      {
+        "id": "workers-monitoring",
+        "source": "audit-workers",
         "target": "monitoring",
-        "type": "data-flow",
-        "label": "Execution health telemetry",
-        "description": "Operations measures queue age, lease expiry, retry storms, dead letters, worker capacity, and provider throttling."
+        "type": "event-stream",
+        "label": "Drift and abuse signals",
+        "description": "Async analysis publishes policy drift, hot keys, rejection, and retention signals."
       },
       {
-        "id": "events-monitoring",
-        "source": "events",
+        "id": "decision-monitoring",
+        "source": "decision-service",
         "target": "monitoring",
-        "type": "data-flow",
-        "label": "Drift and audit telemetry",
-        "description": "Monitoring checks event gaps, reconciliation parity, rollout safety, and audit completeness."
+        "type": "event-stream",
+        "label": "Decision SLOs",
+        "description": "The hot path emits low-cardinality latency, error, and failover metrics."
       }
     ]
   },
   "deepDives": [
     {
-      "title": "Desired versus observed state",
+      "title": "Token bucket and burst semantics",
       "points": [
-        "Keep api rate limiter desired state separate from provider-observed state and show both to operators.",
-        "Make every reconciliation step conditional and resumable so a worker crash does not restart unsafe effects.",
-        "Version policy and resource state so old operations cannot overwrite newer intent."
+        "A token bucket with capacity B and refill rate R permits controlled bursts while bounding long-term throughput; define whether cost can exceed one token.",
+        "Store lastRefillAt and remaining tokens atomically, using a monotonic server time source rather than trusting client clocks.",
+        "Return reset and retry hints derived from the actual policy, not a generic fixed delay that hides burst behavior."
       ]
     },
     {
-      "title": "Provider failures and unknown outcomes",
+      "title": "Policy precedence and identity",
       "points": [
-        "Use provider-specific idempotency tokens and query-after-timeout behavior for api rate limiter operations.",
-        "Bound retries with exponential backoff, circuit breakers, and per-provider quotas.",
-        "Route irreconcilable drift to an approval or quarantine path instead of retrying forever."
+        "A request may consume tenant, user, credential, IP, and endpoint buckets. Define whether all dimensions must allow and how the tightest retry hint is selected.",
+        "Resolve identity at a trusted boundary and normalize IPv4, IPv6, forwarded headers, credentials, and endpoint templates consistently.",
+        "Separate transactional traffic from bulk or public traffic so a global policy does not create accidental cross-tenant coupling."
       ]
     },
     {
-      "title": "Blast radius and operations",
+      "title": "Atomic counters and hot keys",
       "points": [
-        "Partition api rate limiter work by tenant, region, cluster, or resource class and cap concurrent mutations.",
-        "Audit who changed desired state, which policy allowed it, and what provider evidence was observed.",
-        "Alert on drift age, operation backlog, failed steps, policy denials, and stale observations."
+        "The counter update must be atomic for one quota key; a read followed by a write allows races that over-admit during bursts.",
+        "A popular public endpoint or tenant can still overload its counter shard; use dedicated capacity, local admission, or hierarchical limits.",
+        "Do not add a global lock to solve hot keys; isolate the key and accept an explicitly bounded approximation when product policy allows it."
+      ]
+    },
+    {
+      "title": "Multi-region enforcement",
+      "points": [
+        "A globally strict counter needs coordination and spends latency or availability budget; local counters are faster but can over-admit across regions.",
+        "Choose strict, regional, or hierarchical enforcement per policy and report the policy mode in metrics and documentation.",
+        "Clock skew and delayed replication can change window boundaries, so use server time and tolerate or compensate for bounded drift explicitly."
+      ]
+    },
+    {
+      "title": "Fail-open, fail-closed, and degraded mode",
+      "points": [
+        "Fail closed for abuse-sensitive or expensive endpoints when the limiter cannot make a trustworthy decision; fail open or use a local emergency limit for low-risk reads.",
+        "Cache the last validated policy and use bounded local counters during a regional dependency failure, but expose that enforcement is degraded.",
+        "Protect the counter store itself with circuit breakers, admission control, and a separate emergency budget."
+      ]
+    },
+    {
+      "title": "Policy rollout and freshness",
+      "points": [
+        "Publish immutable policy versions and apply them idempotently in each region; an effectiveAt barrier can coordinate high-risk changes.",
+        "When a cache is stale, compare policy risk and freshness against the endpoint contract instead of silently using any available rule.",
+        "Retain rollout history so an operator can explain which limit was enforced for a rejected request."
+      ]
+    },
+    {
+      "title": "Retries, response headers, and cost",
+      "points": [
+        "A retry may represent a new request and should normally consume quota again; if a client retry must be idempotent, define a bounded request identity and replay window.",
+        "Return standard remaining, limit, reset, and retry-after information without exposing another tenant's quota state.",
+        "Batch decisions only within bounded limits and keep partial failures explicit rather than pretending unrelated keys share a transaction."
+      ]
+    },
+    {
+      "title": "Observability and abuse detection",
+      "points": [
+        "Measure decision latency, counter errors, rejection rate, policy freshness, hot-key skew, drift, and fail-open events by region and policy.",
+        "Sample high-cardinality decisions and aggregate ordinary traffic so observability does not become a second overload source.",
+        "Keep abuse analysis asynchronous; a slow detector should not delay a safe, already-bounded decision."
       ]
     }
   ],
   "tradeoffs": [
     {
-      "title": "Push versus pull reconciliation",
-      "recommendation": "Use event triggers for fast response and periodic scans for missed events, drift, and recovery.",
-      "caution": "A push-only api rate limiter controller silently misses changes when a provider event is lost."
+      "title": "Token bucket versus sliding window",
+      "recommendation": "Use token bucket for efficient low-latency decisions and controlled bursts; use a sliding or fixed window when boundary semantics are easier to explain or audit.",
+      "caution": "Window algorithms can create boundary bursts, while token bucket requires careful refill arithmetic and atomic state."
     },
     {
-      "title": "Central control plane versus provider-native controllers",
-      "recommendation": "Keep policy, intent, and audit centralized while isolating provider-specific application logic behind adapters.",
-      "caution": "A monolithic controller becomes hard to scale and couples unrelated provider failure domains."
+      "title": "Centralized versus local counters",
+      "recommendation": "Use a regional counter store for strict local enforcement and local emergency limits for resilience; document cross-region approximation separately.",
+      "caution": "A globally centralized counter adds latency and can become a single failure domain; independent local counters can over-admit."
     },
     {
-      "title": "Automatic repair versus approval",
-      "recommendation": "Automate low-risk, reversible api rate limiter changes and require approval for destructive or high-blast-radius operations.",
-      "caution": "Full automation without policy or blast-radius controls can turn a transient signal into a widespread outage."
+      "title": "Single-dimensional versus hierarchical quotas",
+      "recommendation": "Combine tenant, subject, endpoint, and IP dimensions when abuse or fairness requires it, but keep the number of atomic buckets bounded.",
+      "caution": "More dimensions improve isolation but increase decision cost, memory, and the difficulty of explaining which bucket rejected a request."
+    },
+    {
+      "title": "Fail-open versus fail-closed",
+      "recommendation": "Select the failure mode per endpoint risk and offer bounded local emergency limits rather than one global policy.",
+      "caution": "Fail-open can expose expensive or sensitive endpoints; fail-closed can turn a limiter outage into a broad application outage."
+    },
+    {
+      "title": "Exact audit versus sampled telemetry",
+      "recommendation": "Keep the decision response authoritative and sample or aggregate high-volume audit data, retaining full records for policy changes and exceptional events.",
+      "caution": "Sampling reduces storage and cost but cannot answer every historical question without a defined reconstruction limit."
     }
   ],
   "commonMistakes": [
-    "Treating a api rate limiter API response as proof that the provider has reached the desired state.",
-    "Overwriting desired state with stale observed state after an out-of-order worker response.",
-    "Retrying timed-out provider mutations without an idempotency token or status lookup.",
-    "Running every tenant or region through one queue and allowing a hot failure domain to block all work.",
-    "Omitting policy version, operator identity, provider evidence, and drift age from the audit trail."
+    "Updating a counter with separate read and write operations and allowing concurrent requests to over-admit.",
+    "Using client time or an unbounded sliding-window log for every key, which creates correctness and memory problems.",
+    "Treating all quota dimensions and endpoint risks as identical, then applying a single fail-open or fail-closed policy.",
+    "Ignoring hot tenants, public endpoints, and counter-shard skew because average traffic is balanced.",
+    "Propagating policy without versions or freshness, making rejected requests impossible to explain after a rollout.",
+    "Putting abuse analytics, policy compilation, or global coordination on every decision's synchronous path."
   ],
   "followUps": [
     {
-      "question": "How do you handle a api rate limiter provider timeout?",
-      "answer": "Persist the operation as unknown, query provider state using the idempotency token, and only retry or compensate after the result is known."
+      "question": "What happens if the counter store is unavailable?",
+      "answer": "Use the endpoint's declared risk policy: fail closed for sensitive or expensive actions, or use a bounded local emergency limiter for low-risk traffic, and expose degraded enforcement."
     },
     {
-      "question": "How do you stop a bad rollout?",
-      "answer": "Use policy gates, concurrency limits, canary scopes, operation cancellation, and a versioned last-known-good desired state."
+      "question": "How do you enforce one tenant's global limit across regions?",
+      "answer": "Choose between a coordinated global counter, hierarchical regional budgets, or bounded local approximation; state the over-admission bound and its operational response explicitly."
     },
     {
-      "question": "How do you detect drift?",
-      "answer": "Compare periodic provider observations with desired state, record the observed version and age, and route policy-compliant repair separately from manual exceptions."
+      "question": "How do you prevent a hot key from overloading one shard?",
+      "answer": "Detect skew, allocate dedicated capacity or hierarchical local admission for that subject, and preserve a bounded policy approximation rather than introducing a global lock."
+    },
+    {
+      "question": "Does a client retry consume quota twice?",
+      "answer": "Normally yes because it is another request. If product semantics require retry idempotency, carry a bounded request identity and define how replayed decisions expire."
     }
   ],
   "rubric": [
     {
-      "criterion": "Requirements",
-      "description": "The answer addresses the api rate limiter workflow, scale, latency, durability, authorization, and failure contract."
+      "criterion": "Requirements and scale",
+      "description": "The answer states decision volume, active keys, latency, burst, identity dimensions, policy freshness, and an explicit enforcement drift bound."
     },
     {
-      "criterion": "Correctness",
-      "description": "The answer identifies the authoritative api rate limiter state, versioning or deduplication boundary, and how derived views converge."
+      "criterion": "Quota model",
+      "description": "The answer defines policy precedence, token or window semantics, atomic counters, expiration, response headers, and retry behavior."
     },
     {
-      "criterion": "Scale",
-      "description": "The answer partitions api rate limiter traffic, isolates hot keys, and moves fan-out, retries, or rebuilds behind bounded asynchronous work."
+      "criterion": "Performance and distribution",
+      "description": "The answer partitions counters, isolates hot keys, bounds batch work, and explains regional versus global enforcement."
     },
     {
-      "criterion": "Operations",
-      "description": "The answer names freshness, backlog, error, cost, and recovery signals tied to the api rate limiter user experience."
+      "criterion": "Reliability and safety",
+      "description": "The answer handles policy rollout, stale configuration, counter failure, clock skew, fail-open or fail-closed behavior, and abuse isolation."
+    },
+    {
+      "criterion": "Operations and trade-offs",
+      "description": "The answer connects metrics to quota correctness and can defend algorithm, storage, multi-region, and audit choices."
     }
   ]
 }

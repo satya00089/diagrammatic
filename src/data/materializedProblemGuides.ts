@@ -11,17 +11,16 @@ import guide8Data from "./public/problemGuides/build-a-real-time-analytics-platf
 import guide9Data from "./public/problemGuides/build-a-real-time-data-streaming-pipeline.json";
 import guide10Data from "./public/problemGuides/build-a-scalable-data-lake-architecture.json";
 import guide11Data from "./public/problemGuides/build-a-secure-identity-management-solution-for-customers.json";
-import guide12Data from "./public/problemGuides/build-a-serverless-event-driven-architecture.json";
+import guide12Data from "./public/problemGuides/serverless-event-driven-architecture.json";
 import guide13Data from "./public/problemGuides/build-a-serverless-rest-api.json";
 import guide14Data from "./public/problemGuides/build-a-virtual-desktop-infrastructure-solution.json";
 import guide15Data from "./public/problemGuides/build-an-intelligent-document-processing-pipeline.json";
-import guide16Data from "./public/problemGuides/ci-cd-pipeline.json";
 import guide17Data from "./public/problemGuides/count-facebook-likes-especially-for-high-profile-users.json";
 import guide18Data from "./public/problemGuides/create-a-distributed-file-transfer-system-like-bittorrent.json";
-import guide19Data from "./public/problemGuides/create-a-document-management-system-like-wikipedia-notion-or-google-docs.json";
+import guide19Data from "./public/problemGuides/document-management-system.json";
 import guide20Data from "./public/problemGuides/create-a-system-to-migrate-large-data-to-google-cloud.json";
 import guide21Data from "./public/problemGuides/design-a-blockchain-network-solution.json";
-import guide22Data from "./public/problemGuides/design-a-complete-ci-cd-pipeline.json";
+import guide22Data from "./public/problemGuides/ci-cd-pipeline.json";
 import guide23Data from "./public/problemGuides/design-a-compliance-and-audit-monitoring-solution.json";
 import guide24Data from "./public/problemGuides/design-a-computer-vision-quality-inspection-system.json";
 import guide25Data from "./public/problemGuides/design-a-confidential-computing-solution.json";
@@ -62,14 +61,14 @@ import guide59Data from "./public/problemGuides/design-a-multi-cloud-data-sync-s
 import guide60Data from "./public/problemGuides/design-a-multi-modal-ai-assistant.json";
 import guide61Data from "./public/problemGuides/design-a-multi-region-disaster-recovery-solution.json";
 import guide62Data from "./public/problemGuides/design-a-natural-language-processing-pipeline.json";
-import guide63Data from "./public/problemGuides/design-a-personalized-recommendation-engine.json";
+import guide63Data from "./public/problemGuides/recommendation-engine.json";
 import guide64Data from "./public/problemGuides/design-a-predictive-auto-scaling-system.json";
 import guide65Data from "./public/problemGuides/design-a-predictive-maintenance-system.json";
 import guide66Data from "./public/problemGuides/design-a-real-time-ai-content-moderation-system.json";
 import guide67Data from "./public/problemGuides/design-a-real-time-ai-translation-and-localization-service.json";
 import guide68Data from "./public/problemGuides/design-a-real-time-gaming-leaderboard-system.json";
 import guide69Data from "./public/problemGuides/design-a-real-time-model-monitoring-and-drift-detection-system.json";
-import guide70Data from "./public/problemGuides/design-a-real-time-recommendation-system.json";
+import guide70Data from "./public/problemGuides/real-time-recommendation-system.json";
 import guide71Data from "./public/problemGuides/design-a-real-time-sentiment-analysis-platform.json";
 import guide72Data from "./public/problemGuides/design-a-reinforcement-learning-trading-system.json";
 import guide73Data from "./public/problemGuides/design-a-scalable-e-commerce-backend.json";
@@ -82,7 +81,7 @@ import guide79Data from "./public/problemGuides/design-a-smart-sla-monitoring-an
 import guide80Data from "./public/problemGuides/design-a-system-to-monitor-the-health-of-a-cluster.json";
 import guide81Data from "./public/problemGuides/design-a-system-to-view-latest-stock-prices-worldwide.json";
 import guide82Data from "./public/problemGuides/design-a-user-login-and-authentication-system.json";
-import guide83Data from "./public/problemGuides/design-a-video-processing-and-transcoding-pipeline.json";
+import guide83Data from "./public/problemGuides/video-transcoding-pipeline.json";
 import guide84Data from "./public/problemGuides/design-an-a-b-testing-framework-for-ml-models.json";
 import guide85Data from "./public/problemGuides/design-an-a-b-testing-system.json";
 import guide86Data from "./public/problemGuides/design-an-ai-based-real-time-fraud-detection-system.json";
@@ -93,7 +92,7 @@ import guide90Data from "./public/problemGuides/design-an-ai-powered-code-assist
 import guide91Data from "./public/problemGuides/design-an-ai-powered-contact-center-solution.json";
 import guide92Data from "./public/problemGuides/design-an-ai-powered-legal-document-analysis-platform.json";
 import guide93Data from "./public/problemGuides/design-an-ai-powered-medical-diagnosis-assistant.json";
-import guide94Data from "./public/problemGuides/design-an-ai-powered-semantic-search-engine.json";
+import guide94Data from "./public/problemGuides/semantic-search-engine.json";
 import guide95Data from "./public/problemGuides/design-an-anomaly-detection-system-for-time-series-data.json";
 import guide96Data from "./public/problemGuides/design-an-api-rate-limiter.json";
 import guide97Data from "./public/problemGuides/design-an-automated-chaos-engineering-platform.json";
@@ -102,57 +101,39 @@ import guide99Data from "./public/problemGuides/design-an-automated-root-cause-a
 import guide100Data from "./public/problemGuides/design-an-autonomous-vehicle-perception-system.json";
 import guide101Data from "./public/problemGuides/design-an-end-to-end-ml-pipeline-orchestration-platform.json";
 import guide102Data from "./public/problemGuides/design-an-enterprise-data-warehouse-solution.json";
-import guide103Data from "./public/problemGuides/design-an-eta-service-and-location-sharing-between-driver-and-rider.json";
+import guide103Data from "./public/problemGuides/eta-location-sharing.json";
 import guide104Data from "./public/problemGuides/design-an-intelligent-capacity-planning-system.json";
 import guide105Data from "./public/problemGuides/design-an-intelligent-incident-management-system.json";
-import guide106Data from "./public/problemGuides/design-an-intelligent-observability-platform.json";
+import guide106Data from "./public/problemGuides/observability-platform.json";
 import guide107Data from "./public/problemGuides/design-an-ioc-dependency-injection-framework.json";
 import guide108Data from "./public/problemGuides/design-an-ml-experiment-tracking-system.json";
 import guide109Data from "./public/problemGuides/design-an-on-call-escalation-system.json";
 import guide110Data from "./public/problemGuides/design-and-implement-a-wire-transfer-api.json";
 import guide111Data from "./public/problemGuides/design-backend-for-an-app-to-distribute-6-million-free-burgers-in-one-hour.json";
 import guide112Data from "./public/problemGuides/design-google-analytics-user-analytics-dashboard-and-pipeline.json";
-import guide113Data from "./public/problemGuides/design-google-calendar.json";
-import guide114Data from "./public/problemGuides/design-twitter-for-millions-of-users.json";
+import guide113Data from "./public/problemGuides/google-calendar-system-design.json";
+import guide114Data from "./public/problemGuides/twitter-system-design.json";
 import guide115Data from "./public/problemGuides/design-typeahead-suggestion-autocomplete.json";
-import guide116Data from "./public/problemGuides/design-web-crawler.json";
+import guide116Data from "./public/problemGuides/web-crawler.json";
 import guide117Data from "./public/problemGuides/design-yelp-or-nearby-friends.json";
 import guide118Data from "./public/problemGuides/develop-a-photo-sharing-platform-like-flickr-or-google-photos.json";
 import guide119Data from "./public/problemGuides/develop-a-weather-application.json";
 import guide120Data from "./public/problemGuides/develop-an-ads-management-and-display-system-for-a-social-feed.json";
-import guide121Data from "./public/problemGuides/digital-payment-system.json";
+import guide121Data from "./public/problemGuides/payment-system.json";
 import guide122Data from "./public/problemGuides/distributed-cache.json";
-import guide123Data from "./public/problemGuides/distributed-cache-system.json";
 import guide124Data from "./public/problemGuides/distributed-file-storage.json";
-import guide125Data from "./public/problemGuides/eta-location-sharing.json";
-import guide126Data from "./public/problemGuides/find-a-rider-for-uber-or-uber-eats.json";
-import guide127Data from "./public/problemGuides/google-calendar-system-design.json";
-import guide128Data from "./public/problemGuides/hotel-booking-system.json";
+import guide126Data from "./public/problemGuides/uber-rider-matching.json";
 import guide129Data from "./public/problemGuides/identify-the-k-most-shared-articles-in-various-time-windows.json";
-import guide130Data from "./public/problemGuides/netflix-concurrent-stream-limits.json";
-import guide131Data from "./public/problemGuides/netflix-limit-the-number-of-screens-each-user-can-watch.json";
+import guide131Data from "./public/problemGuides/netflix-concurrent-stream-limits.json";
 import guide132Data from "./public/problemGuides/notification-system.json";
-import guide133Data from "./public/problemGuides/observability-platform.json";
-import guide134Data from "./public/problemGuides/pastebin-system-design.json";
-import guide135Data from "./public/problemGuides/payment-system.json";
-import guide136Data from "./public/problemGuides/rag-conversational-ai.json";
-import guide137Data from "./public/problemGuides/rate-limiter.json";
 import guide138Data from "./public/problemGuides/real-time-chat-system.json";
-import guide139Data from "./public/problemGuides/real-time-recommendation-system.json";
-import guide140Data from "./public/problemGuides/recommendation-engine.json";
-import guide141Data from "./public/problemGuides/ride-sharing-service.json";
-import guide142Data from "./public/problemGuides/ride-sharing-system.json";
-import guide143Data from "./public/problemGuides/semantic-search-engine.json";
-import guide144Data from "./public/problemGuides/serverless-event-driven-architecture.json";
+import guide141Data from "./public/problemGuides/ride-sharing-system.json";
 import guide145Data from "./public/problemGuides/social-media-news-feed.json";
 import guide146Data from "./public/problemGuides/surge-pricing-system-uber-stream-processing.json";
 import guide147Data from "./public/problemGuides/system-to-collect-performance-metrics-from-thousands-of-servers.json";
-import guide148Data from "./public/problemGuides/top-k-elements-app-store-rankings-amazon-bestsellers.json";
-import guide149Data from "./public/problemGuides/uber-rider-matching.json";
+import guide148Data from "./public/problemGuides/top-k-ranking-system.json";
 import guide150Data from "./public/problemGuides/url-shortener-like-bit-ly.json";
 import guide151Data from "./public/problemGuides/video-streaming-platform.json";
-import guide152Data from "./public/problemGuides/video-transcoding-pipeline.json";
-import guide153Data from "./public/problemGuides/web-crawler.json";
 import guide154Data from "./public/problemGuides/web-search-engine.json";
 
 export const materializedProblemGuides: Record<string, ProblemGuide> = {
@@ -171,23 +152,22 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
   "build-a-scalable-data-lake-architecture": guide10Data as ProblemGuide,
   "build-a-secure-identity-management-solution-for-customers":
     guide11Data as ProblemGuide,
-  "build-a-serverless-event-driven-architecture": guide12Data as ProblemGuide,
+  "serverless-event-driven-architecture": guide12Data as ProblemGuide,
   "build-a-serverless-rest-api": guide13Data as ProblemGuide,
   "build-a-virtual-desktop-infrastructure-solution":
     guide14Data as ProblemGuide,
   "build-an-intelligent-document-processing-pipeline":
     guide15Data as ProblemGuide,
-  "ci-cd-pipeline": guide16Data as ProblemGuide,
   "count-facebook-likes-especially-for-high-profile-users":
     guide17Data as ProblemGuide,
   "create-a-distributed-file-transfer-system-like-bittorrent":
     guide18Data as ProblemGuide,
-  "create-a-document-management-system-like-wikipedia-notion-or-google-docs":
+  "document-management-system":
     guide19Data as ProblemGuide,
   "create-a-system-to-migrate-large-data-to-google-cloud":
     guide20Data as ProblemGuide,
   "design-a-blockchain-network-solution": guide21Data as ProblemGuide,
-  "design-a-complete-ci-cd-pipeline": guide22Data as ProblemGuide,
+  "ci-cd-pipeline": guide22Data as ProblemGuide,
   "design-a-compliance-and-audit-monitoring-solution":
     guide23Data as ProblemGuide,
   "design-a-computer-vision-quality-inspection-system":
@@ -241,7 +221,7 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
   "design-a-multi-region-disaster-recovery-solution":
     guide61Data as ProblemGuide,
   "design-a-natural-language-processing-pipeline": guide62Data as ProblemGuide,
-  "design-a-personalized-recommendation-engine": guide63Data as ProblemGuide,
+  "recommendation-engine": guide63Data as ProblemGuide,
   "design-a-predictive-auto-scaling-system": guide64Data as ProblemGuide,
   "design-a-predictive-maintenance-system": guide65Data as ProblemGuide,
   "design-a-real-time-ai-content-moderation-system":
@@ -251,7 +231,7 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
   "design-a-real-time-gaming-leaderboard-system": guide68Data as ProblemGuide,
   "design-a-real-time-model-monitoring-and-drift-detection-system":
     guide69Data as ProblemGuide,
-  "design-a-real-time-recommendation-system": guide70Data as ProblemGuide,
+  "real-time-recommendation-system": guide70Data as ProblemGuide,
   "design-a-real-time-sentiment-analysis-platform": guide71Data as ProblemGuide,
   "design-a-reinforcement-learning-trading-system": guide72Data as ProblemGuide,
   "design-a-scalable-e-commerce-backend": guide73Data as ProblemGuide,
@@ -268,7 +248,7 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
   "design-a-system-to-view-latest-stock-prices-worldwide":
     guide81Data as ProblemGuide,
   "design-a-user-login-and-authentication-system": guide82Data as ProblemGuide,
-  "design-a-video-processing-and-transcoding-pipeline":
+  "video-transcoding-pipeline":
     guide83Data as ProblemGuide,
   "design-an-a-b-testing-framework-for-ml-models": guide84Data as ProblemGuide,
   "design-an-a-b-testing-system": guide85Data as ProblemGuide,
@@ -286,7 +266,7 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
     guide92Data as ProblemGuide,
   "design-an-ai-powered-medical-diagnosis-assistant":
     guide93Data as ProblemGuide,
-  "design-an-ai-powered-semantic-search-engine": guide94Data as ProblemGuide,
+  "semantic-search-engine": guide94Data as ProblemGuide,
   "design-an-anomaly-detection-system-for-time-series-data":
     guide95Data as ProblemGuide,
   "design-an-api-rate-limiter": guide96Data as ProblemGuide,
@@ -299,13 +279,13 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
   "design-an-end-to-end-ml-pipeline-orchestration-platform":
     guide101Data as ProblemGuide,
   "design-an-enterprise-data-warehouse-solution": guide102Data as ProblemGuide,
-  "design-an-eta-service-and-location-sharing-between-driver-and-rider":
+  "eta-location-sharing":
     guide103Data as ProblemGuide,
   "design-an-intelligent-capacity-planning-system":
     guide104Data as ProblemGuide,
   "design-an-intelligent-incident-management-system":
     guide105Data as ProblemGuide,
-  "design-an-intelligent-observability-platform": guide106Data as ProblemGuide,
+  "observability-platform": guide106Data as ProblemGuide,
   "design-an-ioc-dependency-injection-framework": guide107Data as ProblemGuide,
   "design-an-ml-experiment-tracking-system": guide108Data as ProblemGuide,
   "design-an-on-call-escalation-system": guide109Data as ProblemGuide,
@@ -314,52 +294,34 @@ export const materializedProblemGuides: Record<string, ProblemGuide> = {
     guide111Data as ProblemGuide,
   "design-google-analytics-user-analytics-dashboard-and-pipeline":
     guide112Data as ProblemGuide,
-  "design-google-calendar": guide113Data as ProblemGuide,
-  "design-twitter-for-millions-of-users": guide114Data as ProblemGuide,
+  "google-calendar-system-design": guide113Data as ProblemGuide,
+  "twitter-system-design": guide114Data as ProblemGuide,
   "design-typeahead-suggestion-autocomplete": guide115Data as ProblemGuide,
-  "design-web-crawler": guide116Data as ProblemGuide,
+  "web-crawler": guide116Data as ProblemGuide,
   "design-yelp-or-nearby-friends": guide117Data as ProblemGuide,
   "develop-a-photo-sharing-platform-like-flickr-or-google-photos":
     guide118Data as ProblemGuide,
   "develop-a-weather-application": guide119Data as ProblemGuide,
   "develop-an-ads-management-and-display-system-for-a-social-feed":
     guide120Data as ProblemGuide,
-  "digital-payment-system": guide121Data as ProblemGuide,
+  "payment-system": guide121Data as ProblemGuide,
   "distributed-cache": guide122Data as ProblemGuide,
-  "distributed-cache-system": guide123Data as ProblemGuide,
   "distributed-file-storage": guide124Data as ProblemGuide,
-  "eta-location-sharing": guide125Data as ProblemGuide,
-  "find-a-rider-for-uber-or-uber-eats": guide126Data as ProblemGuide,
-  "google-calendar-system-design": guide127Data as ProblemGuide,
-  "hotel-booking-system": guide128Data as ProblemGuide,
+  "uber-rider-matching": guide126Data as ProblemGuide,
   "identify-the-k-most-shared-articles-in-various-time-windows":
     guide129Data as ProblemGuide,
-  "netflix-concurrent-stream-limits": guide130Data as ProblemGuide,
-  "netflix-limit-the-number-of-screens-each-user-can-watch":
+  "netflix-concurrent-stream-limits":
     guide131Data as ProblemGuide,
   "notification-system": guide132Data as ProblemGuide,
-  "observability-platform": guide133Data as ProblemGuide,
-  "pastebin-system-design": guide134Data as ProblemGuide,
-  "payment-system": guide135Data as ProblemGuide,
-  "rag-conversational-ai": guide136Data as ProblemGuide,
-  "rate-limiter": guide137Data as ProblemGuide,
   "real-time-chat-system": guide138Data as ProblemGuide,
-  "real-time-recommendation-system": guide139Data as ProblemGuide,
-  "recommendation-engine": guide140Data as ProblemGuide,
-  "ride-sharing-service": guide141Data as ProblemGuide,
-  "ride-sharing-system": guide142Data as ProblemGuide,
-  "semantic-search-engine": guide143Data as ProblemGuide,
-  "serverless-event-driven-architecture": guide144Data as ProblemGuide,
+  "ride-sharing-system": guide141Data as ProblemGuide,
   "social-media-news-feed": guide145Data as ProblemGuide,
   "surge-pricing-system-uber-stream-processing": guide146Data as ProblemGuide,
   "system-to-collect-performance-metrics-from-thousands-of-servers":
     guide147Data as ProblemGuide,
-  "top-k-elements-app-store-rankings-amazon-bestsellers":
+  "top-k-ranking-system":
     guide148Data as ProblemGuide,
-  "uber-rider-matching": guide149Data as ProblemGuide,
   "url-shortener-like-bit-ly": guide150Data as ProblemGuide,
   "video-streaming-platform": guide151Data as ProblemGuide,
-  "video-transcoding-pipeline": guide152Data as ProblemGuide,
-  "web-crawler": guide153Data as ProblemGuide,
   "web-search-engine": guide154Data as ProblemGuide,
 };
