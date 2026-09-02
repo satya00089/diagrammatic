@@ -283,7 +283,7 @@
         "label": "Tenant and account API gateway",
         "description": "Authenticates users and cloud connectors, isolates tenants and accounts, enforces query and export quotas, and validates approval idempotency keys.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -297,7 +297,7 @@
         "label": "Spend and recommendation API",
         "description": "Serves spend rollups, forecasts, anomalies, recommendation evidence, and freshness metadata; routes policy changes and approval requests to the control plane.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -311,7 +311,7 @@
         "label": "Cloud provider adapters",
         "description": "Isolates AWS, Azure, and GCP credentials and API semantics; fetches billing exports, usage, rates, resource inventory, and executes only approved provider changes.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": -40
         },
         "properties": {
@@ -325,7 +325,7 @@
         "label": "Raw billing and usage lake",
         "description": "Retains immutable provider line items, credits, taxes, rates, exchange-rate inputs, collection cursors, and source timestamps for replay and reconciliation.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": -40
         },
         "properties": {
@@ -339,7 +339,7 @@
         "label": "Resource, tag, and ownership catalog",
         "description": "Maps provider resource IDs to services, environments, teams, business units, tags, regions, and lifecycle state so costs can be allocated consistently.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 420
         },
         "properties": {
@@ -353,7 +353,7 @@
         "label": "Cost data event bus",
         "description": "Publishes billing batch accepted, inventory updated, normalized cost ready, recommendation created, approval recorded, and action completed events with replayable offsets.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 180
         },
         "properties": {
@@ -367,7 +367,7 @@
         "label": "Cost normalization and allocation",
         "description": "Converts provider-specific line items into a canonical cost model, applies currency and amortization rules, joins resource ownership, and marks unallocated or late data explicitly.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 180
         },
         "properties": {
@@ -381,7 +381,7 @@
         "label": "Usage history and feature store",
         "description": "Stores time-windowed spend, utilization, seasonality, commitment coverage, idle-resource signals, and feature snapshots keyed by account and resource.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": -40
         },
         "properties": {
@@ -395,7 +395,7 @@
         "label": "Forecast, anomaly, and savings engine",
         "description": "Runs spend forecasts and anomaly detection, identifies idle resources and rightsizing candidates, and evaluates reserved-instance or savings-plan scenarios with confidence and evidence.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 360
         },
         "properties": {
@@ -409,7 +409,7 @@
         "label": "Savings policy and approval engine",
         "description": "Applies tenant budgets, minimum confidence, savings thresholds, environment exclusions, commitment risk limits, approval roles, and fail-safe action rules.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 260
         },
         "properties": {
@@ -423,7 +423,7 @@
         "label": "Recommendation and audit store",
         "description": "Stores versioned recommendations, evidence references, savings estimates, confidence, policy decision, approval history, action status, and immutable audit records.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 260
         },
         "properties": {
@@ -437,7 +437,7 @@
         "label": "Spend and recommendation serving index",
         "description": "Indexes allocated spend, trends, forecasts, anomalies, recommendation status, savings evidence, and freshness by tenant, account, resource, owner, and time range.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 260
         },
         "properties": {
@@ -451,7 +451,7 @@
         "label": "Approved action executor",
         "description": "Revalidates policy and provider state, performs dry runs, executes rightsizing or commitment changes with bounded retries, and records idempotent outcomes for rollback review.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": -40
         },
         "properties": {
@@ -465,7 +465,7 @@
         "label": "FinOps notification service",
         "description": "Notifies owners about anomalies, budget risk, recommendation expiry, approval requests, and completed or failed actions through configured channels.",
         "position": {
-          "x": 3600,
+          "x": 4800,
           "y": -40
         },
         "properties": {
@@ -479,7 +479,7 @@
         "label": "FinOps quality and safety observability",
         "description": "Tracks provider ingestion freshness, missing accounts, allocation coverage, unallocated spend, forecast error, savings realization, model drift, queue lag, action failures, and approval bypass attempts.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": -260
         },
         "properties": {

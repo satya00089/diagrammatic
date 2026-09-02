@@ -31,7 +31,10 @@ export type ProductEventName =
   | "assessment_finding_toggled"
   | "account_signup_submitted"
   | "account_signup_completed"
-  | "public_share_completed";
+  | "public_share_completed"
+  | "feedback_opened"
+  | "feedback_submitted"
+  | "feedback_failed";
 
 interface AnalyticsBatch {
   user_id?: string;

@@ -21,11 +21,11 @@ import {
 import CustomEdge from "../../components/CustomEdge";
 import CustomNode, { type NodeData } from "../../components/Node";
 import { COMPONENTS } from "../../config/components";
+import { getDefaultArchitectureHandlePair } from "../../utils/architectureEdgeRouting";
 import type {
   GuideArchitecture,
   GuideArchitectureComponent,
 } from "../../types/problemGuide";
-import type { SystemConnection } from "../../types/systemDesign";
 
 import "@xyflow/react/dist/style.css";
 
@@ -107,31 +107,13 @@ const toFlowNodes = (architecture: GuideArchitecture): Node[] =>
     };
   });
 
-const getDefaultHandlePair = (
-  connection: SystemConnection,
-  componentsById: Map<string, GuideArchitectureComponent>,
-) => {
-  const source = componentsById.get(connection.source);
-  const target = componentsById.get(connection.target);
-
-  if (source && target && Math.abs(source.position.x - target.position.x) < 1) {
-    const sourceIsAbove = source.position.y < target.position.y;
-    return sourceIsAbove
-      ? { sourceHandle: "bottom", targetHandle: "top" }
-      : { sourceHandle: "top", targetHandle: "bottom" };
-  }
-
-  return { sourceHandle: "right", targetHandle: "left" };
-};
-
 const toFlowEdges = (architecture: GuideArchitecture): Edge[] => {
-  const componentsById = new Map(
-    architecture.components.map((component) => [component.id, component]),
-  );
-
   return architecture.connections.map((connection) => {
     const properties = connection.properties ?? {};
-    const defaultHandles = getDefaultHandlePair(connection, componentsById);
+    const defaultHandles = getDefaultArchitectureHandlePair(
+      connection,
+      architecture.components,
+    );
 
     return {
       id: connection.id,

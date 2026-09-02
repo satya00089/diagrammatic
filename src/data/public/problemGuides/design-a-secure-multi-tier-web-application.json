@@ -200,7 +200,7 @@
         "label": "Global edge and static delivery",
         "description": "Serves versioned assets and safe cacheable responses close to users.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 80
         },
         "properties": {}
@@ -212,7 +212,7 @@
         "label": "Protected ingress gateway",
         "description": "Terminates public ingress, identity, and network policy before requests reach application tiers.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -226,7 +226,7 @@
         "label": "Identity and session service",
         "description": "Issues short-lived sessions, evaluates roles, and supports key or certificate rotation.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -238,7 +238,7 @@
         "label": "Stateless application tier",
         "description": "Owns secure multi tier web application commands, authorization, and the synchronous user contract without retaining local session state.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 440
         },
         "properties": {}
@@ -250,7 +250,7 @@
         "label": "Read and session cache",
         "description": "Caches safe derived reads and session metadata with explicit TTL and invalidation.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 80
         },
         "properties": {}
@@ -262,7 +262,7 @@
         "label": "Private primary data store",
         "description": "Stores authoritative secure multi tier web application state behind private network and backup boundaries.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 440
         },
         "properties": {}
@@ -274,7 +274,7 @@
         "label": "Domain event bus",
         "description": "Publishes committed changes for asynchronous work, audit, and replay.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 260
         },
         "properties": {}
@@ -286,7 +286,7 @@
         "label": "Async jobs and migrations",
         "description": "Processes notifications, exports, migrations, backups, and repair with bounded retries.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 260
         },
         "properties": {}
@@ -298,7 +298,7 @@
         "label": "Audit and security evidence",
         "description": "Retains access, policy, deployment, and recovery evidence for investigation.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 440
         },
         "properties": {}
@@ -310,7 +310,7 @@
         "label": "Application reliability operations",
         "description": "Tracks zone health, authentication, latency, saturation, queue lag, and restore readiness.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

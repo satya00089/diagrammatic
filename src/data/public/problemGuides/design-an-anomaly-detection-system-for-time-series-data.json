@@ -221,7 +221,7 @@
         "label": "Model platform API gateway",
         "description": "Authenticates tenants and service identities, validates dataset and model contracts, applies quotas, and routes interactive requests.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -235,7 +235,7 @@
         "label": "Training data intake",
         "description": "Registers data snapshots, validates schemas and quality gates, and creates reproducible ingestion manifests without blocking on training.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -249,8 +249,8 @@
         "label": "Training data and artifact lake",
         "description": "Stores immutable raw data, labels, embeddings, evaluation sets, feature exports, and training artifacts with lineage and retention policy.",
         "position": {
-          "x": 1080,
-          "y": 80
+          "x": 960,
+          "y": 0
         },
         "properties": {
           "partitioning": "Tenant, dataset, version, and event time"
@@ -263,8 +263,8 @@
         "label": "Feature and dataset registry",
         "description": "Serves point-in-time-correct feature snapshots and records dataset versions, ownership, quality results, and transformation lineage.",
         "position": {
-          "x": 1080,
-          "y": 440
+          "x": 960,
+          "y": 560
         },
         "properties": {
           "consistency": "Point-in-time joins and versioned metadata"
@@ -291,7 +291,7 @@
         "label": "Model registry and lineage",
         "description": "Stores immutable model versions, metrics, datasets, code references, approvals, rollout stages, and rollback candidates.",
         "position": {
-          "x": 1800,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -305,8 +305,8 @@
         "label": "Model serving and inference",
         "description": "Loads approved models, enforces input and policy checks, serves predictions or generated outputs, and emits latency and quality feedback.",
         "position": {
-          "x": 1800,
-          "y": 440
+          "x": 1920,
+          "y": 560
         },
         "properties": {
           "latency": "Version-pinned inference with bounded payloads"
@@ -319,7 +319,7 @@
         "label": "Prediction and experiment results",
         "description": "Stores prediction metadata, experiment assignments, explanations, feedback, and replay references without mixing them with model artifacts.",
         "position": {
-          "x": 2160,
+          "x": 2400,
           "y": 260
         },
         "properties": {
@@ -333,7 +333,7 @@
         "label": "Model quality and platform observability",
         "description": "Tracks data drift, training failures, evaluation regressions, inference latency, GPU utilization, feature freshness, and model feedback.",
         "position": {
-          "x": 1440,
+          "x": 2400,
           "y": -140
         },
         "properties": {
@@ -420,7 +420,13 @@
         "target": "client",
         "type": "http",
         "label": "Prediction or experiment result",
-        "description": "Clients receive the output with model version, confidence or explanation metadata, and an explicit degraded response when unavailable."
+        "description": "Clients receive the output with model version, confidence or explanation metadata, and an explicit degraded response when unavailable.",
+        "properties": {
+          "sourceHandle": "bottom",
+          "targetHandle": "bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.5
+        }
       },
       {
         "id": "orchestrator-monitoring",
@@ -428,7 +434,12 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Training and data quality telemetry",
-        "description": "Operations observes queue lag, run duration, data quality failures, resource saturation, and reproducibility gaps."
+        "description": "Operations observes queue lag, run duration, data quality failures, resource saturation, and reproducibility gaps.",
+        "properties": {
+          "sourceHandle": "top",
+          "labelPosition": "target",
+          "labelOffset": 0.3
+        }
       },
       {
         "id": "serving-monitoring",
@@ -436,7 +447,11 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Inference and drift telemetry",
-        "description": "Serving emits latency, error, feature freshness, drift, safety, and model-quality signals by tenant and model version."
+        "description": "Serving emits latency, error, feature freshness, drift, safety, and model-quality signals by tenant and model version.",
+        "properties": {
+          "labelPosition": "target",
+          "labelOffset": 0.5
+        }
       }
     ]
   },

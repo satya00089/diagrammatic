@@ -187,7 +187,7 @@
         "label": "Ranking query gateway",
         "description": "Validates scope, K, time window, authorization, and cache policy.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -199,7 +199,7 @@
         "label": "Score event stream",
         "description": "Carries item score changes with event time, source, and deduplication identity.",
         "position": {
-          "x": 650,
+          "x": 0,
           "y": 80
         },
         "properties": {}
@@ -211,7 +211,7 @@
         "label": "Windowed score aggregator",
         "description": "Maintains exact or approximate counts and score windows with checkpoints.",
         "position": {
-          "x": 1010,
+          "x": 480,
           "y": 80
         },
         "properties": {}
@@ -223,7 +223,7 @@
         "label": "Score state store",
         "description": "Stores item scores, windows, watermarks, and correction metadata.",
         "position": {
-          "x": 1360,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -235,7 +235,7 @@
         "label": "Top-K rank store",
         "description": "Materializes sorted candidate sets or heaps per scope and window.",
         "position": {
-          "x": 1710,
+          "x": 1580,
           "y": 260
         },
         "properties": {}
@@ -259,8 +259,8 @@
         "label": "Hot ranking cache",
         "description": "Caches popular scope and window results with version-aware invalidation.",
         "position": {
-          "x": 1710,
-          "y": 440
+          "x": 1960,
+          "y": 560
         },
         "properties": {}
       },
@@ -271,7 +271,7 @@
         "label": "Ranking reliability operations",
         "description": "Tracks score lag, rank churn, approximation error, hot keys, and query latency.",
         "position": {
-          "x": 1360,
+          "x": 2060,
           "y": -140
         },
         "properties": {}
@@ -292,7 +292,12 @@
         "target": "cache",
         "type": "api-call",
         "label": "Version-aware cache lookup",
-        "description": "The gateway checks a cache entry against the requested window and ranking version."
+        "description": "The gateway checks a cache entry against the requested window and ranking version.",
+        "properties": {
+          "targetHandle": "bottom",
+          "labelPosition": "target",
+          "labelOffset": 0.35
+        }
       },
       {
         "id": "gateway-query-2",
@@ -316,7 +321,10 @@
         "target": "cache",
         "type": "data-flow",
         "label": "Fresh top-K result",
-        "description": "Fresh snapshots populate the hot cache with version-aware expiry."
+        "description": "Fresh snapshots populate the hot cache with version-aware expiry.",
+        "properties": {
+          "sourceHandle": "right-bottom"
+        }
       },
       {
         "id": "events-aggregator-5",

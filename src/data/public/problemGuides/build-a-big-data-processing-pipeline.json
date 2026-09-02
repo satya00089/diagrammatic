@@ -244,7 +244,7 @@
         "label": "Ingestion gateway",
         "description": "Authenticates producers, validates envelopes, and enforces quotas.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -258,7 +258,7 @@
         "label": "Source connectors",
         "description": "Reads APIs, CDC logs, queues, and files with source checkpoints.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 100
         },
         "properties": {
@@ -272,7 +272,7 @@
         "label": "Durable event broker",
         "description": "Buffers bursts, preserves partition order, and exposes replayable offsets.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 280
         },
         "properties": {
@@ -286,7 +286,7 @@
         "label": "Raw object store",
         "description": "Stores compressed immutable events and replay manifests.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 600
         },
         "properties": {
@@ -300,7 +300,7 @@
         "label": "Pipeline catalog",
         "description": "Stores definitions, schemas, runs, lineage, and manifests.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -314,7 +314,7 @@
         "label": "Checkpoint store",
         "description": "Stores offsets, watermarks, state snapshots, and worker leases.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 600
         },
         "properties": {
@@ -328,7 +328,7 @@
         "label": "Job scheduler",
         "description": "Schedules streaming jobs, batch stages, retries, and quotas.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 280
         },
         "properties": {
@@ -342,7 +342,7 @@
         "label": "Stateful stream engine",
         "description": "Runs keyed transforms, windows, joins, and checkpointed state.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 80
         },
         "properties": {
@@ -356,7 +356,7 @@
         "label": "Batch execution engine",
         "description": "Runs historical transforms and writes isolated fragments.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 520
         },
         "properties": {
@@ -370,7 +370,7 @@
         "label": "Quality and policy gates",
         "description": "Checks schema, completeness, duplicates, privacy, and lineage.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 280
         },
         "properties": {
@@ -384,7 +384,7 @@
         "label": "Curated analytical store",
         "description": "Serves partitioned columnar tables and snapshots.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 280
         },
         "properties": {
@@ -398,7 +398,7 @@
         "label": "Query and export service",
         "description": "Provides bounded dashboard queries and asynchronous exports.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 280
         },
         "properties": {
@@ -412,7 +412,7 @@
         "label": "Replay and control plane",
         "description": "Authorizes backfills, compares runs, and promotes manifests safely.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 600
         },
         "properties": {
@@ -426,7 +426,7 @@
         "label": "Pipeline observability",
         "description": "Tracks throughput, lag, watermarks, quality, cost, lineage, and retries.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 600
         },
         "properties": {

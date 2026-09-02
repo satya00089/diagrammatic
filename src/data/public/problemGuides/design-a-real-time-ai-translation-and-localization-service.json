@@ -221,7 +221,7 @@
         "label": "Model platform API gateway",
         "description": "Authenticates tenants and service identities, validates dataset and model contracts, applies quotas, and routes interactive requests.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -235,7 +235,7 @@
         "label": "Training data intake",
         "description": "Registers data snapshots, validates schemas and quality gates, and creates reproducible ingestion manifests without blocking on training.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -249,7 +249,7 @@
         "label": "Training data and artifact lake",
         "description": "Stores immutable raw data, labels, embeddings, evaluation sets, feature exports, and training artifacts with lineage and retention policy.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 80
         },
         "properties": {
@@ -263,7 +263,7 @@
         "label": "Feature and dataset registry",
         "description": "Serves point-in-time-correct feature snapshots and records dataset versions, ownership, quality results, and transformation lineage.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 440
         },
         "properties": {
@@ -277,7 +277,7 @@
         "label": "Training and evaluation orchestrator",
         "description": "Schedules training, validation, backfills, and shadow evaluations; isolates GPU-heavy jobs and retries only safe stages.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 260
         },
         "properties": {
@@ -291,7 +291,7 @@
         "label": "Model registry and lineage",
         "description": "Stores immutable model versions, metrics, datasets, code references, approvals, rollout stages, and rollback candidates.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 80
         },
         "properties": {
@@ -305,7 +305,7 @@
         "label": "Model serving and inference",
         "description": "Loads approved models, enforces input and policy checks, serves predictions or generated outputs, and emits latency and quality feedback.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 440
         },
         "properties": {
@@ -319,7 +319,7 @@
         "label": "Prediction and experiment results",
         "description": "Stores prediction metadata, experiment assignments, explanations, feedback, and replay references without mixing them with model artifacts.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 260
         },
         "properties": {
@@ -333,7 +333,7 @@
         "label": "Model quality and platform observability",
         "description": "Tracks data drift, training failures, evaluation regressions, inference latency, GPU utilization, feature freshness, and model feedback.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

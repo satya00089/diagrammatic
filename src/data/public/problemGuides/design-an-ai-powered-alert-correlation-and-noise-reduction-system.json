@@ -292,7 +292,7 @@
         "label": "Ingestion and query gateway",
         "description": "Authenticates source credentials and operator identity, enforces tenant isolation and quotas, validates payload size, and routes alert, query, and action requests.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -306,7 +306,7 @@
         "label": "Alert intake and normalizer",
         "description": "Maps source schemas into a normalized alert, derives a stable fingerprint, performs bounded deduplication, and sends urgent signals to conservative routing.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -320,7 +320,7 @@
         "label": "Raw alert and action log",
         "description": "Append-only tenant-partitioned storage for original alert payloads, normalized fields, operator actions, and idempotency records.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -334,7 +334,7 @@
         "label": "Alert event backbone",
         "description": "Publishes alert-accepted, topology-updated, decision-created, action-recorded, and notification events with tenant/time partitioning and replay offsets.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 100
         },
         "properties": {
@@ -348,7 +348,7 @@
         "label": "Topology and feature store",
         "description": "Serves versioned service ownership, dependency edges, maintenance windows, historical fingerprints, and bounded temporal features for correlation.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 420
         },
         "properties": {
@@ -362,7 +362,7 @@
         "label": "Correlation and explanation workers",
         "description": "Combine fingerprint, temporal, topology, message-similarity, and historical features; produce explainable attach, merge, split, or new-incident decisions with confidence.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 260
         },
         "properties": {
@@ -376,7 +376,7 @@
         "label": "Suppression and routing policy",
         "description": "Evaluates severity, confidence, maintenance, expiry, escalation, and fail-open rules; refuses unsafe suppression and records the policy version used.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 260
         },
         "properties": {
@@ -390,7 +390,7 @@
         "label": "Incident state store",
         "description": "Stores versioned incident aggregates, alert membership, correlation evidence, suppression state, and notification intents for active incident reads.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 260
         },
         "properties": {
@@ -404,7 +404,7 @@
         "label": "Incident search projection",
         "description": "Indexes active and historical incidents, evidence, service filters, confidence, suppression expiry, and freshness for the operator console.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 420
         },
         "properties": {
@@ -418,7 +418,7 @@
         "label": "Notification and escalation worker",
         "description": "Delivers incident transitions to paging, chat, email, and webhooks with idempotency keys, retry policies, deduplication, and provider circuit breakers.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 80
         },
         "properties": {
@@ -432,7 +432,7 @@
         "label": "Quality and safety observability",
         "description": "Tracks ingest loss, queue lag, correlation latency, false merges and splits, suppressed-critical alerts, notification delivery, model drift, and replay parity.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": -120
         },
         "properties": {

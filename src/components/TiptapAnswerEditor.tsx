@@ -31,6 +31,10 @@ type TiptapAnswerEditorProps = {
   onChange: (value: string) => void;
   placeholder: string;
   disabled?: boolean;
+  contentFormat?: "text" | "html";
+  ariaLabel?: string;
+  maxLength?: number;
+  onHtmlChange?: (html: string, text: string) => void;
 };
 
 type ToolbarButtonProps = {
@@ -48,8 +52,12 @@ const escapeHtml = (value: string): string =>
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br />");
 
-const toEditorContent = (value: string): string =>
-  value.trim() ? `<p>${escapeHtml(value)}</p>` : "";
+const toEditorContent = (value: string, contentFormat: "text" | "html"): string =>
+  value.trim()
+    ? contentFormat === "html"
+      ? value
+      : `<p>${escapeHtml(value)}</p>`
+    : "";
 
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   onClick,
@@ -119,6 +127,10 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
   onChange,
   placeholder,
   disabled = false,
+  contentFormat = "text",
+  ariaLabel = id,
+  maxLength,
+  onHtmlChange,
 }) => {
   const [, forceUpdate] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -130,15 +142,23 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
     ],
-    content: toEditorContent(value),
+    content: toEditorContent(value, contentFormat),
     editable: !disabled,
     editorProps: {
       attributes: {
-        "aria-label": id,
+        "aria-label": ariaLabel,
+        role: "textbox",
+        "aria-multiline": "true",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
-      onChange(currentEditor.getText({ blockSeparator: "\n" }));
+      const text = currentEditor.getText({ blockSeparator: "\n" });
+      if (maxLength !== undefined && text.length > maxLength) {
+        currentEditor.commands.undo();
+        return;
+      }
+      onChange(text);
+      onHtmlChange?.(currentEditor.getHTML(), text);
     },
     onSelectionUpdate: () => forceUpdate((count) => count + 1),
     onTransaction: () => forceUpdate((count) => count + 1),
@@ -148,13 +168,21 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
     if (!editor) return;
 
     const editorText = editor.getText({ blockSeparator: "\n" });
-    if (editorText !== value) {
-      editor.commands.setContent(toEditorContent(value), {
+    if (contentFormat === "html") {
+      if (value.trim() && editor.getHTML() !== value) {
+        editor.commands.setContent(toEditorContent(value, contentFormat), {
+          emitUpdate: false,
+        });
+      } else if (!value.trim() && editorText.trim()) {
+        editor.commands.clearContent(false);
+      }
+    } else if (editorText !== value) {
+      editor.commands.setContent(toEditorContent(value, contentFormat), {
         emitUpdate: false,
       });
     }
     editor.setEditable(!disabled);
-  }, [disabled, editor, value]);
+  }, [contentFormat, disabled, editor, value]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

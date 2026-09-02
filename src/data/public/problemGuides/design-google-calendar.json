@@ -187,7 +187,7 @@
         "label": "Calendar API gateway",
         "description": "Authenticates users, enforces calendar ACLs, validates time zones, and binds idempotency keys.",
         "position": {
-          "x": 320,
+          "x": 480,
           "y": 240
         },
         "properties": {
@@ -201,7 +201,7 @@
         "label": "Event and calendar service",
         "description": "Owns event versions, recurrence exceptions, attendee state, sharing, and conflict rules.",
         "position": {
-          "x": 660,
+          "x": 960,
           "y": 240
         },
         "properties": {
@@ -215,7 +215,7 @@
         "label": "Calendar and ACL store",
         "description": "Stores calendars, events, recurrence rules, attendees, permissions, and tombstones.",
         "position": {
-          "x": 1000,
+          "x": 1440,
           "y": 240
         },
         "properties": {
@@ -229,7 +229,7 @@
         "label": "Time-range and free/busy index",
         "description": "Derived interval index optimized for range reads and free/busy lookup.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -243,8 +243,8 @@
         "label": "Calendar event bus",
         "description": "Carries committed event changes, ACL updates, reminder jobs, and replay offsets.",
         "position": {
-          "x": 1360,
-          "y": 400
+          "x": 1920,
+          "y": 560
         },
         "properties": {
           "delivery": "At least once, partitioned by calendar"
@@ -257,7 +257,7 @@
         "label": "Recurrence and reminder workers",
         "description": "Expands recurring events, materializes exceptions, schedules reminders, and retries fan-out.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 80
         },
         "properties": {
@@ -271,8 +271,8 @@
         "label": "Incremental sync service",
         "description": "Serves sync tokens and reconnect deltas without forcing clients to reload an entire calendar.",
         "position": {
-          "x": 1710,
-          "y": 400
+          "x": 2400,
+          "y": 560
         },
         "properties": {
           "protocol": "Versioned cursor and snapshot fallback"
@@ -285,7 +285,7 @@
         "label": "Invite and reminder delivery",
         "description": "Delivers invitation, RSVP, reminder, and change notifications with deduplication and audit.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 240
         },
         "properties": {
@@ -299,8 +299,8 @@
         "label": "Calendar correctness operations",
         "description": "Tracks conflicts, freshness, reminder lag, notification duplicates, and sync recovery.",
         "position": {
-          "x": 1360,
-          "y": -160
+          "x": 1920,
+          "y": -180
         },
         "properties": {
           "alerts": "Stale projections, missed reminders, and invariant failures"
@@ -386,7 +386,11 @@
         "target": "client",
         "type": "http",
         "label": "Sync response or push",
-        "description": "The client receives deltas, a resume token, or an explicit snapshot-required state."
+        "description": "The client receives deltas, a resume token, or an explicit snapshot-required state.",
+        "properties": {
+          "sourceHandle": "bottom-left",
+          "targetHandle": "bottom-right"
+        }
       },
       {
         "id": "calendar-service-monitoring-10",
@@ -402,7 +406,11 @@
         "target": "monitoring",
         "type": "data-flow",
         "label": "Lag and freshness telemetry",
-        "description": "Operations observes consumer lag, missed reminders, projection age, and replay parity."
+        "description": "Operations observes consumer lag, missed reminders, projection age, and replay parity.",
+        "properties": {
+          "sourceHandle": "right-bottom",
+          "targetHandle": "right-bottom"
+        }
       }
     ],
     "keyPaths": [

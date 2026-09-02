@@ -214,7 +214,7 @@
         "label": "Job API",
         "description": "Authenticates tenants, applies quotas, and validates requests.",
         "position": {
-          "x": 320,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -228,7 +228,7 @@
         "label": "Job coordinator",
         "description": "Owns state transitions, checkpoints, leases, and output commit.",
         "position": {
-          "x": 680,
+          "x": 960,
           "y": 280
         },
         "properties": {
@@ -242,7 +242,7 @@
         "label": "Job metadata store",
         "description": "Stores jobs, partitions, task attempts, and manifests.",
         "position": {
-          "x": 1040,
+          "x": 1440,
           "y": 280
         },
         "properties": {
@@ -256,7 +256,7 @@
         "label": "Object storage",
         "description": "Stores input, spill runs, output shards, and manifests.",
         "position": {
-          "x": 1040,
+          "x": 1440,
           "y": 40
         },
         "properties": {
@@ -270,7 +270,7 @@
         "label": "Task scheduler",
         "description": "Places partition and merge tasks according to capacity and locality.",
         "position": {
-          "x": 1400,
+          "x": 1920,
           "y": 280
         },
         "properties": {
@@ -284,7 +284,7 @@
         "label": "Partition sorters",
         "description": "Stream records, sort bounded runs, and spill them durably.",
         "position": {
-          "x": 1760,
+          "x": 2400,
           "y": 40
         },
         "properties": {
@@ -298,7 +298,7 @@
         "label": "Shuffle index",
         "description": "Tracks partition ranges and run locations; data remains in object storage.",
         "position": {
-          "x": 1760,
+          "x": 2400,
           "y": 280
         },
         "properties": {
@@ -312,7 +312,7 @@
         "label": "Merge reducers",
         "description": "Perform streaming k-way merges and write immutable output shards.",
         "position": {
-          "x": 2120,
+          "x": 2880,
           "y": 40
         },
         "properties": {
@@ -326,7 +326,7 @@
         "label": "Job event stream",
         "description": "Publishes progress, failure, cancellation, and completion events.",
         "position": {
-          "x": 1760,
+          "x": 2400,
           "y": 600
         },
         "properties": {
@@ -340,7 +340,7 @@
         "label": "Output validator",
         "description": "Checks ordering, counts, checksums, and manifest completeness.",
         "position": {
-          "x": 2480,
+          "x": 3360,
           "y": 280
         },
         "properties": {
@@ -354,7 +354,7 @@
         "label": "Cleanup workers",
         "description": "Delete temporary runs after retention and recover abandoned jobs.",
         "position": {
-          "x": 2480,
+          "x": 3360,
           "y": 600
         },
         "properties": {
@@ -368,7 +368,7 @@
         "label": "Sort observability",
         "description": "Tracks throughput, skew, shuffle, retries, stragglers, and storage cost.",
         "position": {
-          "x": 2840,
+          "x": 3840,
           "y": 280
         },
         "properties": {

@@ -254,7 +254,7 @@
         "label": "Global Instagram-like photo gateway",
         "description": "Authenticates requests, applies quotas, and issues signed upload URLs.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 280
         },
         "properties": {
@@ -268,7 +268,7 @@
         "label": "Object storage",
         "description": "Stores originals, renditions, thumbnails, and manifests with lifecycle tiers.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 40
         },
         "properties": {
@@ -282,7 +282,7 @@
         "label": "Content service",
         "description": "Owns posts, stories, visibility, expiry, deletion, and publication state.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 360
         },
         "properties": {
@@ -296,7 +296,7 @@
         "label": "Content database",
         "description": "Stores durable metadata and moderation state keyed by content and owner.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 360
         },
         "properties": {
@@ -310,7 +310,7 @@
         "label": "Social graph service",
         "description": "Manages follows, blocks, private-account policy, and relationship reads.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 600
         },
         "properties": {
@@ -324,7 +324,7 @@
         "label": "Graph store",
         "description": "Stores adjacency lists and relationship versions for efficient fanout checks.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 600
         },
         "properties": {
@@ -338,7 +338,7 @@
         "label": "Media workers",
         "description": "Scan, resize, transcode, and publish rendition manifests asynchronously.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 40
         },
         "properties": {
@@ -352,7 +352,7 @@
         "label": "Global Instagram-like photo event backbone",
         "description": "Retains publication, graph, interaction, deletion, and moderation events for replay.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 280
         },
         "properties": {
@@ -366,7 +366,7 @@
         "label": "Hybrid fanout service",
         "description": "Pushes normal authors and uses pull or hybrid delivery for celebrity authors.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 40
         },
         "properties": {
@@ -380,7 +380,7 @@
         "label": "Feed projection store",
         "description": "Stores bounded cursor-friendly feed entries and story indexes.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": 280
         },
         "properties": {
@@ -394,7 +394,7 @@
         "label": "Feed and story service",
         "description": "Reads projections, merges hot-author candidates, and applies visibility and expiry filters.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": 280
         },
         "properties": {
@@ -408,7 +408,7 @@
         "label": "Media CDN",
         "description": "Serves signed rendition URLs near viewers and supports purge on takedown.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": 280
         },
         "properties": {
@@ -422,7 +422,7 @@
         "label": "Interaction service",
         "description": "Commits likes and comments with actor-object uniqueness and event publication.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 600
         },
         "properties": {
@@ -436,7 +436,7 @@
         "label": "Moderation service",
         "description": "Scans media and reports, then emits takedown or appeal decisions.",
         "position": {
-          "x": 2520,
+          "x": 3360,
           "y": -160
         },
         "properties": {
@@ -450,7 +450,7 @@
         "label": "Notifications",
         "description": "Delivers selected follows and interactions with preferences and retries.",
         "position": {
-          "x": 2880,
+          "x": 3840,
           "y": -160
         },
         "properties": {
@@ -464,7 +464,7 @@
         "label": "Analytics and discovery",
         "description": "Consumes events for ranking features, search, recommendations, and abuse signals.",
         "position": {
-          "x": 3240,
+          "x": 4320,
           "y": -160
         },
         "properties": {
@@ -478,7 +478,7 @@
         "label": "Global Instagram-like photo monitoring",
         "description": "Tracks upload readiness, feed lag, fanout backlog, CDN hit rate, and expiry correctness.",
         "position": {
-          "x": 3600,
+          "x": 4800,
           "y": -160
         },
         "properties": {

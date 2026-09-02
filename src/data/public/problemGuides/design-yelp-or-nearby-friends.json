@@ -202,7 +202,7 @@
         "label": "Geo discovery API",
         "description": "Authenticates requests, validates consent, applies precision and rate limits, and redacts sensitive fields.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -214,7 +214,7 @@
         "label": "Location and place ingestion",
         "description": "Accepts opted-in location updates and place edits with accuracy, timestamp, and retention metadata.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -226,7 +226,7 @@
         "label": "Audience and privacy policy",
         "description": "Evaluates sharing scope, blocked users, precision, expiry, and deletion policy.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 440
         },
         "properties": {}
@@ -238,7 +238,7 @@
         "label": "Expiring geospatial index",
         "description": "Indexes coarse, expiring candidates for bounded radius and category queries.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 260
         },
         "properties": {}
@@ -250,7 +250,7 @@
         "label": "Place and relationship store",
         "description": "Stores place metadata, friend edges, visibility state, and versioned edits.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -262,7 +262,7 @@
         "label": "Nearby query service",
         "description": "Combines geo candidates with category, ranking, distance, freshness, and privacy filters.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 260
         },
         "properties": {}
@@ -274,7 +274,7 @@
         "label": "Geo update event stream",
         "description": "Carries location, place, consent, block, deletion, and invalidation events.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -286,7 +286,7 @@
         "label": "Opt-in proximity notifications",
         "description": "Delivers approved nearby or place updates with deduplication and audit.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 260
         },
         "properties": {}
@@ -298,7 +298,7 @@
         "label": "Geo privacy operations",
         "description": "Tracks stale locations, policy denials, precision leakage, hot cells, and invalidation lag.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}

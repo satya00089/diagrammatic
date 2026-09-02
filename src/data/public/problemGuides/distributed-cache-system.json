@@ -224,7 +224,7 @@
         "label": "Infrastructure control gateway",
         "description": "Authenticates operators and service identities, validates desired state, applies tenancy and quotas, and enforces approval boundaries.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -238,7 +238,7 @@
         "label": "Domain control plane",
         "description": "Translates the feature-specific desired state into plans, validates dependencies, and owns lifecycle status and reconciliation intents.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 260
         },
         "properties": {
@@ -252,7 +252,7 @@
         "label": "Desired state and audit store",
         "description": "Stores resource specifications, ownership, versions, leases, operation status, secrets references, and immutable audit history.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -266,7 +266,7 @@
         "label": "Placement and work scheduler",
         "description": "Chooses partitions, capacity, rollout order, or execution times while respecting dependencies, fairness, and maintenance windows.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -280,7 +280,7 @@
         "label": "Reconciliation and execution queue",
         "description": "Buffers plans and retries with visibility timeouts, priority, dead-letter handling, and per-tenant isolation.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 440
         },
         "properties": {
@@ -294,7 +294,7 @@
         "label": "Partitioned execution workers",
         "description": "Apply plans, poll progress, handle provider-specific errors, and report observed state without duplicating side effects.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 260
         },
         "properties": {
@@ -308,7 +308,7 @@
         "label": "Infrastructure provider adapters",
         "description": "Encapsulate cloud, cluster, network, identity, or external control APIs and normalize capabilities, drift, and retry semantics.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 80
         },
         "properties": {
@@ -322,7 +322,7 @@
         "label": "Control-plane event stream",
         "description": "Publishes desired-state, plan, execution, drift, and audit events for projections and integrations.",
         "position": {
-          "x": 2160,
+          "x": 2880,
           "y": 440
         },
         "properties": {
@@ -336,7 +336,7 @@
         "label": "Control-plane operations",
         "description": "Tracks reconciliation lag, drift, failed plans, provider throttling, worker saturation, rollout safety, and audit completeness.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": -140
         },
         "properties": {

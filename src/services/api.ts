@@ -13,6 +13,10 @@ import type {
   DesignReasoningContext,
   InterviewSession,
 } from "../types/systemDesign";
+import type {
+  FeedbackResponse,
+  FeedbackSubmission,
+} from "../types/feedback";
 
 // VITE_API_URL is the application's documented API endpoint. Keep the older
 // assessment-specific name as a fallback for existing deployments.
@@ -810,6 +814,29 @@ class ApiService {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+  }
+
+  // Durable product feedback. Unlike analytics, written feedback is stored
+  // as an individual item so it can be triaged and acted on later.
+  async submitFeedback(
+    payload: FeedbackSubmission,
+  ): Promise<FeedbackResponse> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/feedback`, {
+      method: "POST",
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        await this.getErrorMessage(
+          response,
+          "Feedback could not be sent. Please try again.",
+        ),
+      );
+    }
+
+    return response.json() as Promise<FeedbackResponse>;
   }
 
   // Retrieve learning progress for a path

@@ -232,7 +232,7 @@
         "label": "Payment API gateway",
         "description": "Authenticates principals, validates payment contracts, applies rate limits, and binds idempotency keys to a tenant and intent.",
         "position": {
-          "x": 360,
+          "x": 480,
           "y": 260
         },
         "properties": {
@@ -246,7 +246,7 @@
         "label": "Fraud, identity, and risk checks",
         "description": "Evaluates identity, device, velocity, sanctions, and fraud signals before an intent can advance to authorization.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": -40
         },
         "properties": {
@@ -260,7 +260,7 @@
         "label": "Payment orchestration service",
         "description": "Owns the payment state machine, retries provider-safe steps, handles asynchronous provider updates, and never double-captures an intent.",
         "position": {
-          "x": 720,
+          "x": 960,
           "y": 420
         },
         "properties": {
@@ -274,7 +274,7 @@
         "label": "Double-entry payment ledger",
         "description": "Records immutable debits, credits, fees, refunds, reversals, and balance effects with currency and transaction references.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": 260
         },
         "properties": {
@@ -288,7 +288,7 @@
         "label": "Bank and payment-provider adapters",
         "description": "Isolates provider credentials, tokenization, authorization, capture, refund, timeout, and webhook semantics behind a common contract.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 80
         },
         "properties": {
@@ -302,7 +302,7 @@
         "label": "Payment event backbone",
         "description": "Publishes authorization, capture, refund, ledger, dispute, and webhook events with ordering keys and replay offsets.",
         "position": {
-          "x": 1440,
+          "x": 1920,
           "y": 440
         },
         "properties": {
@@ -316,7 +316,7 @@
         "label": "Settlement and reconciliation",
         "description": "Matches provider reports to ledger entries, detects missing or duplicated settlements, and opens repair workflows without rewriting history.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 80
         },
         "properties": {
@@ -330,7 +330,7 @@
         "label": "Payment status notifications",
         "description": "Delivers merchant webhooks and customer notifications with retry, signature verification, and delivery audit.",
         "position": {
-          "x": 1800,
+          "x": 2400,
           "y": 440
         },
         "properties": {
@@ -344,7 +344,7 @@
         "label": "Payment reliability and risk operations",
         "description": "Tracks authorization latency, provider errors, duplicate attempts, ledger imbalance, reconciliation gaps, fraud outcomes, and webhook lag.",
         "position": {
-          "x": 1080,
+          "x": 1440,
           "y": -140
         },
         "properties": {

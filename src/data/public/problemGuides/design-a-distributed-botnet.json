@@ -201,7 +201,7 @@
         "label": "Threat-intelligence gateway",
         "description": "Authenticates analysts, scopes tenants, validates evidence, and requires approval for actions.",
         "position": {
-          "x": 300,
+          "x": 480,
           "y": 260
         },
         "properties": {}
@@ -213,7 +213,7 @@
         "label": "Endpoint telemetry stream",
         "description": "Ingests defensive endpoint, DNS, network, and sandbox observations with provenance.",
         "position": {
-          "x": 650,
+          "x": 960,
           "y": 80
         },
         "properties": {}
@@ -225,7 +225,7 @@
         "label": "Indicator normalizer",
         "description": "Deduplicates and normalizes hashes, domains, IPs, behaviors, and evidence references.",
         "position": {
-          "x": 1010,
+          "x": 1440,
           "y": 80
         },
         "properties": {}
@@ -237,7 +237,7 @@
         "label": "Threat relationship graph",
         "description": "Links indicators, samples, infrastructure, sightings, and confidence over time.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 260
         },
         "properties": {}
@@ -249,19 +249,19 @@
         "label": "Correlation and detection service",
         "description": "Groups observations into campaigns and produces explainable defensive detections.",
         "position": {
-          "x": 1710,
+          "x": 2400,
           "y": 260
         },
         "properties": {}
       },
       {
         "id": "sandbox",
-        "type": "processing-worker",
+        "type": "microservice",
         "componentId": "processing-worker",
         "label": "Isolated malware sandbox",
         "description": "Analyzes suspicious samples in a contained environment with no uncontrolled external actions.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": 440
         },
         "properties": {}
@@ -273,7 +273,7 @@
         "label": "Containment workflow",
         "description": "Creates reviewed block, quarantine, or investigation actions through approved integrations.",
         "position": {
-          "x": 2060,
+          "x": 2880,
           "y": 260
         },
         "properties": {}
@@ -285,7 +285,7 @@
         "label": "Analyst notifications",
         "description": "Delivers high-confidence campaign and containment updates with audit references.",
         "position": {
-          "x": 2410,
+          "x": 3360,
           "y": 260
         },
         "properties": {}
@@ -297,7 +297,7 @@
         "label": "Security operations",
         "description": "Tracks evidence quality, false positives, containment latency, and workflow authorization.",
         "position": {
-          "x": 1360,
+          "x": 1920,
           "y": -140
         },
         "properties": {}
