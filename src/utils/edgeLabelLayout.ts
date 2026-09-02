@@ -46,7 +46,7 @@ type EdgeLabelLayoutOptions = {
 
 const LABEL_PADDING_X = 16;
 const LABEL_PADDING_Y = 4;
-const LABEL_MIN_WIDTH = 60;
+const LABEL_MIN_WIDTH = 100;
 const LABEL_MAX_WIDTH = 240;
 const PATH_CLEARANCE = 24;
 const NODE_CLEARANCE = 8;

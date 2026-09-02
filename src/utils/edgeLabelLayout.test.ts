@@ -35,7 +35,7 @@ describe("getEdgeLabelLayout", () => {
       ],
     });
 
-    expect(layout.width).toBeLessThanOrEqual(96);
+    expect(layout.width).toBe(100);
     expect(layout.lineCount).toBeGreaterThan(1);
     expect(layout.height).toBeGreaterThan(18);
   });

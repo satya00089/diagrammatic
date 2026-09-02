@@ -4,11 +4,13 @@ import { useTheme } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { FeedbackProvider } from "./contexts/FeedbackContext";
 
 const FeatureAnnouncement = lazy(
   () => import("./components/FeatureAnnouncement"),
 );
 const QuickSetupModal = lazy(() => import("./components/QuickSetupModal"));
+const FeedbackLauncher = lazy(() => import("./components/FeedbackLauncher"));
 const StoreBoundary = lazy(() => import("./components/StoreBoundary"));
 
 const Home = lazy(() => import("./pages/Home"));
@@ -115,6 +117,7 @@ const GlobalProductChrome: React.FC = () => {
     <Suspense fallback={null}>
       <FeatureAnnouncement />
       <QuickSetupModal />
+      <FeedbackLauncher />
     </Suspense>
   );
 };
@@ -126,9 +129,10 @@ const App: React.FC = () => {
     <AuthProvider>
       <ChatBotProvider>
         <OnboardingProvider>
-          <BrowserRouter>
-            <Suspense fallback={<RouteLoading />}>
-              <Routes>
+          <FeedbackProvider>
+            <BrowserRouter>
+              <Suspense fallback={<RouteLoading />}>
+                <Routes>
                 <Route path="/" element={<Home />} />
                 <Route
                   path="/problems"
@@ -228,10 +232,11 @@ const App: React.FC = () => {
                   }
                 />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-            <GlobalProductChrome />
-          </BrowserRouter>
+                </Routes>
+              </Suspense>
+              <GlobalProductChrome />
+            </BrowserRouter>
+          </FeedbackProvider>
         </OnboardingProvider>
       </ChatBotProvider>
     </AuthProvider>

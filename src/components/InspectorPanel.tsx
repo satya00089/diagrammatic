@@ -14,6 +14,7 @@ import {
 } from "react-icons/pi";
 import { MdAdd } from "react-icons/md";
 import { FiShare2 } from "react-icons/fi";
+import { useFeedback } from "../contexts/FeedbackContext";
 
 // ── Assessment tab constants (defined once, not inside render) ──────────────
 const RING_RADIUS = 26;
@@ -73,6 +74,93 @@ const FEEDBACK_TYPE_BORDER: Record<string, string> = {
   info: "border-[var(--brand)]/50",
 };
 // ────────────────────────────────────────────────────────────────────────────
+
+const AssessmentFeedbackPrompt: React.FC<{
+  problemId?: string | null;
+  assessmentId?: string;
+}> = ({ problemId, assessmentId }) => {
+  const { openFeedback, submitFeedback } = useFeedback();
+  const [state, setState] = React.useState<"idle" | "sending" | "sent">(
+    "idle",
+  );
+  const [error, setError] = React.useState(false);
+
+  const context = {
+    ...(problemId ? { problemId } : {}),
+    ...(assessmentId ? { assessmentId } : {}),
+  };
+
+  const sendHelpfulSignal = async () => {
+    if (state === "sending" || state === "sent") return;
+    setState("sending");
+    setError(false);
+    try {
+      await submitFeedback({
+        source: "assessment",
+        category: "assessment",
+        helpful: true,
+        reasons: [],
+        message: "",
+        context,
+      });
+      setState("sent");
+    } catch {
+      setState("idle");
+      setError(true);
+    }
+  };
+
+  const askForDetails = () => {
+    openFeedback({
+      source: "assessment",
+      category: "assessment",
+      helpful: false,
+      context,
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3.5 py-3">
+      {state === "sent" ? (
+        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          Thanks — your signal helps us improve architecture reviews.
+        </p>
+      ) : (
+        <>
+          <p className="text-xs font-semibold text-theme">
+            Was this review useful?
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void sendHelpfulSignal()}
+              disabled={state === "sending"}
+              className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-theme transition hover:border-[var(--brand)] hover:text-[var(--brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={askForDetails}
+              disabled={state === "sending"}
+              className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-theme transition hover:border-[var(--brand)] hover:text-[var(--brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Not quite
+            </button>
+            {state === "sending" && (
+              <span className="text-xs text-muted">Sending…</span>
+            )}
+          </div>
+          {error && (
+            <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-300">
+              Could not send that signal. Please try again.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 type InspectorPanelProps = {
   problem: {
@@ -733,6 +821,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             )}
                           </div>
                         </div>
+
+                        <AssessmentFeedbackPrompt
+                          problemId={problemId}
+                          assessmentId={assessmentResult.assessmentId}
+                        />
 
                         <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">
                           <summary className="cursor-pointer font-semibold text-theme">

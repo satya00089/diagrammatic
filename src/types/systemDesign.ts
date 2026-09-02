@@ -143,6 +143,7 @@ export interface ValidationResult {
   unclearConnections?: string[];
   processingTimeMs?: number;
   source?: "ai" | "rule_based";
+  assessmentId?: string;
 }
 
 export type ReviewFindingSeverity =
