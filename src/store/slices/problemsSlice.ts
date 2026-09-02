@@ -28,6 +28,7 @@ interface ProblemsState {
   error: string | null;
   // Cache timestamp
   lastFetched: number | null;
+  totalCount: number | null;
   nextCursor: string | null;
   hasMore: boolean;
   loadingMore: boolean;
@@ -63,6 +64,7 @@ const initialState: ProblemsState = {
   loading: false,
   error: null,
   lastFetched: null,
+  totalCount: null,
   nextCursor: null,
   hasMore: false,
   loadingMore: false,
@@ -72,6 +74,7 @@ interface ProblemPageResponse {
   items: SystemDesignProblem[];
   next_cursor: string | null;
   has_more: boolean;
+  total_count?: number | null;
 }
 
 const getProblemsUrl = (apiUrl: string, cursor?: string | null) => {
@@ -95,6 +98,7 @@ export const fetchProblems = createAsyncThunk(
     ) {
       return {
         problems: state.problems.problems,
+        total_count: state.problems.totalCount,
         next_cursor: state.problems.nextCursor,
         has_more: state.problems.hasMore,
         fromCache: true,
@@ -118,6 +122,7 @@ export const fetchProblems = createAsyncThunk(
         items: fallbackProblems,
         next_cursor: null,
         has_more: false,
+        total_count: null,
         fromCache: false,
       };
     }
@@ -197,7 +202,14 @@ const problemsSlice = createSlice({
       })
       .addCase(fetchProblems.fulfilled, (state, action) => {
         state.loading = false;
-        const { items, problems, next_cursor, has_more, fromCache } =
+        const {
+          items,
+          problems,
+          next_cursor,
+          has_more,
+          total_count,
+          fromCache,
+        } =
           action.payload;
         const firstPage = items ?? problems;
 
@@ -206,6 +218,11 @@ const problemsSlice = createSlice({
         state.filteredProblems = uniqueProblems;
         state.nextCursor = next_cursor ?? null;
         state.hasMore = has_more ?? false;
+        if (typeof total_count === "number" && total_count >= 0) {
+          state.totalCount = total_count;
+        } else if (!fromCache) {
+          state.totalCount = null;
+        }
 
         if (!fromCache) {
           state.lastFetched = Date.now();
@@ -229,6 +246,12 @@ const problemsSlice = createSlice({
         state.filteredProblems = nextProblems;
         state.nextCursor = action.payload.next_cursor;
         state.hasMore = action.payload.has_more;
+        if (
+          typeof action.payload.total_count === "number" &&
+          action.payload.total_count >= 0
+        ) {
+          state.totalCount = action.payload.total_count;
+        }
       })
       .addCase(fetchMoreProblems.rejected, (state, action) => {
         state.loadingMore = false;

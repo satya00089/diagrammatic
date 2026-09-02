@@ -39,6 +39,7 @@ import {
   selectProblemsLoading,
   selectProblemsLoadingMore,
   selectProblemsHasMore,
+  selectProblemsTotalCount,
   selectProblemsError,
   selectCategories,
   selectDomains,
@@ -89,6 +90,7 @@ const Dashboard: React.FC = () => {
   const loading = useAppSelector(selectProblemsLoading);
   const loadingMore = useAppSelector(selectProblemsLoadingMore);
   const hasMore = useAppSelector(selectProblemsHasMore);
+  const totalProblemCount = useAppSelector(selectProblemsTotalCount);
   const error = useAppSelector(selectProblemsError);
   const categories = useAppSelector(selectCategories);
   const domains = useAppSelector(selectDomains);
@@ -99,6 +101,16 @@ const Dashboard: React.FC = () => {
   const searchQuery = useAppSelector(selectSearchQuery);
   const attemptedProblems = useAppSelector(selectAttemptedProblems);
   const hasProblems = filteredProblems.length > 0;
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() ||
+      selectedDifficulty !== "All" ||
+      selectedCategory !== "All" ||
+      selectedDomain !== "All",
+  );
+  const availableProblemCount =
+    !hasActiveFilters && totalProblemCount !== null
+      ? totalProblemCount
+      : filteredProblems.length;
 
   const {
     user,
@@ -374,7 +386,7 @@ const Dashboard: React.FC = () => {
                     ? "Loading..."
                     : loading
                       ? "Updating..."
-                    : `${filteredProblems.length} problems available`}
+                    : `${availableProblemCount} problems available`}
                 </div>
 
                 {/* Tour trigger button */}
