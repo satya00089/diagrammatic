@@ -688,6 +688,13 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-close h2 {
   font-size: clamp(35px, 3.7vw, 52px);
 }
+.systema-close-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
 .systema-footer {
   min-height: 105px;
   border-top: 1px solid var(--systema-line);
@@ -991,6 +998,14 @@ html:has(.systema-page[data-theme="dark"]) {
     flex-direction: column;
     align-items: flex-start;
     padding-block: 60px;
+  }
+  .systema-close-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .systema-close-actions > * {
+    width: 100%;
   }
   .systema-footer {
     flex-wrap: wrap;

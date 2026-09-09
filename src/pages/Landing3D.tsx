@@ -223,6 +223,7 @@ export default function Landing3D() {
         <nav aria-label="Main navigation" className="systema-desktop-nav">
           <a href="#how-it-works">How it works</a>
           <Link to="/problems/">Practice problems</Link>
+          <Link to="/playground/free">Design Studio</Link>
           <Link to="/learning-paths/">Learning paths</Link>
         </nav>
         <div className="systema-nav-actions">
@@ -266,6 +267,7 @@ export default function Landing3D() {
           >
             <a href="#how-it-works">How it works</a>
             <Link to="/problems/">Practice problems</Link>
+            <Link to="/playground/free">Design Studio</Link>
             <Link to="/learning-paths/">Learning paths</Link>
             <Link to="/problems/" className="systema-mobile-nav-cta">
               Start designing <HiArrowUpRight />
@@ -527,11 +529,23 @@ export default function Landing3D() {
             <br />
             <span>starts on the canvas.</span>
           </h2>
-          <Button asChild size="lg" className="systema-primary-cta">
-            <Link to="/problems/">
-              Find your first problem <HiArrowRight />
-            </Link>
-          </Button>
+          <div className="systema-close-actions">
+            <Button asChild size="lg" className="systema-primary-cta">
+              <Link to="/problems/">
+                Find your first problem <HiArrowRight />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="systema-outline-cta"
+            >
+              <Link to="/playground/free">
+                Open Design Studio <HiArrowUpRight />
+              </Link>
+            </Button>
+          </div>
         </section>
       </main>
       <footer className="systema-footer systema-container">
