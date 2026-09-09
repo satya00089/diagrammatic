@@ -25,3 +25,7 @@ dist-ssr
 .agents/*
 skills-lock.json
 .env
+
+# Local browser verification artifacts
+.playwright-cli/
+.impeccable/review/

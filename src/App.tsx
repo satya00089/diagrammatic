@@ -19,6 +19,7 @@ const FeedbackLauncher = lazy(() => import("./components/FeedbackLauncher"));
 const StoreBoundary = lazy(() => import("./components/StoreBoundary"));
 
 const Home = lazy(() => import("./pages/Home"));
+const Landing3D = lazy(() => import("./pages/Landing3D"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProblemLanding = lazy(() => import("./pages/ProblemLanding"));
 const SeoGuide = lazy(() => import("./pages/SeoGuide"));
@@ -139,6 +140,7 @@ const App: React.FC = () => {
               <Suspense fallback={<RouteLoading />}>
                 <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/landing-3d" element={<Landing3D />} />
                 <Route
                   path="/problems"
                   element={

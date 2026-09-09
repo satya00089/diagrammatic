@@ -53,6 +53,40 @@ const routes = {
     lastmod: "2026-08-23",
     indexable: true,
   },
+  "/landing-3d": {
+    title: "Diagrammatic — Design systems. Understand every decision.",
+    heading: "Design systems. Understand every decision.",
+    description:
+      "Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration.",
+    keywords:
+      "system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview",
+    image: `${siteUrl}/og/home.png`,
+    imageAlt: "Diagrammatic system design walkthrough preview",
+    sectionTitle: "Build, review, and improve your architecture",
+    actions: [
+      { label: "Start designing", href: "/problems/" },
+      { label: "Explore learning paths", href: "/learning-paths/" },
+    ],
+    items: [
+      {
+        title: "Make the request path visible",
+        description:
+          "Start with a clear architecture and show how each component connects.",
+      },
+      {
+        title: "Explain the trade-offs",
+        description:
+          "Review assumptions around scale, reliability, latency, and data design.",
+      },
+      {
+        title: "Improve the next iteration",
+        description:
+          "Turn structured feedback into a stronger design you can defend.",
+      },
+    ],
+    lastmod: "2026-09-09",
+    indexable: true,
+  },
   "/problems": {
     title: "System Design & AI/ML Practice Problems | Diagrammatic",
     heading: "System Design & AI/ML Problems",
@@ -680,7 +714,10 @@ function fallbackProblemSlug(title = "") {
 }
 
 function loadGuideCatalog() {
-  const files = ["src/data/problemGuides.ts", "src/data/materializedProblemGuides.ts"];
+  const files = [
+    "src/data/problemGuides.ts",
+    "src/data/materializedProblemGuides.ts",
+  ];
   const imports = new Map();
   const aliases = new Map();
   const guides = new Map();
@@ -694,19 +731,22 @@ function loadGuideCatalog() {
   );
   for (const file of fs.readdirSync(guideDirectory)) {
     if (!file.endsWith(".json")) continue;
-    guides.set(path.basename(file, ".json"), JSON.parse(
-      fs.readFileSync(path.join(guideDirectory, file), "utf-8"),
-    ));
+    guides.set(
+      path.basename(file, ".json"),
+      JSON.parse(fs.readFileSync(path.join(guideDirectory, file), "utf-8")),
+    );
   }
 
   for (const relativePath of files) {
     const source = fs.readFileSync(path.join(__dirname, relativePath), "utf-8");
     for (const match of source.matchAll(
       /import\s+(\w+)\s+from\s+"\.\/public\/problemGuides\/([^\"]+)"/g,
-    )) imports.set(match[1], match[2]);
+    ))
+      imports.set(match[1], match[2]);
     for (const match of source.matchAll(
       /const\s+(\w+)\s*=\s*(\w+)\s+as\s+ProblemGuide/g,
-    )) aliases.set(match[1], match[2]);
+    ))
+      aliases.set(match[1], match[2]);
 
     const objectStart = source.indexOf(
       relativePath.includes("materialized")

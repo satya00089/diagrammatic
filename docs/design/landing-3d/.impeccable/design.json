@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-09T14:35:36Z",
+  "title": "Design System: Diagrammatic Systema Preview",
+  "extensions": {
+    "motion": [
+      {
+        "name": "request-flow",
+        "value": "5s linear infinite",
+        "purpose": "Move request-packet dashes; user pause stops this loop."
+      },
+      {
+        "name": "architecture-addition",
+        "value": "500ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Fade in the cache-miss database path from opacity 0.25 to 1."
+      },
+      {
+        "name": "control-color",
+        "value": "180ms",
+        "purpose": "Phase-control and navigation color transitions."
+      },
+      {
+        "name": "panel-color",
+        "value": "200ms",
+        "purpose": "Feature-panel background hover transition."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion removes animation and transition and uses automatic scrolling."
+      }
+    ],
+    "shadows": [],
+    "breakpoints": [
+      { "name": "small-header", "value": "360px" },
+      { "name": "mobile", "value": "600px" },
+      { "name": "stacked-max", "value": "899px" },
+      { "name": "desktop-min", "value": "900px" },
+      { "name": "compact-desktop", "value": "1100px" },
+      { "name": "wide-desktop", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Large problem-catalog action as used in the hero and closing section.",
+      "html": "<a class=\"ds-primary\" href=\"/problems/\">Start designing <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M4.5 19.5 19.5 4.5m0 0H8.25m11.25 0v11.25\"/></svg></a>",
+      "css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 24px;border-radius:6px;background:#fff;color:#000;font:600 14px Inter,sans-serif;text-decoration:none;transition:color 150ms cubic-bezier(.4,0,.2,1),background-color 150ms cubic-bezier(.4,0,.2,1)}.ds-primary:hover{background:var(--color-zinc-200,oklch(92% .004 286.32))}.ds-primary:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Outline action",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action to the URL-shortener problem.",
+      "html": "<a class=\"ds-outline\" href=\"/problems/url-shortener-like-bit-ly/\">Try this problem</a>",
+      "css": ".ds-outline{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border:1px solid var(--color-zinc-700,oklch(37% .013 285.805));border-radius:6px;background:transparent;color:#fff;font:600 14px Inter,sans-serif;text-decoration:none;transition:background-color 150ms cubic-bezier(.4,0,.2,1)}.ds-outline:hover{background:var(--color-zinc-900,oklch(21% .006 285.885))}.ds-outline:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-outline{transition:none}}"
+    },
+    {
+      "name": "Ghost menu control",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Mobile navigation toggle; this static specimen shows the closed appearance.",
+      "html": "<button class=\"ds-ghost\" aria-label=\"Open navigation\" aria-expanded=\"false\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M3.75 9h16.5m-16.5 6.75h16.5\"/></svg></button>",
+      "css": ".ds-ghost{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:6px;background:transparent;color:var(--color-zinc-300,oklch(87.1% .006 286.286));cursor:pointer;transition:color 150ms cubic-bezier(.4,0,.2,1)}.ds-ghost:hover{color:#fff}.ds-ghost:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-ghost{transition:none}}"
+    },
+    {
+      "name": "Walkthrough phase",
+      "kind": "custom",
+      "refersTo": "phase-selected",
+      "description": "Selected phase appearance; selection behavior belongs to the React walkthrough.",
+      "html": "<button class=\"ds-phase\" aria-pressed=\"true\"><span>02</span>Review</button>",
+      "css": ".ds-phase{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 11px;border:0;border-radius:4px;background:#242424;color:#f5f5f3;font:400 11px Inter,sans-serif;cursor:pointer;transition:background 180ms,color 180ms}.ds-phase span{font-size:9px;font-variant-numeric:tabular-nums;opacity:.7}.ds-phase:hover{background:#1b1b1b;color:#fff}.ds-phase:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}@media(max-width:899px){.ds-phase{min-height:44px;padding-inline:15px}}@media(max-width:600px){.ds-phase{gap:7px;padding-inline:10px}}@media(prefers-reduced-motion:reduce){.ds-phase{transition:none}}"
+    },
+    {
+      "name": "Feature panel",
+      "kind": "card",
+      "refersTo": "feature",
+      "description": "Linked learning-path panel with a cache decision trace: input volume enters a cache decision and branches into speed and freshness trade-offs.",
+      "html": "<a class=\"ds-feature\" href=\"/learning-paths/\"><svg viewBox=\"0 0 320 140\" fill=\"none\" aria-hidden=\"true\"><g stroke=\"currentColor\"><path d=\"M28 70H112M196 70H238\" opacity=\".42\"/><rect x=\"28\" y=\"43\" width=\"64\" height=\"54\" rx=\"3\"/><text x=\"60\" y=\"64\" fill=\"currentColor\" stroke=\"none\" text-anchor=\"middle\" font-size=\"10\">READS</text><text x=\"60\" y=\"80\" fill=\"currentColor\" stroke=\"none\" text-anchor=\"middle\" font-size=\"11\">volume</text><rect x=\"112\" y=\"31\" width=\"84\" height=\"78\" rx=\"3\" fill=\"#131313\"/><path d=\"M125 50H183M125 62H173\" opacity=\".42\"/><text x=\"154\" y=\"86\" fill=\"currentColor\" stroke=\"none\" text-anchor=\"middle\" font-size=\"12\">CACHE</text><path d=\"M196 70H214Q226 70 226 55V43M214 70Q226 70 226 85V97H238\" opacity=\".55\"/><rect x=\"238\" y=\"27\" width=\"54\" height=\"32\" rx=\"3\"/><rect x=\"238\" y=\"81\" width=\"54\" height=\"32\" rx=\"3\"/><text x=\"265\" y=\"47\" fill=\"currentColor\" stroke=\"none\" text-anchor=\"middle\" font-size=\"10\">faster</text><text x=\"265\" y=\"101\" fill=\"currentColor\" stroke=\"none\" text-anchor=\"middle\" font-size=\"10\">fresher</text><path d=\"m232 43 6-3v6m-6 54 6-3v6\" fill=\"none\"/></g></svg><h3>Connect the reasoning</h3><p>Explore the concepts behind your choices, from caching to distributed systems.</p></a>",
+      "css": ".ds-feature{display:block;background:#131313;color:#f5f5f3;padding:20px 28px 28px;border-radius:7px;text-decoration:none;font-family:Inter,sans-serif;transition:background 200ms}.ds-feature:hover{background:#1b1b1b}.ds-feature:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}.ds-feature svg{display:block;width:100%;height:150px;color:#cdcdca}.ds-feature h3{margin:0;font-size:17px;font-weight:400;letter-spacing:-.025em}.ds-feature p{margin:12px 0 0;font-size:12px;line-height:1.8;color:#9a9a98}@media(prefers-reduced-motion:reduce){.ds-feature{transition:none}}"
+    },
+    {
+      "name": "Desktop navigation",
+      "kind": "nav",
+      "description": "Quiet links to explanation, practice problems, and learning paths.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a href=\"#how-it-works\">How it works</a><a href=\"/problems/\">Practice problems</a><a href=\"/learning-paths/\">Learning paths</a></nav>",
+      "css": ".ds-nav{display:flex;gap:29px}.ds-nav a{font:400 12px Inter,sans-serif;color:#9a9a98;text-decoration:none;transition:color 180ms}.ds-nav a:hover{color:#f5f5f3}.ds-nav a:focus-visible{outline:2px solid #f5f5f3;outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-nav a{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Make the reasoning behind a system visible.",
+    "overview": "This document applies only to the isolated `/landing-3d/` preview. It does not define Diagrammatic's global identity, replace the existing homepage, or authorize changes to other surfaces. The user selected [Systema](https://motionsites.ai/?prompt=systema) as the visual reference; the implementation adapts its restrained composition to Diagrammatic's architecture-learning purpose.\n\nA warm paper canvas, quiet Inter typography, and fine architectural lines put the diagram beside the argument. The signature is an original SVG URL-shortener walkthrough: Design, Review, Improve. The direction is code-led; there is no approved image comp or shipping raster asset to reproduce. The earlier landing experiment remains stashed separately.",
+    "keyCharacteristics": [
+      "Quiet monochrome surfaces with generous space around the main argument.",
+      "A meaningful diagram that changes alongside the learning narrative.",
+      "Compact controls, visible keyboard focus, and user-controlled motion."
+    ],
+    "rules": [],
+    "dos": [
+      "Do preserve the preview's route boundary and the existing homepage.",
+      "Do keep the diagram's request path, review concern, and cache trade-off understandable.",
+      "Do retain keyboard focus, manual phase controls, pause, and reduced-motion behavior.",
+      "Do use original code-native SVG geometry and document provenance if raster assets are later added."
+    ],
+    "donts": [
+      "Don't imply this illustrative walkthrough is a live assessment or benchmark.",
+      "Don't replace meaningful architecture with an unrelated decorative animation.",
+      "Don't promote this route's composition or palette into a global product redesign."
+    ]
+  }
+}
