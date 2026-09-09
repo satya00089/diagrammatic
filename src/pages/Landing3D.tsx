@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   HiArrowDown,
@@ -13,10 +13,12 @@ import {
   HiXMark,
 } from "react-icons/hi2";
 import { Button } from "../components/ui/button";
+import RollingNavLabel from "../components/RollingNavLabel";
 import ArchitectureDiagram, {
   type DesignPhase,
 } from "../components/landing3d/ArchitectureDiagram";
 import SEO from "../components/SEO";
+import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
 import "./Landing3D.css";
 
 /* Systema is the user-selected visual reference; this is an original Diagrammatic adaptation.
@@ -156,6 +158,26 @@ export default function Landing3D() {
       : "light";
   });
   const storyRef = useRef<HTMLDivElement>(null);
+  const heroDecisionRef = useRef<HTMLSpanElement>(null);
+
+  const roughAnnotationTargets = useMemo(
+    () => [
+      {
+        ref: heroDecisionRef,
+        config: {
+          type: "underline" as const,
+          color: theme === "light" ? "#151513" : "#d5d5d2",
+          strokeWidth: 1.5,
+          padding: 2,
+          iterations: 1,
+          animationDuration: 650,
+        },
+      },
+    ],
+    [theme],
+  );
+
+  useRoughAnnotation(roughAnnotationTargets);
 
   useEffect(() => {
     window.localStorage.setItem("diagrammatic-landing-theme", theme);
@@ -221,10 +243,18 @@ export default function Landing3D() {
       <header className="systema-header systema-container">
         <Brand />
         <nav aria-label="Main navigation" className="systema-desktop-nav">
-          <a href="#how-it-works">How it works</a>
-          <Link to="/problems/">Practice problems</Link>
-          <Link to="/playground/free">Design Studio</Link>
-          <Link to="/learning-paths/">Learning paths</Link>
+          <a href="#how-it-works" aria-label="How it works">
+            <RollingNavLabel>How it works</RollingNavLabel>
+          </a>
+          <Link to="/problems/" aria-label="Practice problems">
+            <RollingNavLabel>Practice problems</RollingNavLabel>
+          </Link>
+          <Link to="/playground/free" aria-label="Design Studio">
+            <RollingNavLabel>Design Studio</RollingNavLabel>
+          </Link>
+          <Link to="/learning-paths/" aria-label="Learning paths">
+            <RollingNavLabel>Learning paths</RollingNavLabel>
+          </Link>
         </nav>
         <div className="systema-nav-actions">
           <button
@@ -289,7 +319,7 @@ export default function Landing3D() {
               <span>
                 Understand
                 <br />
-                every decision.
+                <span ref={heroDecisionRef}>every decision.</span>
               </span>
             </h1>
             <p>
