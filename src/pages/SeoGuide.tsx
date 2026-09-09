@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { MdArrowForward, MdCheckCircleOutline } from "react-icons/md";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
-import RollingNavLabel from "../components/RollingNavLabel";
+import ProductHeader from "../components/ProductHeader";
 import { featuredProblems } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 
@@ -239,35 +239,7 @@ const SeoGuide: React.FC = () => {
         }}
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme">
-        <header className="border-b border-theme/10 bg-[var(--surface)]">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-            <Link
-              to="/"
-              className="flex items-center gap-3 font-bold tracking-wide"
-            >
-              <img src="/logo-64.png" alt="" className="h-7" />
-              <span>Diagrammatic</span>
-            </Link>
-            <nav
-              className="flex items-center gap-3 sm:gap-5"
-              aria-label="Primary navigation"
-            >
-              <Link
-                to="/problems/"
-                className="text-sm font-semibold text-muted hover:text-theme"
-              >
-                <RollingNavLabel>Problems</RollingNavLabel>
-              </Link>
-              <Link
-                to="/learning-paths/"
-                className="hidden text-sm font-semibold text-muted hover:text-theme sm:inline"
-              >
-                <RollingNavLabel>Learning paths</RollingNavLabel>
-              </Link>
-              <ThemeSwitcher />
-            </nav>
-          </div>
-        </header>
+        <ProductHeader actions={<ThemeSwitcher />} />
 
         <main>
           <section className="border-b border-theme/10 bg-[var(--surface)]">

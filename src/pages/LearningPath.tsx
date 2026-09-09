@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { AuthModal } from "../components/AuthModal";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import ProductHeader from "../components/ProductHeader";
 import { useTheme } from "../hooks/useTheme";
 import SEO from "../components/SEO";
 import { fetchLearningPathBySlug } from "../services/contentLoader";
@@ -95,152 +96,112 @@ const LearningPath: React.FC = () => {
         }
       />
 
-      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
-        {/* Header */}
-        <header
-          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
-          style={{ top: "var(--announcement-h, 0px)" }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="flex items-center space-x-3 group cursor-pointer"
-              >
-                <img
-                  src="/logo-64.png"
-                  alt="Logo"
-                  className="h-7 transition-transform group-hover:scale-110 duration-300"
-                />
-                <span className="text-lg font-bold text-white tracking-wide leading-none">
-                  Diagrammatic
-                </span>
-              </button>
-              <div className="flex items-center gap-4">
-                {isAuth && (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/diagrams")}
-                    className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
-                  >
-                    My Designs
-                  </button>
-                )}
-
-                {path && (
-                  <div className="hidden md:block text-sm text-white/90">
-                    {path.title}
-                  </div>
-                )}
-
+      <div className="learning-path-detail-page min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
+        <ProductHeader
+          actions={
+            <>
+              {isAuth && (
                 <button
                   type="button"
-                  data-tooltip="Back to all paths"
-                  onClick={() => navigate("/learning-paths/")}
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  onClick={() => navigate("/diagrams")}
+                  className="detail-header-action hidden md:block"
                 >
-                  <MdHelpOutline className="h-4 w-4" />
-                  <span className="hidden sm:inline">All Paths</span>
+                  My Designs
                 </button>
-
-                <ThemeSwitcher />
-
-                <div className="relative">
-                  {isAuth ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
-                      >
-                        {user?.picture ? (
-                          <img
-                            src={user.picture}
-                            alt={user.name || "User"}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                            {user?.name?.[0]?.toUpperCase() ||
-                              user?.email?.[0]?.toUpperCase() ||
-                              "U"}
-                          </div>
-                        )}
-                        <span className="hidden sm:inline">
-                          {user?.name || user?.email}
-                        </span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-
-                      {showUserMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                          <div className="px-4 py-2">
-                            <p className="text-sm font-medium text-theme">
-                              {user?.name || "User"}
-                            </p>
-                            <p className="text-xs text-muted truncate">
-                              {user?.email}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              globalThis.dispatchEvent(
-                                new Event("open-quick-setup"),
-                              );
-                              setShowUserMenu(false);
-                            }}
-                            aria-label="Edit preferences"
-                            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
-                          >
-                            Edit preferences
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              logout();
-                              setShowUserMenu(false);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            Sign Out
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
+              )}
+              {path && (
+                <span className="detail-header-context hidden lg:block">
+                  {path.title}
+                </span>
+              )}
+              <button
+                type="button"
+                data-tooltip="Back to all paths"
+                onClick={() => navigate("/learning-paths/")}
+                className="detail-header-action"
+              >
+                <MdHelpOutline className="h-4 w-4" />
+                <span className="hidden sm:inline">All Paths</span>
+              </button>
+              <ThemeSwitcher />
+              <div className="relative">
+                {isAuth ? (
+                  <>
                     <button
                       type="button"
-                      onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-md hover:bg-white/30 transition-colors"
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="detail-account-button"
                     >
-                      Sign In
+                      {user?.picture ? (
+                        <img
+                          src={user.picture}
+                          alt={user.name || "User"}
+                          className="detail-avatar detail-avatar-image"
+                        />
+                      ) : (
+                        <div className="detail-avatar">
+                          {user?.name?.[0]?.toUpperCase() ||
+                            user?.email?.[0]?.toUpperCase() ||
+                            "U"}
+                        </div>
+                      )}
+                      <span className="hidden sm:inline max-w-[150px] truncate">
+                        {user?.name || user?.email}
+                      </span>
+                      <span aria-hidden="true">⌄</span>
                     </button>
-                  )}
-                </div>
+                    {showUserMenu && (
+                      <div className="detail-user-menu">
+                        <div className="px-4 py-2">
+                          <p className="text-sm font-medium text-theme">
+                            {user?.name || "User"}
+                          </p>
+                          <p className="text-xs text-muted truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            globalThis.dispatchEvent(
+                              new Event("open-quick-setup"),
+                            );
+                            setShowUserMenu(false);
+                          }}
+                          className="detail-user-menu-item border-b border-theme/10"
+                        >
+                          Edit preferences
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            logout();
+                            setShowUserMenu(false);
+                          }}
+                          className="detail-user-menu-item text-red-600"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthModal(true)}
+                    className="detail-sign-in"
+                  >
+                    Sign In
+                  </button>
+                )}
               </div>
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         <div
           className="relative z-10 h-screen overflow-hidden"
-          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
+          style={{ paddingTop: "1.5rem" }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full pt-6 pb-2">
             {!path ? (
@@ -250,17 +211,17 @@ const LearningPath: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col h-full">
-                <div className="shrink-0 mb-4">
+                <div className="learning-path-detail-intro shrink-0 mb-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     <button
                       type="button"
                       onClick={() => navigate("/learning-paths/")}
-                      className="px-3 py-2 text-sm rounded-md border border-theme/15 text-theme hover:bg-[var(--bg-hover)] transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      className="detail-back-button px-3 py-2 text-sm rounded-md border text-theme transition-colors inline-flex items-center gap-1 cursor-pointer"
                     >
                       <IoChevronBackOutline /> Back to Learning Paths
                     </button>
 
-                    <h1 className="text-3xl md:text-4xl font-bold text-[var(--brand)] m-0">
+                    <h1 className="text-3xl md:text-4xl font-normal text-theme m-0">
                       {path.title}
                     </h1>
                   </div>

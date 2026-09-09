@@ -32,20 +32,20 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
-        return "bg-green-100 text-green-800";
+        return "learning-path-difficulty learning-path-difficulty--easy";
       case "Medium":
-        return "bg-yellow-100 text-yellow-800";
+        return "learning-path-difficulty learning-path-difficulty--medium";
       case "Hard":
-        return "bg-red-100 text-red-800";
+        return "learning-path-difficulty learning-path-difficulty--hard";
       case "Very Hard":
-        return "bg-orange-200 text-orange-800";
+        return "learning-path-difficulty learning-path-difficulty--very-hard";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "learning-path-difficulty";
     }
   };
 
   return (
-    <div className="group relative min-w-0 rounded-xl border border-theme/10 p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 elevated-card-bg">
+    <div className="learning-path-card group relative min-w-0 rounded-xl p-5 transition-all duration-200">
       <div className="flex justify-end">
         <div className="flex items-center gap-2">
           <div
@@ -64,7 +64,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
           <h3 className="text-xl font-semibold">
             <Link
               to={`/learning-paths/${path.slug}/`}
-              className="text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4 decoration-[1.5px]"
+              className="learning-path-card-title font-semibold hover:underline underline-offset-4 decoration-[1.5px]"
             >
               {path.title}
             </Link>
@@ -77,7 +77,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
           {path.tags?.slice(0, 4).map((t) => (
             <div
               key={t}
-              className="break-words text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold capitalize shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
+              className="learning-path-tag break-words text-xs px-2 py-1 rounded-full font-semibold capitalize transition-colors"
             >
               {t}
             </div>
@@ -93,9 +93,9 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
               <Link
                 key={pl.lessonId}
                 to={`/learning-paths/${path.slug}/?module=${encodeURIComponent(pl.moduleId)}`}
-                className="flex-1 min-w-0 p-3 rounded-md border border-theme/10 bg-[var(--bg)] hover:bg-[var(--bg-hover)] hover:shadow-sm transition-colors flex items-center justify-between"
+                className="learning-path-preview flex-1 min-w-0 p-3 rounded-md transition-colors flex items-center justify-between"
               >
-                <div className="text-sm truncate text-[var(--brand)] font-semibold hover:text-[var(--brand)]/80 hover:underline underline-offset-4">
+                <div className="learning-path-preview-title text-sm truncate font-semibold hover:underline underline-offset-4">
                   {pl.title}
                 </div>
                 <div className="ml-3">
@@ -118,7 +118,7 @@ const LearningPathCard: React.FC<Props> = ({ path }) => {
               <Link
                 key={m.id}
                 to={`/learning-paths/${path.slug}/?module=${encodeURIComponent(m.id)}`}
-                className="break-words text-xs px-2 py-1 rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/12 text-[var(--brand)] font-semibold shadow-sm hover:bg-[var(--brand)]/16 transition-colors"
+                className="learning-path-tag break-words text-xs px-2 py-1 rounded-full font-semibold transition-colors"
               >
                 {m.title}
               </Link>

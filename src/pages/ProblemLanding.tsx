@@ -21,16 +21,13 @@ import ProblemGuideContent, {
 } from "../components/problem-guide/ProblemGuideContent";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
-import RollingNavLabel from "../components/RollingNavLabel";
+import ProductHeader from "../components/ProductHeader";
 import { getProblemGuide } from "../data/problemGuides";
 import type { ProblemGuide } from "../types/problemGuide";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
 import type { SystemDesignProblem } from "../types/systemDesign";
-import {
-  featuredProblems,
-  getFeaturedProblem,
-} from "../utils/problemSlug";
+import { featuredProblems, getFeaturedProblem } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 
 const PublicArchitectureCanvas = lazy(
@@ -204,7 +201,7 @@ const ProblemLanding: React.FC = () => {
         const response = await fetch(
           `${apiUrl}/api/v1/problem/slug/${encodeURIComponent(slug)}`,
           {
-          signal: controller.signal,
+            signal: controller.signal,
           },
         );
         if (!response.ok) throw new Error("Problem catalog unavailable");
@@ -315,37 +312,7 @@ const ProblemLanding: React.FC = () => {
       />
 
       <div className="min-h-screen bg-[var(--bg)] text-theme">
-        <header className="border-b border-white/20 bg-[var(--brand)] text-white">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-3 font-bold tracking-wide text-white"
-            >
-              <img src="/logo-64.png" alt="" className="h-7" />
-              <span className="text-lg font-bold leading-none tracking-wide text-white">
-                Diagrammatic
-              </span>
-            </Link>
-            <nav
-              className="flex items-center gap-2 sm:gap-4"
-              aria-label="Primary navigation"
-            >
-              <Link
-                to="/problems/"
-                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:inline"
-              >
-                <RollingNavLabel>All problems</RollingNavLabel>
-              </Link>
-              <Link
-                to="/learning-paths/"
-                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:inline"
-              >
-                <RollingNavLabel>Learning paths</RollingNavLabel>
-              </Link>
-              <ThemeSwitcher />
-            </nav>
-          </div>
-        </header>
+        <ProductHeader actions={<ThemeSwitcher />} />
 
         <main>
           <section className="border-b border-theme/10 bg-[var(--surface)]">
