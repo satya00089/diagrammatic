@@ -1,10 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useTheme } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
@@ -97,6 +92,7 @@ const GlobalProductChrome: React.FC = () => {
   const isKnownRoute =
     [
       "/",
+      "/landing-backup",
       "/problems",
       "/create-problem",
       "/learning-paths",
@@ -109,9 +105,11 @@ const GlobalProductChrome: React.FC = () => {
     ["/learning-paths/", "/playground/", "/problems/"].some((prefix) =>
       pathname.startsWith(prefix),
     );
+  const isSystemaLanding = pathname === "/" || pathname === "/landing-3d";
 
   if (
     !isReady ||
+    isSystemaLanding ||
     pathname.startsWith("/public/") ||
     pathname === "/verify-email" ||
     !isKnownRoute
@@ -139,106 +137,107 @@ const App: React.FC = () => {
             <BrowserRouter>
               <Suspense fallback={<RouteLoading />}>
                 <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/landing-3d" element={<Landing3D />} />
-                <Route
-                  path="/problems"
-                  element={
-                    <StoreBoundary>
-                      <Dashboard />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/problems/:slug"
-                  element={
-                    <StoreBoundary>
-                      <ProblemLanding />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/system-design-interview"
-                  element={
-                    <StoreBoundary>
-                      <SeoGuide />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/system-design-practice"
-                  element={
-                    <StoreBoundary>
-                      <SeoGuide />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/ai-system-design-interview"
-                  element={
-                    <StoreBoundary>
-                      <SeoGuide />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/kubernetes-architecture"
-                  element={
-                    <StoreBoundary>
-                      <SeoGuide />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/create-problem"
-                  element={
-                    <StoreBoundary>
-                      <CreateProblem />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/learning-paths"
-                  element={
-                    <StoreBoundary>
-                      <LearningPaths />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/learning-paths/:slug"
-                  element={
-                    <StoreBoundary>
-                      <LearningPath />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/diagrams"
-                  element={
-                    <StoreBoundary>
-                      <MyDesigns />
-                    </StoreBoundary>
-                  }
-                />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route
-                  path="/playground/:id"
-                  element={
-                    <StoreBoundary>
-                      <SystemDesignPlayground />
-                    </StoreBoundary>
-                  }
-                />
-                <Route
-                  path="/public/:id"
-                  element={
-                    <StoreBoundary>
-                      <SharedCanvasPage />
-                    </StoreBoundary>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
+                  <Route path="/" element={<Landing3D />} />
+                  <Route path="/landing-3d" element={<Landing3D />} />
+                  <Route path="/landing-backup" element={<Home />} />
+                  <Route
+                    path="/problems"
+                    element={
+                      <StoreBoundary>
+                        <Dashboard />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/problems/:slug"
+                    element={
+                      <StoreBoundary>
+                        <ProblemLanding />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/system-design-interview"
+                    element={
+                      <StoreBoundary>
+                        <SeoGuide />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/system-design-practice"
+                    element={
+                      <StoreBoundary>
+                        <SeoGuide />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/ai-system-design-interview"
+                    element={
+                      <StoreBoundary>
+                        <SeoGuide />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/kubernetes-architecture"
+                    element={
+                      <StoreBoundary>
+                        <SeoGuide />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/create-problem"
+                    element={
+                      <StoreBoundary>
+                        <CreateProblem />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/learning-paths"
+                    element={
+                      <StoreBoundary>
+                        <LearningPaths />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/learning-paths/:slug"
+                    element={
+                      <StoreBoundary>
+                        <LearningPath />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/diagrams"
+                    element={
+                      <StoreBoundary>
+                        <MyDesigns />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route
+                    path="/playground/:id"
+                    element={
+                      <StoreBoundary>
+                        <SystemDesignPlayground />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route
+                    path="/public/:id"
+                    element={
+                      <StoreBoundary>
+                        <SharedCanvasPage />
+                      </StoreBoundary>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
               <GlobalProductChrome />

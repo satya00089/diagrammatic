@@ -213,7 +213,7 @@ export default function Landing3D() {
         keywords="system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview"
         image="https://diagrammatic.next-zen.dev/og/home.png"
         imageAlt="Diagrammatic system design walkthrough preview"
-        url="https://diagrammatic.next-zen.dev/landing-3d/"
+        url="https://diagrammatic.next-zen.dev/"
       />
       <a href="#systema-main" className="systema-skip">
         Skip to content
@@ -235,7 +235,11 @@ export default function Landing3D() {
           >
             {theme === "light" ? <HiMoon /> : <HiSun />}
           </button>
-          <Button asChild size="sm" className="systema-nav-cta">
+          <Button
+            asChild
+            size="sm"
+            className="systema-nav-cta systema-primary-cta"
+          >
             <Link to="/problems/">
               Start designing <HiArrowUpRight />
             </Link>
@@ -291,7 +295,7 @@ export default function Landing3D() {
               trade-offs, and turn thoughtful feedback into a stronger design.
             </p>
             <div className="systema-hero-actions">
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="systema-primary-cta">
                 <Link to="/problems/">
                   Start designing <HiArrowUpRight />
                 </Link>
@@ -413,7 +417,7 @@ export default function Landing3D() {
                 <HiCheck /> Revisit it with structured feedback
               </li>
             </ul>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="systema-outline-cta">
               <Link to={examplePath}>
                 Try this problem <HiArrowUpRight />
               </Link>
@@ -523,7 +527,7 @@ export default function Landing3D() {
             <br />
             <span>starts on the canvas.</span>
           </h2>
-          <Button asChild size="lg">
+          <Button asChild size="lg" className="systema-primary-cta">
             <Link to="/problems/">
               Find your first problem <HiArrowRight />
             </Link>

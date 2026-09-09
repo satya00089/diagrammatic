@@ -10,6 +10,9 @@ html:has(.systema-page[data-theme="dark"]) {
   --systema-bg: #f4f3ee;
   --systema-surface: #ebeae5;
   --systema-text: #151513;
+  --systema-primary-bg: #151513;
+  --systema-primary-text: #ffffff;
+  --systema-primary-hover: #2f2f2a;
   --systema-muted: #686863;
   --systema-line: #d4d2ca;
   background: var(--systema-bg);
@@ -23,6 +26,9 @@ html:has(.systema-page[data-theme="dark"]) {
   --systema-bg: #080808;
   --systema-surface: #131313;
   --systema-text: #f5f5f3;
+  --systema-primary-bg: #ffffff;
+  --systema-primary-text: #080808;
+  --systema-primary-hover: #dcdcd7;
   --systema-muted: #9a9a98;
   --systema-line: #292929;
   color-scheme: dark;
@@ -197,6 +203,16 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-nav-cta {
   font-size: 12px;
 }
+.systema-page .systema-primary-cta {
+  border-color: transparent;
+  background: var(--systema-primary-bg);
+  color: var(--systema-primary-text);
+}
+.systema-page .systema-primary-cta:hover {
+  border-color: transparent;
+  background: var(--systema-primary-hover);
+  color: var(--systema-primary-text);
+}
 .systema-menu-toggle {
   display: none;
 }
@@ -310,6 +326,16 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-text-link svg {
   width: 14px;
   height: 14px;
+}
+.systema-page .systema-outline-cta {
+  border-color: var(--systema-line);
+  background: transparent;
+  color: var(--systema-text);
+}
+.systema-page .systema-outline-cta:hover {
+  border-color: var(--systema-text);
+  background: var(--systema-surface);
+  color: var(--systema-text);
 }
 .systema-scroll-note {
   display: flex;
