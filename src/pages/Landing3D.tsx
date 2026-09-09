@@ -478,6 +478,43 @@ export default function Landing3D() {
         </section>
 
         <section
+          className="systema-value systema-container"
+          aria-labelledby="systema-value-title"
+        >
+          <div className="systema-value-heading">
+            <span>THE PAYOFF</span>
+            <h2 id="systema-value-title">
+              Leave with a design
+              <br />
+              <span>you can explain.</span>
+            </h2>
+          </div>
+          <div className="systema-value-grid">
+            <article>
+              <span className="systema-value-index">01</span>
+              <h3>Practice before signing in</h3>
+              <p>Start with a realistic prompt in the free workflow.</p>
+            </article>
+            <article>
+              <span className="systema-value-index">02</span>
+              <h3>Get structured AI feedback</h3>
+              <p>
+                See where scale, reliability, data design, and trade-offs need
+                work.
+              </p>
+            </article>
+            <article>
+              <span className="systema-value-index">03</span>
+              <h3>Save and share when ready</h3>
+              <p>
+                Keep your architecture, sync progress, and bring it to your
+                team.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section
           className="systema-close systema-container"
           aria-labelledby="systema-close-title"
         >
