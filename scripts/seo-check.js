@@ -46,6 +46,7 @@ const guideRoutes = [
 ];
 const expectedRoutes = [
   "/",
+  "/landing-3d/",
   "/problems/",
   "/learning-paths/",
   ...guideRoutes,
