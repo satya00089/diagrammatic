@@ -189,7 +189,7 @@ const LearningPath: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAuthModal(true)}
-                    className="detail-sign-in"
+                    className="product-sign-in detail-sign-in"
                   >
                     Sign In
                   </button>

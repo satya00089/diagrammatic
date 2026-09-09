@@ -210,6 +210,36 @@ a:focus-visible > .rolling-nav-label .rolling-nav-label__copy--incoming {
   gap: 8px;
 }
 
+/* Shared header authentication action across landing, catalog, learning, and
+   Design Studio screens. */
+.product-sign-in {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 15px;
+  border: 1px solid var(--text);
+  border-radius: 999px;
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.product-sign-in:hover {
+  opacity: 0.84;
+  transform: translateY(-1px);
+}
+
+.product-sign-in:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
 .product-header__menu-toggle {
   display: none;
   width: 40px;
@@ -681,8 +711,7 @@ a:focus-visible > .rolling-nav-label .rolling-nav-label__copy--incoming {
     gap: 4px;
   }
 
-  .dashboard-page .product-header__actions > .dashboard-tour-action,
-  .dashboard-page .product-header__actions > .relative {
+  .dashboard-page .product-header__actions > .dashboard-tour-action {
     display: none;
   }
 
@@ -1039,13 +1068,235 @@ html.dark:has(.learning-path-detail-page) {
   text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent);
 }
 
+/* Problem briefs use the same editorial palette as the landing page while
+   keeping the metadata and architecture review content easy to scan. */
+.problem-detail-page {
+  --bg: #f4f3ee;
+  --surface: #ebeae5;
+  --bg-hover: #e4e2db;
+  --text: #151513;
+  --muted: #686863;
+  --border: #d4d2ca;
+  --brand: #151513;
+  --accent: #686863;
+  --theme: var(--text);
+  --elevated-card-bg: var(--surface);
+  min-height: 100svh;
+}
+
+.dark .problem-detail-page {
+  --bg: #080808;
+  --surface: #131313;
+  --bg-hover: #1b1b1b;
+  --text: #f5f5f3;
+  --muted: #9a9a98;
+  --border: #292929;
+  --brand: #ffffff;
+  --accent: #9a9a98;
+  --theme: var(--text);
+  --elevated-card-bg: var(--surface);
+}
+
+html:has(.problem-detail-page) {
+  color-scheme: light;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa89f #f4f3ee;
+}
+
+html.dark:has(.problem-detail-page) {
+  color-scheme: dark;
+  scrollbar-color: #555550 #080808;
+}
+
+.problem-detail-page .product-header__brand span {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: -0.045em;
+}
+
+.problem-detail-hero {
+  border-color: var(--border);
+}
+
+.problem-detail-title {
+  font-family: "Instrument Serif", Georgia, serif;
+}
+
+.problem-detail-summary {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 5%);
+}
+
+.problem-primary-cta {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 12%);
+}
+
+.problem-primary-cta:hover {
+  box-shadow: 0 12px 28px rgb(0 0 0 / 16%);
+  opacity: 0.86;
+  transform: translateY(-2px);
+}
+
+.problem-bottom-cta {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.problem-bottom-cta h2,
+.problem-detail-page h2 {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.problem-secondary-cta {
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+
+.problem-secondary-cta:hover {
+  opacity: 0.86;
+}
+
+.problem-detail-page .rounded-lg.bg-\[var\(--surface\)\] {
+  border: 1px solid var(--border);
+}
+
+/* Design Studio keeps its canvas tooling, but shares the landing page's
+   restrained paper-and-ink chrome. */
+.design-studio-page {
+  --bg: #f4f3ee;
+  --surface: #ebeae5;
+  --bg-hover: #e4e2db;
+  --text: #151513;
+  --muted: #686863;
+  --border: #d4d2ca;
+  --brand: #151513;
+  --accent: #686863;
+  --theme: var(--text);
+  --elevated-card-bg: var(--surface);
+  color: var(--text);
+}
+
+.dark .design-studio-page {
+  --bg: #080808;
+  --surface: #131313;
+  --bg-hover: #1b1b1b;
+  --text: #f5f5f3;
+  --muted: #9a9a98;
+  --border: #292929;
+  --brand: #ffffff;
+  --accent: #9a9a98;
+  --theme: var(--text);
+  --elevated-card-bg: var(--surface);
+}
+
+html:has(.design-studio-page) {
+  color-scheme: light;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa89f #f4f3ee;
+}
+
+html.dark:has(.design-studio-page) {
+  color-scheme: dark;
+  scrollbar-color: #555550 #080808;
+}
+
+.design-studio-page > header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg) !important;
+  box-shadow: none !important;
+  color: var(--text);
+}
+
+.design-studio-brand {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 25px;
+  font-weight: 400 !important;
+  letter-spacing: -0.045em;
+}
+
+.design-studio-page > header .text-white,
+.design-studio-page > header [class*="text-white/"] {
+  color: var(--text) !important;
+}
+
+.design-studio-page > header [class*="border-white/"] {
+  border-color: var(--border) !important;
+}
+
+.design-studio-page > header button {
+  color: var(--text);
+}
+
+.design-studio-page > header button:hover {
+  background: var(--bg-hover) !important;
+}
+
+.design-studio-page > header .product-sign-in:hover {
+  background: var(--text) !important;
+  color: var(--bg) !important;
+  opacity: 0.84;
+}
+
+.design-studio-page > header .bg-white\/20,
+.design-studio-page > header .bg-white\/15 {
+  background: var(--bg-hover) !important;
+}
+
+.design-studio-page > header .bg-emerald-500 {
+  background: #3f704f !important;
+  color: #fff !important;
+}
+
+.design-studio-page > header .bg-emerald-500:hover {
+  background: #518761 !important;
+}
+
+.design-studio-page > header .bg-gray-100 {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+.design-studio-page .react-flow {
+  background: var(--bg);
+}
+
+.design-studio-page .component-palette,
+.design-studio-page .inspector-panel {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.design-studio-page .react-flow__controls {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 7%);
+}
+
+.design-studio-page .react-flow__controls button {
+  border-color: var(--border) !important;
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+.design-studio-page .react-flow__minimap {
+  border: 1px solid var(--border);
+  background: var(--surface) !important;
+}
+
 @media (max-width: 899px) {
   .learning-path-detail-page .product-header__actions {
     gap: 4px;
   }
 
-  .learning-path-detail-page .product-header__actions > .detail-header-context,
-  .learning-path-detail-page .product-header__actions > .relative {
+  .learning-path-detail-page .product-header__actions > .detail-header-context {
     display: none;
   }
 }

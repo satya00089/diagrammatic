@@ -571,7 +571,7 @@ const Dashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAuthModal(true)}
-                    className="dashboard-sign-in"
+                    className="product-sign-in dashboard-sign-in"
                   >
                     Sign In
                   </button>

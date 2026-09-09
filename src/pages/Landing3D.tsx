@@ -18,6 +18,8 @@ import ArchitectureDiagram, {
   type DesignPhase,
 } from "../components/landing3d/ArchitectureDiagram";
 import SEO from "../components/SEO";
+import { AuthModal } from "../components/AuthModal";
+import { useAuth } from "../hooks/useAuth";
 import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
 import "./Landing3D.css";
 
@@ -151,6 +153,8 @@ export default function Landing3D() {
   const [phase, setPhase] = useState<DesignPhase>(0);
   const [paused, setPaused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { login, signup, googleLogin } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     return window.localStorage.getItem("diagrammatic-landing-theme") === "dark"
@@ -266,6 +270,13 @@ export default function Landing3D() {
           >
             {theme === "light" ? <HiMoon /> : <HiSun />}
           </button>
+          <button
+            type="button"
+            className="product-sign-in systema-sign-in"
+            onClick={() => setShowAuthModal(true)}
+          >
+            Sign In
+          </button>
           <Button
             asChild
             size="sm"
@@ -299,6 +310,16 @@ export default function Landing3D() {
             <Link to="/problems/">Practice problems</Link>
             <Link to="/playground/free">Design Studio</Link>
             <Link to="/learning-paths/">Learning paths</Link>
+            <button
+              type="button"
+              className="systema-mobile-nav-sign-in"
+              onClick={() => {
+                setMenuOpen(false);
+                setShowAuthModal(true);
+              }}
+            >
+              Sign In
+            </button>
             <Link to="/problems/" className="systema-mobile-nav-cta">
               Start designing <HiArrowUpRight />
             </Link>
@@ -578,6 +599,17 @@ export default function Landing3D() {
           </div>
         </section>
       </main>
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={async (email, password) => login({ email, password })}
+          onSignup={async (email, password, name) =>
+            signup({ email, password, name })
+          }
+          onGoogleLogin={googleLogin}
+        />
+      )}
       <footer className="systema-footer systema-container">
         <Brand />
         <p>Design. Explain. Improve.</p>
