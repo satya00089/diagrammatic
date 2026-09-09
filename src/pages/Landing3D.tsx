@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   HiArrowDown,
@@ -13,10 +13,14 @@ import {
   HiXMark,
 } from "react-icons/hi2";
 import { Button } from "../components/ui/button";
+import RollingNavLabel from "../components/RollingNavLabel";
 import ArchitectureDiagram, {
   type DesignPhase,
 } from "../components/landing3d/ArchitectureDiagram";
 import SEO from "../components/SEO";
+import { AuthModal } from "../components/AuthModal";
+import { useAuth } from "../hooks/useAuth";
+import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
 import "./Landing3D.css";
 
 /* Systema is the user-selected visual reference; this is an original Diagrammatic adaptation.
@@ -149,6 +153,8 @@ export default function Landing3D() {
   const [phase, setPhase] = useState<DesignPhase>(0);
   const [paused, setPaused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { login, signup, googleLogin } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
     return window.localStorage.getItem("diagrammatic-landing-theme") === "dark"
@@ -156,6 +162,26 @@ export default function Landing3D() {
       : "light";
   });
   const storyRef = useRef<HTMLDivElement>(null);
+  const heroDecisionRef = useRef<HTMLSpanElement>(null);
+
+  const roughAnnotationTargets = useMemo(
+    () => [
+      {
+        ref: heroDecisionRef,
+        config: {
+          type: "underline" as const,
+          color: theme === "light" ? "#151513" : "#d5d5d2",
+          strokeWidth: 1.5,
+          padding: 2,
+          iterations: 1,
+          animationDuration: 650,
+        },
+      },
+    ],
+    [theme],
+  );
+
+  useRoughAnnotation(roughAnnotationTargets);
 
   useEffect(() => {
     window.localStorage.setItem("diagrammatic-landing-theme", theme);
@@ -213,7 +239,7 @@ export default function Landing3D() {
         keywords="system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview"
         image="https://diagrammatic.next-zen.dev/og/home.png"
         imageAlt="Diagrammatic system design walkthrough preview"
-        url="https://diagrammatic.next-zen.dev/landing-3d/"
+        url="https://diagrammatic.next-zen.dev/"
       />
       <a href="#systema-main" className="systema-skip">
         Skip to content
@@ -221,9 +247,18 @@ export default function Landing3D() {
       <header className="systema-header systema-container">
         <Brand />
         <nav aria-label="Main navigation" className="systema-desktop-nav">
-          <a href="#how-it-works">How it works</a>
-          <Link to="/problems/">Practice problems</Link>
-          <Link to="/learning-paths/">Learning paths</Link>
+          <a href="#how-it-works" aria-label="How it works">
+            <RollingNavLabel>How it works</RollingNavLabel>
+          </a>
+          <Link to="/problems/" aria-label="Practice problems">
+            <RollingNavLabel>Practice problems</RollingNavLabel>
+          </Link>
+          <Link to="/playground/free" aria-label="Design Studio">
+            <RollingNavLabel>Design Studio</RollingNavLabel>
+          </Link>
+          <Link to="/learning-paths/" aria-label="Learning paths">
+            <RollingNavLabel>Learning paths</RollingNavLabel>
+          </Link>
         </nav>
         <div className="systema-nav-actions">
           <button
@@ -235,7 +270,18 @@ export default function Landing3D() {
           >
             {theme === "light" ? <HiMoon /> : <HiSun />}
           </button>
-          <Button asChild size="sm" className="systema-nav-cta">
+          <button
+            type="button"
+            className="product-sign-in systema-sign-in"
+            onClick={() => setShowAuthModal(true)}
+          >
+            Sign In
+          </button>
+          <Button
+            asChild
+            size="sm"
+            className="systema-nav-cta systema-primary-cta"
+          >
             <Link to="/problems/">
               Start designing <HiArrowUpRight />
             </Link>
@@ -262,7 +308,18 @@ export default function Landing3D() {
           >
             <a href="#how-it-works">How it works</a>
             <Link to="/problems/">Practice problems</Link>
+            <Link to="/playground/free">Design Studio</Link>
             <Link to="/learning-paths/">Learning paths</Link>
+            <button
+              type="button"
+              className="systema-mobile-nav-sign-in"
+              onClick={() => {
+                setMenuOpen(false);
+                setShowAuthModal(true);
+              }}
+            >
+              Sign In
+            </button>
             <Link to="/problems/" className="systema-mobile-nav-cta">
               Start designing <HiArrowUpRight />
             </Link>
@@ -283,7 +340,7 @@ export default function Landing3D() {
               <span>
                 Understand
                 <br />
-                every decision.
+                <span ref={heroDecisionRef}>every decision.</span>
               </span>
             </h1>
             <p>
@@ -291,7 +348,7 @@ export default function Landing3D() {
               trade-offs, and turn thoughtful feedback into a stronger design.
             </p>
             <div className="systema-hero-actions">
-              <Button asChild size="lg">
+              <Button asChild size="lg" className="systema-primary-cta">
                 <Link to="/problems/">
                   Start designing <HiArrowUpRight />
                 </Link>
@@ -413,7 +470,7 @@ export default function Landing3D() {
                 <HiCheck /> Revisit it with structured feedback
               </li>
             </ul>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="systema-outline-cta">
               <Link to={examplePath}>
                 Try this problem <HiArrowUpRight />
               </Link>
@@ -523,13 +580,36 @@ export default function Landing3D() {
             <br />
             <span>starts on the canvas.</span>
           </h2>
-          <Button asChild size="lg">
-            <Link to="/problems/">
-              Find your first problem <HiArrowRight />
-            </Link>
-          </Button>
+          <div className="systema-close-actions">
+            <Button asChild size="lg" className="systema-primary-cta">
+              <Link to="/problems/">
+                Find your first problem <HiArrowRight />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="systema-outline-cta"
+            >
+              <Link to="/playground/free">
+                Open Design Studio <HiArrowUpRight />
+              </Link>
+            </Button>
+          </div>
         </section>
       </main>
+      {showAuthModal && (
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onLogin={async (email, password) => login({ email, password })}
+          onSignup={async (email, password, name) =>
+            signup({ email, password, name })
+          }
+          onGoogleLogin={googleLogin}
+        />
+      )}
       <footer className="systema-footer systema-container">
         <Brand />
         <p>Design. Explain. Improve.</p>

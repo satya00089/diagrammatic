@@ -340,6 +340,17 @@ const routes = {
   },
 };
 
+const legacyLandingRoute = routes["/"];
+routes["/"] = { ...routes["/landing-3d"], lastmod: "2026-09-10" };
+routes["/landing-3d"] = {
+  ...routes["/landing-3d"],
+  indexable: false,
+};
+routes["/landing-backup"] = {
+  ...legacyLandingRoute,
+  indexable: false,
+};
+
 const notFoundRoute = {
   title: "Page Not Found | Diagrammatic",
   heading: "This page could not be found",
@@ -378,7 +389,9 @@ function escapeHtml(value = "") {
 }
 
 function canonicalUrl(route) {
-  return route === "/" ? `${siteUrl}/` : `${siteUrl}${route}/`;
+  return route === "/" || route === "/landing-3d"
+    ? `${siteUrl}/`
+    : `${siteUrl}${route}/`;
 }
 
 function itemMarkup(item) {

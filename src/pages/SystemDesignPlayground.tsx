@@ -625,7 +625,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     exchanges: [],
     currentQuestionIndex: 0,
   });
-  const [assessmentHistory, setAssessmentHistory] = useState<AssessmentHistoryEntry[]>([]);
+  const [assessmentHistory, setAssessmentHistory] = useState<
+    AssessmentHistoryEntry[]
+  >([]);
   const [addressedFindingIds, setAddressedFindingIds] = useState<string[]>([]);
 
   // Project Intent dialog state (shown when entering Design Studio)
@@ -1603,7 +1605,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             assessmentCount?: number;
             assessmentHistory?: AssessmentHistoryEntry[];
           };
-          persistedAssessmentCountRef.current = savedAttempt.assessmentCount ?? 0;
+          persistedAssessmentCountRef.current =
+            savedAttempt.assessmentCount ?? 0;
           if (savedAttempt.assessmentHistory) {
             setAssessmentHistory(savedAttempt.assessmentHistory);
           }
@@ -1732,7 +1735,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     if (nextIndex >= assessmentInterviewQuestions.length) {
       trackEvent("reasoning_submitted", {
         problem_id: idFromUrl === "free" ? undefined : idFromUrl,
-        field_count: nextSession.exchanges.filter((item) => item.answer.trim()).length,
+        field_count: nextSession.exchanges.filter((item) => item.answer.trim())
+          .length,
         source: "assessment_interview",
       });
       setShowAssessmentInterview(false);
@@ -3003,7 +3007,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       // Use properties from Redux cache (priority) or local COMPONENTS.
       // Mermaid imports also expose their visible subtitle directly, including
       // generic nodes that do not have a catalog component definition.
-      const componentProperties = fullComp?.properties || comp?.properties || [];
+      const componentProperties =
+        fullComp?.properties || comp?.properties || [];
       const subtitleProperty: ComponentProperty = {
         key: "subtitle",
         label: "Subtitle",
@@ -4629,7 +4634,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
         noIndex
       />
-      <div className="h-screen flex flex-col bg-theme">
+      <div className="design-studio-page h-screen flex flex-col bg-theme">
         {/* Header */}
         <header className="bg-[var(--brand)] shadow-md overflow-visible">
           <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
@@ -4646,7 +4651,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     alt="Logo"
                     className="h-7 transition-transform group-hover:scale-110 duration-300"
                   />
-                  <span className="text-lg font-bold text-white tracking-wide leading-none">
+                  <span className="design-studio-brand text-lg font-bold text-white tracking-wide leading-none">
                     Diagrammatic
                   </span>
                 </button>
@@ -5047,7 +5052,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-2 text-sm font-medium text-white rounded-md hover:bg-white/20 transition-colors"
+                      className="product-sign-in"
                     >
                       Sign In
                     </button>

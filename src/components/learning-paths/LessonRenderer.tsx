@@ -125,7 +125,7 @@ function ExerciseRunner({
                   onClick={() =>
                     setShowHints((s) => ({ ...s, [q.id]: !s[q.id] }))
                   }
-                  className="rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/8 px-2 py-1 text-xs font-medium text-[var(--brand)]"
+                  className="inline-flex shrink-0 whitespace-nowrap rounded-full border border-[var(--brand)]/20 bg-[var(--brand)]/8 px-2 py-1 text-xs font-medium text-[var(--brand)]"
                 >
                   {showHints[q.id] ? "Hide hint" : "Show hint"}
                 </button>
@@ -149,7 +149,7 @@ function ExerciseRunner({
             />
             <button
               onClick={() => validate(q)}
-              className="px-3 py-2 bg-[var(--brand)] text-white rounded-md"
+              className="exercise-submit-button px-3 py-2 rounded-md transition-all"
             >
               Submit
             </button>
@@ -257,7 +257,7 @@ const LessonRenderer: React.FC<{
           {hasNextLesson && (
             <button
               onClick={onNext}
-              className="px-4 py-2 bg-[var(--brand)] text-white rounded-md hover:shadow-md transition-shadow"
+              className="lesson-next-button px-4 py-2 rounded-md transition-all"
             >
               Next Lesson
             </button>

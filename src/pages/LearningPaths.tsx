@@ -5,6 +5,7 @@ import { AuthModal } from "../components/AuthModal";
 import { MdHelpOutline } from "react-icons/md";
 import SEO from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import ProductHeader from "../components/ProductHeader";
 import { useTheme } from "../hooks/useTheme";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
@@ -65,13 +66,13 @@ const LearningPathUserAvatar: React.FC<{ user: User | null }> = ({ user }) => {
       <img
         src={user.picture}
         alt={user.name || "User"}
-        className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
+        className="w-8 h-8 rounded-full object-cover border-2 border-[var(--border)]"
       />
     );
   }
 
   return (
-    <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
+    <div className="w-8 h-8 rounded-full bg-[var(--bg-hover)] flex items-center justify-center font-bold text-theme">
       {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
     </div>
   );
@@ -98,11 +99,7 @@ const LearningPathAccountControl: React.FC<LearningPathAccountControlProps> = ({
 }) => {
   if (!isAuth) {
     return (
-      <button
-        type="button"
-        onClick={onSignIn}
-        className="px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-md hover:bg-white/30 transition-colors"
-      >
+      <button type="button" onClick={onSignIn} className="product-sign-in">
         Sign In
       </button>
     );
@@ -113,7 +110,7 @@ const LearningPathAccountControl: React.FC<LearningPathAccountControlProps> = ({
       <button
         type="button"
         onClick={onToggleUserMenu}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors"
       >
         <LearningPathUserAvatar user={user} />
         <span className="hidden sm:inline">{user?.name || user?.email}</span>
@@ -177,18 +174,18 @@ const LearningPathsHeaderActions: React.FC<LearningPathsHeaderActionsProps> = ({
   onLogout,
   onSignIn,
 }) => (
-  <div className="flex items-center gap-4">
+  <div className="learning-paths-header-actions flex items-center gap-4">
     {isAuth && (
       <button
         type="button"
         onClick={() => onNavigate("/diagrams")}
-        className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
+        className="hidden md:block px-4 py-2 text-sm font-medium text-theme hover:text-theme/70 transition-colors cursor-pointer"
       >
         My Designs
       </button>
     )}
 
-    <div className="hidden md:block text-sm text-white/90">
+    <div className="hidden md:block text-sm text-muted">
       {getHeaderPathStatus(loading, pathCount, loadError)}
     </div>
 
@@ -196,7 +193,7 @@ const LearningPathsHeaderActions: React.FC<LearningPathsHeaderActionsProps> = ({
       type="button"
       onClick={onStartTour}
       data-tooltip="Take a tour"
-      className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+      className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-muted hover:text-theme hover:bg-[var(--bg-hover)] rounded-md transition-colors cursor-pointer"
     >
       <MdHelpOutline className="h-4 w-4" />
       <span className="hidden sm:inline">Tour</span>
@@ -331,68 +328,48 @@ const LearningPaths: React.FC = () => {
         url="https://diagrammatic.next-zen.dev/learning-paths/"
       />
 
-      <div className="bg-[var(--bg)] text-theme relative grid-pattern-overlay">
-        {/* Header */}
-        <header
-          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
-          style={{ top: "var(--announcement-h, 0px)" }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="flex items-center space-x-3 group cursor-pointer"
-              >
-                <img
-                  src="/logo-64.png"
-                  alt="Logo"
-                  className="h-7 transition-transform group-hover:scale-110 duration-300"
-                />
-                <span className="text-lg font-bold text-white tracking-wide leading-none">
-                  Diagrammatic
-                </span>
-              </button>
-              <LearningPathsHeaderActions
-                isAuth={isAuth}
-                user={user}
-                loading={loading}
-                pathCount={paths.length}
-                loadError={loadError}
-                showUserMenu={showUserMenu}
-                onNavigate={navigate}
-                onStartTour={startTour}
-                onToggleUserMenu={() => setShowUserMenu(!showUserMenu)}
-                onEditPreferences={() => {
-                  globalThis.dispatchEvent(new Event("open-quick-setup"));
-                  setShowUserMenu(false);
-                }}
-                onLogout={() => {
-                  logout();
-                  setShowUserMenu(false);
-                }}
-                onSignIn={() => setShowAuthModal(true)}
-              />
-            </div>
-          </div>
-        </header>
-        <div
-          className="relative z-10"
-          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
-        >
+      <div className="learning-paths-page min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
+        <ProductHeader
+          actions={
+            <LearningPathsHeaderActions
+              isAuth={isAuth}
+              user={user}
+              loading={loading}
+              pathCount={paths.length}
+              loadError={loadError}
+              showUserMenu={showUserMenu}
+              onNavigate={navigate}
+              onStartTour={startTour}
+              onToggleUserMenu={() => setShowUserMenu(!showUserMenu)}
+              onEditPreferences={() => {
+                globalThis.dispatchEvent(new Event("open-quick-setup"));
+                setShowUserMenu(false);
+              }}
+              onLogout={() => {
+                logout();
+                setShowUserMenu(false);
+              }}
+              onSignIn={() => setShowAuthModal(true)}
+            />
+          }
+        />
+        <div className="relative z-10" style={{ paddingTop: "1.5rem" }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Page Header */}
-            <div className="text-center mb-6">
-              <h1 className="text-4xl md:text-5xl font-bold mb-3">
+            <div className="learning-paths-intro text-center mb-8">
+              <p className="learning-paths-eyebrow">
+                Build your systems thinking
+              </p>
+              <h1 className="text-4xl md:text-6xl font-normal mb-4 tracking-[-0.04em]">
                 Learning Paths
               </h1>
-              <p className="text-muted text-lg max-w-2xl mx-auto">
+              <p className="text-muted text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
                 Follow curated sequences of modules and lessons that teach
                 system design from first principles to advanced patterns.
               </p>
             </div>
 
-            <div className="mb-4 flex items-center justify-between">
+            <div className="learning-paths-count mb-5 flex items-center justify-between">
               <div className="text-sm text-muted">
                 {getPathAvailabilityMessage(loading, paths.length, loadError)}
               </div>

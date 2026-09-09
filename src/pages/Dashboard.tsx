@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -17,6 +17,7 @@ import {
 } from "react-icons/md";
 import { HiChevronDown } from "react-icons/hi2";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import ProductHeader from "../components/ProductHeader";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
@@ -51,6 +52,119 @@ import {
   selectAttemptedProblems,
 } from "../store/slices/problemsSelectors";
 import { getProblemSlug } from "../utils/problemSlug";
+
+type DashboardSelectProps = {
+  id: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  "aria-label": string;
+};
+
+const DashboardSelect: React.FC<DashboardSelectProps> = ({
+  id,
+  value,
+  options,
+  onChange,
+  "aria-label": ariaLabel,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(() =>
+    Math.max(0, options.indexOf(value)),
+  );
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setHighlightedIndex(Math.max(0, options.indexOf(value)));
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open, options, value]);
+
+  const choose = (nextValue: string) => {
+    onChange(nextValue);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={wrapperRef} className="dashboard-select-wrapper">
+      <button
+        id={id}
+        type="button"
+        className="dashboard-select-trigger"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex((current) =>
+              event.key === "ArrowDown"
+                ? Math.min(options.length - 1, current + 1)
+                : Math.max(0, current - 1),
+            );
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(0);
+          } else if (event.key === "End") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(options.length - 1);
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (open) choose(options[highlightedIndex]);
+            else setOpen(true);
+          } else if (event.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      >
+        <span>{value}</span>
+        <HiChevronDown
+          aria-hidden="true"
+          className={`dashboard-select-chevron ${open ? "dashboard-select-chevron--open" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className="dashboard-select-menu"
+          role="listbox"
+          aria-label={ariaLabel}
+        >
+          {options.map((option, index) => (
+            <div
+              key={option}
+              role="option"
+              tabIndex={0}
+              aria-selected={option === value}
+              className={`dashboard-select-option ${
+                index === highlightedIndex
+                  ? "dashboard-select-option--highlighted"
+                  : ""
+              } ${option === value ? "dashboard-select-option--selected" : ""}`}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onClick={() => choose(option)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  choose(option);
+                }
+              }}
+            >
+              {option}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Dashboard: React.FC = () => {
   useTheme();
@@ -240,7 +354,11 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const updateColumnCount = () => {
-      setColumnCount(window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1);
+      const width = window.innerWidth;
+      let nextColumnCount = 1;
+      if (width >= 1024) nextColumnCount = 3;
+      else if (width >= 768) nextColumnCount = 2;
+      setColumnCount(nextColumnCount);
     };
     updateColumnCount();
     window.addEventListener("resize", updateColumnCount);
@@ -272,7 +390,14 @@ const Dashboard: React.FC = () => {
     ) {
       dispatch(fetchMoreProblems());
     }
-  }, [columnCount, dispatch, gridProblems.length, hasMore, loadingMore, virtualRows]);
+  }, [
+    columnCount,
+    dispatch,
+    gridProblems.length,
+    hasMore,
+    loadingMore,
+    virtualRows,
+  ]);
 
   // Fetch problems from API on mount
   useEffect(() => {
@@ -324,15 +449,15 @@ const Dashboard: React.FC = () => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
-        return "bg-green-100 text-green-800";
+        return "dashboard-difficulty dashboard-difficulty--easy";
       case "Medium":
-        return "bg-yellow-100 text-yellow-800";
+        return "dashboard-difficulty dashboard-difficulty--medium";
       case "Hard":
-        return "bg-red-100 text-red-800";
+        return "dashboard-difficulty dashboard-difficulty--hard";
       case "Very Hard":
-        return "bg-orange-200 text-orange-800";
+        return "dashboard-difficulty dashboard-difficulty--very-hard";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "dashboard-difficulty";
     }
   };
 
@@ -346,167 +471,135 @@ const Dashboard: React.FC = () => {
         imageAlt="Diagrammatic practice problems preview"
         url="https://diagrammatic.next-zen.dev/problems"
       />
-      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
-        {/* Header */}
-        <header
-          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
-          style={{ top: "var(--announcement-h, 0px)" }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="flex items-center space-x-3 group cursor-pointer"
-              >
-                <img
-                  src="/logo-64.png"
-                  width="28"
-                  height="28"
-                  alt="Logo"
-                  className="h-7 w-7 flex-shrink-0 object-contain transition-transform group-hover:scale-110 duration-300"
-                />
-                <span className="text-lg font-bold text-white tracking-wide leading-none">
-                  Diagrammatic
-                </span>
-              </button>
-              <div className="flex items-center gap-4">
-                {isAuth && (
-                  <button
-                    type="button"
-                    onClick={() => navigate("/diagrams")}
-                    className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
-                  >
-                    My Designs
-                  </button>
-                )}
-
-                <div className="hidden md:block text-sm text-white/90">
-                  {loading && !hasProblems
-                    ? "Loading..."
-                    : loading
-                      ? "Updating..."
-                    : `${availableProblemCount} problems available`}
-                </div>
-
-                {/* Tour trigger button */}
+      <div className="dashboard-page min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
+        <ProductHeader
+          actions={
+            <>
+              {isAuth && (
                 <button
                   type="button"
-                  onClick={startTour}
-                  data-tooltip="Take a tour"
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  onClick={() => navigate("/diagrams")}
+                  className="dashboard-header-action hidden md:block"
                 >
-                  <MdHelpOutline className="h-4 w-4" />
-                  <span className="hidden sm:inline">Tour</span>
+                  My Designs
                 </button>
-
-                <ThemeSwitcher />
-
-                {/* Authentication UI */}
-                <div className="relative">
-                  {isAuth ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md transition-colors"
-                      >
-                        {user?.picture ? (
-                          <img
-                            src={user.picture}
-                            alt={user.name || "User"}
-                            className="w-8 h-8 rounded-full object-cover border-2 border-white/30"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center font-bold">
-                            {user?.name?.[0]?.toUpperCase() ||
-                              user?.email?.[0]?.toUpperCase() ||
-                              "U"}
-                          </div>
-                        )}
-                        <span className="hidden sm:inline">
-                          {user?.name || user?.email}
-                        </span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-
-                      {showUserMenu && (
-                        <div className="absolute top-full right-0 mt-1 bg-[var(--surface)] shadow-lg rounded-lg border border-theme/10 py-1 z-50 min-w-[180px]">
-                          <div className="px-4 py-2">
-                            <p className="text-sm font-medium text-theme">
-                              {user?.name || "User"}
-                            </p>
-                            <p className="text-xs text-muted truncate">
-                              {user?.email}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              globalThis.dispatchEvent(
-                                new Event("open-quick-setup"),
-                              );
-                              setShowUserMenu(false);
-                            }}
-                            aria-label="Edit preferences"
-                            className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover,var(--bg))] transition-colors border-b border-theme/10"
-                          >
-                            Edit preferences
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              logout();
-                              setShowUserMenu(false);
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            Sign Out
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
+              )}
+              <div className="dashboard-problem-count hidden lg:block">
+                {loading && !hasProblems
+                  ? "Loading..."
+                  : loading
+                    ? "Updating..."
+                    : `${availableProblemCount} problems available`}
+              </div>
+              <button
+                type="button"
+                onClick={startTour}
+                data-tooltip="Take a tour"
+                className="dashboard-header-action dashboard-tour-action"
+              >
+                <MdHelpOutline className="h-4 w-4" />
+                <span className="hidden sm:inline">Tour</span>
+              </button>
+              <ThemeSwitcher />
+              <div className="relative">
+                {isAuth ? (
+                  <>
                     <button
                       type="button"
-                      onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-2 text-sm font-medium bg-white/20 text-white rounded-md hover:bg-white/30 transition-colors"
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="dashboard-account-button"
                     >
-                      Sign In
+                      {user?.picture ? (
+                        <img
+                          src={user.picture}
+                          alt={user.name || "User"}
+                          className="dashboard-avatar dashboard-avatar-image"
+                        />
+                      ) : (
+                        <div className="dashboard-avatar">
+                          {user?.name?.[0]?.toUpperCase() ||
+                            user?.email?.[0]?.toUpperCase() ||
+                            "U"}
+                        </div>
+                      )}
+                      <span className="hidden sm:inline max-w-[150px] truncate">
+                        {user?.name || user?.email}
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
                     </button>
-                  )}
-                </div>
+                    {showUserMenu && (
+                      <div className="dashboard-user-menu">
+                        <div className="px-4 py-2">
+                          <p className="text-sm font-medium text-theme">
+                            {user?.name || "User"}
+                          </p>
+                          <p className="text-xs text-muted truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            globalThis.dispatchEvent(
+                              new Event("open-quick-setup"),
+                            );
+                            setShowUserMenu(false);
+                          }}
+                          aria-label="Edit preferences"
+                          className="dashboard-user-menu-item border-b border-theme/10"
+                        >
+                          Edit preferences
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            logout();
+                            setShowUserMenu(false);
+                          }}
+                          className="dashboard-user-menu-item text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthModal(true)}
+                    className="product-sign-in dashboard-sign-in"
+                  >
+                    Sign In
+                  </button>
+                )}
               </div>
-            </div>
-          </div>
-        </header>
+            </>
+          }
+        />
 
         {/* Main Content */}
-        <div
-          className="relative z-10"
-          style={{ paddingTop: "calc(var(--announcement-h, 0px) + 4rem)" }}
-        >
+        <div className="relative z-10" style={{ paddingTop: "1.5rem" }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Page Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <div className="dashboard-intro text-center mb-12">
+              <p className="dashboard-eyebrow">Practice the craft of systems</p>
+              <h1 className="text-4xl md:text-6xl font-normal mb-5 tracking-[-0.04em]">
                 System Design & AI/ML Problems
               </h1>
-              <p className="text-muted text-lg max-w-2xl mx-auto">
+              <p className="text-muted text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
                 Master Infrastructure, Application, AI & ML architectures.
                 Practice with realistic architecture problems in an interactive
                 canvas.
@@ -517,19 +610,19 @@ const Dashboard: React.FC = () => {
               >
                 <Link
                   to="/system-design-interview/"
-                  className="text-[var(--brand)] hover:underline"
+                  className="dashboard-guide-link"
                 >
                   Interview guide
                 </Link>
                 <Link
                   to="/system-design-practice/"
-                  className="text-[var(--brand)] hover:underline"
+                  className="dashboard-guide-link"
                 >
                   Practice method
                 </Link>
                 <Link
                   to="/ai-system-design-interview/"
-                  className="text-[var(--brand)] hover:underline"
+                  className="dashboard-guide-link"
                 >
                   AI system design
                 </Link>
@@ -573,7 +666,7 @@ const Dashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => globalThis.location.reload()}
-                    className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                    className="dashboard-primary-cta px-6 py-3 font-semibold rounded-lg transition-all duration-200 cursor-pointer"
                   >
                     Try again
                   </button>
@@ -584,7 +677,7 @@ const Dashboard: React.FC = () => {
             {/* Filters - Only show when not loading and no error */}
             {!error && (!loading || hasProblems) && (
               <>
-                <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-4">
+                <div className="dashboard-filter-shell elevated-card-bg backdrop-blur-md rounded-2xl p-6 mb-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     {/* Search */}
                     <div data-tour="search-box">
@@ -602,7 +695,7 @@ const Dashboard: React.FC = () => {
                         onChange={(e) =>
                           dispatch(setSearchQuery(e.target.value))
                         }
-                        className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
+                        className="dashboard-search-input w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300"
                       />
                     </div>
 
@@ -614,26 +707,15 @@ const Dashboard: React.FC = () => {
                       >
                         <MdTune className="w-4 h-4" /> Difficulty
                       </label>
-                      <div className="select-field-wrapper">
-                        <select
-                          id="difficulty-select"
-                          value={selectedDifficulty}
-                          onChange={(e) =>
-                            dispatch(setSelectedDifficulty(e.target.value))
-                          }
-                          className="select-field select-field--compact"
-                        >
-                          {difficulties.map((difficulty) => (
-                            <option key={difficulty} value={difficulty}>
-                              {difficulty}
-                            </option>
-                          ))}
-                        </select>
-                        <HiChevronDown
-                          aria-hidden="true"
-                          className="select-field-icon"
-                        />
-                      </div>
+                      <DashboardSelect
+                        id="difficulty-select"
+                        value={selectedDifficulty}
+                        options={difficulties}
+                        onChange={(value) =>
+                          dispatch(setSelectedDifficulty(value))
+                        }
+                        aria-label="Difficulty"
+                      />
                     </div>
 
                     {/* Category Filter */}
@@ -644,32 +726,24 @@ const Dashboard: React.FC = () => {
                       >
                         <MdLabel className="w-4 h-4" /> Category
                       </label>
-                      <div className="select-field-wrapper">
-                        <select
-                          id="category-select"
-                          value={selectedCategory}
-                          onChange={(e) =>
-                            dispatch(setSelectedCategory(e.target.value))
-                          }
-                          className="select-field select-field--compact"
-                        >
-                          {categories.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
-                        <HiChevronDown
-                          aria-hidden="true"
-                          className="select-field-icon"
-                        />
-                      </div>
+                      <DashboardSelect
+                        id="category-select"
+                        value={selectedCategory}
+                        options={categories}
+                        onChange={(value) =>
+                          dispatch(setSelectedCategory(value))
+                        }
+                        aria-label="Category"
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Domain Filter - Below the other filters */}
-                <div className="mb-4" data-tour="domain-filter">
+                <div
+                  className="dashboard-domain-filter mb-6"
+                  data-tour="domain-filter"
+                >
                   <div className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
                     <MdPublic className="w-4 h-4" /> Domain
                   </div>
@@ -679,10 +753,10 @@ const Dashboard: React.FC = () => {
                         key={domain}
                         type="button"
                         onClick={() => dispatch(setSelectedDomain(domain))}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        className={`dashboard-domain-chip flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                           selectedDomain === domain
-                            ? "bg-[var(--brand)] text-white shadow-md transform scale-105"
-                            : "bg-[var(--bg-hover)] text-theme hover:bg-[var(--brand)]/10 hover:text-[var(--brand)]"
+                            ? "dashboard-domain-chip--active"
+                            : ""
                         }`}
                       >
                         {getDomainIcon(domain)}
@@ -708,171 +782,180 @@ const Dashboard: React.FC = () => {
                       style={{ transform: `translateY(${virtualRow.start}px)` }}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-                  {gridProblems
-                    .slice(
-                      virtualRow.index * columnCount,
-                      (virtualRow.index + 1) * columnCount,
-                    )
-                    .map((entry, columnIndex) => {
-                    const index = virtualRow.index * columnCount + columnIndex;
-                    const problem = entry.problem;
-                    const score = entry.score;
-                    const delayClass =
-                      index === 0
-                        ? "delay-0"
-                        : index === 1
-                          ? "delay-100"
-                          : index === 2
-                            ? "delay-200"
-                            : "";
-                    return (
-                      <div
-                        key={problem.id}
-                        data-tour={index === 0 ? "problem-card" : undefined}
-                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative h-full flex flex-col ${delayClass}`}
-                      >
-                        {problem.has_guided_walkthrough ? (
-                          <div className="flex items-center justify-between px-4 py-2 bg-sky-100 rounded-t-2xl">
-                            <div className="flex items-center gap-3 text-sky-700 text-sm font-semibold tracking-wide">
-                              <span>🗺️</span>
-                              <span>Guided Walkthrough</span>
-                              {score > 0 && (
-                                <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">
-                                  Recommended
-                                </span>
-                              )}
-                            </div>
-                            <span
-                              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
-                            >
-                              {problem.difficulty}
-                            </span>
-                          </div>
-                        ) : null}
-                        <div className="relative p-6 flex flex-col flex-1">
-                          {!problem.has_guided_walkthrough && score > 0 && (
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-emerald-100 text-emerald-800">
-                                Recommended
-                              </span>
-                              <span
-                                className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
-                              >
-                                {problem.difficulty}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex items-start justify-between mb-4">
-                            <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
-                              <Link
-                                to={`/problems/${getProblemSlug(problem)}/`}
-                                className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand)]"
-                              >
-                                {problem.title}
-                              </Link>
-                            </h3>
-                            {!problem.has_guided_walkthrough && score === 0 && (
-                              <div className="flex-shrink-0 ml-2">
-                                <span
-                                  className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
-                                >
-                                  {problem.difficulty}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <p className="text-muted text-sm mb-4 line-clamp-3 leading-relaxed">
-                            {problem.description}
-                          </p>
-
-                          <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
-                            <span className="flex items-center gap-1">
-                              <MdLabel className="w-4 h-4 text-muted/60" />{" "}
-                              {problem.category}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MdAccessTime className="w-4 h-4 text-muted/60" />{" "}
-                              {problem.estimated_time}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 mb-6">
-                            {problem.tags.slice(0, 3).map((tag: string) => (
-                              <span
-                                key={tag}
-                                className="px-3 py-1 uppercase bg-[var(--brand)]/10 text-[var(--brand)] text-xs font-semibold rounded-full"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {problem.tags.length > 3 && (
-                              <span className="px-3 py-1 bg-[var(--theme)]/5 text-muted text-xs font-medium rounded-full">
-                                +{problem.tags.length - 3} more
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-auto grid grid-cols-[5fr_7fr] gap-2">
-                            <Link
-                              to={`/problems/${getProblemSlug(problem)}/`}
-                              aria-label={`View guide for ${problem.title}`}
-                              className="inline-flex w-full items-center justify-center rounded-xl border border-[var(--brand)]/35 px-3 py-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
-                            >
-                              View guide
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (!problem.id) {
-                                  navigate(
-                                    `/problems/${getProblemSlug(problem)}/`,
-                                  );
-                                  return;
+                        {gridProblems
+                          .slice(
+                            virtualRow.index * columnCount,
+                            (virtualRow.index + 1) * columnCount,
+                          )
+                          .map((entry, columnIndex) => {
+                            const index =
+                              virtualRow.index * columnCount + columnIndex;
+                            const problem = entry.problem;
+                            const score = entry.score;
+                            const delayClass =
+                              index === 0
+                                ? "delay-0"
+                                : index === 1
+                                  ? "delay-100"
+                                  : index === 2
+                                    ? "delay-200"
+                                    : "";
+                            return (
+                              <div
+                                key={problem.id}
+                                data-tour={
+                                  index === 0 ? "problem-card" : undefined
                                 }
-                                if (!isAuth) {
-                                  setShowAuthModal(true);
-                                  return;
-                                }
-                                navigate(`/playground/${problem.id}`);
-                              }}
-                              aria-label={`Start ${problem.title}`}
-                              className={`w-full px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer group-hover:shadow-xl ${
-                                isAuth && attemptedProblems.has(problem.id)
-                                  ? "bg-blue-600 text-white hover:shadow-md"
-                                  : "bg-[var(--brand)] text-white hover:shadow-md"
-                              }`}
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                {isAuth &&
-                                  attemptedProblems.has(problem.id) && (
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-4 w-4"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth={2.5}
+                                className={`dashboard-problem-card group elevated-card-bg backdrop-blur-md rounded-2xl transition-all duration-500 relative h-full flex flex-col ${delayClass}`}
+                              >
+                                {problem.has_guided_walkthrough ? (
+                                  <div className="dashboard-guided-banner flex items-center justify-between px-4 py-2 rounded-t-2xl">
+                                    <div className="flex items-center gap-3 text-sm font-semibold tracking-wide">
+                                      <span>🗺️</span>
+                                      <span>Guided Walkthrough</span>
+                                      {score > 0 && (
+                                        <span className="dashboard-recommended inline-block px-2 py-0.5 text-xs font-semibold rounded">
+                                          Recommended
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span
+                                      className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
                                     >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                      />
-                                    </svg>
-                                  )}
-                                {isAuth && attemptedProblems.has(problem.id)
-                                  ? "Continue Problem"
-                                  : "Start Problem"}{" "}
-                                →
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                    })}
+                                      {problem.difficulty}
+                                    </span>
+                                  </div>
+                                ) : null}
+                                <div className="relative p-6 flex flex-col flex-1">
+                                  {!problem.has_guided_walkthrough &&
+                                    score > 0 && (
+                                      <div className="flex items-center justify-between mb-3">
+                                        <span className="dashboard-recommended inline-block px-2 py-1 text-xs font-semibold rounded">
+                                          Recommended
+                                        </span>
+                                        <span
+                                          className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                                        >
+                                          {problem.difficulty}
+                                        </span>
+                                      </div>
+                                    )}
+                                  <div className="flex items-start justify-between mb-4">
+                                    <h3 className="text-lg font-bold text-theme group-hover:text-[var(--brand)] transition-colors duration-300 line-clamp-2 flex-1 pr-2">
+                                      <Link
+                                        to={`/problems/${getProblemSlug(problem)}/`}
+                                        className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand)]"
+                                      >
+                                        {problem.title}
+                                      </Link>
+                                    </h3>
+                                    {!problem.has_guided_walkthrough &&
+                                      score === 0 && (
+                                        <div className="flex-shrink-0 ml-2">
+                                          <span
+                                            className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(problem.difficulty)}`}
+                                          >
+                                            {problem.difficulty}
+                                          </span>
+                                        </div>
+                                      )}
+                                  </div>
+
+                                  <p className="text-muted text-sm mb-4 line-clamp-3 leading-relaxed">
+                                    {problem.description}
+                                  </p>
+
+                                  <div className="flex items-center justify-between text-sm text-muted mb-4 pb-4 border-b border-[var(--theme)]/10">
+                                    <span className="flex items-center gap-1">
+                                      <MdLabel className="w-4 h-4 text-muted/60" />{" "}
+                                      {problem.category}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <MdAccessTime className="w-4 h-4 text-muted/60" />{" "}
+                                      {problem.estimated_time}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-2 mb-6">
+                                    {problem.tags
+                                      .slice(0, 3)
+                                      .map((tag: string) => (
+                                        <span
+                                          key={tag}
+                                          className="dashboard-tag px-3 py-1 uppercase text-xs font-semibold rounded-full"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    {problem.tags.length > 3 && (
+                                      <span className="dashboard-tag dashboard-tag--muted px-3 py-1 text-xs font-medium rounded-full">
+                                        +{problem.tags.length - 3} more
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="mt-auto grid grid-cols-[5fr_7fr] gap-2">
+                                    <Link
+                                      to={`/problems/${getProblemSlug(problem)}/`}
+                                      aria-label={`View guide for ${problem.title}`}
+                                      className="dashboard-secondary-cta inline-flex w-full items-center justify-center rounded-xl border px-3 py-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+                                    >
+                                      View guide
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!problem.id) {
+                                          navigate(
+                                            `/problems/${getProblemSlug(problem)}/`,
+                                          );
+                                          return;
+                                        }
+                                        if (!isAuth) {
+                                          setShowAuthModal(true);
+                                          return;
+                                        }
+                                        navigate(`/playground/${problem.id}`);
+                                      }}
+                                      aria-label={`Start ${problem.title}`}
+                                      className={`dashboard-primary-cta w-full px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer ${
+                                        isAuth &&
+                                        attemptedProblems.has(problem.id)
+                                          ? "bg-blue-600 text-white hover:shadow-md"
+                                          : "bg-[var(--brand)] text-white hover:shadow-md"
+                                      }`}
+                                    >
+                                      <span className="flex items-center justify-center gap-2">
+                                        {isAuth &&
+                                          attemptedProblems.has(problem.id) && (
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="h-4 w-4"
+                                              fill="none"
+                                              viewBox="0 0 24 24"
+                                              stroke="currentColor"
+                                              strokeWidth={2.5}
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                              />
+                                            </svg>
+                                          )}
+                                        {isAuth &&
+                                        attemptedProblems.has(problem.id)
+                                          ? "Continue Problem"
+                                          : "Start Problem"}{" "}
+                                        →
+                                      </span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     </div>
                   ))}
@@ -888,7 +971,7 @@ const Dashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => dispatch(fetchMoreProblems())}
-                    className="mx-auto mb-10 block rounded-xl border border-[var(--brand)]/35 px-5 py-3 text-sm font-semibold text-[var(--brand)] transition hover:bg-[var(--brand)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+                    className="dashboard-secondary-cta mx-auto mb-10 block rounded-xl border px-5 py-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
                   >
                     Load more problems
                   </button>

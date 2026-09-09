@@ -6,7 +6,7 @@ import React, {
   useState,
   useRef,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import RollingNavLabel from "../components/RollingNavLabel";
 import { useTheme } from "../hooks/useTheme";
@@ -233,6 +233,8 @@ const PermissionBadge: React.FC<{
 };
 
 const Home: React.FC = () => {
+  const location = useLocation();
+  const isBackupLanding = location.pathname.startsWith("/landing-backup");
   useTheme();
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
@@ -647,7 +649,12 @@ const Home: React.FC = () => {
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
         image="https://diagrammatic.next-zen.dev/og/home.png"
         imageAlt="Diagrammatic homepage preview"
-        url="https://diagrammatic.next-zen.dev/"
+        url={
+          isBackupLanding
+            ? "https://diagrammatic.next-zen.dev/landing-backup/"
+            : "https://diagrammatic.next-zen.dev/"
+        }
+        noIndex={isBackupLanding}
       />
       <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         {/* Header */}

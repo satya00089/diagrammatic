@@ -10,6 +10,9 @@ html:has(.systema-page[data-theme="dark"]) {
   --systema-bg: #f4f3ee;
   --systema-surface: #ebeae5;
   --systema-text: #151513;
+  --systema-primary-bg: #151513;
+  --systema-primary-text: #ffffff;
+  --systema-primary-hover: #2f2f2a;
   --systema-muted: #686863;
   --systema-line: #d4d2ca;
   background: var(--systema-bg);
@@ -23,6 +26,9 @@ html:has(.systema-page[data-theme="dark"]) {
   --systema-bg: #080808;
   --systema-surface: #131313;
   --systema-text: #f5f5f3;
+  --systema-primary-bg: #ffffff;
+  --systema-primary-text: #080808;
+  --systema-primary-hover: #dcdcd7;
   --systema-muted: #9a9a98;
   --systema-line: #292929;
   color-scheme: dark;
@@ -140,9 +146,10 @@ html:has(.systema-page[data-theme="dark"]) {
   align-items: center;
   gap: 11px;
   color: var(--systema-text);
-  font-weight: 600;
-  font-size: 19px;
-  letter-spacing: -0.035em;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-weight: 400;
+  font-size: 25px;
+  letter-spacing: -0.045em;
 }
 .systema-brand img {
   flex: none;
@@ -197,6 +204,47 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-nav-cta {
   font-size: 12px;
 }
+.systema-sign-in {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 15px;
+  border: 1px solid var(--systema-text);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--systema-text);
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 180ms,
+    color 180ms,
+    transform 180ms;
+}
+.systema-sign-in:hover {
+  background: var(--systema-text);
+  color: var(--systema-bg);
+  transform: translateY(-1px);
+}
+.systema-sign-in.product-sign-in {
+  background: var(--systema-text) !important;
+  color: var(--systema-bg) !important;
+}
+.systema-sign-in.product-sign-in:hover {
+  background: var(--systema-text) !important;
+  color: var(--systema-bg) !important;
+  opacity: 0.84;
+}
+.systema-page .systema-primary-cta {
+  border-color: transparent;
+  background: var(--systema-primary-bg);
+  color: var(--systema-primary-text);
+}
+.systema-page .systema-primary-cta:hover {
+  border-color: transparent;
+  background: var(--systema-primary-hover);
+  color: var(--systema-primary-text);
+}
 .systema-menu-toggle {
   display: none;
 }
@@ -228,6 +276,19 @@ html:has(.systema-page[data-theme="dark"]) {
   font-weight: 600;
   padding-top: 8px;
   border-top: 1px solid var(--systema-line);
+}
+.systema-mobile-nav-sign-in {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--systema-muted);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+.systema-mobile-nav-sign-in:hover {
+  color: var(--systema-text);
 }
 .systema-mobile-nav-cta svg {
   width: 15px;
@@ -310,6 +371,16 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-text-link svg {
   width: 14px;
   height: 14px;
+}
+.systema-page .systema-outline-cta {
+  border-color: var(--systema-line);
+  background: transparent;
+  color: var(--systema-text);
+}
+.systema-page .systema-outline-cta:hover {
+  border-color: var(--systema-text);
+  background: var(--systema-surface);
+  color: var(--systema-text);
 }
 .systema-scroll-note {
   display: flex;
@@ -662,6 +733,13 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-close h2 {
   font-size: clamp(35px, 3.7vw, 52px);
 }
+.systema-close-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
 .systema-footer {
   min-height: 105px;
   border-top: 1px solid var(--systema-line);
@@ -713,6 +791,9 @@ html:has(.systema-page[data-theme="dark"]) {
 }
 @media (max-width: 360px) {
   .systema-nav-cta {
+    display: none;
+  }
+  .systema-sign-in {
     display: none;
   }
 }
@@ -863,7 +944,7 @@ html:has(.systema-page[data-theme="dark"]) {
     min-height: 82px;
   }
   .systema-brand {
-    font-size: 17px;
+    font-size: 20px;
     gap: 8px;
   }
   .systema-brand img {
@@ -965,6 +1046,14 @@ html:has(.systema-page[data-theme="dark"]) {
     flex-direction: column;
     align-items: flex-start;
     padding-block: 60px;
+  }
+  .systema-close-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .systema-close-actions > * {
+    width: 100%;
   }
   .systema-footer {
     flex-wrap: wrap;

@@ -21,16 +21,13 @@ import ProblemGuideContent, {
 } from "../components/problem-guide/ProblemGuideContent";
 import Seo from "../components/SEO";
 import ThemeSwitcher from "../components/ThemeSwitcher";
-import RollingNavLabel from "../components/RollingNavLabel";
+import ProductHeader from "../components/ProductHeader";
 import { getProblemGuide } from "../data/problemGuides";
 import type { ProblemGuide } from "../types/problemGuide";
 import { useAuth } from "../hooks/useAuth";
 import { getApiBaseUrl } from "../services/api";
 import type { SystemDesignProblem } from "../types/systemDesign";
-import {
-  featuredProblems,
-  getFeaturedProblem,
-} from "../utils/problemSlug";
+import { featuredProblems, getFeaturedProblem } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 
 const PublicArchitectureCanvas = lazy(
@@ -204,7 +201,7 @@ const ProblemLanding: React.FC = () => {
         const response = await fetch(
           `${apiUrl}/api/v1/problem/slug/${encodeURIComponent(slug)}`,
           {
-          signal: controller.signal,
+            signal: controller.signal,
           },
         );
         if (!response.ok) throw new Error("Problem catalog unavailable");
@@ -314,41 +311,11 @@ const ProblemLanding: React.FC = () => {
         }}
       />
 
-      <div className="min-h-screen bg-[var(--bg)] text-theme">
-        <header className="border-b border-white/20 bg-[var(--brand)] text-white">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between">
-            <Link
-              to="/"
-              className="flex items-center gap-3 font-bold tracking-wide text-white"
-            >
-              <img src="/logo-64.png" alt="" className="h-7" />
-              <span className="text-lg font-bold leading-none tracking-wide text-white">
-                Diagrammatic
-              </span>
-            </Link>
-            <nav
-              className="flex items-center gap-2 sm:gap-4"
-              aria-label="Primary navigation"
-            >
-              <Link
-                to="/problems/"
-                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:inline"
-              >
-                <RollingNavLabel>All problems</RollingNavLabel>
-              </Link>
-              <Link
-                to="/learning-paths/"
-                className="hidden text-sm font-semibold text-white/80 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:inline"
-              >
-                <RollingNavLabel>Learning paths</RollingNavLabel>
-              </Link>
-              <ThemeSwitcher />
-            </nav>
-          </div>
-        </header>
+      <div className="problem-detail-page min-h-screen bg-[var(--bg)] text-theme">
+        <ProductHeader actions={<ThemeSwitcher />} />
 
         <main>
-          <section className="border-b border-theme/10 bg-[var(--surface)]">
+          <section className="problem-detail-hero border-b border-theme/10 bg-[var(--surface)]">
             <div className="w-full px-4 py-12 sm:px-6 sm:py-16 lg:px-8 2xl:px-10">
               <Link
                 to="/problems/"
@@ -366,7 +333,7 @@ const ProblemLanding: React.FC = () => {
                       {problem.difficulty}
                     </span>
                   </div>
-                  <h1 className="max-w-4xl text-balance text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-5xl">
+                  <h1 className="problem-detail-title max-w-4xl text-balance text-4xl font-normal leading-tight tracking-[-0.03em] sm:text-6xl">
                     {problem.title}
                   </h1>
                   <p className="mt-6 max-w-3xl text-lg leading-8 text-muted">
@@ -374,7 +341,7 @@ const ProblemLanding: React.FC = () => {
                   </p>
                 </div>
 
-                <aside className="rounded-2xl bg-[var(--bg)] p-6 shadow-[0_12px_32px_rgba(17,24,39,0.10)]">
+                <aside className="problem-detail-summary rounded-2xl p-6">
                   <dl className="space-y-4 text-sm">
                     <div className="flex items-center justify-between gap-4">
                       <dt className="flex items-center gap-2 text-muted">
@@ -394,7 +361,7 @@ const ProblemLanding: React.FC = () => {
                   <button
                     type="button"
                     onClick={startProblem}
-                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.30)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+                    className="problem-primary-cta mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
                   >
                     <MdPlayArrow className="text-xl" aria-hidden="true" /> Start
                     designing
@@ -572,11 +539,11 @@ const ProblemLanding: React.FC = () => {
                   </>
                 )}
 
-                <section className="bg-[var(--brand)] px-6 py-8 text-white sm:px-8">
+                <section className="problem-bottom-cta px-6 py-8 sm:px-8">
                   <h2 className="text-2xl font-bold">
                     Turn the brief into an architecture
                   </h2>
-                  <p className="mt-3 max-w-2xl leading-7 text-white/85">
+                  <p className="mt-3 max-w-2xl leading-7 text-muted">
                     Place the core components, connect the critical paths,
                     record your assumptions, and request a structured review
                     when the design is ready.
@@ -584,7 +551,7 @@ const ProblemLanding: React.FC = () => {
                   <button
                     type="button"
                     onClick={startProblem}
-                    className="mt-6 inline-flex items-center gap-2 bg-white px-5 py-3 font-semibold text-[var(--brand)] shadow-[0_8px_22px_rgba(17,24,39,0.18)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    className="problem-secondary-cta mt-6 inline-flex items-center gap-2 px-5 py-3 font-semibold transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
                     Start this challenge <MdArrowForward aria-hidden="true" />
                   </button>
