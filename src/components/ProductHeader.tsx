@@ -70,12 +70,12 @@ const ProductHeader: FC<ProductHeaderProps> = ({ actions }) => {
           id="product-mobile-nav"
           className="product-header__mobile-nav"
           aria-label="Mobile navigation"
-          onClick={() => setMenuOpen(false)}
         >
           {navItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
+              onClick={() => setMenuOpen(false)}
               aria-current={
                 isActivePath(pathname, item.to) ? "page" : undefined
               }

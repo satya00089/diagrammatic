@@ -141,6 +141,7 @@ const DashboardSelect: React.FC<DashboardSelectProps> = ({
             <div
               key={option}
               role="option"
+              tabIndex={0}
               aria-selected={option === value}
               className={`dashboard-select-option ${
                 index === highlightedIndex
@@ -149,6 +150,12 @@ const DashboardSelect: React.FC<DashboardSelectProps> = ({
               } ${option === value ? "dashboard-select-option--selected" : ""}`}
               onMouseEnter={() => setHighlightedIndex(index)}
               onClick={() => choose(option)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  choose(option);
+                }
+              }}
             >
               {option}
             </div>
@@ -347,9 +354,11 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const updateColumnCount = () => {
-      setColumnCount(
-        window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1,
-      );
+      const width = window.innerWidth;
+      let nextColumnCount = 1;
+      if (width >= 1024) nextColumnCount = 3;
+      else if (width >= 768) nextColumnCount = 2;
+      setColumnCount(nextColumnCount);
     };
     updateColumnCount();
     window.addEventListener("resize", updateColumnCount);
