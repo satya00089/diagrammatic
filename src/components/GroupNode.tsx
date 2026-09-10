@@ -6,6 +6,7 @@ import type { IconType } from "react-icons";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import SpriteIcon from "./SpriteIcon";
 import { loadSpriteManifest } from "../store/slices/spritesSlice";
+import { shouldUseDirectIcon } from "../utils/iconRendering";
 
 function providerFromId(id: string): string | null {
   const prefix = id.split("-")[0].toLowerCase();
@@ -33,6 +34,8 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
   const borderColor = data.borderColor || "rgba(100, 100, 255, 0.3)";
   const spriteIcons = useAppSelector((state) => state.sprites.allIcons);
   const sprite = data.componentId ? spriteIcons[data.componentId] : undefined;
+  const useDirectIcon =
+    shouldUseDirectIcon(data.componentId) && Boolean(data.iconUrl);
 
   // condition in the thunk deduplicates — safe to dispatch every mount.
   React.useEffect(() => {
@@ -144,10 +147,17 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
-        {data.icon && React.createElement(data.icon, { size: 16 })}
-        {sprite ? (
+        {useDirectIcon ? (
+          <img
+            src={data.iconUrl}
+            alt=""
+            style={{ width: "16px", height: "16px" }}
+          />
+        ) : data.icon ? (
+          React.createElement(data.icon, { size: 16 })
+        ) : sprite ? (
           <SpriteIcon sprite={sprite} displaySize={16} alt="" />
-        ) : data.iconUrl && !data.icon ? (
+        ) : data.iconUrl ? (
           <img
             src={data.iconUrl}
             alt=""

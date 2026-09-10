@@ -1,20 +1,13 @@
 /**
- * The deployed AWS security/identity sprite sheet contains dark rasterization
- * seams in the light portions of its icons. Keep the spritesheet for every
- * other icon, but use the original SVG for this group until the source sheet
- * is regenerated.
+ * Provider sprite sheets can introduce dark seams when transparent SVG artwork
+ * is rasterized and clipped from a PNG sheet. Prefer the catalog's original
+ * SVG for every supported provider; keep the sprite as a fallback when an
+ * older or incomplete component record has no source URL.
  */
-const DIRECT_ICON_COMPONENTS = new Set([
-  "aws-s3-on-outposts-storage",
-  "aws-simple-storage-service-storage",
-  "aws-simple-storage-service-glacier-storage",
-]);
+const SPRITE_PROVIDERS = new Set(["aws", "azure", "gcp", "kubernetes"]);
 
 export function shouldUseDirectIcon(componentId?: string): boolean {
-  return (
-    !!componentId &&
-    (DIRECT_ICON_COMPONENTS.has(componentId) ||
-      (componentId.startsWith("aws-") &&
-        componentId.endsWith("-security-identity-compliance")))
-  );
+  if (!componentId) return false;
+  const provider = componentId.split("-", 1)[0].toLowerCase();
+  return SPRITE_PROVIDERS.has(provider);
 }
