@@ -4,6 +4,7 @@ import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
   MdSettings,
+  MdHub,
   MdDelete,
   MdOutlineVerticalAlignTop,
   MdOutlineVerticalAlignBottom,
@@ -12,7 +13,6 @@ import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { MdHub } from "react-icons/md";
 import { COMPONENTS } from "../config/components";
 import NodePropertyDisplay from "./NodePropertyDisplay";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -561,7 +561,11 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   if (val === undefined || val === null || val === "")
                     return true;
                   if (typeof val === "string") {
-                    const stripped = val.replaceAll(/<[^>]*>/g, "").trim();
+                    const stripped = val
+                      .split("<")
+                      .map((part) => part.slice(part.indexOf(">") + 1))
+                      .join("")
+                      .trim();
                     return stripped === "";
                   }
                   return false;

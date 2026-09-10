@@ -271,7 +271,7 @@ export async function generateInterviewQuestions(
 
   const result = (await response.json()) as { questions?: unknown };
   if (!Array.isArray(result.questions)) {
-    throw new Error("Interview questions response was invalid.");
+    throw new TypeError("Interview questions response was invalid.");
   }
 
   const questions = result.questions.filter(

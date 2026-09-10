@@ -73,8 +73,10 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
 
       // Strip HTML for checking if empty
       const textOnly = sanitized
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
+        .split("<")
+        .map((part) => part.slice(part.indexOf(">") + 1))
+        .join(" ")
+        .replaceAll("\n", " ")
         .trim();
 
       if (textOnly.length === 0) {
@@ -105,7 +107,7 @@ const NodePropertyDisplay: React.FC<NodePropertyDisplayProps> = ({
       >
         {propertyKey
           .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
-          .replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")}
+          .replaceAll(/([A-Z])([A-Z][a-z])/g, "$1 $2")}
       </div>
       <div className="break-words overflow-wrap-anywhere">
         {renderValue(value)}

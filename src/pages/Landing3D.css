@@ -501,6 +501,10 @@ html:has(.systema-page[data-theme="dark"]) {
   padding-top: 15px;
 }
 .systema-phase-controls {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
   display: flex;
   gap: 8px;
 }
@@ -869,7 +873,8 @@ html:has(.systema-page[data-theme="dark"]) {
     top: auto;
     margin-top: 16px;
   }
-  .systema-review {
+  section.systema-review {
+    margin-top: 40px;
     grid-column: 1;
     grid-row: 3;
   }
@@ -882,9 +887,6 @@ html:has(.systema-page[data-theme="dark"]) {
     min-height: auto;
     padding-block: 80px;
     border-top: 1px solid var(--systema-line);
-  }
-  .systema-review {
-    margin-top: 40px;
   }
   .systema-review-excerpt {
     max-width: 500px;

@@ -371,12 +371,8 @@ const CustomEdge: React.FC<EdgeProps> = (props) => {
     Math.max(edgeData?.labelOffset ?? 0.18, 0),
     0.95,
   );
-  const labelShift =
-    edgeData?.labelPosition === "source"
-      ? -labelOffset
-      : edgeData?.labelPosition === "target"
-        ? labelOffset
-        : 0;
+  const labelDirection = { source: -1, target: 1, center: 0 };
+  const labelShift = (labelDirection[edgeData?.labelPosition ?? "center"] ?? 0) * labelOffset;
   const labelText = value || "Connection";
   const textWidth = useMemo(() => {
     const fallbackWidth = Math.max(6, labelText.length * 6);

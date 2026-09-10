@@ -18,6 +18,44 @@ function ExerciseRunner({
     return cleaned ? parseFloat(cleaned[0]) : NaN;
   };
 
+  const validateString = (q: Exercise["questions"][number], user: string) => {
+    const ans = q.answer;
+    if (!ans) return;
+    if (ans.type === "string") {
+      const val = (ans.value || "").toString();
+      if (ans.regex) {
+        try {
+          const re = new RegExp(ans.regex, "i");
+          const ok = re.test(user);
+          setResults((r) => ({
+            ...r,
+            [q.id]: {
+              ok,
+              message: ok
+                ? "Correct"
+                : `Incorrect — expected pattern ${ans.regex}`,
+            },
+          }));
+        } catch {
+          setResults((r) => ({
+            ...r,
+            [q.id]: { ok: false, message: "Invalid validation regex." },
+          }));
+        }
+        return;
+      }
+      const ok = user.toLowerCase() === val.toLowerCase();
+      setResults((r) => ({
+        ...r,
+        [q.id]: {
+          ok,
+          message: ok ? "Correct" : `Incorrect — expected "${val}"`,
+        },
+      }));
+      return;
+    }
+  };
+
   const validate = (q: Exercise["questions"][number]) => {
     const user = (answers[q.id] || "").trim();
     if (!q.answer) {
@@ -54,40 +92,7 @@ function ExerciseRunner({
       return;
     }
 
-    // string validation
-    if (ans.type === "string") {
-      const val = (ans.value || "").toString();
-      if (ans.regex) {
-        try {
-          const re = new RegExp(ans.regex, "i");
-          const ok = re.test(user);
-          setResults((r) => ({
-            ...r,
-            [q.id]: {
-              ok,
-              message: ok
-                ? "Correct"
-                : `Incorrect — expected pattern ${ans.regex}`,
-            },
-          }));
-        } catch {
-          setResults((r) => ({
-            ...r,
-            [q.id]: { ok: false, message: "Invalid validation regex." },
-          }));
-        }
-        return;
-      }
-      const ok = user.toLowerCase() === val.toLowerCase();
-      setResults((r) => ({
-        ...r,
-        [q.id]: {
-          ok,
-          message: ok ? "Correct" : `Incorrect — expected "${val}"`,
-        },
-      }));
-      return;
-    }
+    validateString(q, user);
   };
 
   if (!exercise || !exercise.questions || exercise.questions.length === 0) {

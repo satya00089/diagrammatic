@@ -7,12 +7,12 @@ function Server({
   y,
   label,
   subtitle,
-}: {
+}: Readonly<{
   x: number;
   y: number;
   label: string;
   subtitle: string;
-}) {
+}>) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <rect
@@ -53,12 +53,12 @@ function Database({
   y,
   label,
   cache = false,
-}: {
+}: Readonly<{
   x: number;
   y: number;
   label: string;
   cache?: boolean;
-}) {
+}>) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <path
@@ -86,13 +86,19 @@ function Database({
 export default function ArchitectureDiagram({
   phase,
   paused,
-}: {
+}: Readonly<{
   phase: DesignPhase;
   paused: boolean;
-}) {
+}>) {
   const id = useId().replaceAll(":", "");
   const improved = phase === 2;
   const reviewing = phase === 1;
+  const phaseTitle = ["first draft", "design review", "cache-first design"][phase];
+  const phaseCaption = [
+    "One request. A system of decisions.",
+    "Every redirect reaches the database.",
+    "Popular links take the shorter path.",
+  ][phase];
   return (
     <svg
       viewBox="0 0 650 540"
@@ -102,11 +108,7 @@ export default function ArchitectureDiagram({
     >
       <title id={`${id}-title`}>
         URL shortener architecture:{" "}
-        {improved
-          ? "cache-first design"
-          : reviewing
-            ? "design review"
-            : "first draft"}
+        {phaseTitle}
       </title>
       <desc id={`${id}-desc`}>
         {improved
@@ -249,11 +251,7 @@ export default function ArchitectureDiagram({
         <path d="M-7 0H7M0-7V7" />
       </g>
       <text x="325" y="496" className="architecture-caption">
-        {improved
-          ? "Popular links take the shorter path."
-          : reviewing
-            ? "Every redirect reaches the database."
-            : "One request. A system of decisions."}
+        {phaseCaption}
       </text>
     </svg>
   );

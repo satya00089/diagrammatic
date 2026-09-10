@@ -64,31 +64,8 @@ const getDetourSide = (
   return positiveClearance >= negativeClearance ? 1 : -1;
 };
 
-/**
- * Infer handles for public architecture edges while keeping persisted guide
- * properties as the final override. Equal-axis links use a detour when an
- * intermediate component would otherwise hide the edge path.
- */
-export const getDefaultArchitectureHandlePair = (
-  connection: SystemConnection,
-  components: GuideArchitectureComponent[],
-): ArchitectureHandlePair => {
-  const componentsById = new Map(
-    components.map((component) => [component.id, component]),
-  );
-  const source = componentsById.get(connection.source);
-  const target = componentsById.get(connection.target);
-
-  if (!source || !target) {
-    return { sourceHandle: "right", targetHandle: "left" };
-  }
-
-  const deltaX = target.position.x - source.position.x;
-  const deltaY = target.position.y - source.position.y;
-  const sameX = Math.abs(deltaX) < POSITION_EPSILON;
-  const sameY = Math.abs(deltaY) < POSITION_EPSILON;
-
-  if (sameX && !sameY) {
+const getVerticalHandlePair = (source: GuideArchitectureComponent, target: GuideArchitectureComponent, components: GuideArchitectureComponent[]): ArchitectureHandlePair => {
+const deltaY = target.position.y - source.position.y;
     const hasIntermediateComponent = components.some(
       (component) =>
         component.id !== source.id &&
@@ -115,9 +92,10 @@ export const getDefaultArchitectureHandlePair = (
     return deltaY > 0
       ? { sourceHandle: "bottom", targetHandle: "top" }
       : { sourceHandle: "top", targetHandle: "bottom" };
-  }
+};
 
-  if (sameY && !sameX) {
+const getHorizontalHandlePair = (source: GuideArchitectureComponent, target: GuideArchitectureComponent, components: GuideArchitectureComponent[]): ArchitectureHandlePair => {
+const deltaX = target.position.x - source.position.x;
     const hasIntermediateComponent = components.some(
       (component) =>
         component.id !== source.id &&
@@ -144,7 +122,34 @@ export const getDefaultArchitectureHandlePair = (
     return deltaX > 0
       ? { sourceHandle: "right", targetHandle: "left" }
       : { sourceHandle: "left", targetHandle: "right" };
+};
+
+/**
+ * Infer handles for public architecture edges while keeping persisted guide
+ * properties as the final override. Equal-axis links use a detour when an
+ * intermediate component would otherwise hide the edge path.
+ */
+export const getDefaultArchitectureHandlePair = (
+  connection: SystemConnection,
+  components: GuideArchitectureComponent[],
+): ArchitectureHandlePair => {
+  const componentsById = new Map(
+    components.map((component) => [component.id, component]),
+  );
+  const source = componentsById.get(connection.source);
+  const target = componentsById.get(connection.target);
+
+  if (!source || !target) {
+    return { sourceHandle: "right", targetHandle: "left" };
   }
+
+  const deltaX = target.position.x - source.position.x;
+  const deltaY = target.position.y - source.position.y;
+  const sameX = Math.abs(deltaX) < POSITION_EPSILON;
+  const sameY = Math.abs(deltaY) < POSITION_EPSILON;
+
+  if (sameX && !sameY) return getVerticalHandlePair(source, target, components);
+  if (sameY && !sameX) return getHorizontalHandlePair(source, target, components);
 
   if (deltaX > 0) {
     return { sourceHandle: "right", targetHandle: "left" };

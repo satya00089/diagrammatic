@@ -219,6 +219,24 @@ interface EREdgeData {
   pathType?: EdgePathType;
 }
 
+const getInitialEdgeState = (data: unknown, label: React.ReactNode) => {
+  const edgeData = (data as EREdgeData) || {};
+  return {
+    pathType: edgeData.pathType ?? "smoothstep",
+    initialLabel: edgeData.label ?? (typeof label === "string" ? label : ""),
+    initialHasLabel: edgeData.hasLabel ?? false,
+    initialCardinality: edgeData.cardinality ?? "one-to-many",
+  };
+};
+
+const getRouteAnimation = (animate: boolean) => {
+  if (!animate) return { initial: false as const, transition: { duration: 0 } };
+  return {
+    initial: { opacity: 0.45, pathLength: 0.82 },
+    transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const },
+  };
+};
+
 const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
   const {
     id,
@@ -237,15 +255,12 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
     selected,
   } = props;
 
-  const edgeData = (data as EREdgeData) || {};
-  const pathType = edgeData.pathType ?? "smoothstep";
-  const initialLabel =
-    edgeData.label ?? (typeof label === "string" ? label : "");
+  const { pathType, initialLabel, initialHasLabel, initialCardinality } = getInitialEdgeState(data, label);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState<string>(initialLabel);
-  const [hasLabel, setHasLabel] = useState<boolean>(edgeData.hasLabel ?? false);
+  const [hasLabel, setHasLabel] = useState<boolean>(initialHasLabel);
   const [cardinality, setCardinality] = useState<ERCardinality>(
-    edgeData.cardinality ?? "one-to-many",
+    initialCardinality,
   );
   const inputRef = useRef<HTMLInputElement | null>(null);
   const reduceMotion = useReducedMotion();
@@ -734,17 +749,8 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         fill="none"
         stroke={selected ? "var(--brand)" : "var(--muted)"}
         strokeWidth={selected ? 3 : 2}
-        initial={
-          routeAnimationId > 0 && !reduceMotion
-            ? { opacity: 0.45, pathLength: 0.82 }
-            : false
-        }
+        {...getRouteAnimation(routeAnimationId > 0 && !reduceMotion)}
         animate={{ opacity: 1, pathLength: 1 }}
-        transition={
-          routeAnimationId > 0 && !reduceMotion
-            ? { duration: 0.18, ease: [0.16, 1, 0.3, 1] }
-            : { duration: 0 }
-        }
         markerEnd={`url(#er-${targetMarkerType}-${id})`}
         markerStart={`url(#er-${sourceMarkerType}-source-${id})`}
         className="transition-colors"

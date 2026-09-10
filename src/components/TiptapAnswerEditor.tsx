@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useReducer } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -47,17 +47,16 @@ type ToolbarButtonProps = {
 
 const escapeHtml = (value: string): string =>
   value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br />");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\n", "<br />");
 
 const toEditorContent = (value: string, contentFormat: "text" | "html"): string =>
-  value.trim()
-    ? contentFormat === "html"
-      ? value
-      : `<p>${escapeHtml(value)}</p>`
-    : "";
+  {
+    if (!value.trim()) return "";
+    return contentFormat === "html" ? value : `<p>${escapeHtml(value)}</p>`;
+  };
 
 const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   onClick,
@@ -132,7 +131,7 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
   maxLength,
   onHtmlChange,
 }) => {
-  const [, forceUpdate] = useState(0);
+  const [, forceUpdate] = useReducer((revision: number) => revision + 1, 0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const editor = useEditor({
@@ -160,8 +159,8 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
       onChange(text);
       onHtmlChange?.(currentEditor.getHTML(), text);
     },
-    onSelectionUpdate: () => forceUpdate((count) => count + 1),
-    onTransaction: () => forceUpdate((count) => count + 1),
+    onSelectionUpdate: () => forceUpdate(),
+    onTransaction: () => forceUpdate(),
   });
 
   useEffect(() => {
@@ -360,10 +359,9 @@ const TiptapAnswerEditor: React.FC<TiptapAnswerEditorProps> = ({
               {button.node}
             </ToolbarButton>
           ))}
-          <div
-            role="separator"
+          <hr
             aria-orientation="vertical"
-            className="mx-1 h-6 w-px bg-[var(--border)]"
+            className="mx-1 h-6 w-px border-0 bg-[var(--border)]"
           />
           <ToolbarButton
             onClick={startRecording}

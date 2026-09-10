@@ -1,4 +1,13 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import {
+  createElement,
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { ColorMode } from "@xyflow/react";
 
 export type Theme = "system" | "light" | "dark";
@@ -6,12 +15,34 @@ export type Theme = "system" | "light" | "dark";
 const isValidTheme = (v: unknown): v is Theme =>
   v === "system" || v === "light" || v === "dark";
 
-export function useTheme() {
+interface ThemeContextValue {
+  theme: Theme;
+  setTheme: Dispatch<SetStateAction<Theme>>;
+  flowColorMode: ColorMode;
+}
+
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+const getInitialTheme = (): Theme => {
+  if (typeof window === "undefined") return "light";
+
+  const storedTheme = localStorage.getItem("theme");
+  if (isValidTheme(storedTheme)) return storedTheme;
+
+  // Preserve the preference from the landing page before it joined the
+  // shared application theme state.
+  const legacyLandingTheme = localStorage.getItem("diagrammatic-landing-theme");
+  return isValidTheme(legacyLandingTheme) && legacyLandingTheme !== "system"
+    ? legacyLandingTheme
+    : "light";
+};
+
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [theme, setTheme] = useState<Theme>(() => {
     // Initialize theme state from localStorage immediately
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem("theme");
-    return isValidTheme(stored) ? stored : "light";
+    return getInitialTheme();
   });
 
   const [systemDark, setSystemDark] = useState(() => {
@@ -55,6 +86,17 @@ export function useTheme() {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
+  // Keep separate same-origin tabs aligned when one of them changes theme.
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== "theme") return;
+      setTheme(isValidTheme(event.newValue) ? event.newValue : "light");
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   // map to @xyflow/react ColorMode
   const flowColorMode = ((): ColorMode => {
     if (theme === "system") {
@@ -63,5 +105,18 @@ export function useTheme() {
     return theme as ColorMode;
   })();
 
-  return { theme, setTheme, flowColorMode };
+  const value = useMemo(
+    () => ({ theme, setTheme, flowColorMode }),
+    [flowColorMode, theme],
+  );
+
+  return createElement(ThemeContext.Provider, { value }, children);
+};
+
+export function useTheme(): ThemeContextValue {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within ThemeProvider");
+  }
+  return context;
 }

@@ -221,6 +221,7 @@ const Dashboard: React.FC = () => {
       selectedCategory !== "All" ||
       selectedDomain !== "All",
   );
+  const loadingLabel = hasProblems ? "Updating..." : "Loading...";
   const availableProblemCount =
     !hasActiveFilters && totalProblemCount !== null
       ? totalProblemCount
@@ -287,22 +288,20 @@ const Dashboard: React.FC = () => {
 
     const scored = filteredProblems.map((problem, idx) => {
       let score = 0;
-      const tags = (problem.tags || []).map((t: string) =>
-        String(t).toLowerCase(),
-      );
+      const tags = new Set((problem.tags || []).map((t: string) => String(t).toLowerCase()));
       const category = String(problem.category || "").toLowerCase();
       const domain = String(problem.domain || "").toLowerCase();
 
       for (const pi of primaryInterests) {
         if (!pi) continue;
-        if (tags.includes(pi)) score += 3;
+        if (tags.has(pi)) score += 3;
         if (category === pi) score += 2;
         if (domain === pi) score += 1;
       }
 
       for (const pc of preferredClouds) {
         if (!pc) continue;
-        if (tags.includes(pc) || category === pc || domain === pc) score += 1;
+        if (tags.has(pc) || category === pc || domain === pc) score += 1;
       }
 
       if (experience) {
@@ -485,11 +484,7 @@ const Dashboard: React.FC = () => {
                 </button>
               )}
               <div className="dashboard-problem-count hidden lg:block">
-                {loading && !hasProblems
-                  ? "Loading..."
-                  : loading
-                    ? "Updating..."
-                    : `${availableProblemCount} problems available`}
+                {loading ? loadingLabel : `${availableProblemCount} problems available`}
               </div>
               <button
                 type="button"
@@ -793,13 +788,7 @@ const Dashboard: React.FC = () => {
                             const problem = entry.problem;
                             const score = entry.score;
                             const delayClass =
-                              index === 0
-                                ? "delay-0"
-                                : index === 1
-                                  ? "delay-100"
-                                  : index === 2
-                                    ? "delay-200"
-                                    : "";
+                              ["delay-0", "delay-100", "delay-200"][index] ?? "";
                             return (
                               <div
                                 key={problem.id}
@@ -962,9 +951,9 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {loadingMore && (
-                  <div className="py-8 text-center text-muted" role="status">
+                  <output className="block py-8 text-center text-muted">
                     Loading more problems…
-                  </div>
+                  </output>
                 )}
 
                 {!loadingMore && hasMore && prioritizedProblems.length > 0 && (

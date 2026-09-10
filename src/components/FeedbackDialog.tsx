@@ -1,7 +1,10 @@
+import { useModalDialog } from "../hooks/useModalDialog";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MdClose, MdSend, MdStar, MdStarBorder } from "react-icons/md";
+import { HiChevronDown } from "react-icons/hi2";
 import { useAuth } from "../hooks/useAuth";
 import TiptapAnswerEditor from "./TiptapAnswerEditor";
+import "../styles/feedback-overrides.css";
 import type {
   FeedbackCategory,
   FeedbackLaunchOptions,
@@ -31,13 +34,131 @@ const REASON_OPTIONS: Array<{ value: FeedbackReason; label: string }> = [
   { value: "hard_to_understand", label: "It was hard to understand" },
 ];
 
+interface FeedbackCategorySelectProps {
+  value: FeedbackCategory;
+  onChange: (value: FeedbackCategory) => void;
+}
+
+const FeedbackCategorySelect: React.FC<FeedbackCategorySelectProps> = ({
+  value,
+  onChange,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(() =>
+    Math.max(
+      0,
+      CATEGORY_OPTIONS.findIndex((option) => option.value === value),
+    ),
+  );
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const selectedIndex = Math.max(
+    0,
+    CATEGORY_OPTIONS.findIndex((option) => option.value === value),
+  );
+  const selectedOption = CATEGORY_OPTIONS[selectedIndex];
+
+  useEffect(() => {
+    if (!open) return;
+    setHighlightedIndex(selectedIndex);
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open, selectedIndex]);
+
+  const choose = (nextValue: FeedbackCategory) => {
+    onChange(nextValue);
+    setOpen(false);
+  };
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="dashboard-select-wrapper feedback-category-select"
+    >
+      <button
+        id="feedback-category"
+        type="button"
+        className="dashboard-select-trigger"
+        aria-label="Feedback category"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex((current) =>
+              event.key === "ArrowDown"
+                ? Math.min(CATEGORY_OPTIONS.length - 1, current + 1)
+                : Math.max(0, current - 1),
+            );
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(0);
+          } else if (event.key === "End") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(CATEGORY_OPTIONS.length - 1);
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (open) choose(CATEGORY_OPTIONS[highlightedIndex].value);
+            else setOpen(true);
+          } else if (event.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      >
+        <span>{selectedOption.label}</span>
+        <HiChevronDown
+          aria-hidden="true"
+          className={`dashboard-select-chevron ${open ? "dashboard-select-chevron--open" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className="dashboard-select-menu"
+          role="listbox"
+          aria-label="Feedback category"
+        >
+          {CATEGORY_OPTIONS.map((option, index) => (
+            <div
+              key={option.value}
+              role="option"
+              tabIndex={0}
+              aria-selected={option.value === value}
+              className={`dashboard-select-option ${
+                index === highlightedIndex
+                  ? "dashboard-select-option--highlighted"
+                  : ""
+              } ${option.value === value ? "dashboard-select-option--selected" : ""}`}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onClick={() => choose(option.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  choose(option.value);
+                }
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   initialOptions,
   onClose,
   onSubmit,
 }) => {
   const { user } = useAuth();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useModalDialog();
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const [category, setCategory] = useState<FeedbackCategory>(
     initialOptions.category ??
@@ -49,6 +170,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   const [messageText, setMessageText] = useState("");
   const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [contactEmail, setContactEmail] = useState(user?.email ?? "");
+  const contactEmailWasEditedRef = useRef(false);
   const [requestContact, setRequestContact] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -62,6 +184,12 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   const description = isAssessment
     ? "Tell us what would make the architecture review more useful."
     : "Your feedback helps us make the design and learning experience better.";
+
+  useEffect(() => {
+    if (user?.email && !contactEmailWasEditedRef.current) {
+      setContactEmail(user.email);
+    }
+  }, [user?.email]);
 
   const canSubmit = useMemo(
     () =>
@@ -83,7 +211,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
       window.clearTimeout(focusTimer);
       previousFocusRef.current?.focus();
     };
-  }, []);
+  }, [dialogRef]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -113,7 +241,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isSubmitting, onClose]);
+  }, [dialogRef, isSubmitting, onClose]);
 
   const toggleReason = (reason: FeedbackReason) => {
     setReasons((current) =>
@@ -153,30 +281,25 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-3 sm:items-center sm:p-6"
-      role="presentation"
+    <dialog
+      ref={dialogRef}
+      aria-labelledby="feedback-dialog-title"
+      aria-describedby="feedback-dialog-description"
+      onCancel={(event) => event.preventDefault()}
+      className="feedback-dialog"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !isSubmitting) onClose();
       }}
     >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="feedback-dialog-title"
-        aria-describedby="feedback-dialog-description"
-        tabIndex={-1}
-        className="max-h-[min(700px,calc(100vh-1.5rem))] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-theme shadow-2xl sm:max-h-[calc(100vh-3rem)]"
-      >
-        <header className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-5 py-4 sm:px-6 sm:py-5">
+      <div tabIndex={-1} className="feedback-dialog__surface">
+        <header className="feedback-dialog__header">
           <div>
-            <h2 id="feedback-dialog-title" className="text-xl font-bold">
+            <h2 id="feedback-dialog-title" className="feedback-dialog__title">
               {submitted ? "Thank you" : title}
             </h2>
             <p
               id="feedback-dialog-description"
-              className="mt-1 text-sm leading-relaxed text-muted"
+              className="feedback-dialog__description"
             >
               {submitted ? "Your feedback was received." : description}
             </p>
@@ -185,7 +308,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-[var(--bg-hover)] hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="feedback-dialog__close"
             aria-label="Close feedback dialog"
           >
             <MdClose className="h-5 w-5" aria-hidden="true" />
@@ -193,48 +316,44 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
         </header>
 
         {submitted ? (
-          <div className="px-5 py-8 sm:px-6">
-            <p className="text-sm leading-relaxed text-muted">
+          <div className="feedback-dialog__submitted">
+            <p className="feedback-dialog__description">
               We’ll use this to improve the experience over time. No further
               action is needed.
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
+              className="feedback-dialog__primary-action"
             >
               Done
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-3 px-5 py-4 sm:space-y-5 sm:px-6 sm:py-6">
+          <form onSubmit={handleSubmit} className="feedback-dialog__form">
             {!isAssessment && (
-              <label className="block text-sm font-semibold">
-                What would you like to tell us?
-                <select
+              <div className="feedback-dialog__field">
+                <span>What would you like to tell us?</span>
+                <FeedbackCategorySelect
                   value={category}
-                  onChange={(event) => setCategory(event.target.value as FeedbackCategory)}
-                  className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-3 font-normal text-theme outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20"
-                >
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={setCategory}
+                />
+              </div>
             )}
 
             <fieldset>
-              <legend className="text-sm font-semibold">How was your experience?</legend>
+              <legend className="feedback-dialog__legend">
+                How was your experience?
+              </legend>
               <div
-                className="mt-2 flex items-center gap-1"
+                className="feedback-dialog__rating"
                 role="radiogroup"
                 aria-label="Star rating"
               >
                 {[1, 2, 3, 4, 5].map((value) => {
                   const displayRating = hoveredRating ?? rating;
-                  const isFilled = displayRating !== undefined && value <= displayRating;
+                  const isFilled =
+                    displayRating !== undefined && value <= displayRating;
 
                   return (
                     <label
@@ -243,7 +362,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                       title={`${value} star${value === 1 ? "" : "s"}`}
                       onMouseEnter={() => setHoveredRating(value)}
                       onMouseLeave={() => setHoveredRating(undefined)}
-                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-amber-400 transition hover:bg-amber-500/10 focus-within:bg-amber-500/10 focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--brand)]"
+                      className="feedback-dialog__rating-choice"
                     >
                       <input
                         id={`feedback-rating-${value}`}
@@ -256,23 +375,31 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                         aria-label={`${value} star${value === 1 ? "" : "s"}`}
                       />
                       {isFilled ? (
-                        <MdStar className="pointer-events-none h-7 w-7" aria-hidden="true" />
+                        <MdStar
+                          className="pointer-events-none h-7 w-7"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <MdStarBorder className="pointer-events-none h-7 w-7 text-muted" aria-hidden="true" />
+                        <MdStarBorder
+                          className="pointer-events-none h-7 w-7 text-muted"
+                          aria-hidden="true"
+                        />
                       )}
                     </label>
                   );
                 })}
               </div>
-              <p className="mt-1 text-xs text-muted">
+              <p className="feedback-dialog__hint">
                 {rating ? "Rating selected" : "Select a rating"}
               </p>
             </fieldset>
 
             {isAssessment && (
               <fieldset>
-                <legend className="text-sm font-semibold">What could be better?</legend>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <legend className="feedback-dialog__legend">
+                  What could be better?
+                </legend>
+                <div className="feedback-dialog__reasons">
                   {REASON_OPTIONS.map((option) => {
                     const selected = reasons.includes(option.value);
                     return (
@@ -281,7 +408,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                         type="button"
                         onClick={() => toggleReason(option.value)}
                         aria-pressed={selected}
-                        className={`rounded-full border px-3 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${selected ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)]" : "border-[var(--border)] text-muted hover:border-[var(--brand)] hover:text-theme"}`}
+                        className={`feedback-dialog__reason ${selected ? "feedback-dialog__reason--selected" : ""}`}
                       >
                         {option.label}
                       </button>
@@ -291,30 +418,34 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
               </fieldset>
             )}
 
-            <div className="block text-sm font-semibold">
-              <span>{isAssessment ? "Anything else?" : "Tell us more"}</span>
-              <TiptapAnswerEditor
-                id="feedback-description"
-                value={message}
-                contentFormat="html"
-                ariaLabel="Feedback description"
-                maxLength={4000}
-                disabled={isSubmitting}
-                placeholder={
-                  isAssessment
-                    ? "What should the review explain, catch, or prioritize differently?"
-                    : "What happened, or what would make this better?"
-                }
-                onChange={setMessageText}
-                onHtmlChange={(html) => setMessage(html)}
-              />
-              <span className="mt-1 block text-right text-xs font-normal text-muted">
+            <div className="feedback-dialog__message-field">
+              <span className="feedback-dialog__field-label">
+                {isAssessment ? "Anything else?" : "Tell us more"}
+              </span>
+              <div className="feedback-dialog__editor">
+                <TiptapAnswerEditor
+                  id="feedback-description"
+                  value={message}
+                  contentFormat="html"
+                  ariaLabel="Feedback description"
+                  maxLength={4000}
+                  disabled={isSubmitting}
+                  placeholder={
+                    isAssessment
+                      ? "What should the review explain, catch, or prioritize differently?"
+                      : "What happened, or what would make this better?"
+                  }
+                  onChange={setMessageText}
+                  onHtmlChange={(html) => setMessage(html)}
+                />
+              </div>
+              <span className="feedback-dialog__character-count">
                 {messageText.length}/4000
               </span>
             </div>
 
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-2.5 sm:p-3">
-              <label className="flex items-start gap-2 text-sm text-theme">
+            <div className="feedback-dialog__contact-box">
+              <label className="feedback-dialog__contact-label">
                 <input
                   type="checkbox"
                   checked={requestContact}
@@ -322,7 +453,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                   className="mt-0.5 h-4 w-4 rounded border-[var(--border)] accent-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]"
                 />
                 <span>
-                  You may contact me about this feedback
+                  <span>You may contact me about this feedback</span>
                   <span className="mt-0.5 block text-xs text-muted">
                     Optional. We only use your email for this follow-up.
                   </span>
@@ -332,17 +463,20 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                 <input
                   type="email"
                   value={contactEmail}
-                  onChange={(event) => setContactEmail(event.target.value)}
+                  onChange={(event) => {
+                    contactEmailWasEditedRef.current = true;
+                    setContactEmail(event.target.value);
+                  }}
                   placeholder="you@example.com"
                   required
-                  className="mt-2.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm text-theme outline-none transition placeholder:text-muted focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/20 sm:mt-3"
+                  className="feedback-dialog__contact-input"
                   aria-label="Email address for feedback follow-up"
                 />
               )}
             </div>
 
             {error && (
-              <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
+              <p role="alert" className="feedback-dialog__error">
                 {error}
               </p>
             )}
@@ -350,18 +484,15 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             <button
               type="submit"
               disabled={!canSubmit || isSubmitting}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-bold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="feedback-dialog__primary-action"
             >
               <MdSend className="h-4 w-4" aria-hidden="true" />
               {isSubmitting ? "Sending…" : "Send feedback"}
             </button>
-            <p className="text-center text-xs text-muted">
-              Please avoid including passwords, secrets, or private customer data.
-            </p>
           </form>
         )}
       </div>
-    </div>
+    </dialog>
   );
 };
 

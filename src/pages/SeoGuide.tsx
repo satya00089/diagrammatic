@@ -6,6 +6,7 @@ import ThemeSwitcher from "../components/ThemeSwitcher";
 import ProductHeader from "../components/ProductHeader";
 import { featuredProblems } from "../utils/problemSlug";
 import NotFound from "./NotFound";
+import "./SeoGuide.css";
 
 const SITE_URL = "https://diagrammatic.next-zen.dev";
 
@@ -238,96 +239,87 @@ const SeoGuide: React.FC = () => {
           ],
         }}
       />
-      <div className="min-h-screen bg-[var(--bg)] text-theme">
+      <div className="seo-guide-page min-h-screen">
         <ProductHeader actions={<ThemeSwitcher />} />
 
-        <main>
-          <section className="border-b border-theme/10 bg-[var(--surface)]">
-            <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-              <h1 className="max-w-4xl text-balance text-4xl font-bold leading-tight tracking-[-0.03em] sm:text-6xl">
-                {data.title}
-              </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-muted sm:text-xl">
-                {data.intro}
-              </p>
-              <Link
-                to="/problems/"
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
-              >
-                Choose a practice problem <MdArrowForward />
-              </Link>
+        <main className="seo-guide-main">
+          <section className="seo-guide-hero">
+            <div className="seo-guide-container seo-guide-hero__inner">
+              <div className="seo-guide-hero__copy">
+                <h1>{data.title}</h1>
+                <p className="seo-guide-hero__intro">{data.intro}</p>
+                <div className="seo-guide-hero__actions">
+                  <Link
+                    to="/problems/"
+                    className="seo-guide-button seo-guide-button--primary"
+                  >
+                    Choose a practice problem{" "}
+                    <MdArrowForward aria-hidden="true" />
+                  </Link>
+                  <span className="seo-guide-hero__note">
+                    Read the method, then test it under pressure.
+                  </span>
+                </div>
+              </div>
             </div>
           </section>
 
-          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+          <div className="seo-guide-container seo-guide-content">
             <section
               aria-labelledby="method-heading"
-              className="grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]"
+              className="seo-guide-section seo-guide-method"
             >
-              <div>
-                <h2
-                  id="method-heading"
-                  className="text-3xl font-bold tracking-[-0.02em]"
-                >
-                  A method you can repeat
-                </h2>
-                <p className="mt-4 leading-7 text-muted">
+              <div className="seo-guide-section__intro">
+                <h2 id="method-heading">A method you can repeat</h2>
+                <p>
                   Use the same sequence until it becomes a calm interview habit.
                 </p>
               </div>
-              <ol className="divide-y divide-theme/10 border-y border-theme/10">
+              <ol className="seo-guide-steps">
                 {data.steps.map(([title, description], index) => (
-                  <li
-                    key={title}
-                    className="grid gap-3 py-6 sm:grid-cols-[2.5rem_12rem_1fr] sm:gap-5"
-                  >
-                    <span className="font-semibold tabular-nums text-[var(--brand)]">
-                      {index + 1}.
+                  <li key={title} className="seo-guide-step">
+                    <span className="seo-guide-step__number">
+                      {String(index + 1).padStart(2, "0")}
                     </span>
-                    <h3 className="font-bold">{title}</h3>
-                    <p className="leading-7 text-muted">{description}</p>
+                    <div>
+                      <h3>{title}</h3>
+                      <p>{description}</p>
+                    </div>
                   </li>
                 ))}
               </ol>
             </section>
 
-            <section aria-labelledby="practice-heading" className="mt-20">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <section
+              aria-labelledby="practice-heading"
+              className="seo-guide-section seo-guide-practice"
+            >
+              <div className="seo-guide-section__heading">
                 <div>
-                  <h2
-                    id="practice-heading"
-                    className="text-3xl font-bold tracking-[-0.02em]"
-                  >
-                    Put the method into practice
-                  </h2>
-                  <p className="mt-3 max-w-2xl leading-7 text-muted">
+                  <h2 id="practice-heading">Put the method into practice</h2>
+                  <p>
                     These challenges exercise different parts of the method
                     without showing you a finished solution first.
                   </p>
                 </div>
-                <Link
-                  to="/problems/"
-                  className="text-sm font-semibold text-[var(--brand)] hover:underline"
-                >
+                <Link to="/problems/" className="seo-guide-text-link">
                   View all problems
                 </Link>
               </div>
-              <div className="mt-8 grid gap-x-8 border-y border-theme/10 md:grid-cols-2">
+              <div className="seo-guide-problems">
                 {selectedProblems.map((problem) => (
                   <Link
                     key={problem.slug}
                     to={`/problems/${problem.slug}/`}
-                    className="group flex items-start justify-between gap-5 border-b border-theme/10 py-5 md:[&:nth-last-child(-n+2)]:border-b-0"
+                    className="seo-guide-problem"
                   >
                     <div>
-                      <h3 className="font-bold leading-6 group-hover:text-[var(--brand)]">
-                        {problem.title}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-muted">
+                      <h3>{problem.title}</h3>
+                      <p>
                         {problem.difficulty} · {problem.estimated_time}
                       </p>
                     </div>
-                    <MdArrowForward className="mt-1 shrink-0 text-[var(--brand)] transition group-hover:translate-x-1" />
+                    <MdArrowForward aria-hidden="true" />
                   </Link>
                 ))}
               </div>
@@ -335,49 +327,41 @@ const SeoGuide: React.FC = () => {
 
             <section
               aria-labelledby="faq-heading"
-              className="mt-20 grid gap-8 lg:grid-cols-[18rem_minmax(0,1fr)]"
+              className="seo-guide-section seo-guide-faq"
             >
-              <h2
-                id="faq-heading"
-                className="text-3xl font-bold tracking-[-0.02em]"
-              >
-                Common questions
-              </h2>
-              <div className="space-y-8">
-                {faq.map(([question, answer]) => (
-                  <div key={question}>
-                    <h3 className="flex items-start gap-3 text-lg font-bold">
-                      <MdCheckCircleOutline className="mt-1 shrink-0 text-[var(--brand)]" />
-                      {question}
-                    </h3>
-                    <p className="mt-3 max-w-3xl pl-8 leading-7 text-muted">
-                      {answer}
-                    </p>
-                  </div>
+              <div className="seo-guide-section__intro">
+                <h2 id="faq-heading">Common questions</h2>
+                <p>Keep these principles close when a prompt gets ambiguous.</p>
+              </div>
+              <div className="seo-guide-faq__list">
+                {faq.map(([question, answer], index) => (
+                  <details key={question} open={index === 0}>
+                    <summary>
+                      <MdCheckCircleOutline aria-hidden="true" />
+                      <span>{question}</span>
+                    </summary>
+                    <p>{answer}</p>
+                  </details>
                 ))}
               </div>
             </section>
 
-            <section className="mt-20 rounded-2xl bg-[var(--brand)] px-6 py-8 text-white sm:flex sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+            <section className="seo-guide-cta">
               <div>
-                <h2 className="text-2xl font-bold">
-                  Continue with a concrete next step
-                </h2>
-                <p className="mt-2 text-white/85">
-                  Move from reading to a problem, a diagram, and a review.
-                </p>
+                <h2>Continue with a concrete next step</h2>
+                <p>Move from reading to a problem, a diagram, and a review.</p>
               </div>
               <Link
                 to={data.nextHref}
-                className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-[var(--brand)] sm:mt-0"
+                className="seo-guide-button seo-guide-button--inverse"
               >
                 {data.nextLabel}
-                <MdArrowForward />
+                <MdArrowForward aria-hidden="true" />
               </Link>
             </section>
           </div>
         </main>
-        <footer className="border-t border-theme/10 px-4 py-8 text-center text-sm text-muted">
+        <footer className="seo-guide-footer">
           Diagrammatic — design architectures, explain decisions, and improve
           the result.
         </footer>

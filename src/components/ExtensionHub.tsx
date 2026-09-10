@@ -1,3 +1,4 @@
+import { useModalDialog } from "../hooks/useModalDialog";
 import React, { useMemo, useState } from "react";
 import {
   MdAccountTree,
@@ -28,6 +29,12 @@ const examples = {
   "database-schema": `CREATE TABLE users (\n  id UUID PRIMARY KEY,\n  email VARCHAR(255) NOT NULL\n);\n\nCREATE TABLE orders (\n  id UUID PRIMARY KEY,\n  user_id UUID NOT NULL REFERENCES users(id),\n  created_at TIMESTAMP NOT NULL\n);`,
 };
 
+function ImportReport({ error, parsed }: Readonly<{ error: string | null; parsed: ExtensionImportResult | null }>) {
+if(error) return (<div className="mt-4 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300" role="alert">{error}</div>);
+if(!parsed) return (<p className="mt-4 text-sm text-muted">Add source to see a recognition report.</p>);
+return (<><p className="mt-4 text-lg font-semibold text-theme">{parsed.summary}</p>{typeof parsed.catalogMatches === "number" && <p className="mt-2 text-sm text-muted">{parsed.catalogMatches} component{parsed.catalogMatches === 1 ? "" : "s"} matched from the Diagrammatic catalog; {parsed.fallbackNodes ?? 0} kept as generic editable node{parsed.fallbackNodes === 1 ? "" : "s"}.</p>}<p className="mt-2 text-sm text-muted">Imported elements retain source metadata so future linting can explain where they came from.</p>{parsed.warnings.length > 0 && <output className="mt-4 block space-y-2">{parsed.warnings.map((warning) => <p key={warning} className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">{warning}</p>)}</output>}</>);
+}
+
 const ExtensionHub: React.FC<ExtensionHubProps> = ({
   isOpen,
   onClose,
@@ -38,24 +45,18 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
   onExportXML,
   canExport,
 }) => {
+  const dialogRef = useModalDialog(isOpen);
   const [mode, setMode] = useState<"import" | "export">("import");
   const [kind, setKind] = useState<"mermaid" | "database-schema">("mermaid");
   const [source, setSource] = useState(examples.mermaid);
   const [sourceName, setSourceName] = useState("Pasted source");
-  const [error, setError] = useState<string | null>(null);
   const [transparentBg, setTransparentBg] = useState(false);
 
-  const parsed = useMemo(() => {
+  const { parsed, error } = useMemo(() => {
     try {
-      setError(null);
-      return parseExtensionSource(kind, source);
+      return { parsed: parseExtensionSource(kind, source), error: null };
     } catch (parseError) {
-      setError(
-        parseError instanceof Error
-          ? parseError.message
-          : "Unable to parse this source.",
-      );
-      return null;
+      return { parsed: null, error: parseError instanceof Error ? parseError.message : "Unable to parse this source." };
     }
   }, [kind, source]);
 
@@ -103,8 +104,8 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-4" role="presentation">
-      <section className="flex max-h-[min(760px,92vh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-theme/10 bg-surface shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="extension-hub-title">
+    <dialog ref={dialogRef} onCancel={(event) => { event.preventDefault(); onClose(); }} aria-labelledby="extension-hub-title" className="m-0 h-full max-h-none w-full max-w-none border-0 fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-4">
+      <section className="flex max-h-[min(760px,92vh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-theme/10 bg-surface shadow-2xl">
         <header className="flex items-start justify-between border-b border-theme/10 px-6 py-5">
           <div>
             <h2 id="extension-hub-title" className="text-xl font-bold text-theme">Extensions</h2>
@@ -144,7 +145,7 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
 
               <div className="flex min-h-[320px] flex-col rounded-xl border border-theme/10 bg-[var(--bg)] p-4">
                 <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-theme">Import report</h3>{parsed && <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">Ready to import</span>}</div>
-                {error ? <div className="mt-4 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300" role="alert">{error}</div> : parsed ? <><p className="mt-4 text-lg font-semibold text-theme">{parsed.summary}</p>{typeof parsed.catalogMatches === "number" && <p className="mt-2 text-sm text-muted">{parsed.catalogMatches} component{parsed.catalogMatches === 1 ? "" : "s"} matched from the Diagrammatic catalog; {parsed.fallbackNodes ?? 0} kept as generic editable node{parsed.fallbackNodes === 1 ? "" : "s"}.</p>}<p className="mt-2 text-sm text-muted">Imported elements retain source metadata so future linting can explain where they came from.</p>{parsed.warnings.length > 0 && <div className="mt-4 space-y-2" role="status">{parsed.warnings.map((warning) => <p key={warning} className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">{warning}</p>)}</div>}</> : <p className="mt-4 text-sm text-muted">Add source to see a recognition report.</p>}
+                {<ImportReport error={error} parsed={parsed} />}
                 <div className="mt-auto flex flex-col gap-2 pt-6 sm:flex-row sm:justify-end"><button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-muted hover:bg-[var(--bg-hover)] hover:text-theme">Cancel</button><button type="button" disabled={!parsed} onClick={() => parsed && onImport(parsed, sourceName)} className="rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Replace canvas with import</button></div>
               </div>
             </div>
@@ -159,11 +160,11 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
               </div>
               <div className="mt-6 border-t border-theme/10 pt-5"><h4 className="text-sm font-semibold text-theme">Design data</h4><div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={!canExport} onClick={onExportJSON} className="rounded-lg border border-theme/10 px-4 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-40">Export JSON</button><button type="button" disabled={!canExport} onClick={onExportXML} className="rounded-lg border border-theme/10 px-4 py-2 text-sm font-medium text-theme hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-40">Export XML</button></div></div>
             </div>
-            <aside className="rounded-xl border border-theme/10 p-5"><h3 className="text-sm font-semibold text-theme">Image background</h3><label className="mt-4 flex cursor-pointer items-start gap-3"><input type="checkbox" checked={transparentBg} onChange={(event) => setTransparentBg(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--brand)]" /><span><span className="block text-sm font-medium text-theme">Transparent</span><span className="mt-1 block text-xs leading-5 text-muted">Apply to PNG and SVG. JPEG always uses white.</span></span></label>{!canExport && <p className="mt-5 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">Add at least one component before exporting.</p>}</aside>
+            <aside className="rounded-xl border border-theme/10 p-5"><h3 className="text-sm font-semibold text-theme">Image background</h3><label htmlFor="extension-transparent-bg" className="mt-4 flex cursor-pointer items-start gap-3"><input id="extension-transparent-bg" aria-label="Transparent image background" type="checkbox" checked={transparentBg} onChange={(event) => setTransparentBg(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--brand)]" /><span><span className="block text-sm font-medium text-theme">Transparent</span><span className="mt-1 block text-xs leading-5 text-muted">Apply to PNG and SVG. JPEG always uses white.</span></span></label>{!canExport && <p className="mt-5 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">Add at least one component before exporting.</p>}</aside>
           </div>
         )}
       </section>
-    </div>
+    </dialog>
   );
 };
 
