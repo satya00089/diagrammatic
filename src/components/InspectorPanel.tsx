@@ -12,7 +12,31 @@ import {
   PiCaretRightBold,
   PiWarningCircle,
 } from "react-icons/pi";
-import { MdAdd } from "react-icons/md";
+import {
+  MdAdd,
+  MdAssessment,
+  MdArrowForward,
+  MdArrowUpward,
+  MdAutoAwesome,
+  MdCheck,
+  MdCheckCircle,
+  MdClose,
+  MdContentCopy,
+  MdDescription,
+  MdDownload,
+  MdError,
+  MdInfo,
+  MdLabel,
+  MdLightbulbOutline,
+  MdLink,
+  MdLockOpen,
+  MdMenuBook,
+  MdSearch,
+  MdSettings,
+  MdTrackChanges,
+  MdWarning,
+} from "react-icons/md";
+import type { IconType } from "react-icons";
 import { FiShare2 } from "react-icons/fi";
 import { useFeedback } from "../contexts/FeedbackContext";
 
@@ -60,11 +84,19 @@ const DIM_LABELS: Record<string, string> = {
   connection_clarity: "Connections",
 };
 
-const FEEDBACK_TYPE_ICON: Record<string, string> = {
-  success: "✅",
-  warning: "⚠️",
-  error: "❌",
-  info: "ℹ️",
+const FEEDBACK_TYPE_ICON: Record<string, IconType> = {
+  success: MdCheckCircle,
+  warning: MdWarning,
+  error: MdError,
+  info: MdInfo,
+};
+
+const FeedbackIcon: React.FC<{ type: string; className?: string }> = ({
+  type,
+  className,
+}) => {
+  const Icon = FEEDBACK_TYPE_ICON[type] ?? MdInfo;
+  return <Icon className={className} aria-hidden="true" />;
 };
 
 const FEEDBACK_TYPE_BORDER: Record<string, string> = {
@@ -394,11 +426,15 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === "details"}
                   className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "details" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   data-tour="problem-brief"
                   onClick={() => setActiveTab("details")}
                 >
-                  <span className="text-sm">📄</span>
+                  <MdDescription
+                    className="h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
                   <span className="text-sm font-medium">Details</span>
                 </button>
               )}
@@ -407,10 +443,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === "assessment"}
                   className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "assessment" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   onClick={() => setActiveTab("assessment")}
                 >
-                  <span className="text-sm">📊</span>
+                  <MdAssessment
+                    className="h-4 w-4 shrink-0"
+                    aria-hidden="true"
+                  />
                   <span className="text-sm font-medium">Assessment</span>
                   {assessmentResult && (
                     <span className="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[var(--brand)] text-white">
@@ -424,11 +464,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={activeTab === "guide"}
                   className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "guide" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                   data-tour="guide"
                   onClick={() => setActiveTab("guide")}
                 >
-                  <span className="text-sm">🗺️</span>
+                  <MdMenuBook className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium">Guide</span>
                 </button>
               )}
@@ -436,10 +477,11 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <button
                 type="button"
                 role="tab"
+                aria-selected={activeTab === "inspector"}
                 className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "inspector" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
                 onClick={() => setActiveTab("inspector")}
               >
-                <span className="text-sm">⚙️</span>
+                <MdSettings className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="text-sm font-medium">Properties</span>
               </button>
             </div>
@@ -479,8 +521,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     />
 
                     <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-theme mb-2">
-                        ✅ Requirements
+                      <h4 className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
+                        <MdCheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />
+                        <span>Requirements</span>
                       </h4>
                       {problem.requirements.length > 0 ? (
                         <ul className="space-y-1.5">
@@ -506,8 +549,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     </div>
 
                     <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-theme mb-2">
-                        ⚠️ Constraints
+                      <h4 className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
+                        <MdWarning className="h-4 w-4 text-yellow-500" aria-hidden="true" />
+                        <span>Constraints</span>
                       </h4>
                       {problem.constraints.length > 0 ? (
                         <ul className="space-y-1.5">
@@ -539,8 +583,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         className="w-full flex items-center justify-between mb-2 cursor-pointer hover:bg-[var(--bg-hover)] p-2 rounded-md transition-colors"
                         aria-controls="hints-content"
                       >
-                        <h4 className="text-sm font-semibold text-theme">
-                          💡 Hints
+                        <h4 className="flex items-center gap-1.5 text-sm font-semibold text-theme">
+                          <MdLightbulbOutline className="h-4 w-4 text-amber-400" aria-hidden="true" />
+                          <span>Hints</span>
                         </h4>
                         <PiCaretDownBold
                           size={14}
@@ -572,8 +617,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-theme mb-2">
-                        🏷️ Tags
+                      <h4 className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
+                        <MdLabel className="h-4 w-4 text-muted" aria-hidden="true" />
+                        <span>Tags</span>
                       </h4>
                       {problem.tags.length > 0 ? (
                         <div className="flex flex-wrap gap-1.5">
@@ -602,7 +648,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-base">🔗</span>
+                              <MdLink className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
                             </div>
                             <div>
                               <h3 className="text-sm font-semibold text-theme leading-tight">
@@ -625,7 +671,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
                             title="Close"
                           >
-                            ✕
+                            <MdClose className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </div>
 
@@ -642,7 +688,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-base">⚙️</span>
+                              <MdSettings className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
                             </div>
                             <div>
                               <h3 className="text-sm font-semibold text-theme leading-tight">
@@ -665,7 +711,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
                             title="Close"
                           >
-                            ✕
+                            <MdClose className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </div>
 
@@ -713,13 +759,13 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               onClick={onDetachFromGroup}
                               title="Remove this node from its parent group"
                             >
-                              <span>🔓</span>
+                              <MdLockOpen className="h-4 w-4" aria-hidden="true" />
                               <span>Detach from Group</span>
                             </button>
                           )}
                           <button
                             type="button"
-                            className="w-full px-3 py-2.5 bg-[var(--brand)] text-white rounded-lg hover:bg-[var(--brand)]/90 transition-all font-medium text-sm cursor-pointer"
+                            className="w-full px-3 py-2.5 rounded-lg bg-[var(--brand)] text-[var(--bg)] transition-all hover:bg-[var(--brand)]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] font-medium text-sm cursor-pointer"
                             onClick={handleSave}
                           >
                             Save Changes
@@ -732,14 +778,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                     {!inspectedNodeId && !inspectedEdgeId && (
                       <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                         <div className="w-12 h-12 rounded-2xl bg-[var(--brand)]/8 flex items-center justify-center">
-                          <span className="text-2xl">✦</span>
+                          <MdAutoAwesome className="h-6 w-6 text-[var(--brand)]" aria-hidden="true" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-theme">
                             Nothing selected
                           </p>
                           <p className="text-xs text-muted mt-1">
-                            Click a node ⚙️ or an edge to inspect its
+                            Click a component or connection to inspect its
                             properties.
                           </p>
                         </div>
@@ -795,9 +841,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                     : "bg-amber-500/15 text-amber-500"
                                 }`}
                               >
-                                {assessmentResult.isValid
-                                  ? "✅ Pass"
-                                  : "⚠️ Needs Work"}
+                                <span className="inline-flex items-center gap-1">
+                                  {assessmentResult.isValid ? (
+                                    <MdCheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                  ) : (
+                                    <MdWarning className="h-3.5 w-3.5" aria-hidden="true" />
+                                  )}
+                                  {assessmentResult.isValid ? "Pass" : "Needs Work"}
+                                </span>
                               </span>
                               <span className="text-[10px] text-muted">
                                 {assessmentResult.source === "rule_based"
@@ -846,7 +897,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         {assessmentResult.scores && (
                           <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-3">
                             <div className="font-semibold text-theme text-sm flex items-center gap-2">
-                              <span>📊</span>
+                              <MdAssessment className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
                               <span>Score Breakdown</span>
                             </div>
                             {DISPLAY_GROUPS.map(({ label, keys }) => {
@@ -950,7 +1001,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         {/* ── 3. What Went Well ── */}
                         <div className="p-4 border rounded-xl bg-[var(--surface)]">
                           <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
-                            <span className="text-green-500">✓</span>
+                            <MdCheck className="h-4 w-4 text-green-500" aria-hidden="true" />
                             <span>What Went Well</span>
                           </div>
                           {assessmentResult.architectureStrengths.length > 0 ? (
@@ -995,7 +1046,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         {/* ── 4. Where to Improve ── */}
                         <div className="p-4 border rounded-xl bg-[var(--surface)]">
                           <div className="font-semibold text-theme text-sm mb-3 flex items-center gap-2">
-                            <span className="text-orange-500">↑</span>
+                            <MdArrowUpward className="h-4 w-4 text-orange-500" aria-hidden="true" />
                             <span>Where to Improve</span>
                           </div>
                           {assessmentResult.improvements.length > 0 ? (
@@ -1029,9 +1080,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                       key={s}
                                       className="flex items-start gap-2 text-sm"
                                     >
-                                      <span className="text-[var(--brand)] mt-0.5 flex-shrink-0">
-                                        →
-                                      </span>
+                                      <MdArrowForward
+                                        className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[var(--brand)]"
+                                        aria-hidden="true"
+                                      />
                                       <span className="text-muted">{s}</span>
                                     </li>
                                   ))}
@@ -1068,7 +1120,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             return (
                               <div className="p-4 border rounded-xl bg-[var(--surface)] space-y-4">
                                 <div className="font-semibold text-theme text-sm flex items-center gap-2">
-                                  <span>🔍</span>
+                                  <MdSearch className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
                                   <span>Analysis &amp; Feedback</span>
                                 </div>
 
@@ -1096,13 +1148,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                             key={`${dim}:${feedback.type}:${feedback.message}`}
                                             className={`flex items-start gap-1.5 pl-2 border-l-2 ${FEEDBACK_TYPE_BORDER[feedback.type] ?? "border-[var(--brand)]/50"}`}
                                           >
-                                            <span className="text-[10px] mt-0.5 flex-shrink-0">
-                                              {
-                                                FEEDBACK_TYPE_ICON[
-                                                  feedback.type
-                                                ]
-                                              }
-                                            </span>
+                                            <FeedbackIcon
+                                              type={feedback.type}
+                                              className="h-3.5 w-3.5"
+                                            />
                                             <span className="text-xs text-theme leading-relaxed">
                                               {feedback.message}
                                             </span>
@@ -1121,9 +1170,10 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                         className={`border-l-2 ${FEEDBACK_TYPE_BORDER[f.type] ?? "border-[var(--brand)]/50"} pl-3 py-0.5`}
                                       >
                                         <div className="flex items-center gap-1.5 mb-0.5">
-                                          <span className="text-[10px]">
-                                            {FEEDBACK_TYPE_ICON[f.type]}
-                                          </span>
+                                          <FeedbackIcon
+                                            type={f.type}
+                                            className="h-3.5 w-3.5"
+                                          />
                                           <span className="text-[10px] font-bold text-[var(--brand)] uppercase tracking-widest">
                                             {f.category.replaceAll("_", " ")}
                                           </span>
@@ -1253,7 +1303,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors"
                               >
                                 <div className="flex items-center gap-2">
-                                  <span className="text-base">🎯</span>
+                                  <MdTrackChanges className="h-4 w-4 text-indigo-400" aria-hidden="true" />
                                   <span className="font-semibold text-theme text-sm">
                                     Follow-up Questions
                                   </span>
@@ -1301,20 +1351,22 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             onClick={copyAssessment}
                             className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
                           >
-                            📋 Copy JSON
+                            <MdContentCopy className="mr-1.5 inline h-4 w-4" aria-hidden="true" />
+                            Copy JSON
                           </button>
                           <button
                             type="button"
                             onClick={downloadAssessment}
                             className="flex-1 px-3 py-2 bg-theme border border-theme rounded-md hover:bg-[var(--bg-hover)] transition-colors text-sm"
                           >
-                            💾 Download
+                            <MdDownload className="mr-1.5 inline h-4 w-4" aria-hidden="true" />
+                            Download
                           </button>
                         </div>
                       </div>
                     ) : (
                       <div className="text-center py-12">
-                        <div className="text-6xl mb-4">📊</div>
+                        <MdAssessment className="mx-auto mb-4 h-12 w-12 text-[var(--brand)]" aria-hidden="true" />
                         <div className="text-lg font-semibold text-theme mb-2">
                           No Assessment Yet
                         </div>
