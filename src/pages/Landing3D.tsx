@@ -53,7 +53,7 @@ function Brand() {
 
 function FeatureArt({
   type,
-}: Readonly<{ type: "design" | "reason" | "review" }>) {
+}: Readonly<{ type: "design" | "reason" | "review" | "canvas" }>) {
   return (
     <svg
       viewBox="0 0 320 140"
@@ -152,6 +152,17 @@ function FeatureArt({
           <path d="m99 47 5 5 9-10m-14 28 5 5 9-10" />
           <circle cx="106" cy="94" r="6" />
           <path d="M106 90V94M106 97V98" />
+        </g>
+      )}
+      {type === "canvas" && (
+        <g stroke="currentColor">
+          <rect x="54" y="31" width="212" height="78" rx="4" />
+          <path d="M78 70H117M159 70H198M117 70l20-20M117 70l20 20M198 70l20-20M198 70l20 20" />
+          <circle cx="78" cy="70" r="9" />
+          <circle cx="137" cy="70" r="9" />
+          <circle cx="198" cy="70" r="9" />
+          <circle cx="238" cy="50" r="9" />
+          <circle cx="238" cy="90" r="9" />
         </g>
       )}
     </svg>
@@ -570,19 +581,20 @@ export default function Landing3D() {
         </div>
 
         <section
+          id="choose-path"
           className="systema-capabilities systema-container"
           aria-labelledby="systema-capabilities-title"
         >
           <div className="systema-section-heading">
             <h2 id="systema-capabilities-title">
-              A place to build
+              Choose your path.
               <br />
-              <span>your systems thinking.</span>
+              <span>Start where you are.</span>
             </h2>
             <p>
-              From a blank canvas to a decision
-              <br className="systema-desktop-break" /> you can confidently
-              explain.
+              Four ways into the same learning loop:
+              <br className="systema-desktop-break" /> design, explain, review,
+              improve.
             </p>
           </div>
           <div className="systema-features">
@@ -590,11 +602,11 @@ export default function Landing3D() {
               <FeatureArt type="design" />
               <div>
                 <h3>
-                  Build with purpose <HiArrowUpRight />
+                  Practice system design <HiArrowUpRight />
                 </h3>
                 <p>
-                  Start with a system-design problem and turn its requirements
-                  into an architecture.
+                  Choose a realistic architecture prompt with requirements,
+                  constraints, and a workspace for your answer.
                 </p>
               </div>
             </Link>
@@ -602,26 +614,86 @@ export default function Landing3D() {
               <FeatureArt type="reason" />
               <div>
                 <h3>
-                  Connect the reasoning <HiArrowUpRight />
+                  Follow a learning path <HiArrowUpRight />
                 </h3>
                 <p>
-                  Explore the concepts behind your choices, from caching to
-                  distributed systems.
+                  Build system design fundamentals step by step with structured
+                  modules and hands-on lessons.
                 </p>
               </div>
             </Link>
-            <Link to={examplePath} className="systema-feature">
+            <a href="#how-it-works" className="systema-feature">
               <FeatureArt type="review" />
               <div>
                 <h3>
-                  Learn through review <HiArrowUpRight />
+                  Review your architecture <HiArrowDown />
                 </h3>
                 <p>
-                  Explain your assumptions. Get structured feedback. Give your
-                  next iteration a direction.
+                  Get feedback on scalability, reliability, data design,
+                  performance, security, and trade-offs.
+                </p>
+              </div>
+            </a>
+            <Link to="/playground/free" className="systema-feature">
+              <FeatureArt type="canvas" />
+              <div>
+                <h3>
+                  Start from a blank canvas <HiArrowUpRight />
+                </h3>
+                <p>
+                  Sketch freely when you already know what you want to explore.
+                  Save and share when you are ready.
                 </p>
               </div>
             </Link>
+          </div>
+        </section>
+
+        <section
+          className="systema-toolkit systema-container"
+          aria-labelledby="systema-toolkit-title"
+        >
+          <div className="systema-toolkit-heading">
+            <span>THE TOOLKIT</span>
+            <h2 id="systema-toolkit-title">
+              Powerful features.
+              <br />
+              <span>Useful when decisions get hard.</span>
+            </h2>
+          </div>
+          <div className="systema-toolkit-grid">
+            <article>
+              <span className="systema-toolkit-index">01</span>
+              <h3>Architecture library</h3>
+              <p>
+                Start with generic building blocks or use accurate AWS, Azure,
+                and GCP components across cloud, ER, and UML diagrams.
+              </p>
+            </article>
+            <article>
+              <span className="systema-toolkit-index">02</span>
+              <h3>Connected, annotated diagrams</h3>
+              <p>
+                Draw labeled data flows and attach notes, metadata, and custom
+                fields to explain every important decision.
+              </p>
+            </article>
+            <article>
+              <span className="systema-toolkit-index">03</span>
+              <h3>Structured AI assessment</h3>
+              <p>
+                See what is strong, what is risky, and what to improve next,
+                with interview follow-up questions tailored to your design.
+              </p>
+            </article>
+            <article>
+              <span className="systema-toolkit-index">04</span>
+              <h3>Export and share</h3>
+              <p>
+                Export the architecture as an image or share a live link with
+                teammates when the conversation moves beyond the canvas.
+              </p>
+            </article>
           </div>
         </section>
 
