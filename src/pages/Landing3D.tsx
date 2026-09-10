@@ -6,6 +6,7 @@ import {
   HiArrowUpRight,
   HiBars2,
   HiCheck,
+  HiChevronDown,
   HiMoon,
   HiPause,
   HiPlay,
@@ -161,8 +162,10 @@ export default function Landing3D() {
   const [phase, setPhase] = useState<DesignPhase>(0);
   const [paused, setPaused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { login, signup, googleLogin } = useAuth();
+  const { user, isAuthenticated, login, signup, googleLogin, logout } =
+    useAuth();
   const { setTheme, flowColorMode } = useTheme();
   const landingTheme = flowColorMode;
   const storyRef = useRef<HTMLDivElement>(null);
@@ -231,6 +234,17 @@ export default function Landing3D() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".systema-auth-control")) setShowUserMenu(false);
+    };
+    window.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () =>
+      window.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [showUserMenu]);
+
   return (
     <div className="systema-page" data-theme={landingTheme}>
       <Seo
@@ -272,13 +286,65 @@ export default function Landing3D() {
           >
             {landingTheme === "light" ? <HiMoon /> : <HiSun />}
           </button>
-          <button
-            type="button"
-            className="product-sign-in systema-sign-in"
-            onClick={() => setShowAuthModal(true)}
-          >
-            Sign In
-          </button>
+          <div className="systema-auth-control">
+            {isAuthenticated ? (
+              <>
+                <button
+                  type="button"
+                  className="systema-account-button"
+                  aria-label="Open account menu"
+                  aria-expanded={showUserMenu}
+                  onClick={() => setShowUserMenu((open) => !open)}
+                >
+                  {user?.picture ? (
+                    <img
+                      src={user.picture}
+                      alt={user.name || "User"}
+                      className="systema-account-avatar systema-account-avatar-image"
+                    />
+                  ) : (
+                    <span className="systema-account-avatar">
+                      {user?.name?.[0]?.toUpperCase() ||
+                        user?.email?.[0]?.toUpperCase() ||
+                        "U"}
+                    </span>
+                  )}
+                  <span className="systema-account-name">
+                    {user?.name || user?.email}
+                  </span>
+                  <HiChevronDown
+                    aria-hidden="true"
+                    className={`systema-account-chevron ${showUserMenu ? "systema-account-chevron--open" : ""}`}
+                  />
+                </button>
+                {showUserMenu && (
+                  <div className="systema-account-menu">
+                    <div className="systema-account-menu__identity">
+                      <strong>{user?.name || "User"}</strong>
+                      <span>{user?.email}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                className="product-sign-in systema-sign-in"
+                onClick={() => setShowAuthModal(true)}
+              >
+                Sign In
+              </button>
+            )}
+          </div>
           <Button
             asChild
             size="sm"
@@ -319,16 +385,39 @@ export default function Landing3D() {
             <Link onClick={() => setMenuOpen(false)} to="/learning-paths/">
               Learning paths
             </Link>
-            <button
-              type="button"
-              className="systema-mobile-nav-sign-in"
-              onClick={() => {
-                setMenuOpen(false);
-                setShowAuthModal(true);
-              }}
-            >
-              Sign In
-            </button>
+            {isAuthenticated ? (
+              <>
+                <div className="systema-mobile-nav-account">
+                  <span className="systema-account-avatar">
+                    {user?.name?.[0]?.toUpperCase() ||
+                      user?.email?.[0]?.toUpperCase() ||
+                      "U"}
+                  </span>
+                  <span>{user?.name || user?.email}</span>
+                </div>
+                <button
+                  type="button"
+                  className="systema-mobile-nav-sign-in"
+                  onClick={() => {
+                    logout();
+                    setMenuOpen(false);
+                  }}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="systema-mobile-nav-sign-in"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowAuthModal(true);
+                }}
+              >
+                Sign In
+              </button>
+            )}
             <Link to="/problems/" className="systema-mobile-nav-cta">
               Start designing <HiArrowUpRight />
             </Link>
