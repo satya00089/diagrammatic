@@ -21,6 +21,7 @@ import {
   MdVisibilityOff,
 } from "react-icons/md";
 import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
+import "./MyDesigns.css";
 
 const copyValue = async (value: string) => {
   if (!navigator.clipboard?.writeText) {
@@ -248,10 +249,10 @@ const MyDesigns: React.FC = () => {
         url="https://diagrammatic.next-zen.dev/diagrams"
         noIndex
       />
-      <div className="min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
+      <div className="my-designs-page min-h-screen relative grid-pattern-overlay">
         {/* Header */}
         <header
-          className="fixed left-0 right-0 z-50 bg-[var(--brand)] transition-all duration-300"
+          className="my-designs-header fixed left-0 right-0 z-50 transition-all duration-300"
           style={{ top: "var(--announcement-h, 0px)" }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -259,29 +260,27 @@ const MyDesigns: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/")}
-                className="flex items-center space-x-3 group cursor-pointer"
+                className="my-designs-brand flex items-center space-x-3 group cursor-pointer"
               >
                 <img
                   src="/logo-64.png"
                   alt="Logo"
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="text-lg font-bold text-white tracking-wide leading-none">
-                  Diagrammatic
-                </span>
+                <span className="tracking-wide leading-none">Diagrammatic</span>
               </button>
               <div className="flex items-center gap-4">
                 {isAuth && (
                   <button
                     type="button"
                     onClick={() => navigate("/problems")}
-                    className="hidden md:block px-4 py-2 text-sm font-medium text-white hover:text-white/80 transition-colors cursor-pointer"
+                    className="my-designs-header-link hidden md:block px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
                   >
                     Problems
                   </button>
                 )}
 
-                <div className="hidden md:block text-sm text-white/90">
+                <div className="my-designs-count hidden md:block text-sm">
                   {loadingDiagrams
                     ? "Loading..."
                     : `${ownedCount} owned · ${sharedCount} shared`}
@@ -290,7 +289,7 @@ const MyDesigns: React.FC = () => {
                   type="button"
                   data-tour="new-design-btn"
                   onClick={() => navigate("/playground/free")}
-                  className="px-4 py-2 bg-white/20 text-white text-sm font-semibold rounded-lg hover:bg-white/30 transition-all cursor-pointer"
+                  className="my-designs-new-design px-4 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer"
                 >
                   New Design
                 </button>
@@ -299,7 +298,7 @@ const MyDesigns: React.FC = () => {
                 <button
                   type="button"
                   onClick={startTour}
-                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-white/80 hover:text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  className="my-designs-tour flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer"
                 >
                   <MdHelpOutline className="h-4 w-4" />
                   <span className="hidden sm:inline">Tour</span>
@@ -314,7 +313,7 @@ const MyDesigns: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md text-white hover:bg-white/10 transition-colors cursor-pointer"
+                        className="my-designs-account flex items-center gap-2 px-3 py-2 rounded-md transition-colors cursor-pointer"
                       >
                         {user?.picture ? (
                           <img
@@ -376,7 +375,7 @@ const MyDesigns: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowAuthModal(true)}
-                      className="px-4 py-2 bg-white/20 text-white text-sm font-medium rounded-md hover:bg-white/30 transition-all cursor-pointer"
+                      className="my-designs-sign-in px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer"
                     >
                       Sign In
                     </button>
@@ -388,10 +387,10 @@ const MyDesigns: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <div className="pt-16 relative z-10">
+        <div className="my-designs-content pt-16 relative z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Page Header */}
-            <div className="text-center mb-12">
+            <div className="my-designs-intro mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 My Designs
               </h1>
@@ -405,16 +404,14 @@ const MyDesigns: React.FC = () => {
               <>
                 {/* Filter Tabs */}
                 <div
-                  className="flex gap-2 mb-6 justify-center"
+                  className="my-designs-tabs flex gap-2 mb-6"
                   data-tour="filter-tabs"
                 >
                   <button
                     type="button"
                     onClick={() => setFilterBy("all")}
-                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
-                      filterBy === "all"
-                        ? "bg-[var(--brand)] text-white"
-                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    className={`my-designs-tab px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "all" ? "my-designs-tab--active" : ""
                     }`}
                   >
                     All Designs ({savedDiagrams.length})
@@ -422,10 +419,8 @@ const MyDesigns: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFilterBy("owned")}
-                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
-                      filterBy === "owned"
-                        ? "bg-[var(--brand)] text-white"
-                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    className={`my-designs-tab px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "owned" ? "my-designs-tab--active" : ""
                     }`}
                   >
                     My Designs ({ownedCount})
@@ -433,17 +428,15 @@ const MyDesigns: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFilterBy("shared")}
-                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
-                      filterBy === "shared"
-                        ? "bg-[var(--brand)] text-white"
-                        : "bg-[var(--surface)] text-muted hover:bg-[var(--theme)]/5 border border-[var(--theme)]/10"
+                    className={`my-designs-tab px-6 py-2.5 rounded-xl font-semibold transition-all duration-300 ${
+                      filterBy === "shared" ? "my-designs-tab--active" : ""
                     }`}
                   >
                     Shared with Me ({sharedCount})
                   </button>
                 </div>
 
-                <div className="elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg p-6 mb-8">
+                <div className="my-designs-filters elevated-card-bg rounded-2xl p-6 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Search */}
                     <div>
@@ -459,7 +452,7 @@ const MyDesigns: React.FC = () => {
                         placeholder="Search designs..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme transition-all duration-300 hover:border-[var(--brand)]/30"
+                        className="my-designs-input w-full px-4 py-3 rounded-xl focus:outline-none transition-all duration-300"
                       />
                     </div>
 
@@ -479,7 +472,7 @@ const MyDesigns: React.FC = () => {
                             e.target.value as "updated" | "created" | "title",
                           )
                         }
-                        className="w-full px-4 py-3 border-2 border-[var(--theme)]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent bg-[var(--surface)] text-theme appearance-none cursor-pointer transition-all duration-300 hover:border-[var(--brand)]/30"
+                        className="my-designs-input w-full px-4 py-3 rounded-xl focus:outline-none appearance-none cursor-pointer transition-all duration-300"
                       >
                         <option value="updated">Last Updated</option>
                         <option value="created">Date Created</option>
@@ -491,7 +484,7 @@ const MyDesigns: React.FC = () => {
 
                 {/* Loading State */}
                 {loadingDiagrams && (
-                  <div className="text-center py-20">
+                  <div className="my-designs-empty text-center py-20">
                     <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <div className="text-theme text-xl mb-2">
                       Loading designs...
@@ -534,7 +527,7 @@ const MyDesigns: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => navigate("/playground/free")}
-                        className="px-6 py-3 bg-[var(--brand)] text-white font-semibold rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                        className="my-designs-primary px-6 py-3 font-semibold rounded-lg transition-all duration-200 cursor-pointer"
                       >
                         Create Your First Design →
                       </button>
@@ -544,12 +537,12 @@ const MyDesigns: React.FC = () => {
 
                 {/* Diagrams Grid */}
                 {!loadingDiagrams && filteredDiagrams.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+                  <div className="my-designs-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
                     {filteredDiagrams.map((diagram, index) => (
                       <div
                         key={diagram.id}
                         data-tour={index === 0 ? "design-card" : undefined}
-                        className={`group elevated-card-bg backdrop-blur-md rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden ${CARD_DELAY_CLASSES[index] ?? ""}`}
+                        className={`my-designs-card group elevated-card-bg rounded-2xl transition-all duration-500 overflow-hidden ${CARD_DELAY_CLASSES[index] ?? ""}`}
                       >
                         <div className="relative p-6">
                           {/* Delete Button - Only for owners */}
@@ -819,7 +812,7 @@ const MyDesigns: React.FC = () => {
                                 e.stopPropagation();
                                 handleOpenDiagram(diagram.id);
                               }}
-                              className="w-full rounded-lg bg-[var(--brand)] px-6 py-3 font-semibold text-white transition-[transform,filter] duration-200 hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                              className="my-designs-primary w-full rounded-lg px-6 py-3 font-semibold transition-[transform,filter] duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
                             >
                               Open design
                             </button>
