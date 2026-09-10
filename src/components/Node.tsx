@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
-  MdSettings,
   MdHub,
   MdDelete,
   MdOutlineVerticalAlignTop,
@@ -12,7 +11,7 @@ import {
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { MdTune } from "react-icons/md";
 import { COMPONENTS } from "../config/components";
 import NodePropertyDisplay from "./NodePropertyDisplay";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -25,6 +24,9 @@ function providerFromId(id: string): string | null {
   const prefix = id.split("-")[0].toLowerCase();
   return ["aws", "azure", "gcp", "kubernetes"].includes(prefix) ? prefix : null;
 }
+
+const CONTEXT_MENU_WIDTH = 208;
+const CONTEXT_MENU_GUTTER = 12;
 
 export type NodeData = {
   label: string;
@@ -71,7 +73,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   const spriteStatus = useAppSelector((state) =>
     provider ? state.sprites.providerStatus[provider] : undefined,
   );
-  const useDirectIcon = shouldUseDirectIcon(componentId);
+  const useDirectIcon = shouldUseDirectIcon(componentId) && !!data.iconUrl;
   // For known sprite providers (aws/azure/gcp/kubernetes): NEVER fire iconUrl <img>.
   // Show nothing while loading (status undefined or 'loading'), sprite once ready.
   // Only fall back to iconUrl if sprite load definitively failed (status 'error'),
@@ -95,7 +97,13 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
     y: number;
   }>({ visible: false, x: 0, y: 0 });
   const [isHovered, setIsHovered] = React.useState(false);
+  const [isFocused, setIsFocused] = React.useState(false);
   const [showProperties, setShowProperties] = React.useState(false);
+  const nodeRef = React.useRef<HTMLFieldSetElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
+  const menuTriggerRef = React.useRef<HTMLButtonElement>(null);
+  const firstMenuItemRef = React.useRef<HTMLButtonElement>(null);
+  const returnFocusToTrigger = React.useRef(false);
 
   // Use componentName if available, otherwise fall back to label
   const displayLabel = data.componentName || data.label;
@@ -148,42 +156,99 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
     [id],
   );
 
-  const handleContextMenu = React.useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      visible: true,
-      x: e.clientX,
-      y: e.clientY,
-    });
-  }, []);
+  const getContextMenuPosition = React.useCallback(
+    (x: number, y: number) => {
+      const menuHeight = isInGroup ? 304 : 264;
+      const maxX = Math.max(
+        CONTEXT_MENU_GUTTER,
+        window.innerWidth - CONTEXT_MENU_WIDTH - CONTEXT_MENU_GUTTER,
+      );
+      const maxY = Math.max(
+        CONTEXT_MENU_GUTTER,
+        window.innerHeight - menuHeight - CONTEXT_MENU_GUTTER,
+      );
 
-  const handleMenuButtonHover = React.useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setContextMenu({
-      visible: true,
-      x: rect.left,
-      y: rect.bottom + 4,
-    });
-  }, []);
+      return {
+        x: Math.min(Math.max(x, CONTEXT_MENU_GUTTER), maxX),
+        y: Math.min(Math.max(y, CONTEXT_MENU_GUTTER), maxY),
+      };
+    },
+    [isInGroup],
+  );
+
+  const openContextMenu = React.useCallback(
+    (x: number, y: number, restoreFocus: boolean) => {
+      const position = getContextMenuPosition(x, y);
+      returnFocusToTrigger.current = restoreFocus;
+      setContextMenu({ visible: true, ...position });
+    },
+    [getContextMenuPosition],
+  );
+
+  const handleContextMenu = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openContextMenu(e.clientX, e.clientY, false);
+    },
+    [openContextMenu],
+  );
 
   const closeContextMenu = React.useCallback(() => {
     setContextMenu({ visible: false, x: 0, y: 0 });
+    if (returnFocusToTrigger.current) {
+      returnFocusToTrigger.current = false;
+      window.requestAnimationFrame(() => menuTriggerRef.current?.focus());
+    }
   }, []);
+
+  const handleMenuButtonClick = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (contextMenu.visible) {
+        closeContextMenu();
+        return;
+      }
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const nodeRect = nodeRef.current?.getBoundingClientRect();
+      const rightSideX = nodeRect
+        ? nodeRect.right + CONTEXT_MENU_GUTTER
+        : rect.right - CONTEXT_MENU_WIDTH;
+      const leftSideX = nodeRect
+        ? nodeRect.left - CONTEXT_MENU_WIDTH - CONTEXT_MENU_GUTTER
+        : rect.right - CONTEXT_MENU_WIDTH;
+      const hasRoomOnRight =
+        rightSideX + CONTEXT_MENU_WIDTH + CONTEXT_MENU_GUTTER <=
+        window.innerWidth;
+      const hasRoomOnLeft = leftSideX >= CONTEXT_MENU_GUTTER;
+      const menuX = hasRoomOnRight
+        ? rightSideX
+        : hasRoomOnLeft
+          ? leftSideX
+          : rect.right - CONTEXT_MENU_WIDTH;
+      openContextMenu(
+        menuX,
+        rect.top,
+        true,
+      );
+    },
+    [closeContextMenu, contextMenu.visible, openContextMenu],
+  );
+
+  const showNodeActions =
+    isHovered || isFocused || contextMenu.visible || showProperties;
 
   const toggleProperties = React.useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setShowProperties((prev) => !prev);
-  }, []);
+    closeContextMenu();
+  }, [closeContextMenu]);
 
   // Close menu on outside click
   React.useEffect(() => {
     if (contextMenu.visible) {
       const handleClick = (e: MouseEvent) => {
-        // Only close if clicking outside the menu
-        const menu = document.querySelector("[data-context-menu]");
-        if (menu && !menu.contains(e.target as Node)) {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
           closeContextMenu();
         }
       };
@@ -195,6 +260,58 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
       };
     }
   }, [contextMenu.visible, closeContextMenu]);
+
+  React.useEffect(() => {
+    if (!contextMenu.visible) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      firstMenuItemRef.current?.focus();
+    });
+    const closeOnViewportChange = () => closeContextMenu();
+    window.addEventListener("resize", closeOnViewportChange);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", closeOnViewportChange);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+    };
+  }, [contextMenu.visible, closeContextMenu]);
+
+  const handleContextMenuKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      event.stopPropagation();
+      const menuItems = Array.from(
+        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+          '[role="menuitem"]',
+        ),
+      );
+      const activeIndex = menuItems.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+
+      if (event.key === "Escape" || event.key === "Tab") {
+        event.preventDefault();
+        closeContextMenu();
+        return;
+      }
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const direction = event.key === "ArrowDown" ? 1 : -1;
+        const nextIndex =
+          (activeIndex + direction + menuItems.length) % menuItems.length;
+        menuItems[nextIndex]?.focus();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        menuItems[0]?.focus();
+      } else if (event.key === "End") {
+        event.preventDefault();
+        menuItems[menuItems.length - 1]?.focus();
+      }
+    },
+    [closeContextMenu],
+  );
 
   let nodeIcon: React.ReactNode;
   if (showIconUrl) {
@@ -262,6 +379,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   return (
     <>
       <motion.fieldset
+        ref={nodeRef}
         initial={{ y: 0, opacity: 1 }}
         whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
         whileTap={{ scale: 0.985 }}
@@ -285,51 +403,61 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
       >
         <legend className="sr-only">{displayLabel}</legend>
 
-        {/* Eye Toggle Button - Visible on hover */}
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
-          transition={{ duration: 0.15 }}
-          onClick={toggleProperties}
-          className="absolute top-2 right-10 z-10 w-6 h-6 flex items-center justify-center 
-            rounded-md backdrop-blur-md border border-white/20
-            shadow-md hover:shadow-lg cursor-pointer"
-          style={{
-            pointerEvents: isHovered ? "auto" : "none",
-            backgroundColor: data.backgroundColor
-              ? `${data.backgroundColor as string}99`
-              : "color-mix(in srgb, var(--surface) 90%, transparent)",
-            color: (data.borderColor as string) || "var(--text-theme)",
+        {/* Node actions stay quiet until the node is hovered, focused, or active. */}
+        <motion.div
+          className="node-action-toolbar absolute top-2 right-2 z-10 flex items-center gap-1 rounded-xl border border-theme bg-surface p-1 shadow-lg backdrop-blur-md"
+          initial={{ opacity: 0, y: -4, scale: 0.96 }}
+          animate={{
+            opacity: showNodeActions ? 1 : 0,
+            y: showNodeActions ? 0 : -4,
+            scale: showNodeActions ? 1 : 0.96,
           }}
+          transition={{ duration: 0.15 }}
+          onFocusCapture={() => setIsFocused(true)}
+          onBlurCapture={(event) => {
+            const nextTarget = event.relatedTarget as globalThis.Node | null;
+            if (!nextTarget || !event.currentTarget.contains(nextTarget)) {
+              setIsFocused(false);
+            }
+          }}
+          style={{ pointerEvents: showNodeActions ? "auto" : "none" }}
         >
-          {showProperties ? (
-            <AiOutlineEye className="w-4 h-4" />
-          ) : (
-            <AiOutlineEyeInvisible className="w-4 h-4" />
-          )}
-        </motion.button>
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.94 }}
+            onClick={toggleProperties}
+            aria-label={showProperties ? "Hide node properties" : "Show node properties"}
+            aria-expanded={showProperties}
+            aria-controls={`node-properties-${id}`}
+            title={showProperties ? "Hide properties" : "Show properties"}
+            className={`flex h-6 w-6 items-center justify-center rounded-lg transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${showProperties ? "bg-[var(--bg-hover)]" : ""}`}
+            style={{ color: showProperties ? "var(--brand)" : "var(--text)" }}
+          >
+            <MdTune className="h-4 w-4" aria-hidden="true" />
+          </motion.button>
 
-        {/* Menu Button - Visible on hover */}
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: isHovered ? 1 : 0, scale: isHovered ? 1 : 0.8 }}
-          transition={{ duration: 0.15 }}
-          onClick={handleMenuButtonHover}
-          className="absolute top-2 right-2 z-10 w-6 h-6 flex items-center justify-center 
-            rounded-md backdrop-blur-md border border-white/20
-            shadow-md hover:shadow-lg cursor-pointer"
-          style={{
-            pointerEvents: isHovered ? "auto" : "none",
-            backgroundColor: data.backgroundColor
-              ? `${data.backgroundColor as string}99`
-              : "color-mix(in srgb, var(--surface) 90%, transparent)",
-            color: (data.borderColor as string) || "var(--text-theme)",
-          }}
-        >
-          <BiDotsVertical className="w-4 h-4" />
-        </motion.button>
+          <motion.button
+            type="button"
+            ref={menuTriggerRef}
+            whileTap={{ scale: 0.94 }}
+            onClick={handleMenuButtonClick}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && contextMenu.visible) {
+                event.preventDefault();
+                closeContextMenu();
+              }
+            }}
+            aria-label="More node actions"
+            aria-haspopup="menu"
+            aria-expanded={contextMenu.visible}
+            aria-controls={`node-actions-${id}`}
+            title="More actions"
+            className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+            style={{ color: "var(--text)" }}
+          >
+            <BiDotsVertical className="h-4 w-4" aria-hidden="true" />
+          </motion.button>
+        </motion.div>
 
         <Handle
           id="top"
@@ -536,6 +664,9 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         {/* Properties Section - Toggleable */}
         {showProperties && (
           <motion.div
+            id={`node-properties-${id}`}
+            role="region"
+            aria-label={`${displayLabel} properties`}
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
@@ -635,30 +766,37 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
       {contextMenu.visible &&
         ReactDOM.createPortal(
           <motion.div
+            ref={menuRef}
             data-context-menu
+            id={`node-actions-${id}`}
+            role="menu"
+            aria-label={`${displayLabel} actions`}
+            onKeyDown={handleContextMenuKeyDown}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="fixed z-[10000] bg-[var(--surface)] border border-theme rounded-lg shadow-lg py-1 min-w-[140px] pointer-events-auto"
+            className="node-context-menu fixed z-[10000] w-[208px] rounded-xl border border-theme bg-[var(--surface)] py-1 shadow-xl pointer-events-auto"
             style={{
               left: contextMenu.x,
               top: contextMenu.y,
-              transform: "translate(-50%, -10px)",
             }}
           >
             <button
+              ref={firstMenuItemRef}
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggle(e);
                 closeContextMenu();
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              role="menuitem"
+              className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
-              <MdSettings className="w-4 h-4" />
-              Settings
+              <MdTune className="h-4 w-4" aria-hidden="true" />
+              Open inspector
             </button>
+            <div role="separator" className="my-1 border-t border-theme/60" />
             <button
               type="button"
               onClick={(e) => {
@@ -668,7 +806,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 );
                 closeContextMenu();
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              role="menuitem"
+              className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
               <MdOutlineVerticalAlignTop className="w-4 h-4" />
               Bring to Front
@@ -682,7 +821,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 );
                 closeContextMenu();
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              role="menuitem"
+              className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
               <MdOutlineVerticalAlignBottom className="w-4 h-4" />
               Send to Back
@@ -695,12 +835,14 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                   handleDetach(e);
                   closeContextMenu();
                 }}
-                className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-orange-500"
+                role="menuitem"
+                className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-orange-500 transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
               >
                 <FiUnlock className="w-4 h-4" />
                 Detach from Group
               </button>
             )}
+            <div role="separator" className="my-1 border-t border-theme/60" />
             <button
               type="button"
               onClick={(e) => {
@@ -708,7 +850,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 handleCopy(e);
                 closeContextMenu();
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm"
+              role="menuitem"
+              className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
               <IoDuplicateOutline className="w-4 h-4" />
               Duplicate
@@ -720,7 +863,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 onDelete(e);
                 closeContextMenu();
               }}
-              className="w-full px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 text-sm text-red-600"
+              role="menuitem"
+              className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
               <MdDelete className="w-4 h-4" />
               Delete
