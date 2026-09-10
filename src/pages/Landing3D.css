@@ -754,7 +754,7 @@ html:has(.systema-page[data-theme="dark"]) {
 }
 .systema-features {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 .systema-feature {
@@ -792,6 +792,47 @@ html:has(.systema-page[data-theme="dark"]) {
   line-height: 1.8;
   color: var(--systema-muted);
   margin-top: 12px;
+}
+.systema-toolkit {
+  border-top: 1px solid var(--systema-line);
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
+  gap: 72px;
+  padding-block: 86px 92px;
+}
+.systema-toolkit-heading > span {
+  color: var(--systema-muted);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+.systema-toolkit-heading h2 {
+  margin-top: 15px;
+}
+.systema-toolkit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px 28px;
+}
+.systema-toolkit-grid article {
+  border-top: 1px solid var(--systema-line);
+  padding-top: 14px;
+}
+.systema-toolkit-index {
+  color: var(--systema-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.systema-toolkit-grid h3 {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.35;
+  margin-top: 23px;
+}
+.systema-toolkit-grid p {
+  color: var(--systema-muted);
+  font-size: 12px;
+  line-height: 1.75;
+  margin-top: 10px;
 }
 .systema-value {
   border-top: 1px solid var(--systema-line);
@@ -937,6 +978,9 @@ html:has(.systema-page[data-theme="dark"]) {
   .systema-feature {
     padding-inline: 20px;
   }
+  .systema-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 899px) {
   .systema-desktop-nav {
@@ -1026,6 +1070,11 @@ html:has(.systema-page[data-theme="dark"]) {
   .systema-value {
     grid-template-columns: 1fr;
     gap: 42px;
+  }
+  .systema-toolkit {
+    grid-template-columns: 1fr;
+    gap: 42px;
+    padding-block: 70px;
   }
   .systema-close {
     padding-block: 70px;
@@ -1140,6 +1189,10 @@ html:has(.systema-page[data-theme="dark"]) {
     padding-block: 60px;
   }
   .systema-value-grid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+  .systema-toolkit-grid {
     grid-template-columns: 1fr;
     gap: 26px;
   }
