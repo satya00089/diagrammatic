@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { AuthModal } from "../components/AuthModal";
@@ -20,7 +20,12 @@ import {
   MdSort,
   MdVisibilityOff,
 } from "react-icons/md";
-import { HiUserGroup, HiPencilSquare, HiCube } from "react-icons/hi2";
+import {
+  HiChevronDown,
+  HiUserGroup,
+  HiPencilSquare,
+  HiCube,
+} from "react-icons/hi2";
 import "./MyDesigns.css";
 
 const copyValue = async (value: string) => {
@@ -31,6 +36,130 @@ const copyValue = async (value: string) => {
 };
 
 const CARD_DELAY_CLASSES = ["delay-0", "delay-100", "delay-200"] as const;
+
+type SortOption = "updated" | "created" | "title";
+
+const sortOptions: Array<{ value: SortOption; label: string }> = [
+  { value: "updated", label: "Last Updated" },
+  { value: "created", label: "Date Created" },
+  { value: "title", label: "Title (A-Z)" },
+];
+
+const MyDesignsSortSelect: React.FC<{
+  value: SortOption;
+  onChange: (value: SortOption) => void;
+}> = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(() =>
+    Math.max(
+      0,
+      sortOptions.findIndex((option) => option.value === value),
+    ),
+  );
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setHighlightedIndex(
+      Math.max(
+        0,
+        sortOptions.findIndex((option) => option.value === value),
+      ),
+    );
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open, value]);
+
+  const choose = (nextValue: SortOption) => {
+    onChange(nextValue);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={wrapperRef} className="my-designs-select-wrapper">
+      <button
+        id="sort-select"
+        type="button"
+        className="my-designs-select-trigger"
+        aria-label="Sort By"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex((current) =>
+              event.key === "ArrowDown"
+                ? Math.min(sortOptions.length - 1, current + 1)
+                : Math.max(0, current - 1),
+            );
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(0);
+          } else if (event.key === "End") {
+            event.preventDefault();
+            setOpen(true);
+            setHighlightedIndex(sortOptions.length - 1);
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (open) choose(sortOptions[highlightedIndex].value);
+            else setOpen(true);
+          } else if (event.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+      >
+        <span>
+          {sortOptions.find((option) => option.value === value)?.label}
+        </span>
+        <HiChevronDown
+          aria-hidden="true"
+          className={`my-designs-select-chevron ${open ? "my-designs-select-chevron--open" : ""}`}
+        />
+      </button>
+      {open && (
+        <div
+          className="my-designs-select-menu"
+          role="listbox"
+          aria-label="Sort By"
+        >
+          {sortOptions.map((option, index) => (
+            <div
+              key={option.value}
+              role="option"
+              tabIndex={0}
+              aria-selected={option.value === value}
+              className={`my-designs-select-option ${
+                index === highlightedIndex
+                  ? "my-designs-select-option--highlighted"
+                  : ""
+              } ${
+                option.value === value
+                  ? "my-designs-select-option--selected"
+                  : ""
+              }`}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onClick={() => choose(option.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  choose(option.value);
+                }
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MyDesigns: React.FC = () => {
   useTheme();
@@ -464,20 +593,10 @@ const MyDesigns: React.FC = () => {
                       >
                         <MdSort className="w-4 h-4" /> Sort By
                       </label>
-                      <select
-                        id="sort-select"
+                      <MyDesignsSortSelect
                         value={sortBy}
-                        onChange={(e) =>
-                          setSortBy(
-                            e.target.value as "updated" | "created" | "title",
-                          )
-                        }
-                        className="my-designs-input w-full px-4 py-3 rounded-xl focus:outline-none appearance-none cursor-pointer transition-all duration-300"
-                      >
-                        <option value="updated">Last Updated</option>
-                        <option value="created">Date Created</option>
-                        <option value="title">Title (A-Z)</option>
-                      </select>
+                        onChange={setSortBy}
+                      />
                     </div>
                   </div>
                 </div>
