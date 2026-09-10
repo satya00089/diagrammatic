@@ -333,6 +333,10 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
       </div>
     );
   } else {
+    const iconColor =
+      typeof data.textColor === "string" && data.textColor.trim()
+        ? data.textColor
+        : undefined;
     nodeIcon = (
       <div
         className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-xl relative overflow-hidden"
@@ -361,10 +365,8 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           }
         />
         <div
-          className="relative z-10 opacity-80"
-          style={
-            data.borderColor ? { color: data.borderColor as string } : undefined
-          }
+          className="relative z-10"
+          style={iconColor ? { color: iconColor } : undefined}
         >
           {iconComponent
             ? React.createElement(
@@ -795,7 +797,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
               className="node-context-menu-item flex min-h-10 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:bg-[var(--bg-hover)] focus-visible:outline-none"
             >
               <MdTune className="h-4 w-4" aria-hidden="true" />
-              Open inspector
+              Open properties
             </button>
             <hr className="my-1 border-0 border-t border-theme/60" />
             <button
