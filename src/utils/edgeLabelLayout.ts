@@ -55,27 +55,60 @@ const LABEL_LINE_HEIGHT = 14;
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-/**
- * Extract the points that are useful for stepped and straight edge paths.
- * Bezier control points are intentionally ignored; the direct source/target
- * fallback below still gives those edges a stable label size and anchor.
- */
+const isPathCommand = (value: string | undefined) =>
+  value === "M" || value === "L" || value === "Q";
+
+const isPathLetter = (value: string | undefined) =>
+  value !== undefined && value.toUpperCase() !== value.toLowerCase();
+
+const skipPathSeparators = (path: string, start: number) => {
+  let index = start;
+  while (index < path.length && (path[index] === " " || path[index] === ",")) index += 1;
+  return index;
+};
+
+const readPathNumber = (path: string, start: number) => {
+  let index = start;
+  if (path[index] === "+" || path[index] === "-") index += 1;
+  while (index < path.length && path[index] >= "0" && path[index] <= "9") index += 1;
+  if (path[index] === ".") {
+    index += 1;
+    while (index < path.length && path[index] >= "0" && path[index] <= "9") index += 1;
+  }
+  if (index === start) return null;
+  const value = Number(path.slice(start, index));
+  return Number.isFinite(value) ? { value, next: index } : null;
+};
+
+const readPathCoordinates = (path: string, start: number, command: string) => {
+  const values: number[] = [];
+  let index = start;
+  while (index < path.length && !isPathLetter(path[index])) {
+    index = skipPathSeparators(path, index);
+    const number = readPathNumber(path, index);
+    if (!number) break;
+    values.push(number.value);
+    index = number.next;
+  }
+  const offset = command === "Q" ? 2 : 0;
+  const point = values.length > offset + 1 ? { x: values[offset], y: values[offset + 1] } : null;
+  return { point, next: index };
+};
+
+/** Extract points without regex backtracking on malformed paths. */
 export const getPathPoints = (edgePath: string): EdgePoint[] => {
   const points: EdgePoint[] = [];
-  const commandPattern =
-    /([MLQ])\s*(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+)(?:\s+(-?\d*\.?\d+)\s*,?\s*(-?\d*\.?\d+))?/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = commandPattern.exec(edgePath)) !== null) {
-    const isQuadratic = match[1] === "Q";
-    const x = Number(isQuadratic ? match[4] : match[2]);
-    const y = Number(isQuadratic ? match[5] : match[3]);
-
-    if (Number.isFinite(x) && Number.isFinite(y)) {
-      points.push({ x, y });
+  let index = 0;
+  while (index < edgePath.length) {
+    if (!isPathCommand(edgePath[index])) {
+      index += 1;
+      continue;
     }
+    const command = edgePath[index];
+    const result = readPathCoordinates(edgePath, index + 1, command);
+    if (result.point) points.push(result.point);
+    index = result.next;
   }
-
   return points;
 };
 
@@ -95,7 +128,7 @@ const getPathSegments = (
 
     if (length === 0) return segments;
 
-    const previous = segments[segments.length - 1];
+    const previous = segments.at(-1);
     const crossProduct = previous
       ? previous.deltaX * deltaY - previous.deltaY * deltaX
       : 0;
@@ -155,6 +188,38 @@ const getNearestSegment = (
   )!.segment;
 };
 
+const getCenterPathDistance = (segments: EdgePathSegment[], centerX: number, centerY: number) => {
+    let centerPathDistance = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    let pathDistance = 0;
+
+    for (const segment of segments) {
+      const lengthSquared = segment.length ** 2;
+      const projectedProgress = clamp(
+        ((centerX - segment.start.x) * segment.deltaX +
+          (centerY - segment.start.y) * segment.deltaY) /
+          lengthSquared,
+        0,
+        1,
+      );
+      const projectedX = segment.start.x + segment.deltaX * projectedProgress;
+      const projectedY = segment.start.y + segment.deltaY * projectedProgress;
+      const distanceToCenter = Math.hypot(
+        projectedX - centerX,
+        projectedY - centerY,
+      );
+
+      if (distanceToCenter < closestDistance) {
+        closestDistance = distanceToCenter;
+        centerPathDistance = pathDistance + segment.length * projectedProgress;
+      }
+
+      pathDistance += segment.length;
+    }
+
+return centerPathDistance;
+};
+
 const getShiftedLabelCenter = ({
   edgePath,
   centerX,
@@ -187,33 +252,7 @@ const getShiftedLabelCenter = ({
   );
 
   if (totalPathLength > 0) {
-    let centerPathDistance = 0;
-    let closestDistance = Number.POSITIVE_INFINITY;
-    let pathDistance = 0;
-
-    for (const segment of segments) {
-      const lengthSquared = segment.length ** 2;
-      const projectedProgress = clamp(
-        ((centerX - segment.start.x) * segment.deltaX +
-          (centerY - segment.start.y) * segment.deltaY) /
-          lengthSquared,
-        0,
-        1,
-      );
-      const projectedX = segment.start.x + segment.deltaX * projectedProgress;
-      const projectedY = segment.start.y + segment.deltaY * projectedProgress;
-      const distanceToCenter = Math.hypot(
-        projectedX - centerX,
-        projectedY - centerY,
-      );
-
-      if (distanceToCenter < closestDistance) {
-        closestDistance = distanceToCenter;
-        centerPathDistance = pathDistance + segment.length * projectedProgress;
-      }
-
-      pathDistance += segment.length;
-    }
+    const centerPathDistance = getCenterPathDistance(segments, centerX, centerY);
 
     const targetPathDistance =
       labelShift > 0

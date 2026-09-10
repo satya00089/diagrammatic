@@ -36,6 +36,7 @@ const ReasoningPanel: React.FC<ReasoningPanelProps> = ({
     context.consistencyRequirements,
   ].filter(Boolean);
 
+  const componentNoun = canvasStats.disconnectedCount === 1 ? "component" : "components";
   return (
     <section
       className="mt-5 border-t border-theme/15 pt-4"
@@ -78,7 +79,7 @@ const ReasoningPanel: React.FC<ReasoningPanelProps> = ({
           label="Design signal"
           value={
             canvasStats.disconnectedCount > 0
-              ? `${canvasStats.disconnectedCount} disconnected component${canvasStats.disconnectedCount === 1 ? "" : "s"} to review`
+              ? `${canvasStats.disconnectedCount} disconnected ${componentNoun} to review`
               : "All components are currently connected; failure paths still need review"
           }
         />

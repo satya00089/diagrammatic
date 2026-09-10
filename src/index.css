@@ -585,11 +585,11 @@ a:focus-visible > .rolling-nav-label .rolling-nav-label__copy--incoming {
 }
 
 .dashboard-select-menu::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 .dashboard-select-menu::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: color-mix(in srgb, var(--text) 25%, transparent);
   background-clip: padding-box;
@@ -1304,6 +1304,20 @@ html.dark:has(.design-studio-page) {
 html {
   scrollbar-color: color-mix(in srgb, var(--brand) 55%, var(--muted))
     transparent;
+  scrollbar-width: thin;
+}
+
+/* The catalog owns neutral paper-and-ink tokens below the document root.
+   Scope the root scrollbar explicitly so the legacy indigo brand token cannot
+   leak into the new catalog chrome. */
+html:has(.dashboard-page) {
+  color-scheme: light;
+  scrollbar-color: #aaa89f #f4f3ee;
+}
+
+html.dark:has(.dashboard-page) {
+  color-scheme: dark;
+  scrollbar-color: #555550 #080808;
 }
 
 /* Heading rendering — crisp Inter on high-DPI displays */
@@ -1691,7 +1705,7 @@ select option {
 
 /* Themed scrollbar for select dropdowns */
 select::-webkit-scrollbar {
-  width: 8px;
+  width: 4px;
 }
 
 select::-webkit-scrollbar-track {
@@ -1701,7 +1715,7 @@ select::-webkit-scrollbar-track {
 select::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 9999px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   background-clip: padding-box;
 }
 
@@ -2072,6 +2086,11 @@ select::-webkit-scrollbar-thumb {
 .freeform-node .arrow-icon:hover {
   color: var(--brand);
   transform: scale(1.06);
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
 }
 
 .freeform-node .arrow-icon svg {

@@ -932,11 +932,12 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               {assessmentHistory.slice(-5).map((entry, index, entries) => {
                                 const previous = entries[index - 1];
                                 const delta = previous ? entry.score - previous.score : 0;
+                                const deltaClass = new Map([[-1, "text-red-500"], [0, "text-muted"], [1, "text-green-500"]]).get(Math.sign(delta));
                                 return (
                                   <div key={entry.id} className="flex items-center justify-between rounded-lg bg-[var(--bg)] px-3 py-2 text-xs">
                                     <span className="text-muted">Review {assessmentHistory.length - entries.length + index + 1}</span>
                                     <span className="font-semibold text-theme">{entry.score}/100</span>
-                                    <span className={delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted"}>
+                                    <span className={deltaClass}>
                                       {delta > 0 ? `+${delta}` : delta || "—"}
                                     </span>
                                   </div>

@@ -248,6 +248,8 @@ const buildProvidedReasoningContext = (
   const unstatedTarget = (target: string) =>
     `No explicit ${target} target is specified in the brief. State an assumption when asked during the interview.`;
 
+  const canvasDescription = componentSummary || `${nodes.length} components`;
+  const disconnectedLabel = disconnectedCount === 1 ? "component is" : "components are";
   return {
     requirements: problemRequirements,
     scaleAssumptions: unstatedTarget("scale"),
@@ -257,16 +259,32 @@ const buildProvidedReasoningContext = (
     availabilityTarget: unstatedTarget("availability"),
     consistencyRequirements: unstatedTarget("consistency"),
     technologyChoices: nodes.length
-      ? `The current canvas contains ${componentSummary || `${nodes.length} components`}. Explain why these choices fit the problem.`
+      ? `The current canvas contains ${canvasDescription}. Explain why these choices fit the problem.`
       : "No components are on the canvas yet.",
     tradeoffs:
       "Trade-offs are not pre-filled. Explain them during the interview.",
     unresolvedRisks:
       disconnectedCount > 0
-        ? `${disconnectedCount} component${disconnectedCount === 1 ? " is" : "s are"} currently disconnected. Review its role and failure paths.`
+        ? `${disconnectedCount} ${disconnectedLabel} currently disconnected. Review its role and failure paths.`
         : "Review failure paths, security, and operational risks during the interview.",
   };
 };
+
+function getAssessmentScoreBand(score: number) {
+  if (score >= 80) return "strong";
+  return score >= 50 ? "needs_work" : "weak";
+}
+
+function getAssessmentActionLabel(isAssessing: boolean, isPreparingInterview: boolean) {
+  if (isAssessing) return "Assessing...";
+  return isPreparingInterview ? "Preparing..." : "Run Assessment";
+}
+
+function getAssessmentTooltip(isAuthenticated: boolean, isAssessing: boolean, isPreparingInterview: boolean) {
+  if (!isAuthenticated) return "Please sign in to run assessment";
+  if (isAssessing) return "Assessment in progress...";
+  return isPreparingInterview ? "Preparing interview questions..." : "Run assessment on current design";
+}
 
 type ProvidedCanvasStats = {
   componentCount: number;
@@ -1578,7 +1596,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         problem_id: idFromUrl === "free" ? undefined : idFromUrl,
         assessment_source: res.source ?? "unknown",
         score_band:
-          res.score >= 80 ? "strong" : res.score >= 50 ? "needs_work" : "weak",
+          getAssessmentScoreBand(res.score),
         finding_count: res.feedback?.length ?? 0,
       });
       setInterviewSession(followUpSession);
@@ -3809,20 +3827,21 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     return null;
   }
 
+  function findMinimalPaletteComponent(componentId: string) {
+    for (const providerComps of Object.values(minimalComponentsByProvider)) {
+      const match = providerComps.find((component) => component.id === componentId);
+      if (match) return match;
+    }
+    return minimalComponents.find((component) => component.id === componentId);
+  }
+
   function addNodeFromPalette(id: string) {
     // Intelligently find the best matching component
     const comp = findBestMatchingComponent(id);
 
     // For cloud provider components (aws, azure, gcp) not in local COMPONENTS,
     // look up the minimalComponent which has the real DB id and iconUrl.
-    let minimalComp: MinimalComponent | undefined;
-    if (!comp) {
-      for (const providerComps of Object.values(minimalComponentsByProvider)) {
-        minimalComp = providerComps.find((c) => c.id === id);
-        if (minimalComp) break;
-      }
-      minimalComp ??= minimalComponents.find((c) => c.id === id);
-    }
+    const minimalComp = comp ? undefined : findMinimalPaletteComponent(id);
 
     // Place newly added node in the center of the visible viewport
     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
@@ -4403,10 +4422,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       Map<string, { x: number; y: number }>
     >();
 
-    for (const groupNode of groupNodes) {
-      const children = nodesToLayout.filter((n) => n.parentId === groupNode.id);
-      if (children.length === 0) continue;
-
+    const layoutGroupChildren = (children: Node[]) => {
       const childGraph = new dagre.graphlib.Graph();
       childGraph.setDefaultEdgeLabel(() => ({}));
       childGraph.setGraph({
@@ -4458,6 +4474,15 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           });
         }
       }
+
+return positions;
+};
+
+    for (const groupNode of groupNodes) {
+      const children = nodesToLayout.filter((n) => n.parentId === groupNode.id);
+      if (children.length === 0) continue;
+
+      const positions = layoutGroupChildren(children);
 
       childLayouts.set(groupNode.id, positions);
     }
@@ -4943,13 +4968,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <div
                     data-tour="assess-btn"
                     data-tooltip={
-                      isAuthenticated
-                        ? isAssessing
-                          ? "Assessment in progress..."
-                          : isPreparingInterview
-                            ? "Preparing interview questions..."
-                            : "Run assessment on current design"
-                        : "Please sign in to run assessment"
+                      getAssessmentTooltip(isAuthenticated, isAssessing, isPreparingInterview)
                     }
                   >
                     <button
@@ -4960,11 +4979,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       }
                       className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                     >
-                      {isAssessing
-                        ? "Assessing..."
-                        : isPreparingInterview
-                          ? "Preparing..."
-                          : "Run Assessment"}
+                      {getAssessmentActionLabel(isAssessing, isPreparingInterview)}
                     </button>
                   </div>
                 )}

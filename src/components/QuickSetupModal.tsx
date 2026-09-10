@@ -96,7 +96,7 @@ export const QuickSetupModal: React.FC = () => {
     };
 
     globalThis.addEventListener("open-quick-setup", handler as EventListener);
-    return () =>
+  return () =>
       globalThis.removeEventListener(
         "open-quick-setup",
         handler as EventListener,
@@ -115,6 +115,7 @@ export const QuickSetupModal: React.FC = () => {
   if (!visible) return null;
 
   const isEditing = Boolean(user?.preferences);
+  const saveLabel = isEditing ? "Save changes" : "Get started";
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -289,11 +290,7 @@ export const QuickSetupModal: React.FC = () => {
                 disabled={submitting}
                 className="px-4 py-2 rounded bg-[var(--brand)] text-white text-sm shadow-sm cursor-pointer"
               >
-                {submitting
-                  ? "Saving..."
-                  : isEditing
-                    ? "Save changes"
-                    : "Get started"}
+                {submitting ? "Saving..." : saveLabel}
               </button>
             </div>
           </form>

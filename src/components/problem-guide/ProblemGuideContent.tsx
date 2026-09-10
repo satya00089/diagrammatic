@@ -147,6 +147,80 @@ const GuideDisclosure: React.FC<GuideDisclosureProps> = ({
   </details>
 );
 
+type GuideHighlights = {
+  highlightedMetricLabel: string | undefined;
+  durableStepTitle: string | undefined;
+  asyncStepTitle: string | undefined;
+};
+
+const guideHighlights = new Map<string, GuideHighlights>(Object.entries({
+  "document-management-system": {
+    "highlightedMetricLabel": "Peak edit rate",
+    "durableStepTitle": "Accept and fan out an edit",
+    "asyncStepTitle": "Buffer asynchronous work"
+  },
+  "url-shortener-like-bit-ly": {
+    "highlightedMetricLabel": "Redirect traffic",
+    "durableStepTitle": "Resolve the redirect",
+    "asyncStepTitle": "Emit click telemetry"
+  },
+  "design-a-parts-compatibility-feature-for-an-ecommerce-site": {
+    "highlightedMetricLabel": "Peak lookup rate",
+    "durableStepTitle": "Revalidate before purchase",
+    "asyncStepTitle": "Publish catalog changes asynchronously"
+  },
+  "design-a-price-alert-system": {
+    "highlightedMetricLabel": "Observation rate",
+    "durableStepTitle": "Accept a price observation",
+    "asyncStepTitle": "Deliver asynchronously"
+  },
+  "design-a-feature-to-show-the-number-of-users-viewing-a-page": {
+    "highlightedMetricLabel": "Heartbeat rate",
+    "durableStepTitle": "Join the page",
+    "asyncStepTitle": "Expire inactive presence"
+  },
+  "design-facebook-likes-feature-with-live-updates": {
+    "highlightedMetricLabel": "Peak write rate",
+    "durableStepTitle": "Commit the user's like state",
+    "asyncStepTitle": "Broadcast asynchronously"
+  },
+  "twitter-system-design": {
+    "highlightedMetricLabel": "Timeline reads",
+    "durableStepTitle": "Accept the post",
+    "asyncStepTitle": "Read and refresh asynchronously"
+  },
+  "top-k-ranking-system": {
+    "highlightedMetricLabel": "Peak event rate",
+    "durableStepTitle": "Maintain the Top-K",
+    "asyncStepTitle": "Serve or rebuild asynchronously"
+  },
+  "design-a-cost-optimized-architecture-for-batch-processing": {
+    "highlightedMetricLabel": "Peak runnable tasks",
+    "durableStepTitle": "Commit the durable state",
+    "asyncStepTitle": "Reconcile and report asynchronously"
+  },
+  "instagram-system-design": {
+    "highlightedMetricLabel": "Media upload rate",
+    "durableStepTitle": "Commit content metadata",
+    "asyncStepTitle": "Serve and invalidate asynchronously"
+  },
+  "pastebin-system-design": {
+    "highlightedMetricLabel": "Paste create rate",
+    "durableStepTitle": "Commit immutable content",
+    "asyncStepTitle": "Invalidate and expire asynchronously"
+  },
+  "design-a-system-for-sorting-large-data-sets": {
+    "highlightedMetricLabel": "Input throughput",
+    "durableStepTitle": "Spill sorted runs",
+    "asyncStepTitle": "Commit the output manifest"
+  },
+  "build-a-marketplace-feature-for-facebook": {
+    "highlightedMetricLabel": "Search throughput",
+    "durableStepTitle": "Commit the listing",
+    "asyncStepTitle": "Notify and moderate asynchronously"
+  }
+}));
+
 interface ProblemGuideContentProps {
   guide: ProblemGuide;
   onPractice?: () => void;
@@ -158,141 +232,29 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
   onPractice,
   problemSlug,
 }) => {
-  const isDocumentManagement =
-    problemSlug === "document-management-system";
-  const isUrlShortener = problemSlug === "url-shortener-like-bit-ly";
-  const isJobScheduler = problemSlug === "job-scheduler";
-  const isPartsCompatibility =
-    problemSlug ===
-    "design-a-parts-compatibility-feature-for-an-ecommerce-site";
-  const isPriceAlert = problemSlug === "design-a-price-alert-system";
-  const isPagePresence =
-    problemSlug ===
-    "design-a-feature-to-show-the-number-of-users-viewing-a-page";
-  const isFacebookLikesLiveUpdates =
-    problemSlug === "design-facebook-likes-feature-with-live-updates";
-  const isTwitterSystemDesign =
-    problemSlug === "twitter-system-design";
-  const isTopKRankingSystem =
-    problemSlug === "top-k-ranking-system";
-  const isCostOptimizedBatchProcessing =
-    problemSlug === "design-a-cost-optimized-architecture-for-batch-processing";
-  const isInstagramSystemDesign = problemSlug === "instagram-system-design";
-  const isDesignPastebin = problemSlug === "pastebin-system-design";
-  const isSortLargeDataSets =
-    problemSlug === "design-a-system-for-sorting-large-data-sets";
-  const isFacebookMarketplace =
-    problemSlug === "build-a-marketplace-feature-for-facebook";
-  const isCatalogProblem = Boolean(problemSlug);
-  const isAnnotatedProblem =
-    isDocumentManagement ||
-    isUrlShortener ||
-    isJobScheduler ||
-    isPartsCompatibility ||
-    isPriceAlert ||
-    isPagePresence ||
-    isFacebookLikesLiveUpdates ||
-    isTwitterSystemDesign ||
-    isTopKRankingSystem ||
-    isCostOptimizedBatchProcessing ||
-    isInstagramSystemDesign ||
-    isDesignPastebin ||
-    isSortLargeDataSets ||
-    isFacebookMarketplace ||
-    isCatalogProblem;
-  const highlightedMetricLabel = isDocumentManagement
-    ? "Peak edit rate"
-    : isUrlShortener
-      ? "Redirect traffic"
-      : isPartsCompatibility
-        ? "Peak lookup rate"
-        : isPriceAlert
-          ? "Observation rate"
-          : isPagePresence
-            ? "Heartbeat rate"
-            : isFacebookLikesLiveUpdates
-              ? "Peak write rate"
-              : isTwitterSystemDesign
-                ? "Timeline reads"
-                : isTopKRankingSystem
-                  ? "Peak event rate"
-                  : isCostOptimizedBatchProcessing
-                    ? "Peak runnable tasks"
-                    : isInstagramSystemDesign
-                      ? "Media upload rate"
-                      : isDesignPastebin
-                        ? "Paste create rate"
-                        : isSortLargeDataSets
-                          ? "Input throughput"
-                          : isFacebookMarketplace
-                            ? "Search throughput"
-                            : isCatalogProblem
+  const isAnnotatedProblem = Boolean(problemSlug);
+  const { highlightedMetricLabel, durableStepTitle, asyncStepTitle } = guideHighlights.get(problemSlug ?? "") ?? {
+    highlightedMetricLabel: problemSlug
                               ? guide.requirements.metrics[0]?.label
-                              : "Peak dispatch rate";
-  const durableStepTitle = isDocumentManagement
-    ? "Accept and fan out an edit"
-    : isUrlShortener
-      ? "Resolve the redirect"
-      : isPartsCompatibility
-        ? "Revalidate before purchase"
-        : isPriceAlert
-          ? "Accept a price observation"
-          : isPagePresence
-            ? "Join the page"
-            : isFacebookLikesLiveUpdates
-              ? "Commit the user's like state"
-              : isTwitterSystemDesign
-                ? "Accept the post"
-                : isTopKRankingSystem
-                  ? "Maintain the Top-K"
-                  : isCostOptimizedBatchProcessing
-                    ? "Commit the durable state"
-                      : isInstagramSystemDesign
-                        ? "Commit content metadata"
-                        : isDesignPastebin
-                          ? "Commit immutable content"
-                          : isSortLargeDataSets
-                            ? "Spill sorted runs"
-                            : isFacebookMarketplace
-                              ? "Commit the listing"
-                              : isCatalogProblem
+                              : "Peak dispatch rate",
+    durableStepTitle: problemSlug
                                 ? guide.dataFlow[1]?.title
-                                : "Claim due work";
-  const asyncStepTitle = isDocumentManagement
-    ? "Buffer asynchronous work"
-    : isUrlShortener
-      ? "Emit click telemetry"
-      : isPartsCompatibility
-        ? "Publish catalog changes asynchronously"
-        : isPriceAlert
-          ? "Deliver asynchronously"
-          : isPagePresence
-            ? "Expire inactive presence"
-            : isFacebookLikesLiveUpdates
-              ? "Broadcast asynchronously"
-              : isTwitterSystemDesign
-                ? "Read and refresh asynchronously"
-                : isTopKRankingSystem
-                  ? "Serve or rebuild asynchronously"
-                  : isCostOptimizedBatchProcessing
-                    ? "Reconcile and report asynchronously"
-                      : isInstagramSystemDesign
-                        ? "Serve and invalidate asynchronously"
-                      : isDesignPastebin
-                        ? "Invalidate and expire asynchronously"
-                        : isSortLargeDataSets
-                          ? "Commit the output manifest"
-                          : isFacebookMarketplace
-                            ? "Notify and moderate asynchronously"
-                            : isCatalogProblem
+                                : "Claim due work",
+    asyncStepTitle: problemSlug
                               ? guide.dataFlow[4]?.title
-                              : "Enqueue an execution";
+                              : "Enqueue an execution",
+  };
   const [isDarkTheme, setIsDarkTheme] = useState(false);
   const promptRef = useRef<HTMLSpanElement>(null);
   const successSignalRef = useRef<HTMLSpanElement>(null);
   const peakEditRateRef = useRef<HTMLSpanElement>(null);
   const durableBoundaryRef = useRef<HTMLSpanElement>(null);
   const asyncWorkRef = useRef<HTMLSpanElement>(null);
+  const getStepAnnotationRef = (title: string) => {
+    if (title === durableStepTitle) return durableBoundaryRef;
+    if (title === asyncStepTitle) return asyncWorkRef;
+    return undefined;
+  };
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -617,23 +579,7 @@ const ProblemGuideContent: React.FC<ProblemGuideContentProps> = ({
               </span>
               <div>
                 <h3 className="text-lg font-bold">
-                  {step.title === durableStepTitle ? (
-                    <span
-                      ref={isAnnotatedProblem ? durableBoundaryRef : undefined}
-                      className="relative inline-block px-2 py-1"
-                    >
-                      {step.title}
-                    </span>
-                  ) : step.title === asyncStepTitle ? (
-                    <span
-                      ref={isAnnotatedProblem ? asyncWorkRef : undefined}
-                      className="relative inline-block"
-                    >
-                      {step.title}
-                    </span>
-                  ) : (
-                    step.title
-                  )}
+                  {<span ref={isAnnotatedProblem ? getStepAnnotationRef(step.title) : undefined} className={step.title === durableStepTitle ? "relative inline-block px-2 py-1" : "relative inline-block"}>{step.title}</span>}
                 </h3>
                 <p className="mt-2 leading-7 text-muted">{step.description}</p>
               </div>

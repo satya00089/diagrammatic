@@ -115,7 +115,7 @@ const PAGES = [
 ];
 
 function esc(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 async function fitFontSize(measure, text, startSize, minSize, maxWidth) {

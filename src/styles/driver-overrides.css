@@ -1,121 +1,256 @@
-/* Driver.js theme overrides — maps to Diagrammatic CSS variables */
+/* Driver.js surface for Diagrammatic's paper-and-ink product UI. */
 
-/* Core overlay */
+/* Keep the canvas readable while making the guided step feel intentional. */
 .driver-overlay {
-  background: rgba(0, 0, 0, 0.65) !important;
+  background: rgba(15, 23, 42, 0.58) !important;
+}
+
+html.dark .driver-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Driver mounts at document level, outside the page-scoped theme tokens.
+   Bridge it to the shared Systema palette used by the catalog, studio, and
+   learning surfaces so every tour uses the same paper-and-ink values. */
+html:has(
+    .dashboard-page,
+    .learning-paths-page,
+    .learning-path-detail-page,
+    .problem-detail-page,
+    .design-studio-page
+  )
+  .driver-popover {
+  --bg: #f4f3ee;
+  --surface: #ebeae5;
+  --bg-hover: #e4e2db;
+  --text: #151513;
+  --muted: #686863;
+  --border: #d4d2ca;
+  --brand: #151513;
+}
+
+html.dark:has(
+    .dashboard-page,
+    .learning-paths-page,
+    .learning-path-detail-page,
+    .problem-detail-page,
+    .design-studio-page
+  )
+  .driver-popover {
+  --bg: #080808;
+  --surface: #131313;
+  --bg-hover: #1b1b1b;
+  --text: #f5f5f3;
+  --muted: #9a9a98;
+  --border: #292929;
+  --brand: #ffffff;
 }
 
 /* Popover container */
 .driver-popover {
-  background: var(--surface, #1e1e2e) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.04) !important;
-  color: var(--text, #f1f5f9) !important;
-  padding: 20px !important;
-  max-width: 320px !important;
+  box-sizing: border-box !important;
+  width: min(360px, calc(100vw - 32px)) !important;
+  min-width: min(292px, calc(100vw - 32px)) !important;
+  max-width: min(360px, calc(100vw - 32px)) !important;
+  padding: 18px 18px 15px !important;
+  border: 1px solid var(--border, #d9d2c5) !important;
+  border-radius: 16px !important;
+  background: var(--surface, #f2ede6) !important;
+  color: var(--text, #111827) !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.2) !important;
+  font-family: var(--font-family, "Inter", sans-serif) !important;
+}
+
+html.dark .driver-popover {
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.48) !important;
+}
+
+.driver-popover * {
+  font-family: inherit !important;
 }
 
 /* Title */
 .driver-popover-title {
-  color: var(--text, #f1f5f9) !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  font-family: var(--font-family, "Inter", sans-serif) !important;
-  margin-bottom: 6px !important;
+  margin: 0 28px 6px 0 !important;
+  color: var(--text, #111827) !important;
+  font-family: "Instrument Serif", Georgia, serif !important;
+  font-size: 21px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.035em;
+  line-height: 1.05 !important;
 }
 
 /* Description */
 .driver-popover-description {
-  color: var(--muted, #94a3b8) !important;
+  margin: 0 !important;
+  color: var(--muted, #6b7280) !important;
   font-size: 13px !important;
-  font-family: var(--font-family, "Inter", sans-serif) !important;
-  line-height: 1.6 !important;
+  font-weight: 400 !important;
+  line-height: 1.55 !important;
 }
 
-/* Footer buttons row */
+/* Footer and progress */
 .driver-popover-footer {
-  margin-top: 16px !important;
-  gap: 8px !important;
+  min-height: 34px !important;
+  margin-top: 17px !important;
+  gap: 12px !important;
 }
 
-/* Navigation buttons (Prev / Next) */
-.driver-popover-prev-btn,
-.driver-popover-next-btn {
-  background: var(--brand, #6366f1) !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 6px 16px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  font-family: var(--font-family, "Inter", sans-serif) !important;
-  transition: opacity 0.15s !important;
-  text-shadow: none !important;
-}
-
-.driver-popover-prev-btn:hover,
-.driver-popover-next-btn:hover {
-  opacity: 0.85 !important;
-}
-
-/* Close button (×) */
-.driver-popover-close-btn {
-  color: var(--muted, #94a3b8) !important;
-  font-size: 18px !important;
-  opacity: 0.7 !important;
-  transition: opacity 0.15s !important;
-}
-.driver-popover-close-btn:hover {
-  opacity: 1 !important;
-}
-
-/* Progress dots */
 .driver-popover-progress-text {
-  color: var(--muted, #94a3b8) !important;
-  font-size: 12px !important;
-  font-family: var(--font-family, "Inter", sans-serif) !important;
+  flex: none !important;
+  color: var(--muted, #6b7280) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
 }
 
-/* Highlighted element outline */
-.driver-active-element {
-  margin: 5px;
-  outline: 2px solid var(--brand, #6366f1) !important;
-  outline-offset: 3px !important;
-  border-radius: 6px !important;
+.driver-popover-navigation-btns {
+  gap: 6px !important;
 }
 
-/* Arrow — proper CSS triangle via border trick */
-.driver-popover-arrow {
-  width: 0 !important;
-  height: 0 !important;
-  border: 8px solid transparent !important;
+.driver-popover-navigation-btns button + button {
+  margin-left: 0 !important;
+}
+
+.driver-popover-footer button {
+  box-sizing: border-box !important;
+  min-height: 32px !important;
+  padding: 7px 11px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  line-height: 1 !important;
+  text-shadow: none !important;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease !important;
+}
+
+.driver-popover-prev-btn {
+  color: var(--muted, #6b7280) !important;
   background: transparent !important;
 }
 
-/* Popover is below the element → arrow points UP */
+.driver-popover-prev-btn:hover,
+.driver-popover-prev-btn:focus-visible {
+  border-color: var(--border, #d9d2c5) !important;
+  background: var(--bg-hover, #ebe4da) !important;
+  color: var(--text, #111827) !important;
+}
+
+.driver-popover-next-btn {
+  border-color: var(--text, #111827) !important;
+  background: var(--text, #111827) !important;
+  color: var(--bg, #f8f6f1) !important;
+}
+
+.driver-popover-next-btn:hover,
+.driver-popover-next-btn:focus-visible {
+  transform: translateY(-1px) !important;
+  opacity: 0.84 !important;
+}
+
+.driver-popover-footer button:focus-visible,
+.driver-popover-close-btn:focus-visible {
+  outline: 2px solid var(--text, #111827) !important;
+  outline-offset: 2px !important;
+}
+
+.driver-popover-btn-disabled {
+  opacity: 0.35 !important;
+}
+
+/* Close button */
+.driver-popover-close-btn {
+  top: 11px !important;
+  right: 11px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  color: var(--muted, #6b7280) !important;
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  line-height: 28px !important;
+  text-align: center !important;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease !important;
+}
+
+.driver-popover-close-btn:hover {
+  background: var(--bg-hover, #ebe4da) !important;
+  color: var(--text, #111827) !important;
+}
+
+/* The spotlight uses the same ink accent as the newer header/actions. */
+.driver-active-element {
+  outline: 2px solid var(--text, #111827) !important;
+  outline-offset: 4px !important;
+}
+
+/* Match the popover surface on each arrow orientation. */
+.driver-popover-arrow {
+  width: 0 !important;
+  height: 0 !important;
+  border: 7px solid transparent !important;
+  background: transparent !important;
+}
+
 .driver-popover-arrow.driver-popover-arrow-side-bottom {
-  border-bottom-color: var(--surface, #1e1e2e) !important;
+  border-bottom-color: var(--surface, #f2ede6) !important;
   border-top: none !important;
 }
 
-/* Popover is above the element → arrow points DOWN */
 .driver-popover-arrow.driver-popover-arrow-side-top {
-  border-top-color: var(--surface, #1e1e2e) !important;
+  border-top-color: var(--surface, #f2ede6) !important;
   border-bottom: none !important;
 }
 
-/* Popover is to the right of the element → arrow points LEFT */
 .driver-popover-arrow.driver-popover-arrow-side-right {
-  border-right-color: var(--surface, #1e1e2e) !important;
+  border-right-color: var(--surface, #f2ede6) !important;
   border-left: none !important;
 }
 
-/* Popover is to the left of the element → arrow points RIGHT */
 .driver-popover-arrow.driver-popover-arrow-side-left {
-  border-left-color: var(--surface, #1e1e2e) !important;
+  border-left-color: var(--surface, #f2ede6) !important;
   border-right: none !important;
+}
+
+@media (max-width: 480px) {
+  .driver-popover {
+    width: calc(100vw - 24px) !important;
+    min-width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 16px 16px 14px !important;
+  }
+
+  .driver-popover-title {
+    font-size: 20px !important;
+  }
+
+  .driver-popover-description {
+    font-size: 13px !important;
+  }
+
+  .driver-popover-footer {
+    margin-top: 15px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-fade .driver-overlay,
+  .driver-fade .driver-popover {
+    animation: none !important;
+  }
+
+  .driver-popover-footer button,
+  .driver-popover-close-btn {
+    transition: none !important;
+  }
 }

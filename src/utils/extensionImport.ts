@@ -1,3 +1,4 @@
+import { parseMermaidEdge, scanMermaidLine, splitSqlDefinitions } from "./sourceScanning";
 import type { Edge, Node } from "@xyflow/react";
 import type { ExtensionImportResult, ExtensionKind } from "../types/extensions";
 import { COMPONENTS } from "../config/components";
@@ -136,7 +137,7 @@ const parseMermaid = (source: string): ExtensionImportResult => {
   const warnings: string[] = [];
   const lines = source
     .split(/\r?\n/)
-    .map((line) => line.replaceAll(/%%.*$/g, "").trim())
+    .map((line) => line.split("%%", 1)[0].trim())
     .filter(Boolean);
 
   if (
@@ -192,22 +193,12 @@ const parseMermaid = (source: string): ExtensionImportResult => {
     });
   };
 
-  const declarationPattern =
-    /([A-Za-z0-9_:-]+)[ \t]*(?:\[([^\]\r\n]+)\]|\(\(([^)\r\n]+)\)\)|\{([^}\r\n]+)\}|\(([^)\r\n]+)\))/g;
-  const edgePattern =
-    /^([A-Za-z0-9_:-]+).*?(?:-->|-.->|==>|---|--\s+).*?([A-Za-z0-9_:-]+)(?:\s*\|([^|]+)\|)?/;
-
-  for (const line of lines) {
-    for (const declaration of line.matchAll(declarationPattern)) {
-      ensureNode(declaration[1], declaration.slice(2).find(Boolean));
-    }
-
-    const edge = edgePattern.exec(line);
-    if (edge && edge[1] !== edge[2]) {
-      ensureNode(edge[1]);
-      ensureNode(edge[2]);
-      const sourceNode = nodesByKey.get(edge[1]);
-      const targetNode = nodesByKey.get(edge[2]);
+  const addEdge = (edge: ReturnType<typeof parseMermaidEdge>) => {
+    if (edge && edge.source !== edge.target) {
+      ensureNode(edge.source);
+      ensureNode(edge.target);
+      const sourceNode = nodesByKey.get(edge.source);
+      const targetNode = nodesByKey.get(edge.target);
       if (sourceNode && targetNode) {
         edges.push({
           id: `mermaid-edge-${edges.length}`,
@@ -216,14 +207,19 @@ const parseMermaid = (source: string): ExtensionImportResult => {
           target: targetNode.id,
           targetHandle: "left",
           type: "customEdge",
-          label: edge[3] ? cleanLabel(edge[3]) : undefined,
+          label: edge.label ? cleanLabel(edge.label) : undefined,
           data: {
             extensionSource: "mermaid",
-            extensionSourceKey: `${edge[1]}-${edge[2]}`,
+            extensionSourceKey: `${edge.source}-${edge.target}`,
           },
         });
       }
     }
+  };
+  for (const line of lines) {
+    const { declarations, edgeSource } = scanMermaidLine(line);
+    for (const declaration of declarations) ensureNode(declaration.key, declaration.label);
+    addEdge(parseMermaidEdge(edgeSource));
   }
 
   if (nodesByKey.size === 0) {
@@ -246,18 +242,7 @@ const parseMermaid = (source: string): ExtensionImportResult => {
   };
 };
 
-const parseDatabaseSchema = (source: string): ExtensionImportResult => {
-  const nodes: Node[] = [];
-  const edges: Edge[] = [];
-  const warnings: string[] = [];
-  const tableIds = new Map<string, string>();
-  const relationships: SchemaRelationship[] = [];
-  const attributesByTableId = new Map<string, TableAttribute[]>();
-  const tableBlocks = source.matchAll(createTablePattern);
-
-  for (const [index, match] of Array.from(tableBlocks).entries()) {
-    const tableName = match[1];
-    const body = match[2];
+const parseTableBody = (tableName: string, body: string, warnings: string[]) => {
     const attributes: TableAttribute[] = [];
     const primaryColumns = new Set<string>();
     const foreignKeyColumns = new Set<string>();
@@ -267,9 +252,9 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
       target: string;
     }> = [];
 
-    for (const rawLine of body.split(/,(?![^()]*\))/)) {
+    const parseDefinition = (rawLine: string) => {
       const line = rawLine.trim().replaceAll(/[\r\n]+/g, " ");
-      if (!line) continue;
+      if (!line) return;
       const tablePrimaryKey = tablePrimaryKeyPattern.exec(line);
       if (tablePrimaryKey) {
         tablePrimaryKey[1]
@@ -277,7 +262,7 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
           .forEach((column) =>
             primaryColumns.add(normalizeSqlIdentifier(column)),
           );
-        continue;
+        return;
       }
       const foreignKey = foreignKeyPattern.exec(line);
       if (foreignKey) {
@@ -290,13 +275,13 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
           parentColumns: normalizeColumnList(foreignKey[3]),
           target: foreignKey[2],
         });
-        continue;
+        return;
       }
-      if (/^(constraint|unique|check|primary\s+key)/i.test(line)) continue;
+      if (/^(constraint|unique|check|primary\s+key)/i.test(line)) return;
       const column = columnPattern.exec(line);
       if (!column) {
         warnings.push(`Skipped an unrecognized definition in ${tableName}.`);
-        continue;
+        return;
       }
       const name = normalizeSqlIdentifier(column[1]);
       attributes.push({
@@ -316,12 +301,31 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
           target: inlineReference[1],
         });
       }
-    }
+
+    };
+    splitSqlDefinitions(body).forEach(parseDefinition);
 
     attributes.forEach((attribute) => {
       if (primaryColumns.has(attribute.name)) attribute.isPrimaryKey = true;
       if (foreignKeyColumns.has(attribute.name)) attribute.isForeignKey = true;
     });
+
+return { attributes, inlineForeignKeys };
+};
+
+const parseDatabaseSchema = (source: string): ExtensionImportResult => {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  const warnings: string[] = [];
+  const tableIds = new Map<string, string>();
+  const relationships: SchemaRelationship[] = [];
+  const attributesByTableId = new Map<string, TableAttribute[]>();
+  const tableBlocks = source.matchAll(createTablePattern);
+
+  for (const [index, match] of Array.from(tableBlocks).entries()) {
+    const tableName = match[1];
+    const body = match[2];
+    const { attributes, inlineForeignKeys } = parseTableBody(tableName, body, warnings);
     const id = makeId("table", tableName, index);
     tableIds.set(normalizeSqlIdentifier(tableName), id);
     attributesByTableId.set(id, attributes);

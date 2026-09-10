@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useTheme } from "./hooks/useTheme";
+import { ThemeProvider } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
@@ -126,9 +126,7 @@ const GlobalProductChrome: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
-  useTheme(); // initialize theme globally
-
+const AppContent: React.FC = () => {
   return (
     <AuthProvider>
       <ChatBotProvider>
@@ -248,5 +246,11 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
+
+const App: React.FC = () => (
+  <ThemeProvider>
+    <AppContent />
+  </ThemeProvider>
+);
 
 export default App;

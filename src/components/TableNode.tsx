@@ -45,6 +45,24 @@ type Props = {
   isInGroup?: boolean;
 };
 
+function BooleanCellContent({ columnKey, displayValue, icon }: Readonly<{ columnKey: string; displayValue: boolean; icon?: React.ReactNode }>) {
+if (columnKey === "isPrimaryKey" && displayValue) return ((
+                <MdKey className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              ));
+if (columnKey === "isForeignKey" && displayValue) return ((
+                <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">
+                  FK
+                </span>
+              ));
+if (icon) return ((
+                <span className="text-xs">{icon}</span>
+              ));
+if (columnKey !== "isPrimaryKey" && columnKey !== "isForeignKey") return ((
+                <div className="w-3 h-3 border border-theme/40 rounded" />
+              ));
+return null;
+}
+
 const TableNode: React.FC<Props> = React.memo(
   ({ id, data, onCopy, isInGroup }) => {
     const [contextMenu, setContextMenu] = useState<{
@@ -325,17 +343,7 @@ const TableNode: React.FC<Props> = React.memo(
               title={col.label}
               aria-pressed={displayValue}
             >
-              {col.key === "isPrimaryKey" && displayValue ? (
-                <MdKey className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              ) : col.key === "isForeignKey" && displayValue ? (
-                <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">
-                  FK
-                </span>
-              ) : icon ? (
-                <span className="text-xs">{icon}</span>
-              ) : col.key !== "isPrimaryKey" && col.key !== "isForeignKey" ? (
-                <div className="w-3 h-3 border border-theme/40 rounded" />
-              ) : null}
+              {<BooleanCellContent columnKey={col.key} displayValue={displayValue} icon={icon} />}
             </button>
           );
         }

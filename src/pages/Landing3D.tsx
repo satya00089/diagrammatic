@@ -17,9 +17,10 @@ import RollingNavLabel from "../components/RollingNavLabel";
 import ArchitectureDiagram, {
   type DesignPhase,
 } from "../components/landing3d/ArchitectureDiagram";
-import SEO from "../components/SEO";
+import Seo from "../components/SEO";
 import { AuthModal } from "../components/AuthModal";
 import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../hooks/useTheme";
 import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
 import "./Landing3D.css";
 
@@ -33,6 +34,11 @@ import "./Landing3D.css";
  */
 
 const phases = ["Design", "Review", "Improve"] as const;
+const phaseInsights = [
+  "Start with the request path. Make your assumptions visible.",
+  "A popular link repeats the same database read. What would you change?",
+  "Cache popular links. Now consider expiry, invalidation, and cache misses.",
+] as const;
 const examplePath = "/problems/url-shortener-like-bit-ly/";
 
 function Brand() {
@@ -44,7 +50,9 @@ function Brand() {
   );
 }
 
-function FeatureArt({ type }: { type: "design" | "reason" | "review" }) {
+function FeatureArt({
+  type,
+}: Readonly<{ type: "design" | "reason" | "review" }>) {
   return (
     <svg
       viewBox="0 0 320 140"
@@ -155,12 +163,8 @@ export default function Landing3D() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { login, signup, googleLogin } = useAuth();
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "light";
-    return window.localStorage.getItem("diagrammatic-landing-theme") === "dark"
-      ? "dark"
-      : "light";
-  });
+  const { setTheme, flowColorMode } = useTheme();
+  const landingTheme = flowColorMode;
   const storyRef = useRef<HTMLDivElement>(null);
   const heroDecisionRef = useRef<HTMLSpanElement>(null);
 
@@ -170,7 +174,7 @@ export default function Landing3D() {
         ref: heroDecisionRef,
         config: {
           type: "underline" as const,
-          color: theme === "light" ? "#151513" : "#d5d5d2",
+          color: landingTheme === "light" ? "#151513" : "#d5d5d2",
           strokeWidth: 1.5,
           padding: 2,
           iterations: 1,
@@ -178,14 +182,10 @@ export default function Landing3D() {
         },
       },
     ],
-    [theme],
+    [landingTheme],
   );
 
   useRoughAnnotation(roughAnnotationTargets);
-
-  useEffect(() => {
-    window.localStorage.setItem("diagrammatic-landing-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     const sections =
@@ -232,8 +232,8 @@ export default function Landing3D() {
   }, [menuOpen]);
 
   return (
-    <div className="systema-page" data-theme={theme}>
-      <SEO
+    <div className="systema-page" data-theme={landingTheme}>
+      <Seo
         title="Diagrammatic — Design systems. Understand every decision."
         description="Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration."
         keywords="system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview"
@@ -264,11 +264,13 @@ export default function Landing3D() {
           <button
             type="button"
             className="systema-theme-toggle"
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
-            title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={`Switch to ${landingTheme === "light" ? "dark" : "light"} theme`}
+            title={`Switch to ${landingTheme === "light" ? "dark" : "light"} theme`}
+            onClick={() =>
+              setTheme(landingTheme === "light" ? "dark" : "light")
+            }
           >
-            {theme === "light" ? <HiMoon /> : <HiSun />}
+            {landingTheme === "light" ? <HiMoon /> : <HiSun />}
           </button>
           <button
             type="button"
@@ -304,12 +306,19 @@ export default function Landing3D() {
             id="systema-mobile-nav"
             aria-label="Mobile navigation"
             className="systema-mobile-nav"
-            onClick={() => setMenuOpen(false)}
           >
-            <a href="#how-it-works">How it works</a>
-            <Link to="/problems/">Practice problems</Link>
-            <Link to="/playground/free">Design Studio</Link>
-            <Link to="/learning-paths/">Learning paths</Link>
+            <a onClick={() => setMenuOpen(false)} href="#how-it-works">
+              How it works
+            </a>
+            <Link onClick={() => setMenuOpen(false)} to="/problems/">
+              Practice problems
+            </Link>
+            <Link onClick={() => setMenuOpen(false)} to="/playground/free">
+              Design Studio
+            </Link>
+            <Link onClick={() => setMenuOpen(false)} to="/learning-paths/">
+              Learning paths
+            </Link>
             <button
               type="button"
               className="systema-mobile-nav-sign-in"
@@ -371,9 +380,8 @@ export default function Landing3D() {
               </figcaption>
               <ArchitectureDiagram phase={phase} paused={paused} />
               <div className="systema-stage-toolbar">
-                <div
+                <fieldset
                   className="systema-phase-controls"
-                  role="group"
                   aria-label="Architecture walkthrough stage"
                 >
                   {phases.map((label, index) => (
@@ -387,7 +395,7 @@ export default function Landing3D() {
                       {label}
                     </button>
                   ))}
-                </div>
+                </fieldset>
                 <button
                   type="button"
                   className="systema-motion-toggle"
@@ -407,13 +415,7 @@ export default function Landing3D() {
                 aria-atomic="true"
               >
                 <span className="systema-insight-dot" />
-                <p>
-                  {phase === 0
-                    ? "Start with the request path. Make your assumptions visible."
-                    : phase === 1
-                      ? "A popular link repeats the same database read. What would you change?"
-                      : "Cache popular links. Now consider expiry, invalidation, and cache misses."}
-                </p>
+                <p>{phaseInsights[phase]}</p>
               </div>
             </figure>
           </div>
