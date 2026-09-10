@@ -7,11 +7,11 @@ import {
   MdDelete,
   MdOutlineVerticalAlignTop,
   MdOutlineVerticalAlignBottom,
+  MdTune,
 } from "react-icons/md";
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import { BiDotsVertical } from "react-icons/bi";
-import { MdTune } from "react-icons/md";
 import { COMPONENTS } from "../config/components";
 import NodePropertyDisplay from "./NodePropertyDisplay";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
@@ -221,11 +221,12 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         rightSideX + CONTEXT_MENU_WIDTH + CONTEXT_MENU_GUTTER <=
         window.innerWidth;
       const hasRoomOnLeft = leftSideX >= CONTEXT_MENU_GUTTER;
-      const menuX = hasRoomOnRight
-        ? rightSideX
-        : hasRoomOnLeft
-          ? leftSideX
-          : rect.right - CONTEXT_MENU_WIDTH;
+      let menuX = rect.right - CONTEXT_MENU_WIDTH;
+      if (hasRoomOnRight) {
+        menuX = rightSideX;
+      } else if (hasRoomOnLeft) {
+        menuX = leftSideX;
+      }
       openContextMenu(
         menuX,
         rect.top,
@@ -307,7 +308,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
         menuItems[0]?.focus();
       } else if (event.key === "End") {
         event.preventDefault();
-        menuItems[menuItems.length - 1]?.focus();
+        menuItems.at(-1)?.focus();
       }
     },
     [closeContextMenu],
@@ -796,7 +797,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
               <MdTune className="h-4 w-4" aria-hidden="true" />
               Open inspector
             </button>
-            <div role="separator" className="my-1 border-t border-theme/60" />
+            <hr className="my-1 border-0 border-t border-theme/60" />
             <button
               type="button"
               onClick={(e) => {
@@ -842,7 +843,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
                 Detach from Group
               </button>
             )}
-            <div role="separator" className="my-1 border-t border-theme/60" />
+            <hr className="my-1 border-0 border-t border-theme/60" />
             <button
               type="button"
               onClick={(e) => {
