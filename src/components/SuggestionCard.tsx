@@ -9,6 +9,18 @@ interface SuggestionCardProps {
   canAdd?: boolean;
 }
 
+const getSuggestionIcon = (isActionable: boolean, isPattern: boolean) => {
+  if (!isActionable) return MdLightbulbOutline;
+  if (isPattern) return MdLayers;
+  return MdAdd;
+};
+
+const getActionLabel = (wasAdded: boolean, isPattern: boolean): string => {
+  if (wasAdded) return "Added to canvas";
+  if (isPattern) return "Add components";
+  return "Add to canvas";
+};
+
 const SuggestionCard: React.FC<SuggestionCardProps> = ({
   suggestion,
   wasAdded,
@@ -19,11 +31,11 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   const isActionable =
     (suggestion.actionType === "add-component" && !!suggestion.componentId) ||
     (isPattern && !!suggestion.componentIds?.length);
-  const Icon = isActionable
-    ? isPattern
-      ? MdLayers
-      : MdAdd
-    : MdLightbulbOutline;
+  const Icon = getSuggestionIcon(isActionable, isPattern);
+  const actionLabel = getActionLabel(wasAdded, isPattern);
+  const actionAriaLabel = wasAdded
+    ? `Added ${suggestion.title}`
+    : `Add ${suggestion.title} to canvas`;
 
   return (
     <article className={`assistant-suggestion${wasAdded ? " is-added" : ""}`}>
@@ -40,18 +52,14 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
             }}
             disabled={!canAdd}
             aria-disabled={wasAdded || !canAdd}
-            aria-label={`${wasAdded ? "Added" : "Add"} ${suggestion.title}${wasAdded ? "" : " to canvas"}`}
+            aria-label={actionAriaLabel}
           >
             {wasAdded ? (
               <MdCheck aria-hidden="true" />
             ) : (
               <MdAdd aria-hidden="true" />
             )}
-            {wasAdded
-              ? "Added to canvas"
-              : isPattern
-                ? "Add components"
-                : "Add to canvas"}
+            {actionLabel}
           </button>
         )}
       </div>

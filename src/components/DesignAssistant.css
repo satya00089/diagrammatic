@@ -114,7 +114,8 @@
   font-weight: 600;
 }
 .assistant-project p,
-.assistant-refresh p {
+.assistant-refresh p,
+.assistant-refresh output {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 13px;

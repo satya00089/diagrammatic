@@ -251,6 +251,7 @@ html.dark .feedback-dialog__surface::-webkit-scrollbar-thumb {
   color: var(--text, #111827);
   font-family: inherit;
   font-size: 13px;
+  padding: 10px 12px;
   outline: none;
   transition:
     border-color 180ms ease,
@@ -383,7 +384,7 @@ html.dark .feedback-dialog__surface::-webkit-scrollbar-thumb {
   line-height: 1.45;
 }
 
-.feedback-dialog__contact-label input {
+.feedback-dialog__contact-label > input {
   width: 16px;
   height: 16px;
   flex: none;
@@ -391,16 +392,15 @@ html.dark .feedback-dialog__surface::-webkit-scrollbar-thumb {
   accent-color: var(--text, #111827);
 }
 
-.feedback-dialog__contact-label span span {
+.feedback-dialog__contact-title {
+  display: block;
+}
+
+.feedback-dialog__contact-note {
   display: block;
   margin-top: 2px;
   color: var(--muted, #6b7280);
   font-size: 11px;
-}
-
-.feedback-dialog__contact-input {
-  margin-top: 12px;
-  padding: 10px 12px;
 }
 
 .feedback-dialog__error {
@@ -409,9 +409,13 @@ html.dark .feedback-dialog__surface::-webkit-scrollbar-thumb {
   border: 1px solid color-mix(in srgb, #b94a48 35%, var(--border));
   border-radius: 12px;
   background: color-mix(in srgb, #b94a48 10%, transparent);
-  color: #994b44;
+  color: #7f1d1d;
   font-size: 12px;
   line-height: 1.45;
+}
+
+html.dark .feedback-dialog__error {
+  color: #fca5a5;
 }
 
 .feedback-dialog__primary-action {

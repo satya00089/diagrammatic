@@ -23,11 +23,12 @@ export const splitSqlDefinitions = (body: string): string[] => {
   const definitions: string[] = [];
   let depth = 0;
   let start = 0;
-  for (let index = 0; index < body.length; index += 1) {
+  let index = 0;
+  while (index < body.length) {
     const char = body[index];
     const closer = sqlQuoteClosers.get(char);
     if (closer) {
-      index = skipSqlQuote(body, index, closer);
+      index = skipSqlQuote(body, index, closer) + 1;
       continue;
     }
     if (char === "(") depth += 1;
@@ -36,6 +37,7 @@ export const splitSqlDefinitions = (body: string): string[] => {
       definitions.push(body.slice(start, index));
       start = index + 1;
     }
+    index += 1;
   }
   definitions.push(body.slice(start));
   return definitions;
@@ -47,7 +49,11 @@ type MermaidDeclaration = { key: string; label: string };
 export const scanMermaidLine = (line: string) => {
   const declarations: MermaidDeclaration[] = [];
   const keyPattern = /[A-Za-z0-9_:-]+/g;
-  const closers = new Map([["[", "]"], ["{", "}"], ["(", ")"]]);
+  const closers = new Map([
+    ["[", "]"],
+    ["{", "}"],
+    ["(", ")"],
+  ]);
   let edgeSource = "";
   let copiedUntil = 0;
   for (const key of line.matchAll(keyPattern)) {
@@ -84,6 +90,12 @@ export const parseMermaidEdge = (line: string) => {
   }
   const target = /^([A-Za-z0-9_:-]+)/.exec(remainder);
   if (!source || !target) return null;
-  const trailingLabel = /^\s*\|([^|]+)\|/.exec(remainder.slice(target[0].length));
-  return { source: source[1], target: target[1], label: label ?? trailingLabel?.[1] };
+  const trailingLabel = /^\s*\|([^|]+)\|/.exec(
+    remainder.slice(target[0].length),
+  );
+  return {
+    source: source[1],
+    target: target[1],
+    label: label ?? trailingLabel?.[1],
+  };
 };

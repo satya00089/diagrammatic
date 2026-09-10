@@ -287,9 +287,6 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
       aria-describedby="feedback-dialog-description"
       onCancel={(event) => event.preventDefault()}
       className="feedback-dialog"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !isSubmitting) onClose();
-      }}
     >
       <div tabIndex={-1} className="feedback-dialog__surface">
         <header className="feedback-dialog__header">
@@ -445,20 +442,30 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             </div>
 
             <div className="feedback-dialog__contact-box">
-              <label className="feedback-dialog__contact-label">
+              <div className="feedback-dialog__contact-label">
                 <input
+                  id="feedback-contact"
                   type="checkbox"
                   checked={requestContact}
                   onChange={(event) => setRequestContact(event.target.checked)}
+                  aria-describedby="feedback-contact-note"
                   className="mt-0.5 h-4 w-4 rounded border-[var(--border)] accent-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]"
                 />
                 <span>
-                  <span>You may contact me about this feedback</span>
-                  <span className="mt-0.5 block text-xs text-muted">
+                  <label
+                    htmlFor="feedback-contact"
+                    className="feedback-dialog__contact-title"
+                  >
+                    You may contact me about this feedback
+                  </label>
+                  <span
+                    id="feedback-contact-note"
+                    className="feedback-dialog__contact-note"
+                  >
                     Optional. We only use your email for this follow-up.
                   </span>
                 </span>
-              </label>
+              </div>
               {requestContact && (
                 <input
                   type="email"

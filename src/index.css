@@ -1304,6 +1304,7 @@ html.dark:has(.design-studio-page) {
 html {
   scrollbar-color: color-mix(in srgb, var(--brand) 55%, var(--muted))
     transparent;
+  scrollbar-width: thin;
 }
 
 /* The catalog owns neutral paper-and-ink tokens below the document root.
@@ -2085,11 +2086,6 @@ select::-webkit-scrollbar-thumb {
 .freeform-node .arrow-icon:hover {
   color: var(--brand);
   transform: scale(1.06);
-}
-
-/* Keep every native and custom scroll surface quiet and consistent. */
-html {
-  scrollbar-width: thin;
 }
 
 *::-webkit-scrollbar {

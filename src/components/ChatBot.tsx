@@ -22,6 +22,196 @@ interface ChatBotProps {
   onAddComponent?: (componentId: string) => void;
 }
 
+const getSuggestionComponentIds = (suggestion: Suggestion): string[] => {
+  if (suggestion.actionType === "add-component" && suggestion.componentId) {
+    return [suggestion.componentId];
+  }
+  if (suggestion.actionType === "add-pattern") {
+    return suggestion.componentIds ?? [];
+  }
+  return [];
+};
+
+const getRefreshMessage = (
+  isLoadingAI: boolean,
+  lastAIRefresh: Date | null,
+): string => {
+  if (isLoadingAI) return "Reviewing your canvas…";
+  if (lastAIRefresh) {
+    return `Updated ${lastAIRefresh.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  }
+  return "Get suggestions for your current design.";
+};
+
+interface AssistantRefreshProps {
+  isLoadingAI: boolean;
+  lastAIRefresh: Date | null;
+  onRefresh: () => void;
+}
+
+const AssistantRefresh: React.FC<AssistantRefreshProps> = ({
+  isLoadingAI,
+  lastAIRefresh,
+  onRefresh,
+}) => (
+  <div className="assistant-refresh">
+    <div>
+      <h4>AI recommendations</h4>
+      <output aria-live="polite">
+        {getRefreshMessage(isLoadingAI, lastAIRefresh)}
+      </output>
+    </div>
+    <button
+      type="button"
+      onClick={onRefresh}
+      disabled={isLoadingAI}
+      className="assistant-primary"
+      aria-label="Refresh AI recommendations"
+    >
+      <MdRefresh
+        className={isLoadingAI ? "assistant-spin" : ""}
+        aria-hidden="true"
+      />
+      {isLoadingAI ? "Loading…" : "Refresh"}
+    </button>
+  </div>
+);
+
+interface AssistantSuggestionsProps {
+  suggestions: Suggestion[];
+  addedSuggestionId: string | null;
+  onAddSuggestion: (suggestion: Suggestion) => void;
+  canAdd: boolean;
+}
+
+const AssistantSuggestions: React.FC<AssistantSuggestionsProps> = ({
+  suggestions,
+  addedSuggestionId,
+  onAddSuggestion,
+  canAdd,
+}) => {
+  if (suggestions.length === 0) {
+    return (
+      <div className="assistant-empty">
+        <MdOutlineAccountTree aria-hidden="true" />
+        <h4>Start with a component</h4>
+        <p>
+          Add components to your canvas to get started. Suggestions will appear
+          as you build.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="assistant-section-title">
+        <h4>Suggestions</h4>
+        <span>{suggestions.length}</span>
+      </div>
+      <div className="assistant-suggestions">
+        {suggestions.map((suggestion) => (
+          <SuggestionCard
+            key={suggestion.id}
+            suggestion={suggestion}
+            wasAdded={addedSuggestionId === suggestion.id}
+            onClick={onAddSuggestion}
+            canAdd={canAdd}
+          />
+        ))}
+      </div>
+    </>
+  );
+};
+
+interface AssistantContentProps {
+  showWelcome: boolean;
+  userIntent: ReturnType<typeof useChatBot>["userIntent"];
+  isAuthenticated: boolean;
+  canvasContext?: CanvasContext;
+  isLoadingAI: boolean;
+  lastAIRefresh: Date | null;
+  onRefresh: () => void;
+  suggestions: Suggestion[];
+  addedSuggestionId: string | null;
+  onAddSuggestion: (suggestion: Suggestion) => void;
+  canAdd: boolean;
+}
+
+const AssistantContent: React.FC<AssistantContentProps> = ({
+  showWelcome,
+  userIntent,
+  isAuthenticated,
+  canvasContext,
+  isLoadingAI,
+  lastAIRefresh,
+  onRefresh,
+  suggestions,
+  addedSuggestionId,
+  onAddSuggestion,
+  canAdd,
+}) => {
+  if (showWelcome) return <WelcomeDialog />;
+
+  const shouldShowRefresh =
+    isAuthenticated && canvasContext && canvasContext.nodeCount >= 5;
+
+  return (
+    <>
+      {userIntent && (
+        <div className="assistant-project">
+          <h4>{userIntent.title || "Your Project"}</h4>
+          {userIntent.description && <p>{userIntent.description}</p>}
+        </div>
+      )}
+      {shouldShowRefresh && (
+        <AssistantRefresh
+          isLoadingAI={isLoadingAI}
+          lastAIRefresh={lastAIRefresh}
+          onRefresh={onRefresh}
+        />
+      )}
+      <AssistantSuggestions
+        suggestions={suggestions}
+        addedSuggestionId={addedSuggestionId}
+        onAddSuggestion={onAddSuggestion}
+        canAdd={canAdd}
+      />
+    </>
+  );
+};
+
+interface AssistantStatsProps {
+  showWelcome: boolean;
+  canvasContext?: CanvasContext;
+}
+
+const AssistantStats: React.FC<AssistantStatsProps> = ({
+  showWelcome,
+  canvasContext,
+}) => {
+  if (showWelcome || !canvasContext || canvasContext.isEmpty) return null;
+
+  const componentLabel =
+    canvasContext.nodeCount === 1 ? "component" : "components";
+  const connectionLabel =
+    canvasContext.edgeCount === 1 ? "connection" : "connections";
+
+  return (
+    <footer className="assistant-stats">
+      <span>
+        <strong>{canvasContext.nodeCount}</strong> {componentLabel}
+      </span>
+      <span>
+        <strong>{canvasContext.edgeCount}</strong> {connectionLabel}
+      </span>
+    </footer>
+  );
+};
+
 export const ChatBot: React.FC<ChatBotProps> = ({
   canvasContext,
   nodes = [],
@@ -69,14 +259,9 @@ export const ChatBot: React.FC<ChatBotProps> = ({
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     if (!onAddComponent) return;
-    const componentIds =
-      suggestion.actionType === "add-component" && suggestion.componentId
-        ? [suggestion.componentId]
-        : suggestion.actionType === "add-pattern"
-          ? (suggestion.componentIds ?? [])
-          : [];
+    const componentIds = getSuggestionComponentIds(suggestion);
     if (!componentIds.length) return;
-    componentIds.forEach(onAddComponent);
+    componentIds.forEach((componentId) => onAddComponent(componentId));
     setAddedSuggestionId(suggestion.id);
     if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
     feedbackTimer.current = setTimeout(() => setAddedSuggestionId(null), 2000);
@@ -138,93 +323,27 @@ export const ChatBot: React.FC<ChatBotProps> = ({
               </button>
             </header>
             <div className="assistant-content chatbot-scroll">
-              {showWelcome ? (
-                <WelcomeDialog />
-              ) : (
-                <>
-                  {userIntent && (
-                    <div className="assistant-project">
-                      <h4>{userIntent.title || "Your Project"}</h4>
-                      {userIntent.description && (
-                        <p>{userIntent.description}</p>
-                      )}
-                    </div>
-                  )}
-                  {isAuthenticated &&
-                    canvasContext &&
-                    canvasContext.nodeCount >= 5 && (
-                      <div className="assistant-refresh">
-                        <div>
-                          <h4>AI recommendations</h4>
-                          <p role="status">
-                            {isLoadingAI
-                              ? "Reviewing your canvas…"
-                              : lastAIRefresh
-                                ? `Updated ${lastAIRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                                : "Get suggestions for your current design."}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={refreshAISuggestions}
-                          disabled={isLoadingAI}
-                          className="assistant-primary"
-                          aria-label="Refresh AI recommendations"
-                        >
-                          <MdRefresh
-                            className={isLoadingAI ? "assistant-spin" : ""}
-                            aria-hidden="true"
-                          />
-                          {isLoadingAI ? "Loading…" : "Refresh"}
-                        </button>
-                      </div>
-                    )}
-                  {suggestions.length > 0 ? (
-                    <>
-                      <div className="assistant-section-title">
-                        <h4>Suggestions</h4>
-                        <span>{suggestions.length}</span>
-                      </div>
-                      <div className="assistant-suggestions">
-                        {suggestions.map((suggestion) => (
-                          <SuggestionCard
-                            key={suggestion.id}
-                            suggestion={suggestion}
-                            wasAdded={addedSuggestionId === suggestion.id}
-                            onClick={handleSuggestionClick}
-                            canAdd={!!onAddComponent}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="assistant-empty">
-                      <MdOutlineAccountTree aria-hidden="true" />
-                      <h4>Start with a component</h4>
-                      <p>
-                        Add components to your canvas to get started.
-                        Suggestions will appear as you build.
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
+              <AssistantContent
+                showWelcome={showWelcome}
+                userIntent={userIntent}
+                isAuthenticated={isAuthenticated}
+                canvasContext={canvasContext}
+                isLoadingAI={isLoadingAI}
+                lastAIRefresh={lastAIRefresh}
+                onRefresh={refreshAISuggestions}
+                suggestions={suggestions}
+                addedSuggestionId={addedSuggestionId}
+                onAddSuggestion={handleSuggestionClick}
+                canAdd={!!onAddComponent}
+              />
             </div>
-            {!showWelcome && canvasContext && !canvasContext.isEmpty && (
-              <footer className="assistant-stats">
-                <span>
-                  <strong>{canvasContext.nodeCount}</strong>{" "}
-                  {canvasContext.nodeCount === 1 ? "component" : "components"}
-                </span>
-                <span>
-                  <strong>{canvasContext.edgeCount}</strong>{" "}
-                  {canvasContext.edgeCount === 1 ? "connection" : "connections"}
-                </span>
-              </footer>
-            )}
-            <span className="sr-only" role="status">
+            <AssistantStats
+              showWelcome={showWelcome}
+              canvasContext={canvasContext}
+            />
+            <output className="sr-only" aria-live="polite">
               {addedSuggestionId ? "Added to canvas" : ""}
-            </span>
+            </output>
           </motion.section>
         )}
       </AnimatePresence>
