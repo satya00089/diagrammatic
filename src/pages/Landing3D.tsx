@@ -187,6 +187,54 @@ export default function Landing3D() {
   const landingTheme = flowColorMode;
   const storyRef = useRef<HTMLDivElement>(null);
   const heroDecisionRef = useRef<HTMLSpanElement>(null);
+  const patternRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const pattern = patternRef.current;
+    if (!pattern) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let size1 = 24;
+    let size2 = 29;
+    let animationFrame = 0;
+
+    const updatePattern = (nextSize1: number, nextSize2: number) => {
+      size1 = nextSize1;
+      size2 = nextSize2;
+      pattern.style.setProperty("--systema-pattern-size-1", `${size1}px`);
+      pattern.style.setProperty("--systema-pattern-size-2", `${size2}px`);
+    };
+
+    updatePattern(size1, size2);
+    if (reducedMotion.matches) return;
+
+    const animateToNewPattern = () => {
+      const startSize1 = size1;
+      const startSize2 = size2;
+      const targetSize1 = 18 + Math.floor(Math.random() * 17);
+      const targetSize2 = targetSize1 + 4 + Math.floor(Math.random() * 4);
+      const startedAt = performance.now();
+      const duration = 1200;
+
+      const animate = (now: number) => {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        updatePattern(
+          startSize1 + (targetSize1 - startSize1) * eased,
+          startSize2 + (targetSize2 - startSize2) * eased,
+        );
+        if (progress < 1) animationFrame = window.requestAnimationFrame(animate);
+      };
+
+      animationFrame = window.requestAnimationFrame(animate);
+    };
+
+    const interval = window.setInterval(animateToNewPattern, 10000);
+    return () => {
+      window.clearInterval(interval);
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, []);
 
   const roughAnnotationTargets = useMemo(
     () => [
@@ -264,6 +312,7 @@ export default function Landing3D() {
 
   return (
     <div className="systema-page" data-theme={landingTheme}>
+      <div ref={patternRef} className="systema-pattern-layer" aria-hidden="true" />
       <Seo
         title="Diagrammatic — Design systems. Understand every decision."
         description="Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration."

@@ -19,8 +19,59 @@ html:has(.systema-page[data-theme="dark"]) {
   color: var(--systema-text);
   font-family: "Inter", sans-serif;
   min-height: 100svh;
+  position: relative;
+  isolation: isolate;
   color-scheme: light;
   overflow: clip;
+}
+.systema-page > main,
+.systema-page > footer {
+  position: relative;
+  z-index: 1;
+}
+.systema-pattern-layer {
+  --systema-pattern-size-1: 24px;
+  --systema-pattern-size-2: 29px;
+  --systema-pattern-ink: color-mix(
+    in srgb,
+    var(--systema-line) 60%,
+    transparent
+  );
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.15;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent var(--systema-pattern-size-1),
+    var(--systema-pattern-ink) var(--systema-pattern-size-1),
+    var(--systema-pattern-ink) var(--systema-pattern-size-2)
+  );
+  background-size: 64px 64px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+}
+.systema-page[data-theme="dark"] .systema-pattern-layer {
+  --systema-pattern-ink: color-mix(
+    in srgb,
+    var(--systema-muted) 22%,
+    transparent
+  );
+  opacity: 0.1;
 }
 .systema-page[data-theme="dark"] {
   --systema-bg: #080808;
