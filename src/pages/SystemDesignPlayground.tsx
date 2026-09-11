@@ -1573,10 +1573,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       exchanges: [],
       currentQuestionIndex: 0,
     });
-  const [assessmentInterviewError, setAssessmentInterviewError] = useState<
-    string | null
-  >(null);
-
   const executeAssessment = async (preAssessmentSession: InterviewSession) => {
     if (isAssessing) return;
 
@@ -1685,7 +1681,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     }
 
     setIsPreparingInterview(true);
-    setAssessmentInterviewError(null);
 
     try {
       const questions = await generateInterviewQuestions(
@@ -1696,9 +1691,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     } catch (error) {
       console.error("Failed to prepare interview questions:", error);
       setAssessmentInterviewQuestions(DEFAULT_PRE_ASSESSMENT_QUESTIONS);
-      setAssessmentInterviewError(
-        "We could not tailor the questions to this diagram, so we loaded a general system-design set instead.",
-      );
     } finally {
       setAssessmentInterviewIndex(0);
       setAssessmentInterviewAnswer("");
@@ -1765,7 +1757,6 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const cancelAssessmentInterview = () => {
     setShowAssessmentInterview(false);
     setAssessmentInterviewAnswer("");
-    setAssessmentInterviewError(null);
   };
 
   // ref to the reactflow wrapper to compute drop position
@@ -3747,7 +3738,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           <div className="flex gap-3 justify-center">
             <button
               onClick={onBack}
-              className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
+              className="px-4 py-2 bg-accent text-[var(--bg)] rounded-md hover:brightness-90"
             >
               Back to Dashboard
             </button>
@@ -3776,7 +3767,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           </div>
           <button
             onClick={onBack}
-            className="px-4 py-2 bg-accent text-white rounded-md hover:brightness-90"
+            className="px-4 py-2 bg-accent text-[var(--bg)] rounded-md hover:brightness-90"
           >
             Back to Dashboard
           </button>
@@ -4662,7 +4653,7 @@ return positions;
       <div className="design-studio-page h-screen flex flex-col bg-theme">
         {/* Header */}
         <header className="bg-[var(--brand)] shadow-md overflow-visible">
-          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+          <div className="max-w-full mx-auto px-4 sm:px-6 overflow-visible">
             <div className="flex items-center justify-between h-14 overflow-visible">
               {/* Left side - Logo and Title */}
               <div className="flex items-center space-x-4">
@@ -5242,7 +5233,6 @@ return positions;
             questions={assessmentInterviewQuestions}
             currentIndex={assessmentInterviewIndex}
             answer={assessmentInterviewAnswer}
-            error={assessmentInterviewError}
             onAnswerChange={setAssessmentInterviewAnswer}
             onSubmit={() => advanceAssessmentInterview(false)}
             onSkip={() => advanceAssessmentInterview(true)}
@@ -5406,7 +5396,7 @@ return positions;
                       type="button"
                       onClick={handleShareDiagram}
                       disabled={!shareEmail.trim() || isSharing}
-                      className="w-full px-4 py-2 bg-accent text-white rounded-md hover:brightness-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-2 bg-accent text-[var(--bg)] rounded-md hover:brightness-90 transition-all disabled:bg-[var(--muted)] disabled:text-[var(--bg)] disabled:opacity-100 disabled:hover:brightness-100 disabled:cursor-not-allowed"
                     >
                       {isSharing ? "Sharing..." : "Share Design"}
                     </button>

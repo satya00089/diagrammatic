@@ -60,7 +60,7 @@ const ToolbarButton: React.FC<{
       title={title}
       className={`px-2 py-1 rounded transition-colors ${
         active
-          ? "bg-[var(--brand)] text-white"
+          ? "bg-[var(--brand)] text-[var(--bg)]"
           : "hover:bg-[var(--bg-hover)] text-theme"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >

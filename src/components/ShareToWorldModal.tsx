@@ -514,12 +514,12 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
                       type="button"
                       onClick={() => void handlePublish()}
                       disabled={!mode || phase === "publishing"}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(79,70,229,0.24)] transition-[transform,background-color,box-shadow] hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 text-sm font-bold text-[var(--bg)] shadow-[0_8px_24px_rgba(79,70,229,0.24)] transition-[transform,background-color,box-shadow] hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:text-[var(--bg)] disabled:opacity-100 disabled:hover:translate-y-0 disabled:hover:brightness-100"
                     >
                       {phase === "publishing" ? (
                         <>
                           <span
-                            className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--bg)]/40 border-t-[var(--bg)]"
                             aria-hidden
                           />
                           <span>Publishing…</span>
@@ -560,7 +560,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
                       <button
                         type="button"
                         onClick={() => void handleCopyLink()}
-                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-bold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+                        className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-bold text-[var(--bg)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
                       >
                         {linkCopied ? (
                           <MdCheck aria-hidden />

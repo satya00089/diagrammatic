@@ -151,7 +151,7 @@ const InterviewPanel: React.FC<InterviewPanelProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || !answer.trim()}
-              className="flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2.5 text-xs font-semibold text-white transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-3 py-2.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60 disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:text-[var(--bg)] disabled:opacity-100 disabled:hover:brightness-100"
             >
               {isSubmitting ? (
                 <>

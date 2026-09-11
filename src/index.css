@@ -749,6 +749,17 @@ a:focus-visible > .rolling-nav-label .rolling-nav-label__copy--incoming {
   --elevated-card-bg: var(--surface);
 }
 
+html:has(.learning-paths-page) {
+  color-scheme: light;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa89f #f4f3ee;
+}
+
+html.dark:has(.learning-paths-page) {
+  color-scheme: dark;
+  scrollbar-color: #555550 #080808;
+}
+
 .learning-paths-page.grid-pattern-overlay::before {
   opacity: 0.032;
 }

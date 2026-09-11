@@ -72,7 +72,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
     disabled={disabled}
     onMouseDown={(event) => event.preventDefault()}
     onClick={onClick}
-    className={`rounded px-2 py-1 text-theme transition-colors hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50 ${active ? "bg-[var(--brand)] text-white" : ""}`}
+    className={`rounded px-2 py-1 text-theme transition-colors hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-50 ${active ? "bg-[var(--brand)] text-[var(--bg)]" : ""}`}
   >
     {children}
   </button>

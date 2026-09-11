@@ -12,7 +12,6 @@ type AssessmentInterviewDialogProps = {
   questions: string[];
   currentIndex: number;
   answer: string;
-  error: string | null;
   onAnswerChange: (answer: string) => void;
   onSubmit: () => void;
   onSkip: () => void;
@@ -23,7 +22,6 @@ const AssessmentInterviewDialog: React.FC<AssessmentInterviewDialogProps> = ({
   questions,
   currentIndex,
   answer,
-  error,
   onAnswerChange,
   onSubmit,
   onSkip,
@@ -132,15 +130,6 @@ const AssessmentInterviewDialog: React.FC<AssessmentInterviewDialogProps> = ({
               answer by voice.
             </p>
 
-            {error && (
-              <div
-                role="alert"
-                className="mt-3 rounded-lg border border-red-500/35 bg-red-500/8 px-3 py-2 text-xs leading-relaxed text-theme"
-              >
-                {error}
-              </div>
-            )}
-
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
@@ -153,7 +142,7 @@ const AssessmentInterviewDialog: React.FC<AssessmentInterviewDialogProps> = ({
               <button
                 type="submit"
                 disabled={!answer.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--brand)] px-4 py-2.5 text-xs font-semibold text-[var(--bg)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60 disabled:cursor-not-allowed disabled:bg-[var(--muted)] disabled:text-[var(--bg)] disabled:opacity-100 disabled:hover:brightness-100"
               >
                 {isLastQuestion
                   ? "Continue to assessment"

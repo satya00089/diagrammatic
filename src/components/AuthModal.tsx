@@ -282,7 +282,7 @@ const CredentialsForm: React.FC<{
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full px-6 py-3 bg-[var(--brand)] text-white font-bold rounded-lg hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full px-6 py-3 bg-[var(--brand)] text-[var(--bg)] font-bold rounded-lg hover:brightness-95 disabled:bg-[var(--muted)] disabled:text-[var(--bg)] disabled:opacity-100 disabled:hover:brightness-100 disabled:cursor-not-allowed transition-all"
         >
           {isLoading ? "Please wait..." : modeCopy.submit}
         </button>

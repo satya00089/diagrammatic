@@ -542,7 +542,7 @@ const TableNode: React.FC<Props> = React.memo(
           />
 
           {/* Table Header */}
-          <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0 rounded-t-md">
+          <div className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0 rounded-t-md">
             <div className="flex items-center gap-2">
               {data.icon && <span className="text-lg">{data.icon}</span>}
               <span>{displayLabel}</span>
