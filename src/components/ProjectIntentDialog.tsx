@@ -117,7 +117,7 @@ export const ProjectIntentDialog: React.FC<ProjectIntentDialogProps> = ({
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium bg-accent hover:brightness-90
-                text-white rounded-md transition-all"
+                text-[var(--bg)] rounded-md transition-all"
             >
               {submitLabel}
             </button>

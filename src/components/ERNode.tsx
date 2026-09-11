@@ -298,7 +298,7 @@ const ERNode: React.FC<Props> = React.memo(
 
           {/* Entity Header */}
           {!isNote && !isTrigger && (
-            <div className="bg-[var(--brand)] text-white px-3 py-2 font-semibold text-center flex items-center justify-center gap-2">
+            <div className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold text-center flex items-center justify-center gap-2">
               {data.icon && <span className="text-lg">{data.icon}</span>}
               <span>{displayLabel}</span>
             </div>

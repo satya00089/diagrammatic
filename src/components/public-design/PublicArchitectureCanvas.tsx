@@ -414,7 +414,7 @@ const PublicArchitectureCanvas: React.FC<{
           <button
             type="button"
             onClick={onPractice}
-            className="inline-flex items-center justify-center gap-2 bg-[var(--brand)] px-5 py-3 font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
+            className="inline-flex items-center justify-center gap-2 bg-[var(--brand)] px-5 py-3 font-semibold text-[var(--bg)] shadow-[0_8px_22px_rgba(99,102,241,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(99,102,241,0.3)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand)]"
           >
             Start designing <MdArrowForward aria-hidden="true" />
           </button>

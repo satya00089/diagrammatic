@@ -38,7 +38,7 @@ export const AnimatedCheckbox: React.FC<AnimatedCheckboxProps> = ({
           className="peer w-4 h-4 cursor-pointer appearance-none rounded border border-theme bg-[var(--surface)] focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-1 transition-colors disabled:cursor-not-allowed"
         />
         {checked && (
-          <span className="pointer-events-none absolute w-3 h-3 flex items-center justify-center text-[10px] font-semibold text-white bg-[var(--brand)] rounded-sm shadow-sm">
+          <span className="pointer-events-none absolute w-3 h-3 flex items-center justify-center text-[10px] font-semibold text-[var(--bg)] bg-[var(--brand)] rounded-sm shadow-sm">
             ✓
           </span>
         )}

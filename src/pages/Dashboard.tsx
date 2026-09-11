@@ -912,7 +912,7 @@ const Dashboard: React.FC = () => {
                                         isAuth &&
                                         attemptedProblems.has(problem.id)
                                           ? "bg-blue-600 text-white hover:shadow-md"
-                                          : "bg-[var(--brand)] text-white hover:shadow-md"
+                                          : "bg-[var(--brand)] text-[var(--bg)] hover:shadow-md"
                                       }`}
                                     >
                                       <span className="flex items-center justify-center gap-2">

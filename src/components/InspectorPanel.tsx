@@ -398,7 +398,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               <span className="w-px h-full bg-transparent group-hover:bg-[var(--brand)]/40 transition-colors" />
               <PiDotsSixVerticalBold
                 aria-hidden
-                className="absolute py-1 rounded-md bg-[var(--surface)] border border-theme text-[var(--muted)] opacity-90 group-hover:bg-[var(--brand)] group-hover:text-white shadow-sm pointer-events-none transition-colors"
+                className="absolute py-1 rounded-md bg-[var(--surface)] border border-theme text-[var(--muted)] opacity-90 group-hover:bg-[var(--brand)] group-hover:text-[var(--bg)] shadow-sm pointer-events-none transition-colors"
                 size={24}
               />
             </button>
@@ -453,7 +453,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                   />
                   <span className="text-sm font-medium">Assessment</span>
                   {assessmentResult && (
-                    <span className="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[var(--brand)] text-white">
+                    <span className="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-[var(--brand)] text-[var(--bg)]">
                       {assessmentResult.score}
                     </span>
                   )}
@@ -1037,7 +1037,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                           <button
                             type="button"
                             onClick={onReviewAgain}
-                            className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                            className="w-full rounded-xl bg-[var(--brand)] px-4 py-3 text-sm font-semibold text-[var(--bg)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
                           >
                             Review again after making changes
                           </button>
@@ -1386,7 +1386,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <div className="flex-shrink-0 border-t border-[var(--border)] px-4 py-3">
             <Link
               to={sharedCta.to}
-              className="block w-full text-center py-2.5 rounded-xl bg-[var(--brand,#6366f1)] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+              className="block w-full text-center py-2.5 rounded-xl bg-[var(--brand,#6366f1)] text-[var(--bg)] text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               {sharedCta.label}
             </Link>
