@@ -270,6 +270,46 @@
   box-shadow: 0 12px 24px rgb(0 0 0 / 10%);
 }
 
+.my-designs-card-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.my-designs-delete-action {
+  display: inline-flex;
+  min-height: 3rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  padding: 0 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.my-designs-delete-action svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.my-designs-delete-action:hover {
+  border-color: color-mix(in srgb, #b94a48 55%, var(--border));
+  background: color-mix(in srgb, #b94a48 10%, transparent);
+  color: #8f3734;
+}
+
+.dark .my-designs-page .my-designs-delete-action:hover {
+  color: #f09a94;
+}
+
 .my-designs-card {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -282,18 +322,6 @@
   transform: translateY(-4px);
 }
 
-.my-designs-card .text-purple-800,
-.my-designs-card .text-purple-600,
-.my-designs-card .text-purple-400,
-.my-designs-card .text-purple-300 {
-  color: var(--text) !important;
-}
-
-.my-designs-card [class*="bg-purple-"] {
-  border-color: var(--border);
-  background: var(--bg-hover);
-}
-
 .my-designs-card [class*="bg-emerald-"] {
   border: 1px solid var(--border);
   background: var(--bg-hover) !important;
@@ -304,14 +332,106 @@
   color: var(--text) !important;
 }
 
-.my-designs-card .bg-emerald-600 {
-  background: var(--text) !important;
-  color: var(--bg) !important;
+.my-designs-sharing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.my-designs-card .bg-slate-500 {
-  background: var(--bg-hover) !important;
-  color: var(--text) !important;
+.my-designs-sharing-person {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.my-designs-sharing-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+  color: var(--muted);
+}
+
+.my-designs-sharing-avatar {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text) 16%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 10%, var(--surface));
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.my-designs-sharing-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.1rem;
+  line-height: 1.2;
+}
+
+.my-designs-sharing-label {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.my-designs-sharing-name {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.my-designs-permission-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.my-designs-permission-badge svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.my-designs-permission-badge--edit {
+  border-color: color-mix(in srgb, var(--text) 24%, var(--border));
+  color: var(--text);
+}
+
+.my-designs-permission-badge:hover {
+  border-color: color-mix(in srgb, var(--text) 45%, var(--border));
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+}
+
+@media (max-width: 420px) {
+  .my-designs-sharing {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .my-designs-page button:focus-visible,
@@ -346,7 +466,8 @@
   .my-designs-new-design,
   .my-designs-sign-in,
   .my-designs-card,
-  .my-designs-primary {
+  .my-designs-primary,
+  .my-designs-delete-action {
     transition: none;
   }
 }

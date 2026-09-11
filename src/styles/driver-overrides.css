@@ -9,17 +9,10 @@ html.dark .driver-overlay {
   background: rgba(0, 0, 0, 0.7) !important;
 }
 
-/* Driver mounts at document level, outside the page-scoped theme tokens.
-   Bridge it to the shared Systema palette used by the catalog, studio, and
-   learning surfaces so every tour uses the same paper-and-ink values. */
-html:has(
-    .dashboard-page,
-    .learning-paths-page,
-    .learning-path-detail-page,
-    .problem-detail-page,
-    .design-studio-page
-  )
-  .driver-popover {
+/* Driver mounts at document level, outside page-scoped theme tokens. Keep the
+   tour surface global so every route, including My Designs, gets the same
+   paper-and-ink treatment. */
+.driver-popover {
   --bg: #f4f3ee;
   --surface: #ebeae5;
   --bg-hover: #e4e2db;
@@ -29,14 +22,7 @@ html:has(
   --brand: #151513;
 }
 
-html.dark:has(
-    .dashboard-page,
-    .learning-paths-page,
-    .learning-path-detail-page,
-    .problem-detail-page,
-    .design-studio-page
-  )
-  .driver-popover {
+html.dark .driver-popover {
   --bg: #080808;
   --surface: #131313;
   --bg-hover: #1b1b1b;

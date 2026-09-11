@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "motion/react";
 import { FieldWrapper } from "./AnimatedFieldBase";
 import { useFocus } from "./useFocus";
+import SelectDropdown from "./SelectDropdown";
 
 export interface AnimatedSelectProps {
   id: string;
@@ -44,24 +45,17 @@ const AnimatedSelect: React.FC<AnimatedSelectProps> = ({
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
         className="w-full"
       >
-        <select
+        <SelectDropdown
           id={id}
           value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
+          options={options}
+          aria-label={label || id}
           onFocus={onFocus}
           onBlur={onBlur}
           disabled={disabled}
-          aria-labelledby={label ? labelId : undefined}
-          aria-label={label || id}
-          title={label || id}
-          className={`w-full border p-1 px-2 rounded bg-[var(--surface)] text-theme outline-none ${disabled ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
-        >
-          {options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
+          className={className}
+        />
       </motion.div>
     </FieldWrapper>
   );

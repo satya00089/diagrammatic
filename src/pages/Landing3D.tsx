@@ -284,6 +284,15 @@ export default function Landing3D() {
           <Link to="/learning-paths/" aria-label="Learning paths">
             <RollingNavLabel>Learning paths</RollingNavLabel>
           </Link>
+          {isAuthenticated && (
+            <Link
+              to="/diagrams"
+              aria-label="My Designs"
+              className="systema-nav-workspace-link"
+            >
+              <RollingNavLabel>My Designs</RollingNavLabel>
+            </Link>
+          )}
         </nav>
         <div className="systema-nav-actions">
           <button
@@ -396,6 +405,15 @@ export default function Landing3D() {
             <Link onClick={() => setMenuOpen(false)} to="/learning-paths/">
               Learning paths
             </Link>
+            {isAuthenticated && (
+              <Link
+                onClick={() => setMenuOpen(false)}
+                to="/diagrams"
+                className="systema-mobile-nav-workspace-link"
+              >
+                My Designs
+              </Link>
+            )}
             {isAuthenticated ? (
               <>
                 <div className="systema-mobile-nav-account">
