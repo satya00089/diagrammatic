@@ -41,6 +41,13 @@ const phaseInsights = [
   "Cache popular links. Now consider expiry, invalidation, and cache misses.",
 ] as const;
 const examplePath = "/problems/url-shortener-like-bit-ly/";
+const landingPatternSizes = [
+  { size1: 18, size2: 23 },
+  { size1: 27, size2: 32 },
+  { size1: 21, size2: 27 },
+  { size1: 33, size2: 39 },
+  { size1: 24, size2: 30 },
+] as const;
 
 function Brand() {
   return (
@@ -197,6 +204,7 @@ export default function Landing3D() {
     let size1 = 24;
     let size2 = 29;
     let animationFrame = 0;
+    let patternIndex = 0;
 
     const updatePattern = (nextSize1: number, nextSize2: number) => {
       size1 = nextSize1;
@@ -211,8 +219,8 @@ export default function Landing3D() {
     const animateToNewPattern = () => {
       const startSize1 = size1;
       const startSize2 = size2;
-      const targetSize1 = 18 + Math.floor(Math.random() * 17);
-      const targetSize2 = targetSize1 + 4 + Math.floor(Math.random() * 4);
+      const target = landingPatternSizes[patternIndex % landingPatternSizes.length];
+      patternIndex += 1;
       const startedAt = performance.now();
       const duration = 1200;
 
@@ -220,8 +228,8 @@ export default function Landing3D() {
         const progress = Math.min((now - startedAt) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         updatePattern(
-          startSize1 + (targetSize1 - startSize1) * eased,
-          startSize2 + (targetSize2 - startSize2) * eased,
+          startSize1 + (target.size1 - startSize1) * eased,
+          startSize2 + (target.size2 - startSize2) * eased,
         );
         if (progress < 1) animationFrame = window.requestAnimationFrame(animate);
       };
