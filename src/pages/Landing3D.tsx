@@ -155,14 +155,20 @@ function FeatureArt({
         </g>
       )}
       {type === "canvas" && (
-        <g stroke="currentColor">
-          <rect x="54" y="31" width="212" height="78" rx="4" />
-          <path d="M78 70H117M159 70H198M117 70l20-20M117 70l20 20M198 70l20-20M198 70l20 20" />
-          <circle cx="78" cy="70" r="9" />
-          <circle cx="137" cy="70" r="9" />
-          <circle cx="198" cy="70" r="9" />
-          <circle cx="238" cy="50" r="9" />
-          <circle cx="238" cy="90" r="9" />
+        <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="54" y="30" width="212" height="80" rx="4" />
+          <path d="M54 49H266" opacity=".28" />
+          <circle cx="67" cy="39" r="2" fill="currentColor" stroke="none" opacity=".55" />
+          <circle cx="75" cy="39" r="2" fill="currentColor" stroke="none" opacity=".35" />
+          <circle cx="83" cy="39" r="2" fill="currentColor" stroke="none" opacity=".2" />
+          <path d="M94 39H126M138 39H166" opacity=".16" />
+          <path d="M76 66H244M76 78H244M76 90H213" strokeDasharray="1 6" opacity=".16" />
+          <rect x="82" y="60" width="42" height="25" rx="3" opacity=".85" />
+          <path d="M90 68H116M90 76H108" opacity=".42" />
+          <rect x="145" y="55" width="48" height="35" rx="3" opacity=".85" />
+          <path d="M154 65H184M154 74H178M154 83H171" opacity=".42" />
+          <circle cx="224" cy="73" r="13" opacity=".85" />
+          <path d="M218 73H230M224 67V79" opacity=".42" />
         </g>
       )}
     </svg>
