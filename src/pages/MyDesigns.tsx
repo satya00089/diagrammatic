@@ -11,6 +11,7 @@ import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
 import {
   MdContentCopy,
+  MdDeleteOutline,
   MdHelpOutline,
   MdLockOutline,
   MdOpenInNew,
@@ -22,6 +23,8 @@ import {
 } from "react-icons/md";
 import {
   HiChevronDown,
+  HiEye,
+  HiShare,
   HiUserGroup,
   HiPencilSquare,
   HiCube,
@@ -664,31 +667,6 @@ const MyDesigns: React.FC = () => {
                         className={`my-designs-card group elevated-card-bg rounded-2xl transition-all duration-500 overflow-hidden ${CARD_DELAY_CLASSES[index] ?? ""}`}
                       >
                         <div className="relative p-6">
-                          {/* Delete Button - Only for owners */}
-                          {diagram.isOwner && (
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteDiagram(diagram, e)}
-                              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg z-10"
-                              title="Delete diagram"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 text-red-500"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
-                          )}
-
                           <div
                             className="cursor-pointer"
                             onClick={() => handleOpenDiagram(diagram.id)}
@@ -731,82 +709,47 @@ const MyDesigns: React.FC = () => {
                                   </div>
                                 )}
 
-                                {/* Enhanced Ownership & Permission Section */}
+                                {/* Shared-by and permission metadata */}
                                 {!diagram.isOwner && (
-                                  <div className="mb-2 flex items-center gap-2 flex-wrap">
-                                    {/* Owner Info Badge - Inline */}
-                                    <div className="group/owner relative rounded-lg bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1.5 border border-purple-200/60 dark:border-purple-700/40 transition-all duration-300 inline-flex items-center gap-2">
-                                      <div className="relative flex items-center gap-1.5">
-                                        {/* Avatar */}
-                                        <div className="relative flex-shrink-0">
-                                          {diagram.owner.pictureUrl ? (
-                                            <img
-                                              src={diagram.owner.pictureUrl}
-                                              alt={diagram.owner.name}
-                                              className="w-5 h-5 rounded-full object-cover ring-1 ring-purple-300 dark:ring-purple-600"
-                                            />
-                                          ) : (
-                                            <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[9px] text-white font-bold">
-                                              {diagram.owner.name[0]?.toUpperCase()}
-                                            </div>
-                                          )}
-                                          {/* Online indicator */}
-                                          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white dark:border-gray-900" />
-                                        </div>
-
-                                        {/* Owner Name */}
-                                        <div className="flex items-center gap-1">
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="h-2.5 w-2.5 text-purple-600 dark:text-purple-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            strokeWidth={3}
-                                          >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                                            />
-                                          </svg>
-                                          <span className="text-xs font-bold text-purple-800 dark:text-purple-300">
-                                            {diagram.owner.name}
-                                          </span>
-                                        </div>
+                                  <div className="my-designs-sharing mb-3">
+                                    <div className="my-designs-sharing-person">
+                                      <HiShare
+                                        className="my-designs-sharing-icon"
+                                        aria-hidden="true"
+                                      />
+                                      <div className="my-designs-sharing-avatar">
+                                        {diagram.owner.pictureUrl ? (
+                                          <img
+                                            src={diagram.owner.pictureUrl}
+                                            alt=""
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          diagram.owner.name[0]?.toUpperCase()
+                                        )}
+                                      </div>
+                                      <div className="my-designs-sharing-copy">
+                                        <span className="my-designs-sharing-label">
+                                          Shared by
+                                        </span>
+                                        <span className="my-designs-sharing-name">
+                                          {diagram.owner.name}
+                                        </span>
                                       </div>
                                     </div>
 
-                                    {/* Permission Badge */}
                                     <div
-                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-sm transition-all duration-300 ${
+                                      className={`my-designs-permission-badge ${
                                         diagram.permission === "edit"
-                                          ? "bg-emerald-600 text-white hover:shadow-sm"
-                                          : "bg-slate-500 text-white hover:shadow-sm"
+                                          ? "my-designs-permission-badge--edit"
+                                          : "my-designs-permission-badge--view"
                                       }`}
                                     >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="h-3.5 w-3.5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2.5}
-                                      >
-                                        {diagram.permission === "edit" ? (
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                          />
-                                        ) : (
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                          />
-                                        )}
-                                      </svg>
+                                      {diagram.permission === "edit" ? (
+                                        <HiPencilSquare aria-hidden="true" />
+                                      ) : (
+                                        <HiEye aria-hidden="true" />
+                                      )}
                                       <span>
                                         {diagram.permission === "edit"
                                           ? "Can Edit"
@@ -925,16 +868,31 @@ const MyDesigns: React.FC = () => {
                               </div>
                             )}
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDiagram(diagram.id);
-                              }}
-                              className="my-designs-primary w-full rounded-lg px-6 py-3 font-semibold transition-[transform,filter] duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
-                            >
-                              Open design
-                            </button>
+                            <div className="my-designs-card-actions">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDiagram(diagram.id);
+                                }}
+                                className="my-designs-primary min-w-0 flex-1 rounded-lg px-4 py-3 font-semibold transition-[transform,filter] duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                              >
+                                Open design
+                              </button>
+                              {diagram.isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={(event) =>
+                                    void handleDeleteDiagram(diagram, event)
+                                  }
+                                  className="my-designs-delete-action rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
+                                  aria-label={`Delete ${diagram.title}`}
+                                >
+                                  <MdDeleteOutline aria-hidden />
+                                  <span>Delete</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

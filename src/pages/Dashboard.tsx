@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -15,9 +15,9 @@ import {
   MdSmartToy,
   MdHelpOutline,
 } from "react-icons/md";
-import { HiChevronDown } from "react-icons/hi2";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import ProductHeader from "../components/ProductHeader";
+import SelectDropdown from "../components/shared/SelectDropdown";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../hooks/useAuth";
 import { useOnboarding } from "../hooks/useOnboarding";
@@ -52,119 +52,6 @@ import {
   selectAttemptedProblems,
 } from "../store/slices/problemsSelectors";
 import { getProblemSlug } from "../utils/problemSlug";
-
-type DashboardSelectProps = {
-  id: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-  "aria-label": string;
-};
-
-const DashboardSelect: React.FC<DashboardSelectProps> = ({
-  id,
-  value,
-  options,
-  onChange,
-  "aria-label": ariaLabel,
-}) => {
-  const [open, setOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(() =>
-    Math.max(0, options.indexOf(value)),
-  );
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setHighlightedIndex(Math.max(0, options.indexOf(value)));
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open, options, value]);
-
-  const choose = (nextValue: string) => {
-    onChange(nextValue);
-    setOpen(false);
-  };
-
-  return (
-    <div ref={wrapperRef} className="dashboard-select-wrapper">
-      <button
-        id={id}
-        type="button"
-        className="dashboard-select-trigger"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            event.preventDefault();
-            setOpen(true);
-            setHighlightedIndex((current) =>
-              event.key === "ArrowDown"
-                ? Math.min(options.length - 1, current + 1)
-                : Math.max(0, current - 1),
-            );
-          } else if (event.key === "Home") {
-            event.preventDefault();
-            setOpen(true);
-            setHighlightedIndex(0);
-          } else if (event.key === "End") {
-            event.preventDefault();
-            setOpen(true);
-            setHighlightedIndex(options.length - 1);
-          } else if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            if (open) choose(options[highlightedIndex]);
-            else setOpen(true);
-          } else if (event.key === "Escape") {
-            setOpen(false);
-          }
-        }}
-      >
-        <span>{value}</span>
-        <HiChevronDown
-          aria-hidden="true"
-          className={`dashboard-select-chevron ${open ? "dashboard-select-chevron--open" : ""}`}
-        />
-      </button>
-      {open && (
-        <div
-          className="dashboard-select-menu"
-          role="listbox"
-          aria-label={ariaLabel}
-        >
-          {options.map((option, index) => (
-            <div
-              key={option}
-              role="option"
-              tabIndex={0}
-              aria-selected={option === value}
-              className={`dashboard-select-option ${
-                index === highlightedIndex
-                  ? "dashboard-select-option--highlighted"
-                  : ""
-              } ${option === value ? "dashboard-select-option--selected" : ""}`}
-              onMouseEnter={() => setHighlightedIndex(index)}
-              onClick={() => choose(option)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  choose(option);
-                }
-              }}
-            >
-              {option}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const Dashboard: React.FC = () => {
   useTheme();
@@ -702,7 +589,7 @@ const Dashboard: React.FC = () => {
                       >
                         <MdTune className="w-4 h-4" /> Difficulty
                       </label>
-                      <DashboardSelect
+                      <SelectDropdown
                         id="difficulty-select"
                         value={selectedDifficulty}
                         options={difficulties}
@@ -721,7 +608,7 @@ const Dashboard: React.FC = () => {
                       >
                         <MdLabel className="w-4 h-4" /> Category
                       </label>
-                      <DashboardSelect
+                      <SelectDropdown
                         id="category-select"
                         value={selectedCategory}
                         options={categories}

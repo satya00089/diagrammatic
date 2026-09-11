@@ -1331,6 +1331,17 @@ html.dark:has(.dashboard-page) {
   scrollbar-color: #555550 #080808;
 }
 
+html:has(.my-designs-page) {
+  color-scheme: light;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa89f #f4f3ee;
+}
+
+html.dark:has(.my-designs-page) {
+  color-scheme: dark;
+  scrollbar-color: #555550 #080808;
+}
+
 /* Heading rendering — crisp Inter on high-DPI displays */
 h1,
 h2,
