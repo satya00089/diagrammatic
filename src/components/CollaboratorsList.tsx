@@ -83,7 +83,8 @@ const CollaboratorsList: React.FC<CollaboratorsListProps> = ({
               type="button"
               onClick={() => onRemove(collaborator.id)}
               className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-              title="Remove collaborator"
+              aria-label="Remove collaborator"
+              data-tooltip="Remove collaborator"
             >
               <MdClose className="h-4 w-4" />
             </button>

@@ -358,17 +358,21 @@ export default function Landing3D() {
           )}
         </nav>
         <div className="systema-nav-actions">
-          <button
-            type="button"
-            className="systema-theme-toggle"
-            aria-label={`Switch to ${landingTheme === "light" ? "dark" : "light"} theme`}
-            title={`Switch to ${landingTheme === "light" ? "dark" : "light"} theme`}
-            onClick={() =>
-              setTheme(landingTheme === "light" ? "dark" : "light")
-            }
-          >
-            {landingTheme === "light" ? <HiMoon /> : <HiSun />}
-          </button>
+          <span className="systema-theme-control">
+            <button
+              type="button"
+              className="systema-theme-toggle"
+              aria-label={`Switch to ${landingTheme === "light" ? "dark" : "light"} theme`}
+              onClick={() =>
+                setTheme(landingTheme === "light" ? "dark" : "light")
+              }
+            >
+              {landingTheme === "light" ? <HiMoon /> : <HiSun />}
+            </button>
+            <span className="systema-theme-tooltip" role="tooltip">
+              Switch to {landingTheme === "light" ? "dark" : "light"} theme
+            </span>
+          </span>
           <div className="systema-auth-control">
             {isAuthenticated ? (
               <>

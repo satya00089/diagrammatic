@@ -2948,7 +2948,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         key={preset.value || "__default__"}
                         type="button"
-                        title={preset.label}
+                        data-tooltip={preset.label}
                         onClick={() => setPropString(p.key, preset.value)}
                         className="w-6 h-6 rounded flex-shrink-0 transition-transform hover:scale-110 relative"
                         style={{
@@ -2979,7 +2979,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     onChange={(e) => setPropString(p.key, e.target.value)}
                     className="w-7 h-7 cursor-pointer rounded border border-theme bg-transparent flex-shrink-0"
                     style={{ padding: "1px" }}
-                    title="Custom color"
+                    aria-label="Custom color"
+                    data-tooltip="Custom color"
                   />
                   <input
                     type="text"
@@ -3131,7 +3132,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     <button
                       key={preset.label}
                       type="button"
-                      title={preset.label}
+                      data-tooltip={preset.label}
                       onClick={() =>
                         applyPair(preset.bg, preset.border, preset.text)
                       }
@@ -3182,7 +3183,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       type="button"
                       onClick={() => updateNodeProperty("backgroundColor", "")}
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
-                      title="Clear"
+                      aria-label="Clear background color"
+                      data-tooltip="Clear"
                     >
                       ✕
                     </button>
@@ -3215,7 +3217,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       type="button"
                       onClick={() => updateNodeProperty("borderColor", "")}
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
-                      title="Clear"
+                      aria-label="Clear border color"
+                      data-tooltip="Clear"
                     >
                       ✕
                     </button>
@@ -3248,7 +3251,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       type="button"
                       onClick={() => updateNodeProperty("textColor", "")}
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
-                      title="Clear"
+                      aria-label="Clear text color"
+                      data-tooltip="Clear"
                     >
                       ✕
                     </button>
@@ -3355,7 +3359,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                     ? "border-[var(--brand)] bg-[var(--brand)]/10 text-[var(--brand)]"
                     : "border-theme bg-[var(--surface)] text-muted hover:border-[var(--brand)]/50 hover:text-theme"
                 }`}
-                title={label}
+                data-tooltip={label}
               >
                 <span className="text-base leading-none">{icon}</span>
                 <span className="text-[9px] font-medium leading-tight">
@@ -3383,7 +3387,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 value={currentEdgeColor || "#6366f1"}
                 onChange={(e) => updateEdgeProperty("color", e.target.value)}
                 className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                title="Pick color"
+                aria-label="Pick color"
+                data-tooltip="Pick color"
               />
               <div
                 className="w-7 h-7 rounded-md border-2 border-white/30 shadow"
@@ -3402,7 +3407,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 type="button"
                 onClick={() => updateEdgeProperty("color", "")}
                 className="text-muted hover:text-red-400 text-sm flex-shrink-0 transition-colors"
-                title="Reset to default"
+                aria-label="Reset to default"
+                data-tooltip="Reset to default"
               >
                 ✕
               </button>

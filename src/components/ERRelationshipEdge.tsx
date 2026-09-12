@@ -824,7 +824,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                       minWidth: "60px",
                       whiteSpace: "nowrap",
                     }}
-                    title="Double-click to edit"
+                    data-tooltip="Double-click to edit"
                     type="button"
                   >
                     {value || "Label"}
@@ -841,7 +841,8 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                         border: "none",
                         cursor: "pointer",
                       }}
-                      title="Remove label"
+                      aria-label="Remove label"
+                      data-tooltip="Remove label"
                       type="button"
                     >
                       ✕
@@ -864,7 +865,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                 }}
-                title="Add label"
+                data-tooltip="Add label"
                 type="button"
               >
                 + Label

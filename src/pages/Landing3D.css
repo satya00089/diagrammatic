@@ -238,6 +238,10 @@ html:has(.systema-page[data-theme="dark"]) {
   gap: 8px;
   justify-self: end;
 }
+.systema-theme-control {
+  position: relative;
+  display: inline-flex;
+}
 .systema-theme-toggle {
   display: inline-grid;
   width: 40px;
@@ -258,6 +262,34 @@ html:has(.systema-page[data-theme="dark"]) {
 .systema-theme-toggle svg {
   width: 16px;
   height: 16px;
+}
+.systema-theme-tooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  z-index: 20;
+  padding: 7px 10px;
+  border: 1px solid var(--systema-line);
+  border-radius: 7px;
+  background: var(--systema-surface);
+  color: var(--systema-text);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
+}
+.systema-theme-control:hover .systema-theme-tooltip,
+.systema-theme-toggle:focus-visible + .systema-theme-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 .systema-nav-cta {
   font-size: 12px;
@@ -1045,6 +1077,15 @@ html:has(.systema-page[data-theme="dark"]) {
   }
 }
 @media (max-width: 899px) {
+  .systema-theme-tooltip {
+    right: 0;
+    left: auto;
+    transform: translateY(-4px);
+  }
+  .systema-theme-control:hover .systema-theme-tooltip,
+  .systema-theme-toggle:focus-visible + .systema-theme-tooltip {
+    transform: translateY(0);
+  }
   .systema-desktop-nav {
     display: none;
   }

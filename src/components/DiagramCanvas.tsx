@@ -7,10 +7,10 @@ import {
   type EdgeTypes,
   ReactFlow,
   MiniMap,
-  Controls,
   Background,
   ConnectionMode,
 } from "@xyflow/react";
+import StyledFlowControls from "./shared/StyledFlowControls";
 
 type DiagramCanvasProps = {
   readOnly?: boolean;
@@ -77,7 +77,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           proOptions={{ hideAttribution: true }}
         >
           <MiniMap nodeStrokeWidth={3} />
-          <Controls />
+          <StyledFlowControls />
           <Background gap={16} />
           {children}
         </ReactFlow>

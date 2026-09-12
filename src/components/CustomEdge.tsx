@@ -173,7 +173,7 @@ const EdgeLabelContent: React.FC<{
           cursor: "pointer",
           whiteSpace: "nowrap",
         }}
-        title="Add label"
+        data-tooltip="Add label"
         type="button"
       >
         + Label
@@ -236,7 +236,7 @@ const EdgeLabelContent: React.FC<{
     return (
       <span
         style={labelStyle}
-        title={description || value}
+        data-tooltip={description || value}
         aria-label={value || "Connection"}
       >
         {value || "Connection"}
@@ -249,7 +249,7 @@ const EdgeLabelContent: React.FC<{
       <button
         onDoubleClick={onEdit}
         style={{ ...labelStyle, cursor: "text" }}
-        title="Double-click to edit"
+        data-tooltip="Double-click to edit"
         type="button"
       >
         {value || "Label"}
@@ -266,7 +266,8 @@ const EdgeLabelContent: React.FC<{
             border: "none",
             cursor: "pointer",
           }}
-          title="Remove label"
+          aria-label="Remove label"
+          data-tooltip="Remove label"
           type="button"
         >
           ✕

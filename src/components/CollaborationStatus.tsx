@@ -116,7 +116,7 @@ export const CollaborationStatus: React.FC<CollaborationStatusProps> = ({
                 className="relative group"
                 role="img"
                 aria-label={collaborator.name}
-                title={collaborator.name}
+                data-tooltip={collaborator.name}
               >
                 {collaborator.pictureUrl ? (
                   <img

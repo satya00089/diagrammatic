@@ -132,7 +132,7 @@ const PasswordField: React.FC<{
           onClick={onToggle}
           className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-r-lg"
           aria-label={visibilityAction}
-          title={visibilityAction}
+          data-tooltip={visibilityAction}
         >
           {visible ? (
             <MdVisibilityOff className="h-5 w-5" />

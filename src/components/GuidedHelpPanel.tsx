@@ -330,7 +330,7 @@ const GuidedHelpPanel: React.FC<GuidedHelpPanelProps> = ({
                   ? "bg-[var(--brand)]/15 text-[var(--brand)] border-[var(--brand)]/30 font-semibold"
                   : "text-muted/50 border-[var(--border)] hover:text-muted hover:border-[var(--border-hover)]"
               }`}
-              title={phase.description}
+              data-tooltip={phase.description}
             >
               {idx + 1}. {phase.name.replace(/^Phase \d+: /, "")}
             </button>

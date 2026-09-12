@@ -373,7 +373,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         }
         aria-controls="inspector-panel"
         data-tour="inspector-toggle"
-        title={open ? undefined : "Inspector panel is closed — click to expand"}
+        data-tooltip={open ? undefined : "Inspector panel is closed — click to expand"}
         className="absolute top-5 -left-3 h-6 w-6 flex items-center justify-center rounded-full border border-theme bg-surface text-theme shadow cursor-pointer hover:bg-[var(--bg-hover)] transition-colors z-50"
       >
         {open ? <PiCaretRightBold size={16} /> : <PiCaretLeftBold size={16} />}
@@ -656,7 +656,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </h3>
                               <p
                                 className="text-[10px] text-muted font-mono truncate max-w-[140px]"
-                                title={inspectedEdgeId}
+                                data-tooltip={inspectedEdgeId}
                               >
                                 {inspectedEdgeId}
                               </p>
@@ -669,7 +669,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               setActiveTab("details");
                             }}
                             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
-                            title="Close"
+                            aria-label="Close connection details"
+                            data-tooltip="Close"
                           >
                             <MdClose className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -696,7 +697,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               </h3>
                               <p
                                 className="text-[10px] text-muted font-mono truncate max-w-[140px]"
-                                title={inspectedNodeId}
+                                data-tooltip={inspectedNodeId}
                               >
                                 {inspectedNodeId}
                               </p>
@@ -709,7 +710,8 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               setActiveTab("details");
                             }}
                             className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] text-muted hover:text-theme transition-colors cursor-pointer text-base"
-                            title="Close"
+                            aria-label="Close component properties"
+                            data-tooltip="Close"
                           >
                             <MdClose className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -735,7 +737,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               type="button"
                               onClick={onAddCustomProperty}
                               className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-md transition-colors border border-[var(--brand)]/30 hover:border-[var(--brand)] cursor-pointer"
-                              title="Add custom property"
+                              data-tooltip="Add custom property"
                             >
                               <MdAdd size={14} />
                               <span>Add</span>
@@ -757,7 +759,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               type="button"
                               className="w-full px-3 py-2.5 rounded-lg bg-orange-500/10 text-orange-500 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 transition-all font-medium text-sm cursor-pointer flex items-center justify-center gap-2"
                               onClick={onDetachFromGroup}
-                              title="Remove this node from its parent group"
+                              data-tooltip="Remove this node from its parent group"
                             >
                               <MdLockOpen className="h-4 w-4" aria-hidden="true" />
                               <span>Detach from Group</span>

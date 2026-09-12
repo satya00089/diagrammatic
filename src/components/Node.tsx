@@ -432,7 +432,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
             aria-label={showProperties ? "Hide node properties" : "Show node properties"}
             aria-expanded={showProperties}
             aria-controls={`node-properties-${id}`}
-            title={showProperties ? "Hide properties" : "Show properties"}
+            data-tooltip={showProperties ? "Hide properties" : "Show properties"}
             className={`flex h-6 w-6 items-center justify-center rounded-lg transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${showProperties ? "bg-[var(--bg-hover)]" : ""}`}
             style={{ color: showProperties ? "var(--brand)" : "var(--text)" }}
           >
@@ -454,7 +454,7 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
             aria-haspopup="menu"
             aria-expanded={contextMenu.visible}
             aria-controls={`node-actions-${id}`}
-            title="More actions"
+            data-tooltip="More actions"
             className="flex h-6 w-6 items-center justify-center rounded-lg transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
             style={{ color: "var(--text)" }}
           >
