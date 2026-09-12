@@ -122,7 +122,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
         onClick={() => onClose(toast.id)}
         className="flex-shrink-0 hover:bg-white/20 rounded p-1 transition-colors"
         aria-label="Close notification"
-        title="Close"
+        data-tooltip="Close"
       >
         <svg
           className="w-4 h-4"

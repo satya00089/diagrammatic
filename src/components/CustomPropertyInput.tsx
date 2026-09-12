@@ -65,7 +65,8 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
           type="button"
           onClick={() => onDelete(property.id)}
           className="p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-colors"
-          title="Delete custom property"
+          aria-label="Delete custom property"
+          data-tooltip="Delete custom property"
         >
           <MdDelete size={16} />
         </button>

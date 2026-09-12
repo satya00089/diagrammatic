@@ -68,7 +68,7 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   <button
     type="button"
     aria-label={title}
-    title={title}
+    data-tooltip={title}
     disabled={disabled}
     onMouseDown={(event) => event.preventDefault()}
     onClick={onClick}
@@ -95,7 +95,7 @@ const HeadingSelect: React.FC<{
   return (
     <select
       aria-label="Paragraph style"
-      title="Paragraph style"
+      data-tooltip="Paragraph style"
       value={headingValue}
       disabled={disabled}
       onChange={(event) => {

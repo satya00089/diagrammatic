@@ -103,10 +103,10 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
       <div className="absolute -top-3 right-2 flex items-center z-10 bg-[var(--surface)]/90 border border-theme rounded-full shadow-sm">
         <motion.button
           type="button"
-          aria-label="Settings"
           onClick={onToggle}
           className="p-1 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-          title="Group Settings"
+          aria-label="Group settings"
+          data-tooltip="Group settings"
           whileHover={{ scale: 1.1, y: -1, rotate: 90 }}
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -115,10 +115,10 @@ const GroupNode: React.FC<GroupNodeProps> = ({ id, data }) => {
         </motion.button>
         <motion.button
           type="button"
-          aria-label="Delete Group"
           onClick={onDelete}
           className="p-1 text-red-600 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center justify-center"
-          title="Delete Group"
+          aria-label="Delete group"
+          data-tooltip="Delete group"
           whileHover={{ scale: 1.15, y: -2, rotate: 5 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}

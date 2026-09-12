@@ -340,7 +340,8 @@ const TableNode: React.FC<Props> = React.memo(
               type="button"
               onClick={() => handleToggleBoolean(attr.id, col.key)}
               className={`${cellClassName} flex items-center justify-center ${colorClass || ""}`}
-              title={col.label}
+              aria-label={col.label}
+              data-tooltip={col.label}
               aria-pressed={displayValue}
             >
               {<BooleanCellContent columnKey={col.key} displayValue={displayValue} icon={icon} />}
@@ -402,7 +403,7 @@ const TableNode: React.FC<Props> = React.memo(
                   handleStartEdit(attr, e);
                 }
               }}
-              title="Double-click or press Enter to edit"
+              data-tooltip="Double-click or press Enter to edit"
             >
               {String(attrValue || "")}
             </button>
@@ -418,7 +419,8 @@ const TableNode: React.FC<Props> = React.memo(
                 type="button"
                 onClick={handleSaveEdit}
                 className={`${cellClassName} text-green-600 hover:text-green-700 text-xs`}
-                title="Save"
+                aria-label="Save attribute"
+                data-tooltip="Save"
               >
                 ✓
               </button>
@@ -430,7 +432,8 @@ const TableNode: React.FC<Props> = React.memo(
               type="button"
               onClick={() => handleDeleteAttribute(attr.id)}
               className={`${cellClassName} opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 transition-opacity`}
-              title="Delete attribute"
+              aria-label="Delete attribute"
+              data-tooltip="Delete attribute"
             >
               <MdDelete className="w-3 h-3" />
             </button>
@@ -551,7 +554,8 @@ const TableNode: React.FC<Props> = React.memo(
               type="button"
               onClick={handleAddAttribute}
               className="p-1 hover:bg-white/20 rounded transition-colors"
-              title="Add attribute"
+              aria-label="Add attribute"
+              data-tooltip="Add attribute"
             >
               <MdAdd className="w-4 h-4" />
             </button>

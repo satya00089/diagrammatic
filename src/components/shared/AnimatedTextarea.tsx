@@ -57,7 +57,8 @@ const ToolbarButton: React.FC<{
     <button
       onClick={onClick}
       disabled={disabled}
-      title={title}
+      aria-label={title}
+      data-tooltip={title}
       className={`px-2 py-1 rounded transition-colors ${
         active
           ? "bg-[var(--brand)] text-[var(--bg)]"
@@ -87,7 +88,8 @@ const HeadingSelect: React.FC<{
 
   return (
     <select
-      title="Heading level"
+      aria-label="Heading level"
+      data-tooltip="Heading level"
       value={headingValue}
       onChange={(e) => {
         const level = parseInt(e.target.value, 10);

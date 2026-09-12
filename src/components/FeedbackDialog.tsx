@@ -356,7 +356,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     <label
                       key={value}
                       htmlFor={`feedback-rating-${value}`}
-                      title={`${value} star${value === 1 ? "" : "s"}`}
+                      data-tooltip={`${value} star${value === 1 ? "" : "s"}`}
                       onMouseEnter={() => setHoveredRating(value)}
                       onMouseLeave={() => setHoveredRating(undefined)}
                       className="feedback-dialog__rating-choice"

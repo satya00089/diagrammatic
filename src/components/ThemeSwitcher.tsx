@@ -11,7 +11,7 @@ const ThemeSwitcher: React.FC = () => {
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       className="p-2 rounded-full bg-[var(--bg)] text-[var(--text)] cursor-pointer"
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
-      title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+      data-tooltip={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
     >
       {theme === "light" ? <FiMoon size={18} /> : <FiSun size={18} />}
     </button>

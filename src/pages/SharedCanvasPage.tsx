@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import {
   ReactFlow,
   Background,
-  Controls,
   MiniMap,
   ReactFlowProvider,
   ConnectionMode,
@@ -18,6 +17,7 @@ import ERNode from "../components/ERNode";
 import TableNode from "../components/TableNode";
 import GroupNode from "../components/GroupNode";
 import FreeformNode from "../components/FreeformNode";
+import StyledFlowControls from "../components/shared/StyledFlowControls";
 import CustomEdge from "../components/CustomEdge";
 import ERRelationshipEdge from "../components/ERRelationshipEdge";
 import AssessmentFindings from "../components/AssessmentFindings";
@@ -891,7 +891,7 @@ const ReadOnlyCanvas: React.FC<{
     proOptions={{ hideAttribution: true }}
   >
     <Background gap={20} size={1} color="var(--border)" />
-    <Controls showInteractive={false} />
+    <StyledFlowControls showInteractive={false} />
     <MiniMap
       nodeStrokeWidth={3}
       zoomable

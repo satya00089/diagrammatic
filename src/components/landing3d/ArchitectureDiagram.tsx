@@ -103,13 +103,10 @@ export default function ArchitectureDiagram({
     <svg
       viewBox="0 0 650 540"
       role="img"
-      aria-labelledby={`${id}-title ${id}-desc`}
+      aria-label={`URL shortener architecture: ${phaseTitle}`}
+      aria-describedby={`${id}-desc`}
       className={`architecture-diagram phase-${phase}${paused ? " is-paused" : ""}`}
     >
-      <title id={`${id}-title`}>
-        URL shortener architecture:{" "}
-        {phaseTitle}
-      </title>
       <desc id={`${id}-desc`}>
         {improved
           ? "A client sends requests through a load balancer to two API instances. A cache serves popular links; cache misses read from the links database."

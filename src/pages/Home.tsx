@@ -1015,11 +1015,9 @@ const Home: React.FC = () => {
                     viewBox="0 0 600 280"
                     preserveAspectRatio="xMidYMid meet"
                     role="img"
-                    aria-labelledby="architecture-preview-title architecture-preview-description"
+                    aria-label="Video upload architecture"
+                    aria-describedby="architecture-preview-description"
                   >
-                    <title id="architecture-preview-title">
-                      Video upload architecture
-                    </title>
                     <desc id="architecture-preview-description">
                       API Gateway routes uploads to an Upload Service, which
                       stores video objects and sends processing work through a

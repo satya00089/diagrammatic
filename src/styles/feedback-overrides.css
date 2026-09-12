@@ -120,7 +120,7 @@ html.dark .feedback-dialog::backdrop {
 
 .feedback-dialog__surface {
   width: min(620px, 100%);
-  max-height: min(760px, calc(100vh - 48px));
+  max-height: min(820px, calc(100vh - 48px));
   overflow-y: auto;
   scrollbar-color: #aaa89f var(--surface, #ebeae5);
   scrollbar-width: thin;

@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import {
   Background,
   ConnectionMode,
-  Controls,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -18,6 +17,7 @@ import {
   MdInfoOutline,
 } from "react-icons/md";
 
+import StyledFlowControls from "../shared/StyledFlowControls";
 import CustomEdge from "../../components/CustomEdge";
 import CustomNode, { type NodeData } from "../../components/Node";
 import { COMPONENTS } from "../../config/components";
@@ -224,7 +224,7 @@ const ArchitectureFlow: React.FC<{
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={20} size={1} color="var(--border)" />
-        <Controls showInteractive={false} />
+        <StyledFlowControls showInteractive={false} />
         <MiniMap
           nodeStrokeWidth={3}
           zoomable
