@@ -1006,6 +1006,16 @@ html:has(.systema-page[data-theme="dark"]) {
   color: var(--systema-muted);
   font-size: 11px;
 }
+.systema-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.systema-footer-links a:focus-visible,
+.systema-footer > a:focus-visible {
+  outline: 2px solid var(--systema-primary-bg);
+  outline-offset: 4px;
+}
 .systema-footer > a {
   display: inline-flex;
   align-items: center;
@@ -1329,6 +1339,9 @@ html:has(.systema-page[data-theme="dark"]) {
   .systema-footer p {
     order: 3;
     width: 100%;
+  }
+  .systema-footer-links {
+    gap: 14px;
   }
   .systema-footer > a {
     font-size: 11px;
