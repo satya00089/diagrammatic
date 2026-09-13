@@ -1644,11 +1644,33 @@ const Home: React.FC = () => {
                 <img src="./logo-64.png" alt="Logo" className="h-8" />
                 <span className="font-semibold text-theme">Diagrammatic</span>
               </div>
-              <p className="text-muted text-sm">
-                © 2026 Diagrammatic. Built with{" "}
-                <span className="inline-block animate-pulse">❤️</span> for
-                system designers
-              </p>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-5">
+                <nav aria-label="Footer" className="flex items-center gap-1">
+                  <a
+                    href="/privacy.html"
+                    className="inline-flex min-h-9 items-center rounded px-2 text-sm text-muted transition-colors hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                  >
+                    Privacy
+                  </a>
+                  <a
+                    href="/terms.html"
+                    className="inline-flex min-h-9 items-center rounded px-2 text-sm text-muted transition-colors hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                  >
+                    Terms
+                  </a>
+                  <a
+                    href="/support.html"
+                    className="inline-flex min-h-9 items-center rounded px-2 text-sm text-muted transition-colors hover:text-theme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]/60"
+                  >
+                    Support
+                  </a>
+                </nav>
+                <p className="text-muted text-sm">
+                  © 2026 Diagrammatic. Built with{" "}
+                  <span className="inline-block animate-pulse">❤️</span> for
+                  system designers
+                </p>
+              </div>
             </div>
           </div>
         </footer>

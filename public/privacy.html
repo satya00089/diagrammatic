@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diagrammatic MCP Privacy Notice</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; }
+      body { max-width: 760px; margin: 0 auto; padding: 48px 24px; color: #172033; line-height: 1.65; }
+      h1 { line-height: 1.15; } h2 { margin-top: 2rem; }
+      a { color: #2457d6; } .meta { color: #5d687d; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/">Diagrammatic</a></p>
+    <h1>Privacy Notice for Diagrammatic MCP</h1>
+    <p class="meta">Last updated: September 13, 2026</p>
+    <p>
+      This notice describes the data handled by Diagrammatic’s MCP integration,
+      a provider-neutral catalog service for architecture components.
+    </p>
+    <h2>What the integration receives</h2>
+    <p>
+      Catalog requests may include a search query, provider or category filter,
+      component identifier, and configuration properties supplied by the MCP
+      client. The public catalog endpoint does not require an account and is not
+      designed to identify individual users.
+    </p>
+    <h2>How data is used</h2>
+    <p>
+      Requests are used to search the supported catalog, return component
+      definitions, and validate component properties. The MCP service does not
+      make LLM calls. Operational logs may contain request identifiers, route,
+      timing, status, and error details so the service can be secured and
+      operated. Authentication tokens are used for authorization and are not
+      returned in tool results.
+    </p>
+    <h2>Storage and service providers</h2>
+    <p>
+      The MCP service may run on AWS Lambda and write operational logs to AWS
+      CloudWatch. The service may read catalog records from Diagrammatic’s API.
+      Retention is governed by the configuration of those services and is
+      limited to what is needed to operate, secure, and improve the service.
+    </p>
+    <h2>Your choices</h2>
+    <p>
+      Do not send secrets or personal information in catalog queries or
+      component properties. For privacy questions or a request about data
+      associated with a request, contact
+      <a href="mailto:support@next-zen.dev">support@next-zen.dev</a>.
+    </p>
+    <p><a href="/terms.html">Terms of Use</a> · <a href="/support.html">Support</a></p>
+  </body>
+</html>
