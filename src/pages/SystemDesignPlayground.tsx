@@ -4889,7 +4889,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("TB");
+                          onLayout("LR");
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
@@ -4899,7 +4899,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("LR");
+                          onLayout("TB");
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"

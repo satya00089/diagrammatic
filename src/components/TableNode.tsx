@@ -601,7 +601,10 @@ const TableNode: React.FC<Props> = React.memo(
               <span
                 key={col.key}
                 className={col.width || "flex-1"}
-                style={{ textAlign: col.align || "left" }}
+                style={{
+                  textAlign:
+                    col.align || (col.type === "boolean" ? "center" : "left"),
+                }}
               >
                 {col.label}
               </span>
