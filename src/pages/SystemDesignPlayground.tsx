@@ -4667,7 +4667,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
         noIndex
       />
-      <div className="design-studio-page h-screen flex flex-col bg-theme">
+      <div className="design-studio-page h-screen flex flex-col overflow-hidden bg-theme">
         {/* Header */}
         <header className="bg-[var(--brand)] shadow-md overflow-visible">
           <div className="max-w-full mx-auto px-4 sm:px-6 overflow-visible">
@@ -5086,7 +5086,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden">
           {!isSharedView && (
             <ComponentPalette
               components={COMPONENTS}
