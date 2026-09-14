@@ -2122,6 +2122,30 @@ select::-webkit-scrollbar-thumb {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Keep compact inspector actions readable near the panel edge. */
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]::before {
+  top: 50%;
+  left: auto;
+  right: calc(100% + 8px);
+  transform: translateX(4px) translateY(-50%);
+}
+
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]::after {
+  top: 50%;
+  left: auto;
+  right: calc(100% + 3px);
+  transform: translateX(4px) translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: rgba(17, 24, 39, 0.98);
+}
+
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:hover::before,
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:hover::after,
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:focus-visible::before,
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:focus-visible::after {
+  transform: translateX(0) translateY(-50%);
+}
+
 /* Dark mode tooltip adjustments */
 .dark [data-tooltip]:not([data-tooltip=""])::before {
   background-color: rgba(249, 250, 251, 0.98);
@@ -2133,6 +2157,11 @@ select::-webkit-scrollbar-thumb {
 
 .dark [data-tooltip]:not([data-tooltip=""])::after {
   border-bottom-color: rgba(249, 250, 251, 0.98);
+}
+
+.dark [data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]::after {
+  border-bottom-color: transparent;
+  border-left-color: rgba(249, 250, 251, 0.98);
 }
 
 /* Disabled state - hide tooltip */
@@ -2147,6 +2176,11 @@ select::-webkit-scrollbar-thumb {
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateX(-50%) translateY(0);
+}
+
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:focus-visible::before,
+[data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]:focus-visible::after {
+  transform: translateX(0) translateY(-50%);
 }
 
 /* Arrow icon wrapper styles for FreeformNode handles

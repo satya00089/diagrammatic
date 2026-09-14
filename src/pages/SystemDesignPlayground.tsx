@@ -3194,6 +3194,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear background color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
@@ -3228,6 +3229,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear border color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
@@ -3262,6 +3264,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear text color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
