@@ -364,7 +364,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
   };
 
   return (
-    <div className="relative z-40" data-tour="inspector-panel">
+    <div className="relative z-40 shrink-0" data-tour="inspector-panel">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -373,7 +373,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
         }
         aria-controls="inspector-panel"
         data-tour="inspector-toggle"
-        data-tooltip={open ? undefined : "Inspector panel is closed — click to expand"}
+        data-tooltip={open ? "Inspector panel is open — click to close" : "Inspector panel is closed — click to expand"}
         className="absolute top-5 -left-3 h-6 w-6 flex items-center justify-center rounded-full border border-theme bg-surface text-theme shadow cursor-pointer hover:bg-[var(--bg-hover)] transition-colors z-50"
       >
         {open ? <PiCaretRightBold size={16} /> : <PiCaretLeftBold size={16} />}
@@ -381,7 +381,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <aside
         ref={panelRef}
         id="inspector-panel"
-        className={`bg-surface border-l border-theme flex flex-col h-full relative inspector-resizable transition-[width] duration-300 ease-in-out ${
+        className={`bg-surface border-l border-theme flex flex-col h-full shrink-0 relative inspector-resizable transition-[width] duration-300 ease-in-out ${
           open ? "p-4" : "w-6 p-1"
         }`}
         data-width={width}
@@ -422,22 +422,20 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
               role="tablist"
               aria-label="Sidebar tabs"
             >
-              {!isFreeDesignMode && (
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === "details"}
-                  className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "details" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
-                  data-tour="problem-brief"
-                  onClick={() => setActiveTab("details")}
-                >
-                  <MdDescription
-                    className="h-4 w-4 shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-medium">Details</span>
-                </button>
-              )}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "details"}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 transition-colors ${activeTab === "details" ? "bg-[var(--brand)]/10 text-[var(--brand)]" : "text-theme hover:bg-[var(--bg-hover)]"}`}
+                data-tour="problem-brief"
+                onClick={() => setActiveTab("details")}
+              >
+                <MdDescription
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="text-sm font-medium">Details</span>
+              </button>
 
               {!isFreeDesignMode && (
                 <button
@@ -520,7 +518,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       canvasStats={canvasStats}
                     />
 
-                    <div className="mb-4">
+                    {!isFreeDesignMode && (
+                      <>
+                        <div className="mb-4">
                       <h4 className="flex items-center gap-1.5 text-sm font-semibold text-theme mb-2">
                         <MdCheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />
                         <span>Requirements</span>
@@ -635,7 +635,9 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       ) : (
                         <p className="text-xs text-muted italic">No tags.</p>
                       )}
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
