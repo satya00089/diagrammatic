@@ -13,6 +13,7 @@ import {
 import { IoDuplicateOutline } from "react-icons/io5";
 import { FiUnlock } from "react-icons/fi";
 import type { NodeRenderConfig, TableColumn } from "../types/canvas";
+import { isFieldAddressableERTable } from "../utils/erdNode";
 
 export type TableAttribute = {
   id: string;
@@ -86,8 +87,7 @@ const TableNode: React.FC<Props> = React.memo(
     });
 
     const displayLabel = data.componentName || data.label;
-    const isEntityTable =
-      data.componentId === "entity" || data.nodeType === "entity";
+    const isERTable = isFieldAddressableERTable(data);
     const backgroundColor =
       typeof data.backgroundColor === "string" && data.backgroundColor.trim()
         ? data.backgroundColor
@@ -495,7 +495,7 @@ const TableNode: React.FC<Props> = React.memo(
           whileHover={{ y: -1, boxShadow: "0 12px 30px rgba(0,0,0,0.12)" }}
           whileTap={{ scale: 0.985 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className={`min-w-[220px] ${isEntityTable ? "" : "max-h-[500px]"} bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col`}
+          className={`min-w-[220px] ${isERTable ? "" : "max-h-[500px]"} bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col`}
           style={{
             ...(backgroundColor ? { backgroundColor } : {}),
             ...(borderColor ? { borderColor } : {}),
@@ -616,7 +616,7 @@ const TableNode: React.FC<Props> = React.memo(
             ref={attributeScrollRef}
             onScroll={updateAttributePortPositions}
             className={`divide-y divide-theme/10 ${
-              isEntityTable
+              isERTable
                 ? "overflow-visible"
                 : "min-h-0 flex-1 overflow-y-auto table-node-scroll"
             }`}
@@ -671,7 +671,7 @@ const TableNode: React.FC<Props> = React.memo(
             })}
           </div>
 
-          {isEntityTable && (
+          {isERTable && (
             <div
               className="pointer-events-none absolute left-0 right-0 z-20"
               aria-label="Entity attribute connection ports"
