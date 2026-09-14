@@ -1207,6 +1207,25 @@ html.dark:has(.problem-detail-page) {
   --elevated-card-bg: var(--surface);
 }
 
+.import-ready-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, #6a9b79 42%, var(--border));
+  border-radius: 9999px;
+  background: color-mix(in srgb, #6a9b79 14%, var(--bg));
+  color: #3f704f;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.dark .import-ready-badge {
+  border-color: color-mix(in srgb, #9bd2a9 38%, var(--border));
+  background: color-mix(in srgb, #6a9b79 22%, var(--surface));
+  color: #b7e1bf;
+}
+
 html:has(.design-studio-page) {
   color-scheme: light;
   scrollbar-width: thin;

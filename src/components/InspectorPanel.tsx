@@ -381,7 +381,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
       <aside
         ref={panelRef}
         id="inspector-panel"
-        className={`bg-surface border-l border-theme flex flex-col h-full shrink-0 relative inspector-resizable transition-[width] duration-300 ease-in-out ${
+        className={`bg-surface border-l border-theme flex min-w-0 flex-col h-full shrink-0 relative inspector-resizable transition-[width] duration-300 ease-in-out ${
           open ? "p-4" : "w-6 p-1"
         }`}
         data-width={width}
@@ -503,7 +503,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
             {/* scrollable content area under the tabs */}
             {activeTab !== "guide" && (
-              <div className="overflow-y-auto component-palette flex-1">
+              <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto component-palette">
                 {activeTab === "details" && (
                   <div>
                     <h3 className="text-lg font-semibold text-theme mb-3">
@@ -686,14 +686,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
                     {/* ── NODE INSPECTOR ── */}
                     {!inspectedEdgeId && inspectedNodeId && (
-                      <div className="flex flex-col gap-4">
+                      <div className="flex min-w-0 flex-col gap-4">
                         {/* Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-[var(--brand)]/10 flex items-center justify-center flex-shrink-0">
                               <MdSettings className="h-4 w-4 text-[var(--brand)]" aria-hidden="true" />
                             </div>
-                            <div>
+                            <div className="min-w-0">
                               <h3 className="text-sm font-semibold text-theme leading-tight">
                                 Component Properties
                               </h3>
@@ -725,14 +725,14 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                             <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
                               Properties
                             </span>
-                            <div className="space-y-2">{propertyElements}</div>
+                            <div className="min-w-0 space-y-2">{propertyElements}</div>
                           </div>
                         )}
 
                         {/* Custom Properties Section */}
-                        <div className="flex flex-col gap-2 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-semibold text-muted uppercase tracking-widest">
+                        <div className="flex min-w-0 flex-col gap-2 rounded-xl border border-theme/30 bg-[var(--surface)] p-3">
+                          <div className="flex min-w-0 items-center justify-between gap-2">
+                            <span className="min-w-0 text-[11px] font-semibold text-muted uppercase tracking-widest">
                               Custom Properties
                             </span>
                             <button
@@ -745,7 +745,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                               <span>Add</span>
                             </button>
                           </div>
-                          <div className="space-y-2">
+                          <div className="min-w-0 space-y-2">
                             {customPropertyElements ?? (
                               <p className="text-xs text-muted/60 text-center py-2">
                                 No custom properties yet

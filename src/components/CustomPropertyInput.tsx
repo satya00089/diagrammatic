@@ -48,13 +48,13 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
   ];
 
   return (
-    <div className="border border-theme rounded-lg overflow-hidden bg-[var(--bg-hover)]/30">
+    <div className="min-w-0 border border-theme rounded-lg overflow-hidden bg-[var(--bg-hover)]/30">
       {/* Header */}
-      <div className="flex items-center justify-between p-2 bg-[var(--bg-hover)]/50">
+      <div className="flex min-w-0 items-center justify-between gap-2 p-2 bg-[var(--bg-hover)]/50">
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 flex-1 text-left hover:text-[var(--brand)] transition-colors"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-[var(--brand)] transition-colors"
         >
           {isExpanded ? <MdExpandLess size={18} /> : <MdExpandMore size={18} />}
           <span className="text-sm font-medium text-theme truncate">
@@ -74,8 +74,8 @@ export const CustomPropertyInput: React.FC<CustomPropertyInputProps> = ({
 
       {/* Configuration Panel (when expanded) */}
       {isExpanded && (
-        <div className="p-3 space-y-3 border-t border-theme">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0 p-3 space-y-3 border-t border-theme">
+          <div className="grid min-w-0 grid-cols-1 gap-2">
             <AnimatedTextInput
               id={`${property.id}-key`}
               label="Key"
