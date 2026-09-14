@@ -415,7 +415,9 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
 
   return (
     <g className="react-flow__edge">
-      <defs>
+      {/* React Flow scopes theme variables on the edge SVG. Keep markers on the resolved
+          canvas accent so cardinality symbols do not inherit the edge subtree's white value. */}
+      <defs style={{ "--brand": rc.brand } as React.CSSProperties}>
         {/* One (single line) marker */}
         <marker
           id={`er-one-${id}`}
@@ -439,8 +441,8 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         {/* Many (crow's foot) marker */}
         <marker
           id={`er-many-${id}`}
-          viewBox="0 0 20 20"
-          refX="18"
+          viewBox="0 0 22 20"
+          refX="22"
           refY="10"
           markerWidth="12"
           markerHeight="12"
@@ -450,7 +452,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="0"
             y1="10"
-            x2="15"
+            x2="22"
             y2="10"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -458,7 +460,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="15"
             y1="10"
-            x2="20"
+            x2="22"
             y2="5"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -466,7 +468,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="15"
             y1="10"
-            x2="20"
+            x2="22"
             y2="15"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -504,8 +506,8 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         {/* Mandatory Many (double line + crow's foot) marker */}
         <marker
           id={`er-mandatory-many-${id}`}
-          viewBox="0 0 20 20"
-          refX="18"
+          viewBox="0 0 22 20"
+          refX="22"
           refY="10"
           markerWidth="12"
           markerHeight="12"
@@ -515,7 +517,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="0"
             y1="10"
-            x2="12"
+            x2="22"
             y2="10"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -532,7 +534,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="12"
             y1="10"
-            x2="20"
+            x2="22"
             y2="5"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -540,7 +542,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="12"
             y1="10"
-            x2="20"
+            x2="22"
             y2="15"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -598,8 +600,8 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         {/* Optional Many (circle + crow's foot) marker */}
         <marker
           id={`er-optional-many-${id}`}
-          viewBox="0 0 25 20"
-          refX="23"
+          viewBox="0 0 27 20"
+          refX="27"
           refY="10"
           markerWidth="14"
           markerHeight="12"
@@ -616,7 +618,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="10"
             y1="10"
-            x2="18"
+            x2="27"
             y2="10"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -624,7 +626,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="18"
             y1="10"
-            x2="25"
+            x2="27"
             y2="5"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -632,7 +634,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
           <line
             x1="18"
             y1="10"
-            x2="25"
+            x2="27"
             y2="15"
             stroke="var(--brand)"
             strokeWidth="2"
@@ -747,7 +749,7 @@ const ERRelationshipEdge: React.FC<EdgeProps> = (props) => {
         id={id}
         d={edgePath}
         fill="none"
-        stroke={selected ? "var(--brand)" : "var(--muted)"}
+        stroke={selected ? rc.brand : "var(--muted)"}
         strokeWidth={selected ? 3 : 2}
         {...getRouteAnimation(routeAnimationId > 0 && !reduceMotion)}
         animate={{ opacity: 1, pathLength: 1 }}

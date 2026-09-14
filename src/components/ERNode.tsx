@@ -220,7 +220,7 @@ const ERNode: React.FC<Props> = React.memo(
         ? { backgroundColor: data.backgroundColor as string }
         : {}),
       ...(data.borderColor
-        ? { borderLeftColor: data.borderColor as string }
+        ? { borderColor: data.borderColor as string }
         : {}),
       // Default dark text for light-bg note/trigger nodes; user textColor always wins
       ...((isNote || isTrigger) && !data.textColor ? { color: "#374151" } : {}),
@@ -298,7 +298,24 @@ const ERNode: React.FC<Props> = React.memo(
 
           {/* Entity Header */}
           {!isNote && !isTrigger && (
-            <div className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold text-center flex items-center justify-center gap-2">
+            <div
+              className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold text-center flex items-center justify-center gap-2"
+              style={{
+                ...(data.backgroundColor
+                  ? {
+                      backgroundColor:
+                        (data.borderColor as string) ||
+                        (data.backgroundColor as string),
+                    }
+                  : {
+                      backgroundColor:
+                        (data.borderColor as string) || "var(--brand)",
+                    }),
+                ...(data.textColor
+                  ? { color: data.textColor as string }
+                  : { color: "var(--bg)" }),
+              }}
+            >
               {data.icon && <span className="text-lg">{data.icon}</span>}
               <span>{displayLabel}</span>
             </div>
@@ -372,7 +389,7 @@ const ERNode: React.FC<Props> = React.memo(
             <div className="px-4 py-3">
               <div className="flex flex-col items-center gap-2">
                 {data.icon && <span className="text-3xl">{data.icon}</span>}
-                <span className="font-bold text-xl text-theme text-center">
+                <span className="font-bold text-xl text-center">
                   {displayLabel}
                 </span>
                 {hasDescription && (

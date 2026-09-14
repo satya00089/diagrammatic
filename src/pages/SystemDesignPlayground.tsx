@@ -3194,6 +3194,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear background color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
@@ -3228,6 +3229,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear border color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
@@ -3262,6 +3264,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       className="text-muted hover:text-red-500 text-xs flex-shrink-0"
                       aria-label="Clear text color"
                       data-tooltip="Clear"
+                      data-tooltip-placement="left"
                     >
                       ✕
                     </button>
@@ -4886,7 +4889,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("TB");
+                          onLayout("LR");
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
@@ -4896,7 +4899,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("LR");
+                          onLayout("TB");
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"

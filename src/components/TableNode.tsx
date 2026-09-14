@@ -88,6 +88,18 @@ const TableNode: React.FC<Props> = React.memo(
     const displayLabel = data.componentName || data.label;
     const isEntityTable =
       data.componentId === "entity" || data.nodeType === "entity";
+    const backgroundColor =
+      typeof data.backgroundColor === "string" && data.backgroundColor.trim()
+        ? data.backgroundColor
+        : undefined;
+    const borderColor =
+      typeof data.borderColor === "string" && data.borderColor.trim()
+        ? data.borderColor
+        : undefined;
+    const textColor =
+      typeof data.textColor === "string" && data.textColor.trim()
+        ? data.textColor
+        : undefined;
 
     // Parse attributes - it might be a JSON string or already an array
     const attributes = React.useMemo(() => {
@@ -396,6 +408,7 @@ const TableNode: React.FC<Props> = React.memo(
               key={col.key}
               type="button"
               className={`${cellClassName} truncate ${textColorClass} text-left bg-transparent border-none p-0`}
+              style={textColor ? { color: textColor } : undefined}
               onDoubleClick={(e) => handleStartEdit(attr, e)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -454,6 +467,7 @@ const TableNode: React.FC<Props> = React.memo(
         handleSaveEdit,
         handleCancelEdit,
         editingValue,
+        textColor,
       ],
     );
 
@@ -482,6 +496,11 @@ const TableNode: React.FC<Props> = React.memo(
           whileTap={{ scale: 0.985 }}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
           className={`min-w-[220px] ${isEntityTable ? "" : "max-h-[500px]"} bg-surface border-2 border-theme text-theme text-sm shadow-lg cursor-grab relative rounded-lg overflow-visible flex flex-col`}
+          style={{
+            ...(backgroundColor ? { backgroundColor } : {}),
+            ...(borderColor ? { borderColor } : {}),
+            ...(textColor ? { color: textColor } : {}),
+          }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onContextMenu={handleContextMenu}
@@ -545,7 +564,15 @@ const TableNode: React.FC<Props> = React.memo(
           />
 
           {/* Table Header */}
-          <div className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0 rounded-t-md">
+          <div
+            className="bg-[var(--brand)] text-[var(--bg)] px-3 py-2 font-semibold flex items-center justify-between flex-shrink-0 rounded-t-md"
+            style={{
+              ...(backgroundColor
+                ? { backgroundColor: borderColor || backgroundColor }
+                : { backgroundColor: borderColor || "var(--brand)" }),
+              ...(textColor ? { color: textColor } : { color: "var(--bg)" }),
+            }}
+          >
             <div className="flex items-center gap-2">
               {data.icon && <span className="text-lg">{data.icon}</span>}
               <span>{displayLabel}</span>
@@ -562,12 +589,22 @@ const TableNode: React.FC<Props> = React.memo(
           </div>
 
           {/* Column Headers */}
-          <div className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold flex-shrink-0">
+          <div
+            className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold flex-shrink-0"
+            style={{
+              ...(backgroundColor ? { backgroundColor } : {}),
+              ...(borderColor ? { borderBottomColor: borderColor } : {}),
+              ...(textColor ? { color: textColor } : {}),
+            }}
+          >
             {columns.map((col) => (
               <span
                 key={col.key}
                 className={col.width || "flex-1"}
-                style={{ textAlign: col.align || "left" }}
+                style={{
+                  textAlign:
+                    col.align || (col.type === "boolean" ? "center" : "left"),
+                }}
               >
                 {col.label}
               </span>
