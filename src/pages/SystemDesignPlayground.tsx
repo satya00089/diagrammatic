@@ -4682,7 +4682,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <img src="/logo-64.png" alt="" aria-hidden="true" />
                   <span>Diagrammatic</span>
                 </Link>
-                <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
+                <div className="hidden md:flex items-center space-x-3 border-l border-white/20 ml-3 pl-4">
                   <h1
                     className="text-sm font-semibold text-white max-w-[200px] truncate cursor-default"
                     data-tooltip={problem.title}
