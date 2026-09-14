@@ -1,4 +1,5 @@
 import type { CanvasComponent } from "../types/canvas";
+import { AiOutlineGateway } from "react-icons/ai";
 import {
   FaArchive,
   FaBalanceScale,
@@ -21,6 +22,7 @@ import {
   FaFolder,
   FaGlobe,
   FaIdCard,
+  FaKey,
   FaList,
   FaLock,
   FaObjectGroup,
@@ -34,6 +36,8 @@ import {
   FaTags,
   FaTrafficLight,
   FaProjectDiagram,
+  FaSearch,
+  FaStream,
   FaUserShield,
   FaClipboardList,
   FaLightbulb,
@@ -62,8 +66,6 @@ import {
   SiCloudflare,
   SiSnowflake,
   SiApacheflink,
-  SiTensorflow,
-  SiPytorch,
   SiOpenai,
   SiJaeger,
   SiServerless,
@@ -97,8 +99,6 @@ import {
   LuShapes,
 } from "react-icons/lu";
 import { TbOvalVertical } from "react-icons/tb";
-
-import { VscMcp } from "react-icons/vsc";
 
 /**
  * COMPREHENSIVE SYSTEM DESIGN COMPONENTS LIBRARY
@@ -473,7 +473,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "web-app",
     group: "Frontend",
-    icon: FaDesktop,
+    icon: FaGlobe,
     label: "Web App",
     description: "Browser-based client",
     tags: ["browser", "client", "frontend", "spa", "pwa", "web application"],
@@ -624,7 +624,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "desktop-app",
     group: "Frontend",
-    icon: FaGlobe,
+    icon: FaDesktop,
     label: "Desktop App",
     description: "Native / Electron client",
     tags: ["desktop", "electron", "tauri", "native", "windows", "mac", "linux"],
@@ -1217,7 +1217,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "search",
     group: "Services",
-    icon: SiElasticsearch,
+    icon: FaSearch,
     label: "Search",
     description: "Search engine & indexing",
     tags: [
@@ -1304,7 +1304,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "queue",
     group: "Messaging",
-    icon: FaClipboardList,
+    icon: FaStream,
     label: "Queue",
     description: "Task queue",
     tags: ["task queue", "job queue", "sqs", "celery", "worker queue", "async"],
@@ -2449,7 +2449,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "container-orchestrator",
     group: "Compute",
-    icon: SiKubernetes,
+    icon: FaCubes,
     label: "Container Orchestrator",
     description: "Container management & orchestration",
     tags: [
@@ -2870,7 +2870,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "ci-cd-pipeline",
     group: "DevOps",
-    icon: FaRoute,
+    icon: FaProjectDiagram,
     label: "CI/CD Pipeline",
     description: "Continuous integration and deployment pipeline",
     tags: [
@@ -4154,7 +4154,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "ml-model",
     group: "AI & ML",
-    icon: SiTensorflow,
+    icon: FaBrain,
     label: "ML Model",
     description: "Machine Learning Model (inference/training)",
     tags: [
@@ -4223,7 +4223,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "model-training",
     group: "AI & ML",
-    icon: SiPytorch,
+    icon: FaCogs,
     label: "Model Training",
     description: "ML model training pipeline",
     tags: [
@@ -4273,7 +4273,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "model-serving",
     group: "AI & ML",
-    icon: FaCloudUploadAlt,
+    icon: FaServer,
     label: "Model Serving",
     description: "ML model serving/inference API",
     tags: [
@@ -4330,7 +4330,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "feature-store",
     group: "AI & ML",
-    icon: FaArchive,
+    icon: FaDatabase,
     label: "Feature Store",
     description: "Centralized feature storage for ML",
     tags: ["features", "ml", "data", "store", "feast", "feature engineering"],
@@ -4714,7 +4714,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "mcp-server",
     group: "AI & ML",
-    icon: VscMcp,
+    icon: FaServer,
     label: "MCP Server",
     description:
       "Model Context Protocol server exposing tools and resources to AI agents",
@@ -4767,7 +4767,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "mcp-client",
     group: "AI & ML",
-    icon: VscMcp,
+    icon: FaPlug,
     label: "MCP Client",
     description:
       "Model Context Protocol client consuming tools from an MCP server",
@@ -4875,7 +4875,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "rag-pipeline",
     group: "AI & ML",
-    icon: FaRoute,
+    icon: FaProjectDiagram,
     label: "RAG Pipeline",
     description:
       "Retrieval Augmented Generation pipeline combining search with LLM generation",
@@ -5022,7 +5022,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "ai-gateway",
     group: "AI & ML",
-    icon: FaTrafficLight,
+    icon: AiOutlineGateway,
     label: "AI Gateway",
     description:
       "LLM routing gateway with rate limiting, caching, and cost management",
@@ -5678,7 +5678,7 @@ export const COMPONENTS: CanvasComponent[] = [
   {
     id: "weak-entity",
     group: "ER Diagram",
-    icon: FaFileAlt,
+    icon: FaKey,
     label: "Weak Entity",
     description: "Entity dependent on another entity for identification",
     nodeType: "tableNode",

@@ -22,7 +22,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
       initial={{ opacity: 0, y: -4, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 260, damping: 24 }}
-      className={`flex flex-col gap-1 ${containerClassName || ""}`}
+      className={`flex min-w-0 w-full flex-col gap-1 ${containerClassName || ""}`}
     >
       {label && (
         <motion.label

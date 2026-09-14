@@ -2824,7 +2824,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const checkedValue: boolean = Boolean(raw);
 
     return (
-      <div key={p.key} className="flex flex-col px-1">
+      <div key={p.key} className="flex min-w-0 flex-col px-1">
         {p.type === "boolean" && (
           <AnimatedCheckbox
             id={inputId}

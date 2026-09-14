@@ -59,7 +59,7 @@ const ToolbarButton: React.FC<{
       disabled={disabled}
       aria-label={title}
       data-tooltip={title}
-      className={`px-2 py-1 rounded transition-colors ${
+      className={`shrink-0 px-2 py-1 rounded transition-colors ${
         active
           ? "bg-[var(--brand)] text-[var(--bg)]"
           : "hover:bg-[var(--bg-hover)] text-theme"
@@ -103,7 +103,7 @@ const HeadingSelect: React.FC<{
             .run();
         }
       }}
-      className="rounded border px-1 py-0.5 bg-[var(--surface)] text-theme"
+      className="shrink-0 rounded border px-1 py-0.5 bg-[var(--surface)] text-theme"
       disabled={disabled}
     >
       <option value="0">P</option>
@@ -379,7 +379,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
       {isFullscreen ? (
         // Fullscreen mode without FieldWrapper to maximize space
         <motion.div
-          className="h-full flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme m-4"
+          className="min-w-0 h-full flex flex-col rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme m-4"
           animate={{
             boxShadow: focused
               ? "0 0 0 2px var(--brand)"
@@ -388,7 +388,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           {/* Fullscreen Toolbar */}
-          <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-2 text-sm shrink-0">
+          <div className="min-w-0 max-w-full flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-2 text-sm shrink-0">
             <div className="flex items-center gap-2 mr-4">
               {label && <span className="font-medium text-theme">{label}</span>}
             </div>
@@ -451,7 +451,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
               <div className="prose prose-invert max-w-none min-h-full">
                 <EditorContent
                   editor={editor}
-                  className="focus:outline-none h-full"
+                  className="min-w-0 max-w-full focus:outline-none h-full"
                 />
               </div>
             </div>
@@ -466,7 +466,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
           containerClassName={containerClassName}
         >
           <motion.div
-            className={`rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme ${className} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+            className={`min-w-0 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-theme ${className} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
             animate={{
               boxShadow: focused
                 ? "0 0 0 2px var(--brand)"
@@ -475,7 +475,7 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
             {/* Normal Toolbar */}
-            <div className="flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-1 text-sm">
+            <div className="min-w-0 max-w-full flex flex-wrap items-center gap-1 border-b border-[var(--border)] p-1 text-sm">
               {isRecordingOrTranscribing ? (
                 recordingBar
               ) : (
@@ -530,8 +530,8 @@ const AnimatedTextarea: React.FC<AnimatedTextareaProps> = ({
             )}
 
             {/* Normal Content */}
-            <div className="p-3 min-h-[8rem] prose prose-invert max-w-none">
-              <EditorContent editor={editor} className="focus:outline-none" />
+            <div className="min-w-0 max-w-full overflow-hidden p-3 min-h-[8rem] prose prose-invert">
+              <EditorContent editor={editor} className="min-w-0 max-w-full focus:outline-none" />
             </div>
           </motion.div>
         </FieldWrapper>
