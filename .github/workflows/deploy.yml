@@ -59,8 +59,10 @@ jobs:
         run: npm run build
         env:
           CI: true
+          VITE_APP_VERSION: ${{ github.sha }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_ASSESSMENT_API_URL: ${{ secrets.VITE_ASSESSMENT_API_URL }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_YJS_URL: ${{ secrets.VITE_YJS_URL }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
 
@@ -110,7 +112,9 @@ jobs:
         run: |
           # Publish dist/ to gh-pages using gh-pages package
           # -r forces the authenticated remote (uses GH_TOKEN)
-          npx --yes gh-pages -d dist -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          # Keep previous hashed assets so cached HTML from an earlier
+          # deployment can still load its lazy chunks during the transition.
+          npx --yes gh-pages -d dist -a -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
 
       - name: Deployment complete
         run: echo "🚀 Deployment complete! Visit https://diagrammatic.next-zen.dev"

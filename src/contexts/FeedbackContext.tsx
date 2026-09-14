@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  lazy,
   Suspense,
   useCallback,
   useMemo,
@@ -13,8 +12,12 @@ import type {
   FeedbackLaunchOptions,
   FeedbackSubmission,
 } from "../types/feedback";
+import { lazyWithRetry } from "../utils/lazyWithRetry";
 
-const FeedbackDialog = lazy(() => import("../components/FeedbackDialog"));
+const FeedbackDialog = lazyWithRetry(
+  () => import("../components/FeedbackDialog"),
+  "feedback-dialog",
+);
 
 interface FeedbackContextValue {
   isOpen: boolean;

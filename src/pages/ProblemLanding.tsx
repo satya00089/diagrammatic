@@ -1,5 +1,4 @@
 import React, {
-  lazy,
   Suspense,
   useEffect,
   useLayoutEffect,
@@ -29,9 +28,11 @@ import { getApiBaseUrl } from "../services/api";
 import type { SystemDesignProblem } from "../types/systemDesign";
 import { featuredProblems, getFeaturedProblem } from "../utils/problemSlug";
 import NotFound from "./NotFound";
+import { lazyWithRetry } from "../utils/lazyWithRetry";
 
-const PublicArchitectureCanvas = lazy(
+const PublicArchitectureCanvas = lazyWithRetry(
   () => import("../components/public-design/PublicArchitectureCanvas"),
+  "public-architecture-canvas",
 );
 
 type PublicProblem = Partial<SystemDesignProblem> & {
@@ -99,10 +100,7 @@ const SkeletonBlock: React.FC<{ className: string }> = ({ className }) => (
 );
 
 const ProblemLandingSkeleton: React.FC = () => (
-  <div
-    className="min-h-screen bg-[var(--bg)] text-theme"
-    aria-busy="true"
-  >
+  <div className="min-h-screen bg-[var(--bg)] text-theme" aria-busy="true">
     <output className="sr-only">Loading the design brief</output>
     <header className="border-b border-white/20 bg-[var(--brand)] text-white">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
