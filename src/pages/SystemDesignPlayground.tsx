@@ -122,6 +122,7 @@ import ERNode from "../components/ERNode";
 import type { ERNodeData } from "../components/ERNode";
 import TableNode from "../components/TableNode";
 import type { TableNodeData, TableAttribute } from "../components/TableNode";
+import { isFieldAddressableERTable } from "../utils/erdNode";
 import GroupNode from "../components/GroupNode";
 import FreeformNode from "../components/FreeformNode";
 import type { FreeformNodeData } from "../components/FreeformNode";
@@ -1516,24 +1517,14 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       });
     }
 
-    // Determine if we're connecting ER nodes (tableNode or erNode types)
+    // Determine if we're connecting field-addressable ER tables.
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
 
-    // Only use ER relationship edge for entity-to-entity connections
-    // Exclude triggers, notes, and views - they should use default customEdge
-    const isEntityNode = (node: Node | undefined) => {
-      const data = (node?.data ?? {}) as {
-        componentId?: unknown;
-        nodeType?: unknown;
-      };
-      return (
-        data.componentId === "entity" ||
-        data.componentId === "weak-entity" ||
-        data.nodeType === "entity" ||
-        data.nodeType === "weak-entity"
-      );
-    };
+    // Use the ER relationship edge for field-addressable tables; triggers,
+    // notes, and other non-table nodes continue to use the generic edge.
+    const isEntityNode = (node: Node | undefined) =>
+      isFieldAddressableERTable(node?.data);
 
     const isERConnection = isEntityNode(sourceNode) && isEntityNode(targetNode);
     const getFieldIdFromHandle = (handle: string | null | undefined) => {
