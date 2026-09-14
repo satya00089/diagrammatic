@@ -1,11 +1,4 @@
-import React, {
-  lazy,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-  useRef,
-} from "react";
+import React, { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import RollingNavLabel from "../components/RollingNavLabel";
@@ -19,6 +12,7 @@ import { MdHelpOutline } from "react-icons/md";
 import { apiService } from "../services/api";
 import type { SavedDiagram } from "../types/auth";
 import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
+import { lazyWithRetry } from "../utils/lazyWithRetry";
 import { VscAzureDevops, VscAzure } from "react-icons/vsc";
 import { SiGooglecloud } from "react-icons/si";
 import { FaAws } from "react-icons/fa6";
@@ -37,10 +31,12 @@ import {
   HiBriefcase,
 } from "react-icons/hi2";
 
-const AuthModal = lazy(() =>
-  import("../components/AuthModal").then((module) => ({
-    default: module.AuthModal,
-  })),
+const AuthModal = lazyWithRetry(
+  () =>
+    import("../components/AuthModal").then((module) => ({
+      default: module.AuthModal,
+    })),
+  "auth-modal",
 );
 
 const HERO_MESSAGE = "Get them reviewed.";

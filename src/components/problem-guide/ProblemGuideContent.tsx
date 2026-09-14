@@ -1,5 +1,4 @@
 import React, {
-  lazy,
   Suspense,
   useLayoutEffect,
   useMemo,
@@ -14,9 +13,11 @@ import {
 } from "react-icons/md";
 import type { ProblemGuide } from "../../types/problemGuide";
 import { useRoughAnnotation } from "../../hooks/useRoughAnnotation";
+import { lazyWithRetry } from "../../utils/lazyWithRetry";
 
-const PublicArchitectureCanvas = lazy(
+const PublicArchitectureCanvas = lazyWithRetry(
   () => import("../public-design/PublicArchitectureCanvas"),
+  "public-architecture-canvas",
 );
 
 const problemGuideSections = [

@@ -39,7 +39,7 @@ import {
 import { FcFlowChart } from "react-icons/fc";
 
 // Routing
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 // Type definitions
 import type {
@@ -249,7 +249,8 @@ const buildProvidedReasoningContext = (
     `No explicit ${target} target is specified in the brief. State an assumption when asked during the interview.`;
 
   const canvasDescription = componentSummary || `${nodes.length} components`;
-  const disconnectedLabel = disconnectedCount === 1 ? "component is" : "components are";
+  const disconnectedLabel =
+    disconnectedCount === 1 ? "component is" : "components are";
   return {
     requirements: problemRequirements,
     scaleAssumptions: unstatedTarget("scale"),
@@ -275,15 +276,24 @@ function getAssessmentScoreBand(score: number) {
   return score >= 50 ? "needs_work" : "weak";
 }
 
-function getAssessmentActionLabel(isAssessing: boolean, isPreparingInterview: boolean) {
+function getAssessmentActionLabel(
+  isAssessing: boolean,
+  isPreparingInterview: boolean,
+) {
   if (isAssessing) return "Assessing...";
   return isPreparingInterview ? "Preparing..." : "Run Assessment";
 }
 
-function getAssessmentTooltip(isAuthenticated: boolean, isAssessing: boolean, isPreparingInterview: boolean) {
+function getAssessmentTooltip(
+  isAuthenticated: boolean,
+  isAssessing: boolean,
+  isPreparingInterview: boolean,
+) {
   if (!isAuthenticated) return "Please sign in to run assessment";
   if (isAssessing) return "Assessment in progress...";
-  return isPreparingInterview ? "Preparing interview questions..." : "Run assessment on current design";
+  return isPreparingInterview
+    ? "Preparing interview questions..."
+    : "Run assessment on current design";
 }
 
 type ProvidedCanvasStats = {
@@ -1591,8 +1601,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       trackEvent("assessment_completed", {
         problem_id: idFromUrl === "free" ? undefined : idFromUrl,
         assessment_source: res.source ?? "unknown",
-        score_band:
-          getAssessmentScoreBand(res.score),
+        score_band: getAssessmentScoreBand(res.score),
         finding_count: res.feedback?.length ?? 0,
       });
       setInterviewSession(followUpSession);
@@ -3826,7 +3835,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   function findMinimalPaletteComponent(componentId: string) {
     for (const providerComps of Object.values(minimalComponentsByProvider)) {
-      const match = providerComps.find((component) => component.id === componentId);
+      const match = providerComps.find(
+        (component) => component.id === componentId,
+      );
       if (match) return match;
     }
     return minimalComponents.find((component) => component.id === componentId);
@@ -4472,8 +4483,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         }
       }
 
-return positions;
-};
+      return positions;
+    };
 
     for (const groupNode of groupNodes) {
       const children = nodesToLayout.filter((n) => n.parentId === groupNode.id);
@@ -4663,20 +4674,14 @@ return positions;
             <div className="flex items-center justify-between h-14 overflow-visible">
               {/* Left side - Logo and Title */}
               <div className="flex items-center space-x-4">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="flex items-center gap-2.5 group cursor-pointer"
+                <Link
+                  className="systema-brand"
+                  to="/"
+                  aria-label="Diagrammatic home"
                 >
-                  <img
-                    src="/logo-64.png"
-                    alt="Logo"
-                    className="h-7 transition-transform group-hover:scale-110 duration-300"
-                  />
-                  <span className="design-studio-brand text-lg font-bold text-white tracking-wide leading-none">
-                    Diagrammatic
-                  </span>
-                </button>
+                  <img src="/logo-64.png" alt="" aria-hidden="true" />
+                  <span>Diagrammatic</span>
+                </Link>
                 <div className="hidden md:flex items-center space-x-3 border-l border-white/20 pl-4">
                   <h1
                     className="text-sm font-semibold text-white max-w-[200px] truncate cursor-default"
@@ -4964,9 +4969,11 @@ return positions;
                 {problem?.id !== "free" && (
                   <div
                     data-tour="assess-btn"
-                    data-tooltip={
-                      getAssessmentTooltip(isAuthenticated, isAssessing, isPreparingInterview)
-                    }
+                    data-tooltip={getAssessmentTooltip(
+                      isAuthenticated,
+                      isAssessing,
+                      isPreparingInterview,
+                    )}
                   >
                     <button
                       type="button"
@@ -4976,7 +4983,10 @@ return positions;
                       }
                       className="px-6 py-1 text-white font-bold rounded-md hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                     >
-                      {getAssessmentActionLabel(isAssessing, isPreparingInterview)}
+                      {getAssessmentActionLabel(
+                        isAssessing,
+                        isPreparingInterview,
+                      )}
                     </button>
                   </div>
                 )}

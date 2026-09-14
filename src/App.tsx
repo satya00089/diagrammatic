@@ -1,33 +1,69 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "./hooks/useTheme";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { FeedbackProvider } from "./contexts/FeedbackContext";
+import { lazyWithRetry } from "./utils/lazyWithRetry";
 
-const FeatureAnnouncement = lazy(
+const FeatureAnnouncement = lazyWithRetry(
   () => import("./components/FeatureAnnouncement"),
+  "feature-announcement",
 );
-const QuickSetupModal = lazy(() => import("./components/QuickSetupModal"));
-const FeedbackLauncher = lazy(() => import("./components/FeedbackLauncher"));
-const StoreBoundary = lazy(() => import("./components/StoreBoundary"));
+const QuickSetupModal = lazyWithRetry(
+  () => import("./components/QuickSetupModal"),
+  "quick-setup-modal",
+);
+const FeedbackLauncher = lazyWithRetry(
+  () => import("./components/FeedbackLauncher"),
+  "feedback-launcher",
+);
+const StoreBoundary = lazyWithRetry(
+  () => import("./components/StoreBoundary"),
+  "store-boundary",
+);
 
-const Home = lazy(() => import("./pages/Home"));
-const Landing3D = lazy(() => import("./pages/Landing3D"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const ProblemLanding = lazy(() => import("./pages/ProblemLanding"));
-const SeoGuide = lazy(() => import("./pages/SeoGuide"));
-const CreateProblem = lazy(() => import("./pages/CreateProblem"));
-const MyDesigns = lazy(() => import("./pages/MyDesigns"));
-const SystemDesignPlayground = lazy(
-  () => import("./pages/SystemDesignPlayground"),
+const Home = lazyWithRetry(() => import("./pages/Home"), "home");
+const Landing3D = lazyWithRetry(
+  () => import("./pages/Landing3D"),
+  "landing-3d",
 );
-const SharedCanvasPage = lazy(() => import("./pages/SharedCanvasPage"));
-const LearningPaths = lazy(() => import("./pages/LearningPaths"));
-const LearningPath = lazy(() => import("./pages/LearningPath"));
-const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "dashboard");
+const ProblemLanding = lazyWithRetry(
+  () => import("./pages/ProblemLanding"),
+  "problem-landing",
+);
+const SeoGuide = lazyWithRetry(() => import("./pages/SeoGuide"), "seo-guide");
+const CreateProblem = lazyWithRetry(
+  () => import("./pages/CreateProblem"),
+  "create-problem",
+);
+const MyDesigns = lazyWithRetry(
+  () => import("./pages/MyDesigns"),
+  "my-designs",
+);
+const SystemDesignPlayground = lazyWithRetry(
+  () => import("./pages/SystemDesignPlayground"),
+  "system-design-playground",
+);
+const SharedCanvasPage = lazyWithRetry(
+  () => import("./pages/SharedCanvasPage"),
+  "shared-canvas-page",
+);
+const LearningPaths = lazyWithRetry(
+  () => import("./pages/LearningPaths"),
+  "learning-paths",
+);
+const LearningPath = lazyWithRetry(
+  () => import("./pages/LearningPath"),
+  "learning-path",
+);
+const VerifyEmail = lazyWithRetry(
+  () => import("./pages/VerifyEmail"),
+  "verify-email",
+);
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "not-found");
 
 const RouteLoading: React.FC = () => (
   <output className="min-h-screen bg-[var(--bg)] text-theme grid place-items-center px-6">
