@@ -110,7 +110,8 @@ const FEEDBACK_TYPE_BORDER: Record<string, string> = {
 const AssessmentFeedbackPrompt: React.FC<{
   problemId?: string | null;
   assessmentId?: string;
-}> = ({ problemId, assessmentId }) => {
+  traceId?: string;
+}> = ({ problemId, assessmentId, traceId }) => {
   const { openFeedback, submitFeedback } = useFeedback();
   const [state, setState] = React.useState<"idle" | "sending" | "sent">(
     "idle",
@@ -120,6 +121,7 @@ const AssessmentFeedbackPrompt: React.FC<{
   const context = {
     ...(problemId ? { problemId } : {}),
     ...(assessmentId ? { assessmentId } : {}),
+    ...(traceId ? { traceId } : {}),
   };
 
   const sendHelpfulSignal = async () => {
@@ -880,6 +882,7 @@ const InspectorPanel: React.FC<InspectorPanelProps> = ({
                         <AssessmentFeedbackPrompt
                           problemId={problemId}
                           assessmentId={assessmentResult.assessmentId}
+                          traceId={assessmentResult.traceId}
                         />
 
                         <details className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs">

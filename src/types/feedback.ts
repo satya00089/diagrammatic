@@ -19,6 +19,7 @@ export type FeedbackReason =
 export interface FeedbackContext {
   problemId?: string;
   assessmentId?: string;
+  traceId?: string;
   diagramId?: string;
   lessonId?: string;
 }
