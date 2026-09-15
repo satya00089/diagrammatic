@@ -729,7 +729,7 @@ export default function ComponentPalette({
       {hoveredComponent &&
         ReactDOM.createPortal(
           <div
-            className="fixed px-3 py-2 bg-[var(--bg)] border border-theme rounded shadow-lg text-xs z-[9999] max-w-[25vw] pointer-events-none -translate-y-1/2"
+            className="app-tooltip pointer-events-none z-[100000] -translate-y-1/2"
             style={
               {
                 left: `${hoveredComponent.rect.right + 8}px`,
@@ -737,11 +737,16 @@ export default function ComponentPalette({
               } as React.CSSProperties
             }
           >
-            <div className="font-semibold text-theme mb-0.5">
+            <div className="font-semibold">
               {hoveredComponent.label}
             </div>
-            <div className="text-muted">{hoveredComponent.description}</div>
-            <div className="absolute right-full top-1/2 -translate-y-1/2 -mr-1 border-4 border-transparent border-r-[var(--bg)]"></div>
+            <div className="mt-0.5 opacity-80">
+              {hoveredComponent.description}
+            </div>
+            <span
+              className="app-tooltip__arrow app-tooltip__arrow--left"
+              aria-hidden="true"
+            />
           </div>,
           document.body,
         )}

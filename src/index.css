@@ -2152,6 +2152,14 @@ select::-webkit-scrollbar-thumb {
   border-left: 6px solid transparent;
 }
 
+.app-tooltip__arrow--left {
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: rgba(17, 24, 39, 0.98);
+}
+
 [data-tooltip]:not([data-tooltip=""])::after {
   content: "";
   top: calc(100% + 3px);
@@ -2218,6 +2226,10 @@ select::-webkit-scrollbar-thumb {
 
 .dark .app-tooltip__arrow {
   border-bottom-color: rgba(249, 250, 251, 0.98);
+}
+
+.dark .app-tooltip__arrow--left {
+  border-right-color: rgba(249, 250, 251, 0.98);
 }
 
 .dark [data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]::after {
