@@ -99,6 +99,11 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
   const [isHovered, setIsHovered] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
   const [showProperties, setShowProperties] = React.useState(false);
+  const [subtitleTooltip, setSubtitleTooltip] = React.useState<{
+    text: string;
+    left: number;
+    top: number;
+  } | null>(null);
   const nodeRef = React.useRef<HTMLFieldSetElement>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const menuTriggerRef = React.useRef<HTMLButtonElement>(null);
@@ -659,7 +664,28 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           <div className="min-w-0 w-full text-center">
             <div className="truncate font-medium text-sm">{displayLabel}</div>
             {displaySubtitle && (
-              <div className="text-xs opacity-70 truncate">{displaySubtitle}</div>
+              <div
+                className="text-xs opacity-70 truncate"
+                aria-label={displaySubtitle}
+                onMouseEnter={(event) => {
+                  if (
+                    event.currentTarget.scrollWidth <=
+                    event.currentTarget.clientWidth
+                  ) {
+                    setSubtitleTooltip(null);
+                    return;
+                  }
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  setSubtitleTooltip({
+                    text: displaySubtitle,
+                    left: rect.left + rect.width / 2,
+                    top: rect.bottom + 8,
+                  });
+                }}
+                onMouseLeave={() => setSubtitleTooltip(null)}
+              >
+                {displaySubtitle}
+              </div>
             )}
           </div>
         </div>
@@ -764,6 +790,23 @@ const Node: React.FC<Props> = React.memo(({ id, data, onCopy, isInGroup }) => {
           </motion.div>
         )}
       </motion.fieldset>
+
+      {/* Sublabel tooltip portal: React Flow clips pseudo-elements inside the canvas. */}
+      {subtitleTooltip &&
+        ReactDOM.createPortal(
+          <div
+            role="tooltip"
+            className="app-tooltip pointer-events-none z-[100000] -translate-x-1/2"
+            style={{
+              left: subtitleTooltip.left,
+              top: subtitleTooltip.top,
+            }}
+          >
+            {subtitleTooltip.text}
+            <span className="app-tooltip__arrow" aria-hidden="true" />
+          </div>,
+          document.body,
+        )}
 
       {/* Context Menu Portal */}
       {contextMenu.visible &&
