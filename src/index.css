@@ -89,6 +89,40 @@ body {
   outline-color: var(--brand);
 }
 
+/* Give interactive controls a pointer affordance and disabled controls a clear
+   unavailable state across every page. */
+button:not(:disabled),
+a[href]:not([aria-disabled="true"]),
+[role="button"]:not([aria-disabled="true"]),
+[role="link"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="checkbox"]:not([aria-disabled="true"]),
+[role="radio"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="slider"]:not([aria-disabled="true"]),
+select:not(:disabled),
+summary,
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="range"]:not(:disabled),
+input[type="file"]:not(:disabled),
+label:has(input[type="checkbox"]:not(:disabled)),
+label:has(input[type="radio"]:not(:disabled)) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+select:disabled,
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled,
+input[type="range"]:disabled,
+input[type="file"]:disabled {
+  cursor: not-allowed;
+}
+
 /* Motion-style rolling labels for primary navigation. The clipped wrapper
    keeps the interaction compact while the duplicate copy makes the state
    change readable in both directions. */
@@ -2104,6 +2138,13 @@ select::-webkit-scrollbar-thumb {
   z-index: 99999 !important;
 }
 
+/* Regular tooltips render through the body-level adaptive layer so they are
+   not clipped by editor, canvas, modal, or panel overflow containers. */
+[data-tooltip-render="portal"]::before,
+[data-tooltip-render="portal"]::after {
+  display: none !important;
+}
+
 [data-tooltip]:not([data-tooltip=""])::before {
   content: attr(data-tooltip);
   top: calc(100% + 8px);
@@ -2158,6 +2199,45 @@ select::-webkit-scrollbar-thumb {
   transform: translateY(-50%);
   border: 6px solid transparent;
   border-right-color: rgba(17, 24, 39, 0.98);
+}
+
+.adaptive-tooltip-layer {
+  z-index: 100000 !important;
+  pointer-events: none;
+}
+
+.adaptive-tooltip-layer--top .app-tooltip__arrow,
+.adaptive-tooltip-layer--bottom .app-tooltip__arrow {
+  left: var(--tooltip-arrow-offset, 50%);
+}
+
+.adaptive-tooltip-layer--right .app-tooltip__arrow,
+.adaptive-tooltip-layer--left .app-tooltip__arrow {
+  top: var(--tooltip-arrow-offset, 50%);
+}
+
+.adaptive-tooltip-layer--top .app-tooltip__arrow {
+  top: auto;
+  bottom: -6px;
+  border-top: 6px solid rgba(17, 24, 39, 0.98);
+  border-bottom: 0;
+}
+
+.adaptive-tooltip-layer--right .app-tooltip__arrow {
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: rgba(17, 24, 39, 0.98);
+}
+
+.adaptive-tooltip-layer--left .app-tooltip__arrow {
+  top: 50%;
+  left: auto;
+  right: -6px;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: rgba(17, 24, 39, 0.98);
 }
 
 [data-tooltip]:not([data-tooltip=""])::after {
@@ -2230,6 +2310,18 @@ select::-webkit-scrollbar-thumb {
 
 .dark .app-tooltip__arrow--left {
   border-right-color: rgba(249, 250, 251, 0.98);
+}
+
+.dark .adaptive-tooltip-layer--top .app-tooltip__arrow {
+  border-top-color: rgba(249, 250, 251, 0.98);
+}
+
+.dark .adaptive-tooltip-layer--right .app-tooltip__arrow {
+  border-right-color: rgba(249, 250, 251, 0.98);
+}
+
+.dark .adaptive-tooltip-layer--left .app-tooltip__arrow {
+  border-left-color: rgba(249, 250, 251, 0.98);
 }
 
 .dark [data-tooltip]:not([data-tooltip=""])[data-tooltip-placement="left"]::after {

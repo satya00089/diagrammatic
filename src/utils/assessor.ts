@@ -375,6 +375,7 @@ export function transformApiResponse(apiResult: unknown): ValidationResult {
     unclear_connections?: string[];
     processing_time_ms?: number;
     assessment_id?: string;
+    trace_id?: string;
   };
 
   const feedback: ValidationFeedback[] = (result.feedback || []).map((fb) => ({
@@ -432,6 +433,7 @@ export function transformApiResponse(apiResult: unknown): ValidationResult {
     processingTimeMs: result.processing_time_ms,
     source: result.source === "rule_based" ? "rule_based" : "ai",
     assessmentId: result.assessment_id,
+    traceId: result.trace_id,
   };
 }
 

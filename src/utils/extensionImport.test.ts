@@ -2,6 +2,73 @@ import { describe, expect, it } from "vitest";
 import { parseExtensionSource } from "./extensionImport";
 
 describe("database schema extension import", () => {
+  it("uses the shared Entity table presentation and preserves constraints", () => {
+    const result = parseExtensionSource(
+      "database-schema",
+      `CREATE TABLE users (
+        id UUID PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE
+      );
+
+      CREATE TABLE orders (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id),
+        created_at TIMESTAMP NOT NULL,
+        UNIQUE (user_id, created_at)
+      );`,
+    );
+
+    const users = result.nodes.find(
+      (node) => node.data.componentName === "users",
+    );
+    const orders = result.nodes.find(
+      (node) => node.data.componentName === "orders",
+    );
+    const userId = (
+      orders?.data.attributes as Array<Record<string, unknown>>
+    ).find((attribute) => attribute.name === "user_id");
+    const email = (
+      users?.data.attributes as Array<Record<string, unknown>>
+    ).find((attribute) => attribute.name === "email");
+    const userColumns = (
+      users?.data.renderConfig as
+        | { columns?: Array<{ key: string; label: string }> }
+        | undefined
+    )?.columns;
+    const resolvedUserColumns = userColumns ?? [];
+
+    expect(users?.data).toMatchObject({
+      componentId: "entity",
+      renderConfig: { shape: "table" },
+    });
+    expect(resolvedUserColumns.map((column) => column.label)).toEqual([
+      "PK",
+      "Column Name",
+      "Data Type",
+      "FK",
+      "UQ",
+      "NULL",
+      "",
+    ]);
+    expect(users?.data.attributes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "id",
+          isPrimaryKey: true,
+          isNullable: false,
+        }),
+      ]),
+    );
+    expect(email).toMatchObject({ isUnique: true, isNullable: false });
+    expect(userId).toMatchObject({ isForeignKey: true, isNullable: false });
+    expect(orders?.data.attributes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "user_id", isUnique: true }),
+        expect.objectContaining({ name: "created_at", isUnique: true }),
+      ]),
+    );
+  });
+
   it("recognizes pgAdmin ALTER TABLE foreign keys", () => {
     const result = parseExtensionSource(
       "database-schema",

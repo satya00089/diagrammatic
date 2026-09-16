@@ -144,6 +144,7 @@ export interface ValidationResult {
   processingTimeMs?: number;
   source?: "ai" | "rule_based";
   assessmentId?: string;
+  traceId?: string;
 }
 
 export type ReviewFindingSeverity =

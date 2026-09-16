@@ -112,7 +112,12 @@ const MicLevelVisualizer: React.FC<MicLevelVisualizerProps> = ({
 
       const bars = barsRef.current;
       const midY = height / 2;
-      ctx.fillStyle = "var(--brand)";
+      // CanvasRenderingContext2D does not resolve CSS var() values assigned
+      // directly to fillStyle. Read the inherited theme token as a real color
+      // so the waveform stays visible in both themes and editor surfaces.
+      ctx.fillStyle =
+        getComputedStyle(canvas).getPropertyValue("--brand").trim() ||
+        "#6366f1";
       bars.forEach((amplitude, index) => {
         const x = index * BAR_STEP;
         const barHeight = Math.max(MIN_BAR_HEIGHT, amplitude * height);

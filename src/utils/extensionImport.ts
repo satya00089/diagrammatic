@@ -9,6 +9,7 @@ type TableAttribute = {
   type: string;
   isPrimaryKey?: boolean;
   isForeignKey?: boolean;
+  isUnique?: boolean;
   isNullable?: boolean;
 };
 
@@ -131,6 +132,10 @@ const resolveLocalComponent = (key: string, label: string) => {
     : undefined;
 };
 
+const entityRenderConfig = COMPONENTS.find(
+  (component) => component.id === "entity",
+)?.renderConfig;
+
 const parseMermaid = (source: string): ExtensionImportResult => {
   const nodesByKey = new Map<string, Node>();
   const edges: Edge[] = [];
@@ -242,75 +247,95 @@ const parseMermaid = (source: string): ExtensionImportResult => {
   };
 };
 
-const parseTableBody = (tableName: string, body: string, warnings: string[]) => {
-    const attributes: TableAttribute[] = [];
-    const primaryColumns = new Set<string>();
-    const foreignKeyColumns = new Set<string>();
-    const inlineForeignKeys: Array<{
-      columns: string[];
-      parentColumns: string[];
-      target: string;
-    }> = [];
+const parseTableBody = (
+  tableName: string,
+  body: string,
+  warnings: string[],
+) => {
+  const attributes: TableAttribute[] = [];
+  const primaryColumns = new Set<string>();
+  const foreignKeyColumns = new Set<string>();
+  const uniqueColumns = new Set<string>();
+  const inlineForeignKeys: Array<{
+    columns: string[];
+    parentColumns: string[];
+    target: string;
+  }> = [];
 
-    const parseDefinition = (rawLine: string) => {
-      const line = rawLine.trim().replaceAll(/[\r\n]+/g, " ");
-      if (!line) return;
-      const tablePrimaryKey = tablePrimaryKeyPattern.exec(line);
-      if (tablePrimaryKey) {
-        tablePrimaryKey[1]
-          .split(",")
-          .forEach((column) =>
-            primaryColumns.add(normalizeSqlIdentifier(column)),
-          );
-        return;
-      }
-      const foreignKey = foreignKeyPattern.exec(line);
-      if (foreignKey) {
-        const columns = normalizeColumnList(foreignKey[1]);
-        columns.forEach((name) => {
-          foreignKeyColumns.add(name);
-        });
-        inlineForeignKeys.push({
-          columns,
-          parentColumns: normalizeColumnList(foreignKey[3]),
-          target: foreignKey[2],
-        });
-        return;
-      }
-      if (/^(constraint|unique|check|primary\s+key)/i.test(line)) return;
-      const column = columnPattern.exec(line);
-      if (!column) {
-        warnings.push(`Skipped an unrecognized definition in ${tableName}.`);
-        return;
-      }
-      const name = normalizeSqlIdentifier(column[1]);
-      attributes.push({
-        id: `${tableName}-${name}`,
-        name,
-        type: column[2].toUpperCase(),
-        isPrimaryKey: /primary\s+key/i.test(line),
-        isNullable: !/not\s+null/i.test(line),
-      });
-      if (/primary\s+key/i.test(line)) primaryColumns.add(name);
-      const inlineReference = inlineReferencePattern.exec(line);
-      if (inlineReference) {
+  const parseDefinition = (rawLine: string) => {
+    const line = rawLine.trim().replaceAll(/[\r\n]+/g, " ");
+    if (!line) return;
+    const tablePrimaryKey = tablePrimaryKeyPattern.exec(line);
+    if (tablePrimaryKey) {
+      tablePrimaryKey[1]
+        .split(",")
+        .forEach((column) =>
+          primaryColumns.add(normalizeSqlIdentifier(column)),
+        );
+      return;
+    }
+    const tableUnique = /\bunique\s*\(([^)]+)\)/i.exec(line);
+    if (tableUnique) {
+      normalizeColumnList(tableUnique[1]).forEach((column) =>
+        uniqueColumns.add(column),
+      );
+      return;
+    }
+    const foreignKey = foreignKeyPattern.exec(line);
+    if (foreignKey) {
+      const columns = normalizeColumnList(foreignKey[1]);
+      columns.forEach((name) => {
         foreignKeyColumns.add(name);
-        inlineForeignKeys.push({
-          columns: [name],
-          parentColumns: normalizeColumnList(inlineReference[2]),
-          target: inlineReference[1],
-        });
-      }
-
-    };
-    splitSqlDefinitions(body).forEach(parseDefinition);
-
-    attributes.forEach((attribute) => {
-      if (primaryColumns.has(attribute.name)) attribute.isPrimaryKey = true;
-      if (foreignKeyColumns.has(attribute.name)) attribute.isForeignKey = true;
+      });
+      inlineForeignKeys.push({
+        columns,
+        parentColumns: normalizeColumnList(foreignKey[3]),
+        target: foreignKey[2],
+      });
+      return;
+    }
+    if (/^(constraint|unique|check|primary\s+key)/i.test(line)) return;
+    const column = columnPattern.exec(line);
+    if (!column) {
+      warnings.push(`Skipped an unrecognized definition in ${tableName}.`);
+      return;
+    }
+    const name = normalizeSqlIdentifier(column[1]);
+    attributes.push({
+      id: `${tableName}-${name}`,
+      name,
+      type: column[2].toUpperCase(),
+      isPrimaryKey: /primary\s+key/i.test(line),
+      isUnique: /\bunique\b/i.test(line),
+      isNullable: !/not\s+null/i.test(line),
     });
+    if (/primary\s+key/i.test(line)) {
+      primaryColumns.add(name);
+    }
+    if (/\bunique\b/i.test(line)) uniqueColumns.add(name);
+    const inlineReference = inlineReferencePattern.exec(line);
+    if (inlineReference) {
+      foreignKeyColumns.add(name);
+      inlineForeignKeys.push({
+        columns: [name],
+        parentColumns: normalizeColumnList(inlineReference[2]),
+        target: inlineReference[1],
+      });
+    }
+  };
+  splitSqlDefinitions(body).forEach(parseDefinition);
 
-return { attributes, inlineForeignKeys };
+  attributes.forEach((attribute) => {
+    if (primaryColumns.has(attribute.name)) {
+      attribute.isPrimaryKey = true;
+      // SQL primary keys are inherently NOT NULL, even when the DDL omits it.
+      attribute.isNullable = false;
+    }
+    if (foreignKeyColumns.has(attribute.name)) attribute.isForeignKey = true;
+    if (uniqueColumns.has(attribute.name)) attribute.isUnique = true;
+  });
+
+  return { attributes, inlineForeignKeys };
 };
 
 const parseDatabaseSchema = (source: string): ExtensionImportResult => {
@@ -325,7 +350,11 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
   for (const [index, match] of Array.from(tableBlocks).entries()) {
     const tableName = match[1];
     const body = match[2];
-    const { attributes, inlineForeignKeys } = parseTableBody(tableName, body, warnings);
+    const { attributes, inlineForeignKeys } = parseTableBody(
+      tableName,
+      body,
+      warnings,
+    );
     const id = makeId("table", tableName, index);
     tableIds.set(normalizeSqlIdentifier(tableName), id);
     attributesByTableId.set(id, attributes);
@@ -338,6 +367,8 @@ const parseDatabaseSchema = (source: string): ExtensionImportResult => {
         componentName: tableName,
         attributes,
         nodeType: "entity",
+        componentId: "entity",
+        renderConfig: entityRenderConfig,
         extensionSource: "database-schema",
       },
     });
