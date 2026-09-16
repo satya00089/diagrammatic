@@ -8,6 +8,7 @@ const FIELD_HANDLE_PREFIX = "field:";
 // still gets enough separation before React Flow reports actual dimensions.
 const DEFAULT_ENTITY_WIDTH = 400;
 const TABLE_CHROME_HEIGHT = 72;
+const COLLAPSED_ENTITY_HEIGHT = 48;
 const ATTRIBUTE_ROW_HEIGHT = 36;
 
 export type ERDLayoutDirection = "TB" | "LR";
@@ -67,6 +68,7 @@ const getPositiveDimension = (...values: unknown[]): number | undefined =>
 
 const getEntityDimensions = (node: Node) => {
   const attributes = getAttributes(node);
+  const isCollapsed = getNodeData(node).isCollapsed === true;
   const width = getPositiveDimension(
     node.measured?.width,
     node.width,
@@ -81,7 +83,10 @@ const getEntityDimensions = (node: Node) => {
   return {
     width: width ?? DEFAULT_ENTITY_WIDTH,
     height:
-      height ?? TABLE_CHROME_HEIGHT + attributes.length * ATTRIBUTE_ROW_HEIGHT,
+      height ??
+      (isCollapsed
+        ? COLLAPSED_ENTITY_HEIGHT
+        : TABLE_CHROME_HEIGHT + attributes.length * ATTRIBUTE_ROW_HEIGHT),
   };
 };
 

@@ -2220,6 +2220,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
+  const handleDiagramTableCollapseToggleRef = useRef<
+    ((e: Event) => void) | undefined
+  >(undefined);
+  handleDiagramTableCollapseToggleRef.current = (e: Event) => {
+    const ce = e as CustomEvent<{ id: string }>;
+    const nodeId = ce.detail.id;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id !== nodeId || !isFieldAddressableERTable(node.data)) {
+          return node;
+        }
+
+        const nodeData = (node.data ?? {}) as Record<string, unknown>;
+        return {
+          ...node,
+          data: {
+            ...nodeData,
+            isCollapsed: nodeData.isCollapsed !== true,
+          },
+        };
+      }),
+    );
+  };
+
   function updateEdgeLabel(
     eds: Edge[],
     id: string,
@@ -2321,6 +2346,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
+    const collapseToggleListener = (e: Event) =>
+      handleDiagramTableCollapseToggleRef.current?.(e);
     const detachListener = (e: Event) => {
       const evt = e as CustomEvent<{ id: string }>;
       // Detach the node from its parent group
@@ -2356,6 +2383,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener,
+    );
+    globalThis.addEventListener(
+      "diagram:table-collapse-toggle",
+      collapseToggleListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-detach",
@@ -2442,6 +2473,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener,
+      );
+      globalThis.removeEventListener(
+        "diagram:table-collapse-toggle",
+        collapseToggleListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-detach",
