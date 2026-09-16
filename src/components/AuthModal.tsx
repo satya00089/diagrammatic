@@ -63,6 +63,22 @@ interface AuthModalProps {
 
 type AuthMode = "login" | "signup";
 
+const getCredentialValidationError = (
+  mode: AuthMode,
+  password: string,
+  confirmPassword: string,
+) => {
+  if (mode === "signup" && password.length < 6) {
+    return "Password must be at least 6 characters.";
+  }
+
+  if (mode === "signup" && password !== confirmPassword) {
+    return "Passwords do not match. Please re-enter them.";
+  }
+
+  return null;
+};
+
 const AUTH_MODE_COPY = {
   login: {
     heading: "Welcome Back",
@@ -426,46 +442,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     };
   }, [isOpen, mode, onGoogleLogin, resolvedDarkMode]);
 
+  const resetCredentialForm = () => {
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setName("");
+  };
+
+  const submitCredentials = async () => {
+    if (mode === "login") {
+      await onLogin(email, password);
+      onClose();
+      return;
+    }
+
+    await onSignup(email, password, name || undefined);
+    setVerificationEmail(email);
+  };
+
+  const handleAuthenticationError = (err: unknown) => {
+    const message =
+      err instanceof Error ? err.message : "Authentication failed";
+    if (
+      mode === "login" &&
+      message.toLowerCase().includes("activate your account")
+    ) {
+      setVerificationEmail(email);
+      return;
+    }
+
+    setError(message);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (mode === "signup" && password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match. Please re-enter them.");
+    const validationError = getCredentialValidationError(
+      mode,
+      password,
+      confirmPassword,
+    );
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      if (mode === "login") {
-        await onLogin(email, password);
-        onClose();
-      } else {
-        await onSignup(email, password, name || undefined);
-        setVerificationEmail(email);
-      }
-      // Reset form
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setName("");
+      await submitCredentials();
+      resetCredentialForm();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Authentication failed";
-      if (
-        mode === "login" &&
-        message.toLowerCase().includes("activate your account")
-      ) {
-        setVerificationEmail(email);
-      } else {
-        setError(message);
-      }
+      handleAuthenticationError(err);
     } finally {
       setIsLoading(false);
     }

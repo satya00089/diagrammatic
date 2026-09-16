@@ -21,7 +21,7 @@ const getTooltipTarget = (target: EventTarget | null): HTMLElement | null => {
   const element = target.closest<HTMLElement>(
     '[data-tooltip]:not([data-tooltip=""])',
   );
-  if (!element || !element.isConnected) return null;
+  if (!element?.isConnected) return null;
   if (
     element.hasAttribute("disabled") ||
     element.getAttribute("aria-disabled") === "true"
@@ -35,7 +35,7 @@ const markTooltipTargets = (root: ParentNode = document) => {
   root
     .querySelectorAll<HTMLElement>('[data-tooltip]:not([data-tooltip=""])')
     .forEach((element) => {
-      element.setAttribute("data-tooltip-render", "portal");
+      element.dataset.tooltipRender = "portal";
       const title = element.getAttribute("title")?.trim();
       if (
         title &&
@@ -83,8 +83,9 @@ const getTooltipLayout = (
   const preferred: TooltipPlacement[] = ["bottom", "top", "right", "left"];
   const placement =
     preferred.find((side) => available[side] >= required[side]) ??
-    preferred.reduce((best, side) =>
-      available[side] > available[best] ? side : best,
+    preferred.reduce<TooltipPlacement>(
+      (best, side) => (available[side] > available[best] ? side : best),
+      "bottom",
     );
 
   const maxLeft = viewportWidth - VIEWPORT_PADDING - width;
