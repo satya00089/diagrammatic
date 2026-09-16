@@ -13,6 +13,9 @@ const ATTRIBUTE_ROW_HEIGHT = 36;
 
 export type ERDLayoutDirection = "TB" | "LR";
 
+// ERD's horizontal presentation spreads each dependency band across the canvas.
+export const DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION: ERDLayoutDirection = "TB";
+
 type EntityAttribute = {
   id: string;
 };
