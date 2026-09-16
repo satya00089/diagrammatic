@@ -145,7 +145,11 @@ import CustomPropertyInput, {
 import ExtensionHub from "../components/ExtensionHub";
 import type { ExtensionImportResult } from "../types/extensions";
 import { getAdaptiveFitViewOptions } from "../utils/adaptiveFitView";
-import { canUseERDLayout, getERDLayoutedNodes } from "../utils/erdLayout";
+import {
+  canUseERDLayout,
+  DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
+  getERDLayoutedNodes,
+} from "../utils/erdLayout";
 
 // Type alias for all node data types
 type AnyNodeData = NodeData | ERNodeData | TableNodeData | FreeformNodeData;
@@ -1039,6 +1043,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   // State for layout menu
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [showExtensionHub, setShowExtensionHub] = useState(false);
+  const [extensionImportStatus, setExtensionImportStatus] = useState<
+    string | null
+  >(null);
 
   // File input ref for import
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2220,6 +2227,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     });
   };
 
+  const handleDiagramTableCollapseToggleRef = useRef<
+    ((e: Event) => void) | undefined
+  >(undefined);
+  handleDiagramTableCollapseToggleRef.current = (e: Event) => {
+    const ce = e as CustomEvent<{ id: string }>;
+    const nodeId = ce.detail.id;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id !== nodeId || !isFieldAddressableERTable(node.data)) {
+          return node;
+        }
+
+        const nodeData = (node.data ?? {}) as Record<string, unknown>;
+        return {
+          ...node,
+          data: {
+            ...nodeData,
+            isCollapsed: nodeData.isCollapsed !== true,
+          },
+        };
+      }),
+    );
+  };
+
   function updateEdgeLabel(
     eds: Edge[],
     id: string,
@@ -2321,6 +2353,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       handleDiagramNodeDeleteRef.current?.(e);
     const toggleListener = (e: Event) =>
       handleDiagramNodeToggleRef.current?.(e);
+    const collapseToggleListener = (e: Event) =>
+      handleDiagramTableCollapseToggleRef.current?.(e);
     const detachListener = (e: Event) => {
       const evt = e as CustomEvent<{ id: string }>;
       // Detach the node from its parent group
@@ -2356,6 +2390,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     globalThis.addEventListener(
       "diagram:node-toggle",
       toggleListener as EventListener,
+    );
+    globalThis.addEventListener(
+      "diagram:table-collapse-toggle",
+      collapseToggleListener as EventListener,
     );
     globalThis.addEventListener(
       "diagram:node-detach",
@@ -2442,6 +2480,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       globalThis.removeEventListener(
         "diagram:node-toggle",
         toggleListener as EventListener,
+      );
+      globalThis.removeEventListener(
+        "diagram:table-collapse-toggle",
+        collapseToggleListener as EventListener,
       );
       globalThis.removeEventListener(
         "diagram:node-detach",
@@ -4245,23 +4287,39 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     const restoredNodes = restoreNodeIcons(result.nodes);
     setCurrentDiagramId(null);
     setShowExtensionHub(false);
+    setExtensionImportStatus("Preparing imported schema…");
 
-    void layoutAndFitCanvas(restoredNodes, result.edges, "LR", (callback) =>
-      window.setTimeout(callback, 100),
-    )
-      .then(() => {
-        setEdges(result.edges);
-        toast.success(`${sourceName} imported: ${result.summary}.`);
-        if (result.warnings.length > 0) {
-          toast.info(
-            `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+    // Let the progress overlay paint before starting the async graph layout.
+    window.setTimeout(() => {
+      setExtensionImportStatus(
+        `Arranging ${restoredNodes.length} elements and ${result.edges.length} relationships…`,
+      );
+
+      void layoutAndFitCanvas(
+        restoredNodes,
+        result.edges,
+        DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
+        (callback) => window.setTimeout(callback, 100),
+      )
+        .then(() => {
+          setEdges(result.edges);
+          toast.success(`${sourceName} imported: ${result.summary}.`);
+          if (result.warnings.length > 0) {
+            toast.info(
+              `${result.warnings.length} import note${result.warnings.length === 1 ? "" : "s"} should be reviewed on the canvas.`,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to lay out imported diagram:", error);
+          toast.error(
+            `${sourceName} was imported, but automatic layout failed.`,
           );
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to lay out imported diagram:", error);
-        toast.error(`${sourceName} was imported, but automatic layout failed.`);
-      });
+        })
+        .finally(() => {
+          setExtensionImportStatus(null);
+        });
+    }, 0);
   };
 
   // Handle sharing diagram with collaborator
@@ -4823,7 +4881,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={undo}
-                    disabled={!canUndo}
+                    disabled={!canUndo || extensionImportStatus !== null}
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     data-tooltip="Undo (Ctrl+Z)"
                   >
@@ -4832,7 +4890,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={redo}
-                    disabled={!canRedo}
+                    disabled={!canRedo || extensionImportStatus !== null}
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     data-tooltip="Redo (Ctrl+Y or Ctrl+Shift+Z)"
                   >
@@ -4843,7 +4901,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={handleClearCanvas}
-                    disabled={nodes.length === 0 && edges.length === 0}
+                    disabled={
+                      (nodes.length === 0 && edges.length === 0) ||
+                      extensionImportStatus !== null
+                    }
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     data-tooltip="Clear Canvas"
                   >
@@ -4854,7 +4915,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 <button
                   type="button"
                   onClick={() => setShowExtensionHub(true)}
-                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors cursor-pointer"
+                  disabled={extensionImportStatus !== null}
+                  className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                   data-tooltip="Extensions: import and export"
                   data-tour="export-btn"
                   aria-label="Open extensions"
@@ -4867,7 +4929,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                   <button
                     type="button"
                     onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-                    disabled={nodes.length === 0}
+                    disabled={
+                      nodes.length === 0 || extensionImportStatus !== null
+                    }
                     className="p-2 text-white hover:bg-white/20 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                     data-tooltip="Auto Layout"
                   >
@@ -4880,22 +4944,22 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("LR");
-                          setShowLayoutMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                      >
-                        Vertical Layout
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
                           onLayout("TB");
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
                       >
                         Horizontal Layout
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onLayout("LR");
+                          setShowLayoutMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        Vertical Layout
                       </button>
                     </div>
                   )}
@@ -5080,7 +5144,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden">
+        <div className="relative flex-1 flex min-h-0 min-w-0 overflow-hidden">
           {!isSharedView && (
             <ComponentPalette
               components={COMPONENTS}
@@ -5167,6 +5231,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             reasoningContext={reasoningContext}
             canvasStats={providedCanvasStats}
           />
+
+          {extensionImportStatus && (
+            <div
+              className="absolute inset-0 z-[60] flex items-center justify-center bg-black/35 px-6 backdrop-blur-[2px]"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-[var(--surface)]/95 p-6 text-center shadow-2xl">
+                <div
+                  className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-[var(--brand)]/25 border-t-[var(--brand)]"
+                  aria-hidden="true"
+                />
+                <p className="mt-4 text-sm font-semibold text-theme">
+                  Importing schema
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  {extensionImportStatus}
+                </p>
+                <p className="mt-3 text-xs text-muted">
+                  Large diagrams may take a moment to finish.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Clear Canvas Confirmation Modal */}

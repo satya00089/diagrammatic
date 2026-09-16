@@ -51,6 +51,14 @@ const markTooltipTargets = (root: ParentNode = document) => {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), Math.max(min, max));
 
+const isTooltipPlacement = (
+  value: string | undefined,
+): value is TooltipPlacement =>
+  value === "top" ||
+  value === "right" ||
+  value === "bottom" ||
+  value === "left";
+
 const getTooltipLayout = (
   element: HTMLElement,
   text: string,
@@ -80,13 +88,22 @@ const getTooltipLayout = (
     right: width + TOOLTIP_GAP,
     left: width + TOOLTIP_GAP,
   } satisfies Record<TooltipPlacement, number>;
-  const preferred: TooltipPlacement[] = ["bottom", "top", "right", "left"];
-  const placement =
-    preferred.find((side) => available[side] >= required[side]) ??
-    preferred.reduce<TooltipPlacement>(
-      (best, side) => (available[side] > available[best] ? side : best),
-      "bottom",
-    );
+  const requestedPlacement = element.dataset.tooltipPlacement;
+  const preferred: TooltipPlacement[] = isTooltipPlacement(requestedPlacement)
+    ? [
+        requestedPlacement,
+        ...(["top", "right", "bottom", "left"] as TooltipPlacement[]).filter(
+          (side) => side !== requestedPlacement,
+        ),
+      ]
+    : ["bottom", "top", "right", "left"];
+  const placement = isTooltipPlacement(requestedPlacement)
+    ? requestedPlacement
+    : (preferred.find((side) => available[side] >= required[side]) ??
+      preferred.reduce<TooltipPlacement>(
+        (best, side) => (available[side] > available[best] ? side : best),
+        "bottom",
+      ));
 
   const maxLeft = viewportWidth - VIEWPORT_PADDING - width;
   const maxTop = viewportHeight - VIEWPORT_PADDING - height;

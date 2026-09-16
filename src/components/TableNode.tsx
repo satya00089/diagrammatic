@@ -7,6 +7,7 @@ import {
   MdDelete,
   MdAdd,
   MdKey,
+  MdExpandMore,
   MdOutlineVerticalAlignTop,
   MdOutlineVerticalAlignBottom,
 } from "react-icons/md";
@@ -36,6 +37,7 @@ export type TableNodeData = {
   description?: string;
   attributes?: TableAttribute[] | string; // Can be array or JSON string
   renderConfig?: NodeRenderConfig; // Column configuration
+  isCollapsed?: boolean;
   [key: string]: unknown;
 };
 
@@ -55,22 +57,27 @@ type Props = {
   isInGroup?: boolean;
 };
 
-function BooleanCellContent({ columnKey, displayValue, icon }: Readonly<{ columnKey: string; displayValue: boolean; icon?: React.ReactNode }>) {
-if (columnKey === "isPrimaryKey" && displayValue) return ((
-                <MdKey className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              ));
-if (columnKey === "isForeignKey" && displayValue) return ((
-                <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">
-                  FK
-                </span>
-              ));
-if (icon) return ((
-                <span className="text-xs">{icon}</span>
-              ));
-if (columnKey !== "isPrimaryKey" && columnKey !== "isForeignKey") return ((
-                <div className="w-3 h-3 border border-theme/40 rounded" />
-              ));
-return null;
+function BooleanCellContent({
+  columnKey,
+  displayValue,
+  icon,
+}: Readonly<{
+  columnKey: string;
+  displayValue: boolean;
+  icon?: React.ReactNode;
+}>) {
+  if (columnKey === "isPrimaryKey" && displayValue)
+    return <MdKey className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />;
+  if (columnKey === "isForeignKey" && displayValue)
+    return (
+      <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">
+        FK
+      </span>
+    );
+  if (icon) return <span className="text-xs">{icon}</span>;
+  if (columnKey !== "isPrimaryKey" && columnKey !== "isForeignKey")
+    return <div className="w-3 h-3 border border-theme/40 rounded" />;
+  return null;
 }
 
 const TableNode: React.FC<Props> = React.memo(
@@ -98,6 +105,8 @@ const TableNode: React.FC<Props> = React.memo(
     const displayLabel = data.componentName || data.label;
     const isContentSizedTable = isContentSizedTableNode(data);
     const isERTable = isFieldAddressableERTable(data);
+    const isCollapsed = isERTable && data.isCollapsed === true;
+    const tableContentId = `table-node-content-${id}`;
     const backgroundColor =
       typeof data.backgroundColor === "string" && data.backgroundColor.trim()
         ? data.backgroundColor
@@ -176,7 +185,7 @@ const TableNode: React.FC<Props> = React.memo(
 
     React.useLayoutEffect(() => {
       updateNodeInternals(id);
-    }, [attributePortPositions, id, updateNodeInternals]);
+    }, [attributePortPositions, id, isCollapsed, updateNodeInternals]);
 
     // Get column configuration from renderConfig or use defaults
     const columns = React.useMemo<TableColumn[]>(() => {
@@ -220,6 +229,18 @@ const TableNode: React.FC<Props> = React.memo(
         e.stopPropagation();
         globalThis.dispatchEvent(
           new CustomEvent("diagram:node-toggle", { detail: { id } }),
+        );
+      },
+      [id],
+    );
+
+    const handleCollapseToggle = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        globalThis.dispatchEvent(
+          new CustomEvent("diagram:table-collapse-toggle", {
+            detail: { id },
+          }),
         );
       },
       [id],
@@ -370,7 +391,13 @@ const TableNode: React.FC<Props> = React.memo(
               data-tooltip={col.label}
               aria-pressed={displayValue}
             >
-              {<BooleanCellContent columnKey={col.key} displayValue={displayValue} icon={icon} />}
+              {
+                <BooleanCellContent
+                  columnKey={col.key}
+                  displayValue={displayValue}
+                  icon={icon}
+                />
+              }
             </button>
           );
         }
@@ -587,14 +614,27 @@ const TableNode: React.FC<Props> = React.memo(
               ...(textColor ? { color: textColor } : { color: "var(--bg)" }),
             }}
           >
-            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="nodrag nopan min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              onClick={handleCollapseToggle}
+              aria-expanded={!isCollapsed}
+              aria-controls={tableContentId}
+              aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${displayLabel}`}
+              data-tooltip={isCollapsed ? "Expand table" : "Collapse table"}
+              data-tooltip-placement="top"
+            >
               {data.icon && <span className="text-lg">{data.icon}</span>}
-              <span>{displayLabel}</span>
-            </div>
+              <span className="truncate">{displayLabel}</span>
+              <MdExpandMore
+                aria-hidden="true"
+                className={`ml-auto h-5 w-5 flex-shrink-0 transition-transform duration-150 ${isCollapsed ? "-rotate-90" : "rotate-0"}`}
+              />
+            </button>
             <button
               type="button"
               onClick={handleAddAttribute}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="nodrag nopan flex-shrink-0 rounded p-1 hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               aria-label="Add attribute"
               data-tooltip="Add attribute"
             >
@@ -602,187 +642,251 @@ const TableNode: React.FC<Props> = React.memo(
             </button>
           </div>
 
-          {/* Column Headers */}
           <div
-            className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold flex-shrink-0"
-            style={{
-              ...(backgroundColor ? { backgroundColor } : {}),
-              ...(borderColor ? { borderBottomColor: borderColor } : {}),
-              ...(textColor ? { color: textColor } : {}),
-            }}
+            id={tableContentId}
+            className={isCollapsed ? "hidden" : "contents"}
           >
-            {columns.map((col) => (
-              <span
-                key={col.key}
-                className={col.width || "flex-1"}
-                style={{
-                  textAlign:
-                    col.align || (col.type === "boolean" ? "center" : "left"),
-                }}
-              >
-                {col.label}
-              </span>
-            ))}
-          </div>
-
-          {/* Attributes List */}
-          <div
-            ref={attributeScrollRef}
-            onScroll={updateAttributePortPositions}
-            className={`divide-y divide-theme/10 ${
-              isContentSizedTable
-                ? "overflow-visible"
-                : "min-h-0 flex-1 overflow-y-auto table-node-scroll"
-            }`}
-          >
-            {attributes.map((attr) => {
-              const isEditing = editingAttrId === attr.id;
-              return (
+            {!isCollapsed && (
+              <>
+                {/* Column Headers */}
                 <div
-                  key={attr.id}
-                  ref={(row) => {
-                    if (row) {
-                      attributeRowRefs.current.set(attr.id, row);
-                    } else {
-                      attributeRowRefs.current.delete(attr.id);
-                    }
+                  className="bg-[var(--bg-hover)] px-3 py-1 border-b border-theme/20 flex items-center gap-2 text-xs font-semibold flex-shrink-0"
+                  style={{
+                    ...(backgroundColor ? { backgroundColor } : {}),
+                    ...(borderColor ? { borderBottomColor: borderColor } : {}),
+                    ...(textColor ? { color: textColor } : {}),
                   }}
-                  className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
-                    entityRowHoverBackground
-                      ? "hover:bg-[var(--entity-row-hover)] focus-visible:bg-[var(--entity-row-hover)]"
-                      : "hover:bg-[var(--bg-hover)]"
-                  }`}
-                  style={
-                    entityRowHoverBackground
-                      ? ({
-                          "--entity-row-hover": entityRowHoverBackground,
-                        } as React.CSSProperties)
-                      : undefined
-                  }
-                  role="group"
-                  aria-label={
-                    attr.name ? `Attribute ${attr.name}` : "Attribute row"
-                  }
-                  tabIndex={0}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
-                    // Only trigger when the div itself is the event target (not when typing in inputs)
-                    if (
-                      e.target === e.currentTarget &&
-                      !isEditing &&
-                      (e.key === "Enter" || e.key === " ")
-                    ) {
-                      e.preventDefault();
-                      handleStartEdit(
-                        attr,
-                        e as unknown as React.SyntheticEvent,
-                      );
-                    }
-                  }}
-                  onBlur={
-                    isEditing
-                      ? (e: React.FocusEvent<HTMLDivElement>) => {
-                          if (
-                            !e.currentTarget.contains(e.relatedTarget as Node)
-                          ) {
-                            handleSaveEdit();
-                          }
-                        }
-                      : undefined
-                  }
                 >
-                  {columns.map((col) => renderColumnCell(col, attr, isEditing))}
+                  {columns.map((col) => (
+                    <span
+                      key={col.key}
+                      className={col.width || "flex-1"}
+                      style={{
+                        textAlign:
+                          col.align ||
+                          (col.type === "boolean" ? "center" : "left"),
+                      }}
+                    >
+                      {col.label}
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
 
-          {isERTable && (
-            <div
-              className="pointer-events-none absolute left-0 right-0 z-20"
-              aria-label="Entity attribute connection ports"
-              style={{
-                top: `${attributePortLayer.top}px`,
-                height: `${attributePortLayer.height}px`,
-              }}
-            >
-              {attributePortPositions.map((position) => {
-                const attribute = attributes.find(
-                  (attr) => attr.id === position.id,
-                );
-                const label = attribute?.name || "attribute";
-                const visibility = position.visible ? "visible" : "hidden";
-                const handleStyle = {
-                  top: `${position.top}px`,
-                  width: "10px",
-                  height: "18px",
-                  background: "transparent",
-                  border: "none",
-                  borderRadius: 0,
-                  zIndex: 10,
-                  pointerEvents: "all" as const,
-                  visibility: visibility as "visible" | "hidden",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                };
+                {/* Attributes List */}
+                <div
+                  ref={attributeScrollRef}
+                  onScroll={updateAttributePortPositions}
+                  className={`divide-y divide-theme/10 ${
+                    isContentSizedTable
+                      ? "overflow-visible"
+                      : "min-h-0 flex-1 overflow-y-auto table-node-scroll"
+                  }`}
+                >
+                  {attributes.map((attr) => {
+                    const isEditing = editingAttrId === attr.id;
+                    return (
+                      <div
+                        key={attr.id}
+                        ref={(row) => {
+                          if (row) {
+                            attributeRowRefs.current.set(attr.id, row);
+                          } else {
+                            attributeRowRefs.current.delete(attr.id);
+                          }
+                        }}
+                        className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
+                          entityRowHoverBackground
+                            ? "hover:bg-[var(--entity-row-hover)] focus-visible:bg-[var(--entity-row-hover)]"
+                            : "hover:bg-[var(--bg-hover)]"
+                        }`}
+                        style={
+                          entityRowHoverBackground
+                            ? ({
+                                "--entity-row-hover": entityRowHoverBackground,
+                              } as React.CSSProperties)
+                            : undefined
+                        }
+                        role="group"
+                        aria-label={
+                          attr.name ? `Attribute ${attr.name}` : "Attribute row"
+                        }
+                        tabIndex={0}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                          // Only trigger when the div itself is the event target (not when typing in inputs)
+                          if (
+                            e.target === e.currentTarget &&
+                            !isEditing &&
+                            (e.key === "Enter" || e.key === " ")
+                          ) {
+                            e.preventDefault();
+                            handleStartEdit(
+                              attr,
+                              e as unknown as React.SyntheticEvent,
+                            );
+                          }
+                        }}
+                        onBlur={
+                          isEditing
+                            ? (e: React.FocusEvent<HTMLDivElement>) => {
+                                if (
+                                  !e.currentTarget.contains(
+                                    e.relatedTarget as Node,
+                                  )
+                                ) {
+                                  handleSaveEdit();
+                                }
+                              }
+                            : undefined
+                        }
+                      >
+                        {columns.map((col) =>
+                          renderColumnCell(col, attr, isEditing),
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
 
-                const connectionCross = (side: "left" | "right") => (
-                  <svg
-                    aria-hidden="true"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 10 10"
-                    fill="none"
-                    className="pointer-events-none transition-opacity duration-100"
+                {isERTable && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-20"
+                    aria-label="Entity attribute connection ports"
                     style={{
-                      opacity: isHovered ? 1 : 0,
-                      transform: `translateX(${side === "left" ? -0.6 : 0.6}px)`,
+                      top: `${attributePortLayer.top}px`,
+                      height: `${attributePortLayer.height}px`,
                     }}
                   >
-                    <path
-                      d="M5 1v8M1 5h8"
-                      transform="rotate(45 5 5)"
-                      stroke="var(--brand)"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                );
+                    {attributePortPositions.map((position) => {
+                      const attribute = attributes.find(
+                        (attr) => attr.id === position.id,
+                      );
+                      const label = attribute?.name || "attribute";
+                      const visibility = position.visible
+                        ? "visible"
+                        : "hidden";
+                      const handleStyle = {
+                        top: `${position.top}px`,
+                        width: "10px",
+                        height: "18px",
+                        background: "transparent",
+                        border: "none",
+                        borderRadius: 0,
+                        zIndex: 10,
+                        pointerEvents: "all" as const,
+                        visibility: visibility as "visible" | "hidden",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      };
 
-                return (
-                  <React.Fragment key={position.id}>
-                    <Handle
-                      id={getAttributeHandleId(position.id, "left")}
-                      type="source"
-                      position={Position.Left}
-                      isConnectable={true}
-                      aria-label={`Connect ${label} on the left`}
-                      className="opacity-100 transition-opacity"
-                      style={{ left: "-1px", ...handleStyle }}
-                    >
-                      {connectionCross("left")}
-                    </Handle>
-                    <Handle
-                      id={getAttributeHandleId(position.id, "right")}
-                      type="source"
-                      position={Position.Right}
-                      isConnectable={true}
-                      aria-label={`Connect ${label} on the right`}
-                      className="opacity-100 transition-opacity"
-                      style={{ right: "-1px", ...handleStyle }}
-                    >
-                      {connectionCross("right")}
-                    </Handle>
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          )}
+                      const connectionCross = (side: "left" | "right") => (
+                        <svg
+                          aria-hidden="true"
+                          width="10"
+                          height="10"
+                          viewBox="0 0 10 10"
+                          fill="none"
+                          className="pointer-events-none transition-opacity duration-100"
+                          style={{
+                            opacity: isHovered ? 1 : 0,
+                            transform: `translateX(${side === "left" ? -0.6 : 0.6}px)`,
+                          }}
+                        >
+                          <path
+                            d="M5 1v8M1 5h8"
+                            transform="rotate(45 5 5)"
+                            stroke="var(--brand)"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      );
 
-          {/* Empty state */}
-          {attributes.length === 0 && (
-            <div className="px-3 py-4 text-center text-xs text-muted">
-              Click + to add attributes
+                      return (
+                        <React.Fragment key={position.id}>
+                          <Handle
+                            id={getAttributeHandleId(position.id, "left")}
+                            type="source"
+                            position={Position.Left}
+                            isConnectable={true}
+                            aria-label={`Connect ${label} on the left`}
+                            className="opacity-100 transition-opacity"
+                            style={{ left: "-1px", ...handleStyle }}
+                          >
+                            {connectionCross("left")}
+                          </Handle>
+                          <Handle
+                            id={getAttributeHandleId(position.id, "right")}
+                            type="source"
+                            position={Position.Right}
+                            isConnectable={true}
+                            aria-label={`Connect ${label} on the right`}
+                            className="opacity-100 transition-opacity"
+                            style={{ right: "-1px", ...handleStyle }}
+                          >
+                            {connectionCross("right")}
+                          </Handle>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {attributes.length === 0 && (
+                  <div className="px-3 py-4 text-center text-xs text-muted">
+                    Click + to add attributes
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {isCollapsed && isERTable && attributes.length > 0 && (
+            <div
+              className="pointer-events-none absolute inset-0 z-20"
+              aria-label="Collapsed entity attribute connection ports"
+            >
+              {attributes.map((attribute) => (
+                <React.Fragment key={attribute.id}>
+                  <Handle
+                    id={getAttributeHandleId(attribute.id, "left")}
+                    type="source"
+                    position={Position.Left}
+                    isConnectable={true}
+                    aria-label={`Connect ${attribute.name || "attribute"} on the left`}
+                    style={{
+                      top: "50%",
+                      left: "-1px",
+                      width: "10px",
+                      height: "18px",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      opacity: 0,
+                      pointerEvents: "all",
+                    }}
+                  />
+                  <Handle
+                    id={getAttributeHandleId(attribute.id, "right")}
+                    type="source"
+                    position={Position.Right}
+                    isConnectable={true}
+                    aria-label={`Connect ${attribute.name || "attribute"} on the right`}
+                    style={{
+                      top: "50%",
+                      right: "-1px",
+                      width: "10px",
+                      height: "18px",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      opacity: 0,
+                      pointerEvents: "all",
+                    }}
+                  />
+                </React.Fragment>
+              ))}
             </div>
           )}
         </motion.div>

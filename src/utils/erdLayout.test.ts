@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Edge, Node } from "@xyflow/react";
 import {
   canUseERDLayout,
+  DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
   getERDLayoutedNodes,
   isEntityTableNode,
 } from "./erdLayout";
@@ -22,6 +23,10 @@ const makeEntity = (id: string, attributes: string[]): Node => ({
 });
 
 describe("ERD ELK layout", () => {
+  it("uses the horizontal presentation as the imported ERD default", () => {
+    expect(DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION).toBe("TB");
+  });
+
   it("recognizes entity-only graphs", () => {
     const entity = makeEntity("users", ["id"]);
 
