@@ -322,7 +322,7 @@ export default function Landing3D() {
     <div className="systema-page" data-theme={landingTheme}>
       <div ref={patternRef} className="systema-pattern-layer" aria-hidden="true" />
       <Seo
-        title="Diagrammatic — Design systems. Understand every decision."
+        title="Diagrammatic — System design. Understand every decision."
         description="Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration."
         keywords="system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview"
         image="https://diagrammatic.next-zen.dev/og/home.png"
@@ -529,7 +529,7 @@ export default function Landing3D() {
             aria-labelledby="systema-title"
           >
             <h1 id="systema-title">
-              Design systems.
+              System design.
               <br />
               <span>
                 Understand
