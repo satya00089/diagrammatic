@@ -42,6 +42,12 @@ export type TableNodeData = {
 const getAttributeHandleId = (attributeId: string, side: "left" | "right") =>
   `field:${attributeId}:${side}`;
 
+const getEntityRowHoverBackground = (
+  backgroundColor: string,
+  textColor?: string,
+) =>
+  `color-mix(in srgb, ${backgroundColor} 88%, ${textColor || "var(--text)"} 12%)`;
+
 type Props = {
   id: string;
   data: TableNodeData;
@@ -103,6 +109,10 @@ const TableNode: React.FC<Props> = React.memo(
     const textColor =
       typeof data.textColor === "string" && data.textColor.trim()
         ? data.textColor
+        : undefined;
+    const entityRowHoverBackground =
+      isERTable && backgroundColor
+        ? getEntityRowHoverBackground(backgroundColor, textColor)
         : undefined;
 
     // Parse attributes - it might be a JSON string or already an array
@@ -637,7 +647,18 @@ const TableNode: React.FC<Props> = React.memo(
                       attributeRowRefs.current.delete(attr.id);
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-hover)] group"
+                  className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
+                    entityRowHoverBackground
+                      ? "hover:bg-[var(--entity-row-hover)] focus-visible:bg-[var(--entity-row-hover)]"
+                      : "hover:bg-[var(--bg-hover)]"
+                  }`}
+                  style={
+                    entityRowHoverBackground
+                      ? ({
+                          "--entity-row-hover": entityRowHoverBackground,
+                        } as React.CSSProperties)
+                      : undefined
+                  }
                   role="group"
                   aria-label={
                     attr.name ? `Attribute ${attr.name}` : "Attribute row"

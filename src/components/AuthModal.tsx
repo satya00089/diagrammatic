@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MdClose, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { useTheme } from "../hooks/useTheme";
@@ -114,7 +115,7 @@ const PasswordField: React.FC<{
       <label htmlFor={id} className="block text-sm font-medium text-theme mb-2">
         {label}
       </label>
-      <div className="relative">
+      <div className="grid grid-cols-1">
         <input
           id={id}
           type={visible ? "text" : "password"}
@@ -124,15 +125,14 @@ const PasswordField: React.FC<{
           minLength={6}
           aria-invalid={invalid}
           aria-describedby={helpId}
-          className="w-full px-4 py-2 pr-12 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+          className="col-start-1 row-start-1 w-full px-4 py-2 pr-12 bg-surface border border-[var(--auth-field-border)] rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={onToggle}
-          className="absolute inset-y-0 right-0 flex items-center px-3 text-muted hover:text-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-r-lg"
+          className="col-start-1 row-start-1 z-10 flex items-center justify-self-end px-3 text-muted hover:text-theme focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-r-lg"
           aria-label={visibilityAction}
-          data-tooltip={visibilityAction}
         >
           {visible ? (
             <MdVisibilityOff className="h-5 w-5" />
@@ -200,7 +200,10 @@ const CredentialsForm: React.FC<{
     <>
       {googleLoginAvailable && (
         <>
-          <div id="google-signin-button" className="flex justify-center mb-4" />
+          <div
+            id="google-signin-button"
+            className="mb-4 flex w-full min-w-0 justify-center overflow-hidden"
+          />
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-theme/20" />
@@ -228,7 +231,7 @@ const CredentialsForm: React.FC<{
               type="text"
               value={name}
               onChange={(event) => onNameChange(event.target.value)}
-              className="w-full px-4 py-2 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+              className="w-full px-4 py-2 bg-surface border border-[var(--auth-field-border)] rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
               placeholder="John Doe"
             />
           </div>
@@ -247,7 +250,7 @@ const CredentialsForm: React.FC<{
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
             required
-            className="w-full px-4 py-2 bg-theme/5 border border-theme/20 rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+            className="w-full px-4 py-2 bg-surface border border-[var(--auth-field-border)] rounded-lg text-theme placeholder-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
             placeholder="you@example.com"
           />
         </div>
@@ -369,20 +372,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!isOpen || !onGoogleLogin) return;
 
     let cancelled = false;
+    let renderedButtonWidth = 0;
+    let resizeObserver: ResizeObserver | undefined;
 
     const renderGoogleButton = () => {
       const container = document.getElementById("google-signin-button");
       if (!container || !window.google) return;
 
+      const width = Math.min(400, container.clientWidth);
+      if (width <= 0 || width === renderedButtonWidth) return;
+
       container.replaceChildren();
       window.google.accounts.id.renderButton(container, {
         theme: resolvedDarkMode ? "filled_black" : "outline",
         size: "large",
-        width: 400,
+        width,
         text: mode === "login" ? "signin_with" : "signup_with",
         shape: "rectangular",
         logo_alignment: "left",
       });
+      renderedButtonWidth = width;
     };
 
     const initializeGoogle = async () => {
@@ -399,6 +408,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         googleIdentityInitialized = true;
       }
 
+      const container = document.getElementById("google-signin-button");
+      if (container) {
+        resizeObserver = new ResizeObserver(renderGoogleButton);
+        resizeObserver.observe(container);
+      }
       renderGoogleButton();
     };
 
@@ -408,6 +422,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
     };
   }, [isOpen, mode, onGoogleLogin, resolvedDarkMode]);
 
@@ -468,19 +483,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const modeCopy = AUTH_MODE_COPY[mode];
+  const modalThemeStyles = {
+    "--bg": resolvedDarkMode ? "#080808" : "#f4f3ee",
+    "--surface": resolvedDarkMode ? "#131313" : "#ebeae5",
+    "--bg-hover": resolvedDarkMode ? "#1b1b1b" : "#e4e2db",
+    "--text": resolvedDarkMode ? "#f5f5f3" : "#151513",
+    "--muted": resolvedDarkMode ? "#9a9a98" : "#686863",
+    "--border": resolvedDarkMode ? "#292929" : "#d4d2ca",
+    "--brand": resolvedDarkMode ? "#ffffff" : "#151513",
+    "--theme": resolvedDarkMode ? "#f5f5f3" : "#151513",
+    "--auth-modal-border": resolvedDarkMode ? "#dedede" : "#151513",
+    "--auth-field-border": resolvedDarkMode ? "#dedede" : "#686863",
+    "--auth-callout-border": resolvedDarkMode ? "#737373" : "#a7a59d",
+    colorScheme: resolvedDarkMode ? "dark" : "light",
+  } as React.CSSProperties;
 
   if (!isOpen) return null;
+  const modalRoot = typeof document === "undefined" ? null : document.body;
+  if (!modalRoot) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4 sm:p-6">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-black/50 px-2 py-4 sm:px-2 sm:py-6"
+          style={modalThemeStyles}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-theme/10 bg-surface p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-x-hidden overflow-y-auto rounded-2xl border border-[var(--auth-modal-border)] bg-surface p-6 shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -500,7 +534,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <p className="text-muted mb-6">{modeCopy.description}</p>
 
-            <div className="mb-6 rounded-xl border border-theme/10 bg-[var(--bg-hover)]/60 px-4 py-3 text-sm text-muted">
+            <div className="mb-6 rounded-xl border border-[var(--auth-callout-border)] bg-[var(--bg-hover)]/60 px-4 py-3 text-sm text-muted">
               Signing in enables cloud saves, shared diagrams, and
               collaboration-ready workflows.
             </div>
@@ -584,6 +618,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    modalRoot,
   );
 };

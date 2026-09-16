@@ -89,6 +89,40 @@ body {
   outline-color: var(--brand);
 }
 
+/* Give interactive controls a pointer affordance and disabled controls a clear
+   unavailable state across every page. */
+button:not(:disabled),
+a[href]:not([aria-disabled="true"]),
+[role="button"]:not([aria-disabled="true"]),
+[role="link"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="checkbox"]:not([aria-disabled="true"]),
+[role="radio"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="slider"]:not([aria-disabled="true"]),
+select:not(:disabled),
+summary,
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="range"]:not(:disabled),
+input[type="file"]:not(:disabled),
+label:has(input[type="checkbox"]:not(:disabled)),
+label:has(input[type="radio"]:not(:disabled)) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+select:disabled,
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled,
+input[type="range"]:disabled,
+input[type="file"]:disabled {
+  cursor: not-allowed;
+}
+
 /* Motion-style rolling labels for primary navigation. The clipped wrapper
    keeps the interaction compact while the duplicate copy makes the state
    change readable in both directions. */
