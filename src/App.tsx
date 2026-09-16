@@ -6,6 +6,7 @@ import { ChatBotProvider } from "./contexts/ChatBotContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { FeedbackProvider } from "./contexts/FeedbackContext";
 import { lazyWithRetry } from "./utils/lazyWithRetry";
+import AdaptiveTooltipLayer from "./components/shared/AdaptiveTooltipLayer";
 
 const FeatureAnnouncement = lazyWithRetry(
   () => import("./components/FeatureAnnouncement"),
@@ -286,6 +287,7 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => (
   <ThemeProvider>
     <AppContent />
+    <AdaptiveTooltipLayer />
   </ThemeProvider>
 );
 
