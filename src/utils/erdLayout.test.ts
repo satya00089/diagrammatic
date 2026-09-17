@@ -4,6 +4,7 @@ import {
   canUseERDLayout,
   DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
   getERDLayoutedNodes,
+  getLayoutDirectionForMenu,
   isEntityTableNode,
 } from "./erdLayout";
 
@@ -43,6 +44,25 @@ describe("ERD ELK layout", () => {
         },
       ]),
     ).toBe(false);
+  });
+
+  it("keeps the established ERD menu convention", () => {
+    const entity = makeEntity("users", ["id"]);
+
+    expect(getLayoutDirectionForMenu([entity], "horizontal")).toBe("TB");
+    expect(getLayoutDirectionForMenu([entity], "vertical")).toBe("LR");
+  });
+
+  it("uses the standard menu direction for regular diagrams", () => {
+    const service: Node = {
+      id: "service",
+      type: "custom",
+      position: { x: 0, y: 0 },
+      data: { label: "Service" },
+    };
+
+    expect(getLayoutDirectionForMenu([service], "horizontal")).toBe("LR");
+    expect(getLayoutDirectionForMenu([service], "vertical")).toBe("TB");
   });
 
   it("lays out field-to-field relationships in the requested direction", async () => {

@@ -150,8 +150,8 @@ import type { ExtensionImportResult } from "../types/extensions";
 import { getAdaptiveFitViewOptions } from "../utils/adaptiveFitView";
 import {
   canUseERDLayout,
-  DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
   getERDLayoutedNodes,
+  getLayoutDirectionForMenu,
 } from "../utils/erdLayout";
 
 // Type alias for all node data types
@@ -4301,7 +4301,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
       void layoutAndFitCanvas(
         restoredNodes,
         result.edges,
-        DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION,
+        getLayoutDirectionForMenu(restoredNodes, "horizontal"),
         (callback) => window.setTimeout(callback, 100),
       )
         .then(() => {
@@ -4947,7 +4947,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("TB");
+                          onLayout(
+                            getLayoutDirectionForMenu(nodes, "horizontal"),
+                          );
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
@@ -4957,7 +4959,9 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          onLayout("LR");
+                          onLayout(
+                            getLayoutDirectionForMenu(nodes, "vertical"),
+                          );
                           setShowLayoutMenu(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-theme hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"

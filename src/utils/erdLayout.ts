@@ -13,6 +13,8 @@ const ATTRIBUTE_ROW_HEIGHT = 36;
 
 export type ERDLayoutDirection = "TB" | "LR";
 
+export type LayoutMenuOrientation = "horizontal" | "vertical";
+
 // ERD's horizontal presentation spreads each dependency band across the canvas.
 export const DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION: ERDLayoutDirection = "TB";
 
@@ -61,6 +63,21 @@ export const canUseERDLayout = (nodes: Node[]): boolean => {
   );
 
   return topLevelNodes.length > 0 && topLevelNodes.every(isEntityTableNode);
+};
+
+// ERD keeps its established presentation convention, while regular diagrams
+// use Dagre's standard left-to-right / top-to-bottom direction names.
+export const getLayoutDirectionForMenu = (
+  nodes: Node[],
+  orientation: LayoutMenuOrientation,
+): ERDLayoutDirection => {
+  if (canUseERDLayout(nodes)) {
+    return orientation === "horizontal"
+      ? DEFAULT_IMPORTED_ERD_LAYOUT_DIRECTION
+      : "LR";
+  }
+
+  return orientation === "horizontal" ? "LR" : "TB";
 };
 
 const getPositiveDimension = (...values: unknown[]): number | undefined =>
