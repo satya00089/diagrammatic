@@ -105,7 +105,10 @@ const TableNode: React.FC<Props> = React.memo(
     const displayLabel = data.componentName || data.label;
     const isContentSizedTable = isContentSizedTableNode(data);
     const isERTable = isFieldAddressableERTable(data);
-    const isCollapsed = isERTable && data.isCollapsed === true;
+    // ER entities and UML table-shaped nodes all share the same collapsible
+    // content treatment. ER-ness still only controls field-level handles.
+    const isCollapsibleTable = isContentSizedTable;
+    const isCollapsed = isCollapsibleTable && data.isCollapsed === true;
     const tableContentId = `table-node-content-${id}`;
     const backgroundColor =
       typeof data.backgroundColor === "string" && data.backgroundColor.trim()
