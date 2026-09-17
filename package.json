@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://diagrammatic.next-zen.dev",
+  "homepage": "https://diagramwise.com",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -13,14 +13,14 @@ interface SEOProps {
 }
 
 const DEFAULT_SEO = {
-  title: "Diagrammatic — Design architectures. Get them reviewed.",
+  title: "Diagramwise — Design architectures. Get them reviewed.",
   description:
     "Practice system design by building architectures visually, explaining your assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
   keywords:
     "system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture",
-  image: "https://diagrammatic.next-zen.dev/og/home.png",
-  imageAlt: "Diagrammatic homepage preview",
-  url: "https://diagrammatic.next-zen.dev/",
+  image: "https://diagramwise.com/og/home.png",
+  imageAlt: "Diagramwise homepage preview",
+  url: "https://diagramwise.com/",
   type: "website",
 };
 

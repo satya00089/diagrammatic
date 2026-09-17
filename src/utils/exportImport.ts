@@ -62,9 +62,9 @@ export const exportAsXML = (
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml +=
-    '<mxfile host="Diagrammatic" modified="' +
+    '<mxfile host="Diagramwise" modified="' +
     new Date().toISOString() +
-    '" agent="Diagrammatic" version="1.0" type="device">\n';
+    '" agent="Diagramwise" version="1.0" type="device">\n';
   xml +=
     '  <diagram id="diagram1" name="' +
     escapeXml(title || "System Design") +

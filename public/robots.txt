@@ -9,4 +9,4 @@ Disallow: /__blobstorage__/
 Disallow: /admin/
 
 # Sitemap
-Sitemap: https://diagrammatic.next-zen.dev/sitemap.xml
+Sitemap: https://diagramwise.com/sitemap.xml

@@ -45,7 +45,7 @@ type PublicProblem = Partial<SystemDesignProblem> & {
   slug?: string;
 };
 
-const SITE_URL = "https://diagrammatic.next-zen.dev";
+const SITE_URL = "https://diagramwise.com";
 
 const readableTag = (tag: string) =>
   tag
@@ -284,10 +284,10 @@ const ProblemLanding: React.FC = () => {
   return (
     <>
       <Seo
-        title={`${problem.title} — System Design Interview Practice | Diagrammatic`}
+        title={`${problem.title} — System Design Interview Practice | Diagramwise`}
         description={pageDescription}
         keywords={`${problem.title}, system design interview question, ${problem.tags.join(", ")}`}
-        image="https://diagrammatic.next-zen.dev/og/problems.png"
+        image="https://diagramwise.com/og/problems.png"
         imageAlt={`${problem.title} practice challenge`}
         url={canonical}
         type="article"
@@ -302,7 +302,7 @@ const ProblemLanding: React.FC = () => {
           teaches: concepts,
           provider: {
             "@type": "Organization",
-            name: "Diagrammatic",
+            name: "Diagramwise",
             url: `${SITE_URL}/`,
           },
         }}
@@ -508,7 +508,7 @@ const ProblemLanding: React.FC = () => {
                         What the review looks for
                       </h2>
                       <p className="mt-4 max-w-3xl leading-7 text-muted">
-                        Diagrammatic reviews the reasoning behind your
+                        Diagramwise reviews the reasoning behind your
                         components and connections—not just whether the right
                         boxes appear. Make assumptions explicit and label the
                         important data flows.
@@ -598,7 +598,7 @@ const ProblemLanding: React.FC = () => {
         </main>
 
         <footer className="border-t border-theme/10 px-4 py-8 text-center text-sm text-muted">
-          Diagrammatic — system design practice built around your reasoning.
+          Diagramwise — system design practice built around your reasoning.
         </footer>
       </div>
 

@@ -1,4 +1,4 @@
-/* Shared feedback surface for Diagrammatic's paper-and-ink product UI. */
+/* Shared feedback surface for Diagramwise's paper-and-ink product UI. */
 
 /* Feedback is mounted at document level, so mirror the page-scoped tokens. */
 html:has(

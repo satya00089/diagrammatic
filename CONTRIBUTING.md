@@ -1,6 +1,6 @@
-# Contributing to Diagrammatic
+# Contributing to Diagramwise
 
-Thank you for your interest in contributing to Diagrammatic! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Diagramwise! This document provides guidelines for contributing to the project.
 
 ## Getting Started
 

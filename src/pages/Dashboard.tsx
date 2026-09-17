@@ -350,12 +350,12 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <SEO
-        title="System Design & AI/ML Practice Problems | Diagrammatic"
+        title="System Design & AI/ML Practice Problems | Diagramwise"
         description="Practice infrastructure, application, AI/ML, and MLOps architecture problems with clear requirements, interactive diagrams, and feedback on the decisions behind your design."
         keywords="system design problems, AI ML design problems, machine learning architecture, MLOps, AIOps, recommendation systems, fraud detection, NLP, computer vision, distributed systems, scalable architecture, system design interview prep, infrastructure design, application architecture"
-        image="https://diagrammatic.next-zen.dev/og/problems.png"
-        imageAlt="Diagrammatic practice problems preview"
-        url="https://diagrammatic.next-zen.dev/problems"
+        image="https://diagramwise.com/og/problems.png"
+        imageAlt="Diagramwise practice problems preview"
+        url="https://diagramwise.com/problems"
       />
       <div className="dashboard-page min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">
         <ProductHeader

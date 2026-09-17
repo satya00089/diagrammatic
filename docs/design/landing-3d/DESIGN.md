@@ -1,5 +1,5 @@
 ---
-name: Diagrammatic Systema Preview
+name: Diagramwise Systema Preview
 description: Scoped visual system for the public / landing page and its /landing-3d/ alias.
 colors:
   ink: "#f4f3ee"
@@ -76,13 +76,13 @@ components:
     padding: "20px 28px 28px"
 ---
 
-# Design System: Diagrammatic Systema Preview
+# Design System: Diagramwise Systema Preview
 
 ## Overview
 
 **Creative North Star: "Make the reasoning behind a system visible."**
 
-This document applies to the public `/` landing page and its `/landing-3d/` alias. The previous homepage remains available at `/landing-backup/`. It does not define Diagrammatic's global identity or authorize changes to other surfaces. The user selected [Systema](https://motionsites.ai/?prompt=systema) as the visual reference; the implementation adapts its restrained composition to Diagrammatic's architecture-learning purpose.
+This document applies to the public `/` landing page and its `/landing-3d/` alias. The previous homepage remains available at `/landing-backup/`. It does not define Diagramwise's global identity or authorize changes to other surfaces. The user selected [Systema](https://motionsites.ai/?prompt=systema) as the visual reference; the implementation adapts its restrained composition to Diagramwise's architecture-learning purpose.
 
 A warm paper canvas, quiet Inter typography, and fine architectural lines put the diagram beside the argument. The signature is an original SVG URL-shortener walkthrough: Design, Review, Improve. The direction is code-led; there is no approved image comp or shipping raster asset to reproduce. The earlier landing experiment remains stashed separately.
 

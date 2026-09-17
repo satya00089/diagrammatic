@@ -117,9 +117,9 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
     const link = publicUrl ?? "";
     if (mode === "attempt") {
       const scoreCopy = score == null ? "" : ` with a score of ${score}/100`;
-      return `I just completed “${sharedTitle}” on Diagrammatic${scoreCopy}. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
+      return `I just completed “${sharedTitle}” on Diagramwise${scoreCopy}. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
     }
-    return `I published my system design “${sharedTitle}” on Diagrammatic. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
+    return `I published my system design “${sharedTitle}” on Diagramwise. Explore the architecture: ${link}\n\n#SystemDesign #SoftwareArchitecture`;
   }, [mode, publicUrl, score, sharedTitle]);
 
   const copyText = useCallback(async (value: string) => {
@@ -288,10 +288,10 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
 
   const handleTwitter = useCallback(() => {
     if (!publicUrl) return;
-    let post = `Explore my system design “${sharedTitle}” on Diagrammatic.`;
+    let post = `Explore my system design “${sharedTitle}” on Diagramwise.`;
     if (mode === "attempt") {
       const scoreCopy = score == null ? "" : ` — ${score}/100`;
-      post = `I completed “${sharedTitle}” on Diagrammatic${scoreCopy}.`;
+      post = `I completed “${sharedTitle}” on Diagramwise${scoreCopy}.`;
     }
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(post)}&url=${encodeURIComponent(publicUrl)}`,

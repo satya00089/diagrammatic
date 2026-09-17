@@ -1074,7 +1074,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             title: `${baseTitle.slice(0, 188)} — Remix`,
             description:
               publicDiagram.description?.slice(0, 1000) ||
-              "Editable remix of a public Diagrammatic design.",
+              "Editable remix of a public Diagramwise design.",
             timestamp: new Date(),
           });
           setCanvasState({ nodes: restoredNodes, edges: restoredEdges });
@@ -4689,8 +4689,8 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
   const pageTitle =
     idFromUrl === "free"
-      ? "Design Studio | Diagrammatic"
-      : `${problem?.title || "System Design Challenge"} | Diagrammatic`;
+      ? "Design Studio | Diagramwise"
+      : `${problem?.title || "System Design Challenge"} | Diagramwise`;
 
   const pageDescription =
     idFromUrl === "free"
@@ -4713,13 +4713,13 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
         title={pageTitle}
         description={pageDescription}
         keywords={`system design playground, ${problem?.title || "free canvas"}, architecture diagram tool, ${problem?.category || "design tool"}`}
-        image="https://diagrammatic.next-zen.dev/og/playground.png"
+        image="https://diagramwise.com/og/playground.png"
         imageAlt={
           problem?.title
             ? `${problem.title} playground preview`
-            : "Diagrammatic design playground preview"
+            : "Diagramwise design playground preview"
         }
-        url={`https://diagrammatic.next-zen.dev/playground/${idFromUrl || "free"}`}
+        url={`https://diagramwise.com/playground/${idFromUrl || "free"}`}
         noIndex
       />
       <div className="design-studio-page h-screen flex flex-col overflow-hidden bg-theme">
@@ -4732,10 +4732,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
                 <Link
                   className="systema-brand"
                   to="/"
-                  aria-label="Diagrammatic home"
+                  aria-label="Diagramwise home"
                 >
                   <img src="/logo-64.png" alt="" aria-hidden="true" />
-                  <span>Diagrammatic</span>
+                  <span>Diagramwise</span>
                 </Link>
                 <div className="hidden md:flex items-center space-x-3 border-l border-white/20 ml-3 pl-4">
                   <h1

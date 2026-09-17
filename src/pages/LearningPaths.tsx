@@ -320,12 +320,12 @@ const LearningPaths: React.FC = () => {
   return (
     <>
       <SEO
-        title="Learning Paths | Diagrammatic"
+        title="Learning Paths | Diagramwise"
         description="Structured learning paths to master system design concepts, modules, and exercises."
         keywords="system design learning path, system design tutorial, learning path"
-        image="https://diagrammatic.next-zen.dev/og/learning-paths.png"
-        imageAlt="Diagrammatic learning paths preview"
-        url="https://diagrammatic.next-zen.dev/learning-paths/"
+        image="https://diagramwise.com/og/learning-paths.png"
+        imageAlt="Diagramwise learning paths preview"
+        url="https://diagramwise.com/learning-paths/"
       />
 
       <div className="learning-paths-page min-h-screen bg-[var(--bg)] text-theme relative grid-pattern-overlay">

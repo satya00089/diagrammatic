@@ -97,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Create CNAME for custom domain
-          echo "diagrammatic.next-zen.dev" > dist/CNAME
+          echo "diagramwise.com" > dist/CNAME
           # prerender.js creates a noindex client-routing fallback. Do not
           # replace it with the homepage or unknown URLs become soft 404s.
           test -f dist/404.html
@@ -117,4 +117,4 @@ jobs:
           npx --yes gh-pages -d dist -a -r "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
 
       - name: Deployment complete
-        run: echo "🚀 Deployment complete! Visit https://diagrammatic.next-zen.dev"
+        run: echo "🚀 Deployment complete! Visit https://diagramwise.com"

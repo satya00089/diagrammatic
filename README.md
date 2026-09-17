@@ -1,10 +1,10 @@
-# Diagrammatic
+# Diagramwise
 
 Design architectures. Explain the decisions. Improve the design.
 
-Diagrammatic is a browser-based system design workspace for practicing architecture interviews and communicating real systems. Build an architecture on an interactive React Flow canvas, record the assumptions behind it, get structured feedback, and revise the design until the trade-offs are clear.
+Diagramwise is a browser-based system design workspace for practicing architecture interviews and communicating real systems. Build an architecture on an interactive React Flow canvas, record the assumptions behind it, get structured feedback, and revise the design until the trade-offs are clear.
 
-The live application is available at [diagrammatic.next-zen.dev](https://diagrammatic.next-zen.dev).
+The live application is available at [diagramwise.com](https://diagramwise.com).
 
 ## What you can do
 
@@ -106,7 +106,7 @@ The frontend reads Vite variables from `.env.local` or another local environment
 
 | Variable | Example | Purpose |
 | --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:8000` | Main Diagrammatic API |
+| `VITE_API_URL` | `http://localhost:8000` | Main Diagramwise API |
 | `VITE_ASSESSMENT_API_URL` | `http://localhost:8000` | Assessment/API base URL when separate |
 | `VITE_YJS_URL` | `ws://localhost:1234` | Optional Yjs WebSocket server |
 | `VITE_GOOGLE_CLIENT_ID` | `your-client-id.apps.googleusercontent.com` | Google Sign-In client ID |
@@ -194,7 +194,7 @@ For new components, problem guides, or import formats, keep the implementation a
 
 ## Links
 
-- [Live application](https://diagrammatic.next-zen.dev)
+- [Live application](https://diagramwise.com)
 - [Frontend repository](https://github.com/satya00089/diagrammatic)
 - [FastAPI backend](https://github.com/satya00089/diagrammatic-api)
 - [Yjs collaboration server](https://github.com/satya00089/diagrammatic-yjs-server)
@@ -202,4 +202,4 @@ For new components, problem guides, or import formats, keep the implementation a
 
 ## License
 
-Diagrammatic is released under the [MIT License](LICENSE).
+Diagramwise is released under the [MIT License](LICENSE).

@@ -21,7 +21,7 @@ describe("lazyWithRetry helpers", () => {
   it("preserves the current route while adding a cache-busting retry token", () => {
     const retryUrl = new URL(
       createChunkRetryUrl(
-        "https://diagrammatic.next-zen.dev/problems/?q=cache",
+        "https://diagramwise.com/problems/?q=cache",
         "123",
       ),
     );

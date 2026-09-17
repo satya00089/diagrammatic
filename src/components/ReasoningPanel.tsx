@@ -55,7 +55,7 @@ const ReasoningPanel: React.FC<ReasoningPanelProps> = ({
               Reasoning context
             </h4>
             <span className="rounded-full bg-[var(--brand)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--brand)]">
-              Provided by Diagrammatic
+              Provided by Diagramwise
             </span>
           </div>
           <p className="mt-1 text-xs leading-relaxed text-muted">
