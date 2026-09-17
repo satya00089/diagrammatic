@@ -24,6 +24,20 @@ describe("ER and UML table classification", () => {
     }
   });
 
+  it("supports collapse state for all content-sized table variants", () => {
+    for (const componentId of [
+      "entity",
+      "weak-entity",
+      "er-view",
+      "uml-class",
+      "uml-interface",
+      "uml-abstract-class",
+      "uml-enum",
+    ]) {
+      expect(isContentSizedTableNode({ componentId })).toBe(true);
+    }
+  });
+
   it("does not change generic table scrolling or edge semantics", () => {
     expect(isContentSizedTableNode({ componentId: "custom-table" })).toBe(
       false,

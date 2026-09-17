@@ -122,7 +122,10 @@ import ERNode from "../components/ERNode";
 import type { ERNodeData } from "../components/ERNode";
 import TableNode from "../components/TableNode";
 import type { TableNodeData, TableAttribute } from "../components/TableNode";
-import { isFieldAddressableERTable } from "../utils/erdNode";
+import {
+  isContentSizedTableNode,
+  isFieldAddressableERTable,
+} from "../utils/erdNode";
 import GroupNode from "../components/GroupNode";
 import FreeformNode from "../components/FreeformNode";
 import type { FreeformNodeData } from "../components/FreeformNode";
@@ -2236,7 +2239,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
 
     setNodes((nds) =>
       nds.map((node) => {
-        if (node.id !== nodeId || !isFieldAddressableERTable(node.data)) {
+        if (node.id !== nodeId || !isContentSizedTableNode(node.data)) {
           return node;
         }
 
