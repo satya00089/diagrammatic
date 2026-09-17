@@ -10,7 +10,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ onSaveImage }) => {
   return (
     <div className="flex items-center justify-between p-2 border-b bg-gray-100 dark:bg-gray-800">
       <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
-        Diagrammatic
+        Diagramwise
       </h1>
       <div className="flex gap-2">
         <button

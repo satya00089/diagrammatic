@@ -25,7 +25,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useRoughAnnotation } from "../hooks/useRoughAnnotation";
 import "./Landing3D.css";
 
-/* Systema is the user-selected visual reference; this is an original Diagrammatic adaptation.
+/* Systema is the user-selected visual reference; this is an original Diagramwise adaptation.
  * THESIS: Make the reasoning behind a system visible.
  * OWN-WORLD: Warm paper canvas, near-black sans typography, fine architectural lines, compact square controls.
  * STORY: Draw a first draft, question its read path, then introduce a cache with an explicit trade-off.
@@ -51,9 +51,9 @@ const landingPatternSizes = [
 
 function Brand() {
   return (
-    <Link className="systema-brand" to="/" aria-label="Diagrammatic home">
+    <Link className="systema-brand" to="/" aria-label="Diagramwise home">
       <img src="/logo-64.png" alt="" aria-hidden="true" />
-      <span>Diagrammatic</span>
+      <span>Diagramwise</span>
     </Link>
   );
 }
@@ -322,12 +322,12 @@ export default function Landing3D() {
     <div className="systema-page" data-theme={landingTheme}>
       <div ref={patternRef} className="systema-pattern-layer" aria-hidden="true" />
       <Seo
-        title="Diagrammatic — System design. Understand every decision."
+        title="Diagramwise — System design. Understand every decision."
         description="Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration."
         keywords="system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview"
-        image="https://diagrammatic.next-zen.dev/og/home.png"
-        imageAlt="Diagrammatic system design walkthrough preview"
-        url="https://diagrammatic.next-zen.dev/"
+        image="https://diagramwise.com/og/home.png"
+        imageAlt="Diagramwise system design walkthrough preview"
+        url="https://diagramwise.com/"
       />
       <a href="#systema-main" className="systema-skip">
         Skip to content

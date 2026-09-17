@@ -246,7 +246,7 @@ function buildSvg(page, layout) {
     .join("\n  ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img" aria-labelledby="title desc">
-  <title id="title">Diagrammatic ${esc(page.name)} OG image</title>
+  <title id="title">Diagramwise ${esc(page.name)} OG image</title>
   <desc id="desc">${esc(title.join(" "))}</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -267,7 +267,7 @@ function buildSvg(page, layout) {
 
   <g transform="translate(${MARGIN} 68)">
     <image href="${LOGO_DATA_URI}" x="0" y="0" width="44" height="44"/>
-    <text x="56" y="30" fill="#0b1220" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Diagrammatic</text>
+    <text x="56" y="30" fill="#0b1220" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Diagramwise</text>
   </g>
 
   ${titleLines}
@@ -283,6 +283,7 @@ function buildSvg(page, layout) {
 
 async function main() {
   const browser = await puppeteer.launch({
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const measurePage = await browser.newPage();
@@ -292,7 +293,7 @@ async function main() {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
       </head><body><canvas id="c"></canvas></body></html>`,
-    { waitUntil: "networkidle0" },
+    { waitUntil: "domcontentloaded" },
   );
   await measurePage.evaluate(() => document.fonts.ready);
 
@@ -363,7 +364,7 @@ async function main() {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
         <style>html,body{margin:0;padding:0;width:${WIDTH}px;height:${HEIGHT}px;}</style>
         </head><body>${svg}</body></html>`,
-      { waitUntil: "networkidle0" },
+      { waitUntil: "domcontentloaded" },
     );
     await renderPage.evaluate(async () => {
       await document.fonts.load("700 24px Inter");

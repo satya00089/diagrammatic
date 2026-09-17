@@ -12,7 +12,7 @@ export const TOURS: Record<string, TourDefinition> = {
       {
         element: '[data-tour="hero-cta"]',
         popover: {
-          title: "Welcome to Diagrammatic 👋",
+          title: "Welcome to Diagramwise 👋",
           description:
             "The interactive canvas for system design. Build, practice, and collaborate — all in your browser.",
           side: "bottom",

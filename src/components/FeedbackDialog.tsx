@@ -180,7 +180,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   const isAssessment = source === "assessment";
   const title = isAssessment
     ? "Help us improve this review"
-    : "Help us improve Diagrammatic";
+    : "Help us improve Diagramwise";
   const description = isAssessment
     ? "Tell us what would make the architecture review more useful."
     : "Your feedback helps us make the design and learning experience better.";

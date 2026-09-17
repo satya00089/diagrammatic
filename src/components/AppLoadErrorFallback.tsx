@@ -19,7 +19,7 @@ const AppLoadErrorFallback: React.FC = () => {
           Temporary loading issue
         </p>
         <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-          Diagrammatic needs a quick refresh
+          Diagramwise needs a quick refresh
         </h1>
         <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-muted sm:text-base">
           A temporary connection or deployment update prevented one part of this

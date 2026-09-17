@@ -374,11 +374,11 @@ const MyDesigns: React.FC = () => {
   return (
     <>
       <SEO
-        title="My Designs | Diagrammatic"
+        title="My Designs | Diagramwise"
         description="View and manage your saved system design projects and diagrams shared with you"
-        image="https://diagrammatic.next-zen.dev/og/diagrams.png"
-        imageAlt="Diagrammatic saved designs preview"
-        url="https://diagrammatic.next-zen.dev/diagrams"
+        image="https://diagramwise.com/og/diagrams.png"
+        imageAlt="Diagramwise saved designs preview"
+        url="https://diagramwise.com/diagrams"
         noIndex
       />
       <div className="my-designs-page min-h-screen relative grid-pattern-overlay">
@@ -399,7 +399,7 @@ const MyDesigns: React.FC = () => {
                   alt="Logo"
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
-                <span className="tracking-wide leading-none">Diagrammatic</span>
+                <span className="tracking-wide leading-none">Diagramwise</span>
               </button>
               <div className="flex items-center gap-4">
                 {isAuth && (

@@ -74,7 +74,7 @@ const RouteLoading: React.FC = () => (
         aria-hidden
       />
       <span className="block text-sm font-semibold text-muted">
-        Loading Diagrammatic…
+        Loading Diagramwise…
       </span>
     </span>
   </output>

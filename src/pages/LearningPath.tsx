@@ -75,24 +75,24 @@ const LearningPath: React.FC = () => {
       <SEO
         title={
           path
-            ? `${path.title} | Learning Path | Diagrammatic`
-            : "Learning Path | Diagrammatic"
+            ? `${path.title} | Learning Path | Diagramwise`
+            : "Learning Path | Diagramwise"
         }
         description={
           path?.summary ??
           "Deep dive lessons and modules for system design learning."
         }
         keywords="system design learning path, system design module, system architecture lessons"
-        image="https://diagrammatic.next-zen.dev/og/learning-path.png"
+        image="https://diagramwise.com/og/learning-path.png"
         imageAlt={
           path?.title
             ? `${path.title} learning path preview`
-            : "Diagrammatic learning path preview"
+            : "Diagramwise learning path preview"
         }
         url={
           slug
-            ? `https://diagrammatic.next-zen.dev/learning-paths/${slug}/`
-            : "https://diagrammatic.next-zen.dev/learning-paths/"
+            ? `https://diagramwise.com/learning-paths/${slug}/`
+            : "https://diagramwise.com/learning-paths/"
         }
       />
 

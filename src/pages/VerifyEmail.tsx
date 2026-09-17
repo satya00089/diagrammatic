@@ -48,9 +48,9 @@ const VerifyEmail: React.FC = () => {
   return (
     <>
       <Seo
-        title="Verify Email | Diagrammatic"
-        description="Activate your Diagrammatic account."
-        url="https://diagrammatic.next-zen.dev/verify-email"
+        title="Verify Email | Diagramwise"
+        description="Activate your Diagramwise account."
+        url="https://diagramwise.com/verify-email"
         noIndex
       />
       <main className="min-h-screen bg-theme flex items-center justify-center p-6">
@@ -64,7 +64,7 @@ const VerifyEmail: React.FC = () => {
               className="mt-6 inline-block rounded-lg bg-[var(--brand)] px-5 py-3 font-semibold text-white"
               to="/"
             >
-              Go to Diagrammatic
+              Go to Diagramwise
             </Link>
           )}
         </section>

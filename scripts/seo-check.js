@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectDir = path.resolve(__dirname, "..");
-const siteUrl = "https://diagrammatic.next-zen.dev";
+const siteUrl = "https://diagramwise.com";
 const failed = [];
 
 function read(relativePath) {

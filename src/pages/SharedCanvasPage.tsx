@@ -1243,8 +1243,8 @@ const SharedCanvasPage: React.FC = () => {
   };
 
   const pageTitle = data
-    ? `${data.title} — Diagrammatic`
-    : "Shared Design — Diagrammatic";
+    ? `${data.title} — Diagramwise`
+    : "Shared Design — Diagramwise";
 
   useEffect(() => {
     if (!showDetails) return;
@@ -1302,7 +1302,7 @@ const SharedCanvasPage: React.FC = () => {
             to="/"
             className="inline-block px-5 py-2 rounded-xl bg-[var(--brand,#6366f1)] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
           >
-            Go to Diagrammatic
+            Go to Diagramwise
           </Link>
         </div>
       </div>
@@ -1315,10 +1315,10 @@ const SharedCanvasPage: React.FC = () => {
         title={pageTitle}
         description={
           data.kind === "attempt"
-            ? `Check out this system design solution for "${data.title}" on Diagrammatic.`
-            : `Check out this interactive diagram "${data.title}" on Diagrammatic.`
+            ? `Check out this system design solution for "${data.title}" on Diagramwise.`
+            : `Check out this interactive diagram "${data.title}" on Diagramwise.`
         }
-        image="https://diagrammatic.next-zen.dev/og/shared-canvas.png"
+        image="https://diagramwise.com/og/shared-canvas.png"
         imageAlt={pageTitle}
       />
 
@@ -1330,7 +1330,7 @@ const SharedCanvasPage: React.FC = () => {
             className="flex flex-shrink-0 items-center gap-2 font-bold text-theme transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
           >
             <img src="/logo-64.png" alt="" className="h-6 w-6 object-contain" />
-            <span className="hidden sm:inline">Diagrammatic</span>
+            <span className="hidden sm:inline">Diagramwise</span>
           </Link>
           <span className="text-muted text-sm">/</span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme">

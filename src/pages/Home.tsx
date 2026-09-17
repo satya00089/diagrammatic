@@ -640,15 +640,15 @@ const Home: React.FC = () => {
   return (
     <>
       <SEO
-        title="Diagrammatic — Design architectures. Get them reviewed."
+        title="Diagramwise — Design architectures. Get them reviewed."
         description="Practice system design by building architectures visually, explaining your assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs."
         keywords="system design, architecture diagram, system design interview, software architecture, distributed systems, scalable architecture, system design tool, architecture playground, cloud architecture, microservices design, ER diagram, entity relationship diagram, UML diagram, class diagram, database design"
-        image="https://diagrammatic.next-zen.dev/og/home.png"
-        imageAlt="Diagrammatic homepage preview"
+        image="https://diagramwise.com/og/home.png"
+        imageAlt="Diagramwise homepage preview"
         url={
           isBackupLanding
-            ? "https://diagrammatic.next-zen.dev/landing-backup/"
-            : "https://diagrammatic.next-zen.dev/"
+            ? "https://diagramwise.com/landing-backup/"
+            : "https://diagramwise.com/"
         }
         noIndex={isBackupLanding}
       />
@@ -681,7 +681,7 @@ const Home: React.FC = () => {
                   className="h-7 transition-transform group-hover:scale-110 duration-300"
                 />
                 <span className="text-lg font-bold text-white tracking-wide leading-none">
-                  Diagrammatic
+                  Diagramwise
                 </span>
               </button>
               <nav
@@ -948,7 +948,7 @@ const Home: React.FC = () => {
                 Don&apos;t just draw the boxes. Defend the decisions.
               </span>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
-                Diagrammatic turns an interview prompt into a design you can
+                Diagramwise turns an interview prompt into a design you can
                 inspect, explain, and improve.
               </p>
             </div>
@@ -1638,7 +1638,7 @@ const Home: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center space-x-3">
                 <img src="./logo-64.png" alt="Logo" className="h-8" />
-                <span className="font-semibold text-theme">Diagrammatic</span>
+                <span className="font-semibold text-theme">Diagramwise</span>
               </div>
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-5">
                 <nav aria-label="Footer" className="flex items-center gap-1">
@@ -1662,7 +1662,7 @@ const Home: React.FC = () => {
                   </a>
                 </nav>
                 <p className="text-muted text-sm">
-                  © 2026 Diagrammatic. Built with{" "}
+                  © 2026 Diagramwise. Built with{" "}
                   <span className="inline-block animate-pulse">❤️</span> for
                   system designers
                 </p>

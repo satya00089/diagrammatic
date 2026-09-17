@@ -11,20 +11,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, "dist");
 const indexPath = path.join(distDir, "index.html");
-const siteUrl = "https://diagrammatic.next-zen.dev";
+const siteUrl = "https://diagramwise.com";
 const staticStart = "<!-- static-route:start -->";
 const staticEnd = "<!-- static-route:end -->";
 
 const routes = {
   "/": {
-    title: "Diagrammatic — Design architectures. Get them reviewed.",
+    title: "Diagramwise — Design architectures. Get them reviewed.",
     heading: "Design architectures. Get them reviewed.",
     description:
       "Practice system design by building architectures visually, explaining assumptions, and getting structured feedback on scalability, reliability, data design, and trade-offs.",
     keywords:
       "system design, architecture diagram, system design interview, distributed systems, system design practice",
     image: `${siteUrl}/og/home.png`,
-    imageAlt: "Diagrammatic homepage preview",
+    imageAlt: "Diagramwise homepage preview",
     sectionTitle: "Build the reasoning behind the diagram",
     actions: [
       { label: "Choose a challenge", href: "/problems/" },
@@ -54,14 +54,14 @@ const routes = {
     indexable: true,
   },
   "/landing-3d": {
-    title: "Diagrammatic — Design systems. Understand every decision.",
+    title: "Diagramwise — Design systems. Understand every decision.",
     heading: "Design systems. Understand every decision.",
     description:
       "Practice system design on a visual canvas. Build an architecture, explain your trade-offs, review your assumptions, and improve your next iteration.",
     keywords:
       "system design, system design practice, architecture diagram, software architecture, distributed systems, architecture trade-offs, system design interview",
     image: `${siteUrl}/og/home.png`,
-    imageAlt: "Diagrammatic system design walkthrough preview",
+    imageAlt: "Diagramwise system design walkthrough preview",
     sectionTitle: "Build, review, and improve your architecture",
     actions: [
       { label: "Start designing", href: "/problems/" },
@@ -88,14 +88,14 @@ const routes = {
     indexable: true,
   },
   "/problems": {
-    title: "System Design & AI/ML Practice Problems | Diagrammatic",
+    title: "System Design & AI/ML Practice Problems | Diagramwise",
     heading: "System Design & AI/ML Problems",
     description:
       "Practice infrastructure, application, AI/ML, and MLOps architecture problems with clear requirements, interactive diagrams, and feedback on the decisions behind your design.",
     keywords:
       "system design problems, AI ML architecture, MLOps, distributed systems, system design interview practice",
     image: `${siteUrl}/og/problems.png`,
-    imageAlt: "Diagrammatic practice problems preview",
+    imageAlt: "Diagramwise practice problems preview",
     sectionTitle: "Choose the architecture skills you want to test",
     actions: [
       { label: "Open the design studio", href: "/playground/free/" },
@@ -123,14 +123,14 @@ const routes = {
     indexable: true,
   },
   "/learning-paths": {
-    title: "Learning Paths | Diagrammatic",
+    title: "Learning Paths | Diagramwise",
     heading: "Learning Paths",
     description:
       "Follow curated sequences of modules and lessons that teach system design from first principles to advanced patterns.",
     keywords:
       "system design learning path, system design tutorial, system architecture learning",
     image: `${siteUrl}/og/learning-paths.png`,
-    imageAlt: "Diagrammatic learning paths preview",
+    imageAlt: "Diagramwise learning paths preview",
     sectionTitle: "Browse system design paths",
     actions: [{ label: "Practice a challenge", href: "/problems/" }],
     items: [],
@@ -138,14 +138,14 @@ const routes = {
     indexable: true,
   },
   "/system-design-interview": {
-    title: "System Design Interview Guide & Practice Questions | Diagrammatic",
+    title: "System Design Interview Guide & Practice Questions | Diagramwise",
     heading: "System Design Interview Guide",
     description:
       "Prepare for system design interviews by turning ambiguous prompts into requirements, estimates, architecture decisions, and defensible trade-offs.",
     keywords:
       "system design interview, system design interview questions, architecture interview practice",
     image: `${siteUrl}/og/problems.png`,
-    imageAlt: "System design interview practice on Diagrammatic",
+    imageAlt: "System design interview practice on Diagramwise",
     sectionTitle: "A repeatable interview method",
     actions: [{ label: "Choose a practice problem", href: "/problems/" }],
     items: [
@@ -180,14 +180,14 @@ const routes = {
   },
   "/system-design-practice": {
     title:
-      "System Design Practice Online with Architecture Feedback | Diagrammatic",
+      "System Design Practice Online with Architecture Feedback | Diagramwise",
     heading: "System Design Practice",
     description:
       "Practice system design online with realistic prompts, an interactive architecture canvas, explicit trade-offs, and structured review.",
     keywords:
       "system design practice, system design practice online, architecture practice",
     image: `${siteUrl}/og/problems.png`,
-    imageAlt: "Online system design practice on Diagrammatic",
+    imageAlt: "Online system design practice on Diagramwise",
     sectionTitle: "A deliberate practice loop",
     actions: [{ label: "Browse practice problems", href: "/problems/" }],
     items: [
@@ -219,14 +219,14 @@ const routes = {
     kind: "article",
   },
   "/ai-system-design-interview": {
-    title: "AI System Design Interview Questions & Practice | Diagrammatic",
+    title: "AI System Design Interview Questions & Practice | Diagramwise",
     heading: "AI System Design Interview",
     description:
       "Practice AI and ML system design across data pipelines, retrieval, inference, evaluation, monitoring, latency, reliability, and cost trade-offs.",
     keywords:
       "AI system design interview, ML system design, RAG system design, LLM interview questions",
     image: `${siteUrl}/og/problems.png`,
-    imageAlt: "AI system design interview practice on Diagrammatic",
+    imageAlt: "AI system design interview practice on Diagramwise",
     sectionTitle: "Connect the offline and online paths",
     actions: [
       { label: "Browse AI and ML problems", href: "/problems/" },
@@ -263,14 +263,14 @@ const routes = {
   },
   "/kubernetes-architecture": {
     title:
-      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagrammatic",
+      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagramwise",
     heading: "Kubernetes Architecture Guide",
     description:
       "Learn how Kubernetes control-plane, workload, networking, storage, and observability components fit together, then practice explaining the trade-offs in an architecture diagram.",
     keywords:
       "kubernetes architecture, kubernetes architecture diagram, kubernetes system design, kubernetes components, kubernetes cluster architecture",
     image: `${siteUrl}/og/problems.png`,
-    imageAlt: "Kubernetes architecture practice on Diagrammatic",
+    imageAlt: "Kubernetes architecture practice on Diagramwise",
     sectionTitle: "Build a Kubernetes architecture you can explain",
     actions: [{ label: "Browse practice problems", href: "/problems/" }],
     items: [
@@ -305,13 +305,13 @@ const routes = {
     kind: "article",
   },
   "/playground/free": {
-    title: "Design Studio | Diagrammatic",
+    title: "Design Studio | Diagramwise",
     heading: "Design Studio",
     description:
       "Create an architecture diagram from scratch with generic, cloud, UML, and entity-relationship components.",
     keywords: "architecture diagram tool, system design canvas, cloud diagram",
     image: `${siteUrl}/og/playground.png`,
-    imageAlt: "Diagrammatic design studio preview",
+    imageAlt: "Diagramwise design studio preview",
     sectionTitle: "Start with the building blocks you need",
     actions: [
       { label: "Choose a guided challenge", href: "/problems/" },
@@ -352,14 +352,14 @@ routes["/landing-backup"] = {
 };
 
 const notFoundRoute = {
-  title: "Page Not Found | Diagrammatic",
+  title: "Page Not Found | Diagramwise",
   heading: "This page could not be found",
   description:
-    "The Diagrammatic page you requested does not exist or may have moved.",
+    "The Diagramwise page you requested does not exist or may have moved.",
   keywords: "",
   image: `${siteUrl}/og/home.png`,
-  imageAlt: "Diagrammatic",
-  sectionTitle: "Continue exploring Diagrammatic",
+  imageAlt: "Diagramwise",
+  sectionTitle: "Continue exploring Diagramwise",
   actions: [
     { label: "Browse practice problems", href: "/problems/" },
     { label: "Go to the homepage", href: "/" },
@@ -504,7 +504,7 @@ function renderStaticRoute(data) {
       <header class="static-route-header">
         <a class="static-route-brand" href="/">
           <img src="/logo-64.png" alt="" width="28" height="28">
-          <span>Diagrammatic</span>
+          <span>Diagramwise</span>
         </a>
         <nav class="static-route-nav" aria-label="Main navigation">
           <a href="/problems/">Practice problems</a>
@@ -524,7 +524,7 @@ function renderStaticRoute(data) {
         ${renderGuideContent(data.guide)}
       </main>
       <footer class="static-route-footer">
-        Diagrammatic — system design practice and architecture review.
+        Diagramwise — system design practice and architecture review.
       </footer>
     </div>`;
 }
@@ -541,21 +541,21 @@ function breadcrumbsFor(route, title) {
     crumbs.push({ name: "Practice Problems", item: `${siteUrl}/problems/` });
   } else {
     crumbs.push({
-      name: title.replace(" | Diagrammatic", ""),
+      name: title.replace(" | Diagramwise", ""),
       item: canonicalUrl(route),
     });
   }
 
   if (route.startsWith("/learning-paths/") && route !== "/learning-paths") {
     crumbs.push({
-      name: title.replace(" | Diagrammatic", ""),
+      name: title.replace(" | Diagramwise", ""),
       item: canonicalUrl(route),
     });
   }
 
   if (route.startsWith("/problems/") && route !== "/problems") {
     crumbs.push({
-      name: title.replace(" | Diagrammatic", ""),
+      name: title.replace(" | Diagramwise", ""),
       item: canonicalUrl(route),
     });
   }
@@ -574,7 +574,7 @@ function routeStructuredData(route, data) {
       isPartOf: {
         "@type": "WebSite",
         url: `${siteUrl}/`,
-        name: "Diagrammatic",
+        name: "Diagramwise",
       },
       mainEntityOfPage: canonicalUrl(route),
     },
@@ -605,7 +605,7 @@ function routeStructuredData(route, data) {
       dateModified: data.lastmod,
       provider: {
         "@type": "Organization",
-        name: "Diagrammatic",
+        name: "Diagramwise",
         url: `${siteUrl}/`,
       },
     });
@@ -617,7 +617,7 @@ function routeStructuredData(route, data) {
       url: canonicalUrl(route),
       publisher: {
         "@type": "Organization",
-        name: "Diagrammatic",
+        name: "Diagramwise",
         url: `${siteUrl}/`,
       },
     });
@@ -884,7 +884,7 @@ function addProblemRoutes(problems, guideCatalog) {
     const route = `/problems/${problem.slug}`;
 
     routes[route] = {
-      title: `${problem.title} — System Design Interview Practice | Diagrammatic`,
+      title: `${problem.title} — System Design Interview Practice | Diagramwise`,
       heading: `${problem.title} — System Design Interview Practice`,
       description: `${problem.description} Work through the requirements, architecture trade-offs, and an interactive design review.`,
       keywords: `${problem.title}, system design interview question, ${problem.tags.join(", ")}`,
@@ -963,7 +963,7 @@ function addLearningPathRoutes(learningPaths) {
       : [];
     const route = `/learning-paths/${learningPath.slug}`;
     routes[route] = {
-      title: `${learningPath.title || learningPath.slug} | Diagrammatic`,
+      title: `${learningPath.title || learningPath.slug} | Diagramwise`,
       heading: learningPath.title || learningPath.slug,
       description:
         learningPath.summary ||

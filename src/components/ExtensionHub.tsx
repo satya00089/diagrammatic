@@ -32,7 +32,7 @@ const examples = {
 function ImportReport({ error, parsed }: Readonly<{ error: string | null; parsed: ExtensionImportResult | null }>) {
 if(error) return (<div className="mt-4 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300" role="alert">{error}</div>);
 if(!parsed) return (<p className="mt-4 text-sm text-muted">Add source to see a recognition report.</p>);
-return (<><p className="mt-4 text-lg font-semibold text-theme">{parsed.summary}</p>{typeof parsed.catalogMatches === "number" && <p className="mt-2 text-sm text-muted">{parsed.catalogMatches} component{parsed.catalogMatches === 1 ? "" : "s"} matched from the Diagrammatic catalog; {parsed.fallbackNodes ?? 0} kept as generic editable node{parsed.fallbackNodes === 1 ? "" : "s"}.</p>}<p className="mt-2 text-sm text-muted">Imported elements retain source metadata so future linting can explain where they came from.</p>{parsed.warnings.length > 0 && <output className="mt-4 block space-y-2">{parsed.warnings.map((warning) => <p key={warning} className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">{warning}</p>)}</output>}</>);
+return (<><p className="mt-4 text-lg font-semibold text-theme">{parsed.summary}</p>{typeof parsed.catalogMatches === "number" && <p className="mt-2 text-sm text-muted">{parsed.catalogMatches} component{parsed.catalogMatches === 1 ? "" : "s"} matched from the Diagramwise catalog; {parsed.fallbackNodes ?? 0} kept as generic editable node{parsed.fallbackNodes === 1 ? "" : "s"}.</p>}<p className="mt-2 text-sm text-muted">Imported elements retain source metadata so future linting can explain where they came from.</p>{parsed.warnings.length > 0 && <output className="mt-4 block space-y-2">{parsed.warnings.map((warning) => <p key={warning} className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">{warning}</p>)}</output>}</>);
 }
 
 const ExtensionHub: React.FC<ExtensionHubProps> = ({
@@ -79,7 +79,7 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
   const importOptions = [
     {
       id: "design-file",
-      label: "Diagrammatic file",
+      label: "Diagramwise file",
       description: "JSON or XML design file",
       icon: MdUpload,
       onClick: onImportDesign,
@@ -109,7 +109,7 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
         <header className="flex items-start justify-between border-b border-theme/10 px-6 py-5">
           <div>
             <h2 id="extension-hub-title" className="text-xl font-bold text-theme">Extensions</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted">Bring architecture into Diagrammatic or export the design you have built.</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted">Bring architecture into Diagramwise or export the design you have built.</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-muted transition-colors hover:bg-[var(--bg-hover)] hover:text-theme" aria-label="Close extensions">
             <MdClose className="h-5 w-5" />
@@ -154,7 +154,7 @@ const ExtensionHub: React.FC<ExtensionHubProps> = ({
           <div className="grid flex-1 gap-5 overflow-y-auto p-6 md:grid-cols-[minmax(0,1fr)_260px]">
             <div className="rounded-xl border border-theme/10 bg-[var(--bg)] p-5">
               <h3 className="text-base font-semibold text-theme">Export design</h3>
-              <p className="mt-1 text-sm text-muted">Choose an image for sharing or a data file you can bring back into Diagrammatic.</p>
+              <p className="mt-1 text-sm text-muted">Choose an image for sharing or a data file you can bring back into Diagramwise.</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {(["png", "jpeg", "svg"] as const).map((format) => <button key={format} type="button" disabled={!canExport} onClick={() => onExportImage(format, transparentBg)} className="rounded-xl border border-theme/10 bg-surface px-4 py-4 text-left transition-colors hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-40"><MdDownload className="mb-3 h-5 w-5 text-[var(--brand)]" /><span className="block text-sm font-semibold uppercase text-theme">{format}</span><span className="mt-1 block text-xs text-muted">{format === "svg" ? "Editable vector" : "Image file"}</span></button>)}
               </div>

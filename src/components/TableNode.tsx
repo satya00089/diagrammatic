@@ -619,7 +619,7 @@ const TableNode: React.FC<Props> = React.memo(
           >
             <button
               type="button"
-              className="nodrag nopan min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+              className="nopan min-w-0 flex flex-1 items-center gap-2 rounded px-1 py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
               onClick={handleCollapseToggle}
               aria-expanded={!isCollapsed}
               aria-controls={tableContentId}

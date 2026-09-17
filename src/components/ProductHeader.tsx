@@ -29,10 +29,10 @@ const ProductHeader: FC<ProductHeaderProps> = ({ actions }) => {
         <Link
           className="product-header__brand"
           to="/"
-          aria-label="Diagrammatic home"
+          aria-label="Diagramwise home"
         >
           <img src="/logo-64.png" alt="" aria-hidden="true" />
-          <span>Diagrammatic</span>
+          <span>Diagramwise</span>
         </Link>
 
         <nav className="product-header__nav" aria-label="Main navigation">

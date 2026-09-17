@@ -8,13 +8,13 @@ import { featuredProblems } from "../utils/problemSlug";
 import NotFound from "./NotFound";
 import "./SeoGuide.css";
 
-const SITE_URL = "https://diagrammatic.next-zen.dev";
+const SITE_URL = "https://diagramwise.com";
 
 const guides = {
   "system-design-interview": {
     title: "System Design Interview Guide",
     seoTitle:
-      "System Design Interview Guide & Practice Questions | Diagrammatic",
+      "System Design Interview Guide & Practice Questions | Diagramwise",
     description:
       "Prepare for system design interviews by turning ambiguous prompts into requirements, estimates, architecture decisions, and defensible trade-offs.",
     intro:
@@ -55,7 +55,7 @@ const guides = {
   "system-design-practice": {
     title: "System Design Practice",
     seoTitle:
-      "System Design Practice Online with Architecture Feedback | Diagrammatic",
+      "System Design Practice Online with Architecture Feedback | Diagramwise",
     description:
       "Practice system design online with realistic prompts, an interactive architecture canvas, explicit trade-offs, and structured review.",
     intro:
@@ -95,7 +95,7 @@ const guides = {
   },
   "ai-system-design-interview": {
     title: "AI System Design Interview",
-    seoTitle: "AI System Design Interview Questions & Practice | Diagrammatic",
+    seoTitle: "AI System Design Interview Questions & Practice | Diagramwise",
     description:
       "Practice AI and ML system design across data pipelines, retrieval, inference, evaluation, monitoring, latency, reliability, and cost trade-offs.",
     intro:
@@ -136,7 +136,7 @@ const guides = {
   "kubernetes-architecture": {
     title: "Kubernetes Architecture Guide",
     seoTitle:
-      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagrammatic",
+      "Kubernetes Architecture Guide: Components, Diagrams & Practice | Diagramwise",
     seoKeywords:
       "kubernetes architecture, kubernetes architecture diagram, kubernetes system design, kubernetes components, kubernetes cluster architecture",
     description:
@@ -210,8 +210,8 @@ const SeoGuide: React.FC = () => {
         title={data.seoTitle}
         description={data.description}
         keywords={keywords}
-        image="https://diagrammatic.next-zen.dev/og/problems.png"
-        imageAlt={`${data.title} on Diagrammatic`}
+        image="https://diagramwise.com/og/problems.png"
+        imageAlt={`${data.title} on Diagramwise`}
         url={canonical}
         type="article"
         structuredData={{
@@ -224,7 +224,7 @@ const SeoGuide: React.FC = () => {
               url: canonical,
               publisher: {
                 "@type": "Organization",
-                name: "Diagrammatic",
+                name: "Diagramwise",
                 url: `${SITE_URL}/`,
               },
             },
@@ -362,7 +362,7 @@ const SeoGuide: React.FC = () => {
           </div>
         </main>
         <footer className="seo-guide-footer">
-          Diagrammatic — design architectures, explain decisions, and improve
+          Diagramwise — design architectures, explain decisions, and improve
           the result.
         </footer>
       </div>
