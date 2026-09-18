@@ -26,7 +26,7 @@ interface Announcement {
 const ANNOUNCEMENTS: Announcement[] = [
   {
     id: "aiml_problems_v1",
-    icon: <LuBrainCircuit className="h-8 w-8 text-[var(--brand,#6366f1)]" />,
+    icon: <LuBrainCircuit className="h-6 w-6" aria-hidden="true" />,
     badge: "New Domain",
     title: "AI & ML System Design Problems",
     description:
@@ -36,7 +36,7 @@ const ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: "realtime_collab_v1",
-    icon: <HiUserGroup className="h-8 w-8 text-emerald-400" />,
+    icon: <HiUserGroup className="h-6 w-6" aria-hidden="true" />,
     badge: "New Feature",
     title: "Real-Time Collaboration is Live",
     description:
@@ -46,7 +46,7 @@ const ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: "learning_path_weekly_modules_v1",
-    icon: <MdMenuBook className="h-8 w-8 text-yellow-400" />,
+    icon: <MdMenuBook className="h-6 w-6" aria-hidden="true" />,
     badge: "Weekly",
     title: "Learning Paths Just Got Better",
     description:
@@ -99,7 +99,7 @@ const FeatureAnnouncement: React.FC = () => {
     const apply = () => {
       document.documentElement.style.setProperty(
         "--announcement-h",
-        mq.matches ? "40px" : "0px",
+        mq.matches ? "54px" : "0px",
       );
     };
     apply();
@@ -132,48 +132,39 @@ const FeatureAnnouncement: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -48 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        className="hidden md:flex fixed top-0 left-0 right-0 z-[60] items-center gap-4 px-6 py-2.5
-          bg-[var(--surface)] border-b border-[var(--brand)]/20 shadow-sm"
+        className="announcement-bar hidden md:flex fixed top-0 left-0 right-0 z-[60]"
+        role="region"
+        aria-label="Featured update"
       >
-        {/* Left brand accent */}
-        <div className="absolute left-0 inset-y-0 w-[3px] bg-[var(--brand,#6366f1)] rounded-r-full" />
+        <div className="announcement-bar__inner">
+          <div className="announcement-bar__icon">{announcement.icon}</div>
 
-        {/* Icon */}
-        <div className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand,#6366f1)]/10 ml-3">
-          {announcement.icon}
+          <div className="announcement-bar__content">
+            <span className="announcement-bar__badge">
+              {announcement.badge}
+            </span>
+            <span className="announcement-bar__title">
+              {announcement.title}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCta}
+            className="announcement-bar__cta"
+          >
+            {announcement.ctaLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="announcement-bar__dismiss"
+            aria-label="Dismiss announcement"
+          >
+            <MdClose aria-hidden="true" />
+          </button>
         </div>
-
-        {/* Badge + title + description */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-[var(--brand,#6366f1)]/10 text-[var(--brand,#6366f1)]">
-            {announcement.badge}
-          </span>
-          <span className="font-semibold text-theme text-sm shrink-0">
-            {announcement.title}
-          </span>
-          <span className="text-muted text-sm hidden lg:block truncate">
-            — {announcement.description}
-          </span>
-        </div>
-
-        {/* CTA */}
-        <button
-          type="button"
-          onClick={handleCta}
-          className="shrink-0 px-4 py-1.5 rounded-lg bg-[var(--brand,#6366f1)] text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
-        >
-          {announcement.ctaLabel}
-        </button>
-
-        {/* Dismiss */}
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="shrink-0 text-muted hover:text-theme transition-colors cursor-pointer"
-          aria-label="Dismiss announcement"
-        >
-          <MdClose className="h-4 w-4" />
-        </button>
       </motion.div>
 
       {/* ── Mobile: modal overlay (unchanged) ── */}
@@ -198,7 +189,7 @@ const FeatureAnnouncement: React.FC = () => {
           transition={{ duration: 0.22 }}
           className="relative z-10 w-full max-w-sm rounded-2xl border border-theme bg-[var(--surface)] shadow-2xl overflow-hidden"
         >
-          <div className="h-1 w-full bg-gradient-to-r from-[var(--brand,#6366f1)] to-purple-400" />
+          <div className="h-1 w-full bg-[var(--accent)]" />
           <button
             type="button"
             onClick={handleDismiss}
@@ -209,11 +200,11 @@ const FeatureAnnouncement: React.FC = () => {
           </button>
           <div className="p-6">
             <div className="flex items-start gap-4 mb-4">
-              <div className="shrink-0 flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--brand,#6366f1)]/10 border border-[var(--brand,#6366f1)]/20">
+              <div className="shrink-0 flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--bg-hover)] border border-theme text-[var(--accent)]">
                 {announcement.icon}
               </div>
               <div className="pt-1">
-                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-[var(--brand,#6366f1)]/15 text-[var(--brand,#6366f1)] mb-1">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-[var(--accent)] mb-1">
                   {announcement.badge}
                 </span>
                 <h2 className="text-base font-bold text-theme leading-snug">
@@ -228,7 +219,7 @@ const FeatureAnnouncement: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCta}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--brand,#6366f1)] text-white text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--text)] text-[var(--bg)] text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer"
               >
                 {announcement.ctaLabel}
               </button>
