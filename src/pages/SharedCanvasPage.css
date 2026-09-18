@@ -96,6 +96,39 @@
   text-transform: uppercase;
 }
 
+.shared-theme-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shared-theme-control button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--shared-line);
+  border-radius: 50%;
+  background: var(--shared-surface-raised) !important;
+  color: var(--shared-text) !important;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.shared-theme-control button:hover {
+  border-color: var(--shared-text);
+  background: var(--shared-bg) !important;
+  transform: translateY(-1px);
+}
+
+.shared-theme-control button:focus-visible {
+  outline: 2px solid var(--shared-text);
+  outline-offset: 3px;
+}
+
 .shared-details-trigger {
   border: 1px solid var(--shared-text);
   background: var(--shared-text) !important;
