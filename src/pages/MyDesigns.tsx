@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { AuthModal } from "../components/AuthModal";
@@ -222,13 +222,45 @@ const MyDesignsLoadingState: React.FC = () => (
   </div>
 );
 
+const MyDesignsLoadMoreSkeletons: React.FC = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading more designs"
+    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
+  >
+    <span className="sr-only">Loading more designs…</span>
+    {Array.from({ length: 3 }, (_, index) => (
+      <div
+        key={index}
+        aria-hidden="true"
+        className="my-designs-card elevated-card-bg rounded-2xl p-6 min-h-[260px]"
+      >
+        <div className="h-6 w-3/4 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+        <div className="h-4 w-1/2 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-8" />
+        <div className="space-y-2 mb-10">
+          <div className="h-3 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          <div className="h-3 w-5/6 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+        </div>
+        <div className="h-12 w-full rounded-lg bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+      </div>
+    ))}
+  </div>
+);
+
 const MyDesigns: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("my_designs");
   const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagramSummary[]>([]);
-  const [loadingDiagrams, setLoadingDiagrams] = useState(false);
+  const [loadingDiagrams, setLoadingDiagrams] = useState(true);
+  const [loadingMoreDiagrams, setLoadingMoreDiagrams] = useState(false);
+  const [nextDiagramCursor, setNextDiagramCursor] = useState<string | null>(
+    null,
+  );
+  const [hasMoreDiagrams, setHasMoreDiagrams] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
     "updated",
@@ -277,12 +309,16 @@ const MyDesigns: React.FC = () => {
     const loadDiagrams = async () => {
       if (!isAuth) {
         setSavedDiagrams([]);
+        setNextDiagramCursor(null);
+        setHasMoreDiagrams(false);
         return;
       }
       setLoadingDiagrams(true);
       try {
-        const diagrams = await apiService.getUserDiagrams();
-        setSavedDiagrams(diagrams);
+        const page = await apiService.getUserDiagramPage();
+        setSavedDiagrams(page.items);
+        setNextDiagramCursor(page.next_cursor);
+        setHasMoreDiagrams(page.has_more);
       } catch (error) {
         console.error("Failed to load diagrams:", error);
       } finally {
@@ -291,6 +327,51 @@ const MyDesigns: React.FC = () => {
     };
     loadDiagrams();
   }, [isAuth]);
+
+  const loadMoreDiagrams = useCallback(async () => {
+    if (
+      !isAuth ||
+      !hasMoreDiagrams ||
+      !nextDiagramCursor ||
+      loadingMoreDiagrams
+    ) {
+      return;
+    }
+
+    setLoadingMoreDiagrams(true);
+    try {
+      const page = await apiService.getUserDiagramPage(nextDiagramCursor);
+      setSavedDiagrams((current) => {
+        const existingIds = new Set(current.map((diagram) => diagram.id));
+        return [
+          ...current,
+          ...page.items.filter((diagram) => !existingIds.has(diagram.id)),
+        ];
+      });
+      setNextDiagramCursor(page.next_cursor);
+      setHasMoreDiagrams(page.has_more);
+    } catch (error) {
+      console.error("Failed to load more diagrams:", error);
+    } finally {
+      setLoadingMoreDiagrams(false);
+    }
+  }, [hasMoreDiagrams, isAuth, loadingMoreDiagrams, nextDiagramCursor]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || !hasMoreDiagrams) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMoreDiagrams();
+        }
+      },
+      { rootMargin: "480px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreDiagrams, loadMoreDiagrams]);
 
   const handleOpenDiagram = (diagramId: string) => {
     navigate(`/playground/free?diagramId=${diagramId}`);
@@ -949,6 +1030,30 @@ const MyDesigns: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {hasMoreDiagrams && (
+                  <div
+                    ref={loadMoreSentinelRef}
+                    aria-hidden="true"
+                    className="h-px w-full"
+                  />
+                )}
+
+                {loadingMoreDiagrams && <MyDesignsLoadMoreSkeletons />}
+
+                {!loadingMoreDiagrams &&
+                  hasMoreDiagrams &&
+                  savedDiagrams.length > 0 && (
+                    <div className="flex justify-center pb-12">
+                      <button
+                        type="button"
+                        onClick={() => void loadMoreDiagrams()}
+                        className="my-designs-tab px-6 py-2.5 rounded-xl font-semibold transition-all duration-300"
+                      >
+                        Load more designs
+                      </button>
+                    </div>
+                  )}
               </>
             )}
           </div>

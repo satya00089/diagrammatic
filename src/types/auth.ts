@@ -80,6 +80,12 @@ export interface SavedDiagramSummary {
   owner: DiagramOwner;
 }
 
+export interface SavedDiagramPage {
+  items: SavedDiagramSummary[];
+  next_cursor: string | null;
+  has_more: boolean;
+}
+
 export interface Collaborator {
   id: string;
   email: string;

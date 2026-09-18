@@ -6,6 +6,7 @@ import type {
   SignupCredentials,
   SavedDiagram,
   SavedDiagramSummary,
+  SavedDiagramPage,
   SaveDiagramPayload,
   Collaborator,
 } from "../types/auth";
@@ -239,16 +240,30 @@ class ApiService {
     return response.json();
   }
 
-  async getUserDiagrams(): Promise<SavedDiagramSummary[]> {
-    const response = await fetch(`${API_BASE_URL}/api/v1/diagrams`, {
-      headers: this.getAuthHeaders(),
-    });
+  async getUserDiagramPage(
+    cursor?: string | null,
+    limit = 24,
+  ): Promise<SavedDiagramPage> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (cursor) params.set("cursor", cursor);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/diagrams?${params.toString()}`,
+      {
+        headers: this.getAuthHeaders(),
+      },
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch diagrams");
     }
 
     return response.json();
+  }
+
+  async getUserDiagrams(): Promise<SavedDiagramSummary[]> {
+    const page = await this.getUserDiagramPage();
+    return page.items;
   }
 
   async getDiagram(id: string): Promise<SavedDiagram> {
