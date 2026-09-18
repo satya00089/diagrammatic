@@ -605,7 +605,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
                       <button
                         type="button"
                         onClick={handleTwitter}
-                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-2 py-3 text-xs font-semibold text-white hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] dark:bg-white dark:text-black"
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-2 py-3 text-xs font-semibold text-white hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] dark:bg-white dark:text-black dark:hover:text-white"
                       >
                         <FaXTwitter size={17} aria-hidden /> X
                       </button>
