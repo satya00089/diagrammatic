@@ -41,7 +41,8 @@ interface ShareToWorldModalProps {
   user: User | null;
   captureCanvasPng: () => Promise<string>;
   initiallyPublished?: boolean;
-  onVisibilityChange?: (isPublic: boolean) => void;
+  publicUrl?: string | null;
+  onVisibilityChange?: (isPublic: boolean, publicDiagramId?: string) => void;
 }
 
 type SharePhase =
@@ -69,6 +70,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
   user,
   captureCanvasPng,
   initiallyPublished = false,
+  publicUrl: initialPublicUrl = null,
   onVisibilityChange,
 }) => {
   const reduceMotion = useReducedMotion();
@@ -162,7 +164,9 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     setPhase(initiallyPublished ? "published" : "preview");
     setPublicUrl(
-      initiallyPublished && entityId ? getPublicUrl(entityId) : null,
+      initiallyPublished && entityId
+        ? initialPublicUrl || getPublicUrl(entityId)
+        : null,
     );
     setError(null);
     setLinkCopied(false);
@@ -176,7 +180,7 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
       window.clearTimeout(focusTimer);
       previousFocusRef.current?.focus();
     };
-  }, [capturePreview, entityId, initiallyPublished, isOpen]);
+  }, [capturePreview, entityId, initiallyPublished, initialPublicUrl, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -227,7 +231,12 @@ const ShareToWorldModal: React.FC<ShareToWorldModalProps> = ({
         problem_id: problem?.id,
         visibility: "public",
       }, true);
-      onVisibilityChange?.(true);
+      onVisibilityChange?.(
+        true,
+        mode === "diagram" && "diagramId" in result
+          ? result.diagramId
+          : undefined,
+      );
     } catch (publishError) {
       setError(
         publishError instanceof Error

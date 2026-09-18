@@ -698,7 +698,11 @@ class ApiService {
 
   async publishDiagram(
     diagramId: string,
-  ): Promise<{ diagramId: string; publicUrl: string; publishedAt: string }> {
+  ): Promise<{
+    diagramId: string;
+    publicUrl: string;
+    publishedAt: string;
+  }> {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/diagrams/${encodeURIComponent(diagramId)}/publish`,
       {
@@ -733,6 +737,9 @@ class ApiService {
     authorPicture?: string;
     publishedAt?: string;
     viewCount: number;
+    recordType?: "canonical" | "public_snapshot" | "remix";
+    familyId?: string | null;
+    sourceDiagramId?: string | null;
   }> {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/public/diagrams/${encodeURIComponent(diagramId)}`,

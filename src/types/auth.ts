@@ -55,6 +55,10 @@ export interface SavedDiagram {
   isPublic?: boolean;
   publishedAt?: string | null;
   viewCount?: number;
+  recordType?: "canonical" | "public_snapshot" | "remix";
+  familyId?: string | null;
+  sourceDiagramId?: string | null;
+  publicSnapshotId?: string | null;
   collaborators?: Collaborator[];
   // New fields from backend enhancement
   isOwner: boolean;
@@ -73,6 +77,10 @@ export interface SavedDiagramSummary {
   isPublic?: boolean;
   publishedAt?: string | null;
   viewCount?: number;
+  recordType?: "canonical" | "public_snapshot" | "remix";
+  familyId?: string | null;
+  sourceDiagramId?: string | null;
+  publicSnapshotId?: string | null;
   nodeCount: number;
   edgeCount: number;
   isOwner: boolean;
@@ -99,4 +107,6 @@ export interface SaveDiagramPayload {
   nodes: unknown[];
   edges: unknown[];
   reasoningContext?: import("./systemDesign").DesignReasoningContext;
+  sourceDiagramId?: string;
+  familyId?: string;
 }

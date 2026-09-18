@@ -42,6 +42,19 @@ const CARD_DELAY_CLASSES = ["delay-0", "delay-100", "delay-200"] as const;
 
 type SortOption = "updated" | "created" | "title";
 
+type DesignFamily = {
+  primary: SavedDiagramSummary;
+  related: SavedDiagramSummary[];
+};
+
+const isRemix = (diagram: SavedDiagramSummary) =>
+  diagram.recordType === "remix" ||
+  Boolean(diagram.sourceDiagramId) ||
+  /\s[—-]\sRemix$/i.test(diagram.title);
+
+const remixBaseTitle = (title: string) =>
+  title.replace(/\s[—-]\sRemix$/i, "").trim();
+
 const sortOptions: Array<{ value: SortOption; label: string }> = [
   { value: "updated", label: "Last Updated" },
   { value: "created", label: "Date Created" },
@@ -277,6 +290,9 @@ const MyDesigns: React.FC = () => {
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [unpublishError, setUnpublishError] = useState<string | null>(null);
   const [copiedDiagramId, setCopiedDiagramId] = useState<string | null>(null);
+  const [expandedFamilyIds, setExpandedFamilyIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const {
     user,
     isAuthenticated: isAuth,
@@ -422,7 +438,8 @@ const MyDesigns: React.FC = () => {
   ) => {
     event.stopPropagation();
     try {
-      await copyValue(publicUrlFor(diagram.id));
+      const publicUrl = publicUrlFor(diagram.publicSnapshotId ?? diagram.id);
+      await copyValue(publicUrl);
       setCopiedDiagramId(diagram.id);
       window.setTimeout(
         () =>
@@ -432,7 +449,7 @@ const MyDesigns: React.FC = () => {
         2200,
       );
     } catch {
-      window.prompt("Copy this public link:", publicUrlFor(diagram.id));
+      window.prompt("Copy this public link:", publicUrlFor(diagram.publicSnapshotId ?? diagram.id));
     }
   };
 
@@ -441,7 +458,11 @@ const MyDesigns: React.FC = () => {
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
-    window.open(publicUrlFor(diagram.id), "_blank", "noopener,noreferrer");
+    window.open(
+      publicUrlFor(diagram.publicSnapshotId ?? diagram.id),
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
   const requestUnpublish = (
@@ -462,7 +483,7 @@ const MyDesigns: React.FC = () => {
       setSavedDiagrams((current) =>
         current.map((diagram) =>
           diagram.id === diagramToUnpublish.id
-            ? { ...diagram, isPublic: false }
+            ? { ...diagram, isPublic: false, publicSnapshotId: null }
             : diagram,
         ),
       );
@@ -476,39 +497,76 @@ const MyDesigns: React.FC = () => {
     }
   };
 
-  const { filteredDiagrams, ownedCount, sharedCount } = useMemo(() => {
+  const { filteredFamilies, ownedCount, sharedCount } = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
-    const filtered = savedDiagrams
-      .filter((diagram) => {
-        if (filterBy === "owned" && !diagram.isOwner) return false;
-        if (filterBy === "shared" && diagram.isOwner) return false;
+    const byId = new Map(savedDiagrams.map((diagram) => [diagram.id, diagram]));
+    const families = new Map<string, DesignFamily>();
 
-        return (
+    savedDiagrams.filter((diagram) => !isRemix(diagram)).forEach((diagram) => {
+      const key = diagram.familyId || diagram.id;
+      families.set(key, { primary: diagram, related: [] });
+    });
+
+    savedDiagrams.filter(isRemix).forEach((diagram) => {
+      const explicitParent = diagram.sourceDiagramId
+        ? byId.get(diagram.sourceDiagramId)
+        : undefined;
+      const legacyParent =
+        explicitParent ||
+        savedDiagrams.find(
+          (candidate) =>
+            !isRemix(candidate) &&
+            candidate.title.trim() === remixBaseTitle(diagram.title) &&
+            candidate.isPublic,
+        ) ||
+        savedDiagrams.find(
+          (candidate) =>
+            !isRemix(candidate) &&
+            candidate.title.trim() === remixBaseTitle(diagram.title),
+        );
+      const parent = explicitParent || legacyParent;
+      const key = parent?.familyId || parent?.id || diagram.familyId || diagram.id;
+      const family = families.get(key);
+      if (family) {
+        family.related.push(diagram);
+      } else {
+        families.set(key, { primary: parent || diagram, related: parent ? [diagram] : [] });
+      }
+    });
+
+    const filtered = Array.from(families.values())
+      .filter((family) => {
+        const members = [family.primary, ...family.related];
+        if (filterBy === "owned" && !members.some((diagram) => diagram.isOwner)) return false;
+        if (filterBy === "shared" && !members.some((diagram) => !diagram.isOwner)) return false;
+        return members.some((diagram) =>
           diagram.title.toLowerCase().includes(searchLower) ||
           diagram.description?.toLowerCase().includes(searchLower) ||
           diagram.owner.name.toLowerCase().includes(searchLower) ||
           diagram.owner.email.toLowerCase().includes(searchLower) ||
-          false
+          false,
         );
       })
       .sort((a, b) => {
+        const first = a.primary;
+        const second = b.primary;
         switch (sortBy) {
           case "title":
-            return a.title.localeCompare(b.title);
+            return first.title.localeCompare(second.title);
           case "created":
             return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
             );
           case "updated":
           default:
             return (
-              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+              new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime()
             );
         }
       });
 
     return {
-      filteredDiagrams: filtered,
+      filteredFamilies: filtered,
       ownedCount: savedDiagrams.filter((diagram) => diagram.isOwner).length,
       sharedCount: savedDiagrams.filter((diagram) => !diagram.isOwner).length,
     };
@@ -749,7 +807,7 @@ const MyDesigns: React.FC = () => {
                 </div>
 
                 {/* Empty State */}
-                {filteredDiagrams.length === 0 && (
+                {filteredFamilies.length === 0 && (
                   <div className="text-center py-20">
                     <div className="flex justify-center mb-6 text-[var(--brand)]/40">
                       {searchTerm ? (
@@ -789,9 +847,9 @@ const MyDesigns: React.FC = () => {
                 )}
 
                 {/* Diagrams Grid */}
-                {filteredDiagrams.length > 0 && (
+                {filteredFamilies.length > 0 && (
                   <div className="my-designs-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                    {filteredDiagrams.map((diagram, index) => (
+                    {filteredFamilies.map(({ primary: diagram, related }, index) => (
                       <div
                         key={diagram.id}
                         data-tour={index === 0 ? "design-card" : undefined}
@@ -996,6 +1054,62 @@ const MyDesigns: React.FC = () => {
                                 >
                                   <MdVisibilityOff aria-hidden /> Unpublish
                                 </button>
+                              </div>
+                            )}
+
+                            {related.length > 0 && (
+                              <div className="my-designs-related">
+                                <button
+                                  type="button"
+                                  className="my-designs-related-toggle"
+                                  aria-expanded={expandedFamilyIds.has(diagram.id)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setExpandedFamilyIds((current) => {
+                                      const next = new Set(current);
+                                      if (next.has(diagram.id)) next.delete(diagram.id);
+                                      else next.add(diagram.id);
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  <span className="my-designs-related-heading">
+                                    <span className="my-designs-related-dot" aria-hidden="true" />
+                                    Related designs
+                                    <span className="my-designs-related-count">{related.length}</span>
+                                  </span>
+                                  <HiChevronDown
+                                    aria-hidden="true"
+                                    className={`my-designs-related-chevron ${expandedFamilyIds.has(diagram.id) ? "is-open" : ""}`}
+                                  />
+                                </button>
+                                {expandedFamilyIds.has(diagram.id) && (
+                                  <div className="my-designs-related-list">
+                                    {related.map((relatedDiagram) => (
+                                      <div className="my-designs-related-row" key={relatedDiagram.id}>
+                                        <div className="my-designs-related-copy">
+                                          <span className="my-designs-related-title">
+                                            {relatedDiagram.title}
+                                          </span>
+                                          <span className="my-designs-related-meta">
+                                            {relatedDiagram.isPublic ? "Public version" : "Independent copy"}
+                                            {relatedDiagram.isPublic ? " · snapshot" : " · changes stay separate"}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          className="my-designs-related-action"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            handleOpenDiagram(relatedDiagram.id);
+                                          }}
+                                        >
+                                          Open
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             )}
 
