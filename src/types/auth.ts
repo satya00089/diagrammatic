@@ -63,6 +63,23 @@ export interface SavedDiagram {
   reasoningContext?: import("./systemDesign").DesignReasoningContext;
 }
 
+export interface SavedDiagramSummary {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  isPublic?: boolean;
+  publishedAt?: string | null;
+  viewCount?: number;
+  nodeCount: number;
+  edgeCount: number;
+  isOwner: boolean;
+  permission: "owner" | "edit" | "read";
+  owner: DiagramOwner;
+}
+
 export interface Collaborator {
   id: string;
   email: string;

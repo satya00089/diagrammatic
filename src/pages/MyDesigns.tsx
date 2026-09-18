@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { AuthModal } from "../components/AuthModal";
@@ -8,7 +8,7 @@ import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
-import type { SavedDiagram } from "../types/auth";
+import type { SavedDiagramSummary } from "../types/auth";
 import {
   MdContentCopy,
   MdDeleteOutline,
@@ -164,12 +164,70 @@ const MyDesignsSortSelect: React.FC<{
   );
 };
 
+const MyDesignsLoadingState: React.FC = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading your designs"
+    className="my-designs-loading"
+  >
+    <span className="sr-only">Loading your designs…</span>
+    <div
+      aria-hidden="true"
+      className="my-designs-tabs flex gap-2 mb-6"
+    >
+      {["w-28", "w-32", "w-40"].map((width) => (
+        <div
+          key={width}
+          className={`h-11 ${width} rounded-xl bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none`}
+        />
+      ))}
+    </div>
+    <div
+      aria-hidden="true"
+      className="my-designs-filters elevated-card-bg rounded-2xl p-6 mb-8"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {["w-24", "w-20"].map((width) => (
+          <div key={width}>
+            <div
+              className={`h-4 ${width} rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-3`}
+            />
+            <div className="h-12 w-full rounded-xl bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div
+      aria-hidden="true"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12"
+    >
+      {Array.from({ length: 6 }, (_, index) => (
+        <div
+          key={index}
+          className="my-designs-card elevated-card-bg rounded-2xl p-6 min-h-[360px]"
+        >
+          <div className="h-6 w-3/4 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+          <div className="h-4 w-1/2 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-3" />
+          <div className="space-y-2 mb-8">
+            <div className="h-3 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+            <div className="h-3 w-5/6 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          </div>
+          <div className="h-4 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+          <div className="h-3 w-2/3 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-8" />
+          <div className="h-12 w-full rounded-lg bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const MyDesigns: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("my_designs");
-  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
+  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagramSummary[]>([]);
   const [loadingDiagrams, setLoadingDiagrams] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
@@ -179,11 +237,11 @@ const MyDesigns: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(
+  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagramSummary | null>(
     null,
   );
   const [diagramToUnpublish, setDiagramToUnpublish] =
-    useState<SavedDiagram | null>(null);
+    useState<SavedDiagramSummary | null>(null);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [unpublishError, setUnpublishError] = useState<string | null>(null);
   const [copiedDiagramId, setCopiedDiagramId] = useState<string | null>(null);
@@ -239,7 +297,7 @@ const MyDesigns: React.FC = () => {
   };
 
   const handleDeleteDiagram = async (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
@@ -278,7 +336,7 @@ const MyDesigns: React.FC = () => {
     `${window.location.origin}/public/${encodeURIComponent(diagramId)}`;
 
   const handleCopyPublicLink = async (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
@@ -298,14 +356,17 @@ const MyDesigns: React.FC = () => {
   };
 
   const handleOpenPublicPage = (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
     window.open(publicUrlFor(diagram.id), "_blank", "noopener,noreferrer");
   };
 
-  const requestUnpublish = (diagram: SavedDiagram, event: React.MouseEvent) => {
+  const requestUnpublish = (
+    diagram: SavedDiagramSummary,
+    event: React.MouseEvent,
+  ) => {
     event.stopPropagation();
     setUnpublishError(null);
     setDiagramToUnpublish(diagram);
@@ -334,42 +395,43 @@ const MyDesigns: React.FC = () => {
     }
   };
 
-  // Filter and sort diagrams
-  const filteredDiagrams = savedDiagrams
-    .filter((diagram) => {
-      // Filter by ownership
-      if (filterBy === "owned" && !diagram.isOwner) return false;
-      if (filterBy === "shared" && diagram.isOwner) return false;
+  const { filteredDiagrams, ownedCount, sharedCount } = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = savedDiagrams
+      .filter((diagram) => {
+        if (filterBy === "owned" && !diagram.isOwner) return false;
+        if (filterBy === "shared" && diagram.isOwner) return false;
 
-      // Filter by search term
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        diagram.title.toLowerCase().includes(searchLower) ||
-        diagram.description?.toLowerCase().includes(searchLower) ||
-        diagram.owner.name.toLowerCase().includes(searchLower) ||
-        diagram.owner.email.toLowerCase().includes(searchLower) ||
-        false
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "title":
-          return a.title.localeCompare(b.title);
-        case "created":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case "updated":
-        default:
-          return (
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          );
-      }
-    });
+        return (
+          diagram.title.toLowerCase().includes(searchLower) ||
+          diagram.description?.toLowerCase().includes(searchLower) ||
+          diagram.owner.name.toLowerCase().includes(searchLower) ||
+          diagram.owner.email.toLowerCase().includes(searchLower) ||
+          false
+        );
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "title":
+            return a.title.localeCompare(b.title);
+          case "created":
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          case "updated":
+          default:
+            return (
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+        }
+      });
 
-  // Count owned and shared diagrams
-  const ownedCount = savedDiagrams.filter((d) => d.isOwner).length;
-  const sharedCount = savedDiagrams.filter((d) => !d.isOwner).length;
+    return {
+      filteredDiagrams: filtered,
+      ownedCount: savedDiagrams.filter((diagram) => diagram.isOwner).length,
+      sharedCount: savedDiagrams.filter((diagram) => !diagram.isOwner).length,
+    };
+  }, [filterBy, savedDiagrams, searchTerm, sortBy]);
 
   return (
     <>
@@ -531,8 +593,9 @@ const MyDesigns: React.FC = () => {
               </p>
             </div>
 
-            {/* Filters */}
-            {!loadingDiagrams && (
+            {loadingDiagrams ? (
+              <MyDesignsLoadingState />
+            ) : (
               <>
                 {/* Filter Tabs */}
                 <div
@@ -604,21 +667,8 @@ const MyDesigns: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Loading State */}
-                {loadingDiagrams && (
-                  <div className="my-designs-empty text-center py-20">
-                    <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <div className="text-theme text-xl mb-2">
-                      Loading designs...
-                    </div>
-                    <div className="text-muted text-sm">
-                      Fetching your designs…
-                    </div>
-                  </div>
-                )}
-
                 {/* Empty State */}
-                {!loadingDiagrams && filteredDiagrams.length === 0 && (
+                {filteredDiagrams.length === 0 && (
                   <div className="text-center py-20">
                     <div className="flex justify-center mb-6 text-[var(--brand)]/40">
                       {searchTerm ? (
@@ -658,7 +708,7 @@ const MyDesigns: React.FC = () => {
                 )}
 
                 {/* Diagrams Grid */}
-                {!loadingDiagrams && filteredDiagrams.length > 0 && (
+                {filteredDiagrams.length > 0 && (
                   <div className="my-designs-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
                     {filteredDiagrams.map((diagram, index) => (
                       <div
@@ -786,8 +836,8 @@ const MyDesigns: React.FC = () => {
                                     d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                                   />
                                 </svg>
-                                {diagram.nodes.length} node
-                                {diagram.nodes.length === 1 ? "" : "s"}
+                                {diagram.nodeCount} node
+                                {diagram.nodeCount === 1 ? "" : "s"}
                               </span>
                               <span className="flex items-center gap-1">
                                 <svg
@@ -804,8 +854,8 @@ const MyDesigns: React.FC = () => {
                                     d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                                   />
                                 </svg>
-                                {diagram.edges.length} connection
-                                {diagram.edges.length === 1 ? "" : "s"}
+                                {diagram.edgeCount} connection
+                                {diagram.edgeCount === 1 ? "" : "s"}
                               </span>
                             </div>
 

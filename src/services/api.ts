@@ -5,6 +5,7 @@ import type {
   LoginCredentials,
   SignupCredentials,
   SavedDiagram,
+  SavedDiagramSummary,
   SaveDiagramPayload,
   Collaborator,
 } from "../types/auth";
@@ -238,7 +239,7 @@ class ApiService {
     return response.json();
   }
 
-  async getUserDiagrams(): Promise<SavedDiagram[]> {
+  async getUserDiagrams(): Promise<SavedDiagramSummary[]> {
     const response = await fetch(`${API_BASE_URL}/api/v1/diagrams`, {
       headers: this.getAuthHeaders(),
     });
