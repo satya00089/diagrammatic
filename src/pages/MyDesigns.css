@@ -311,9 +311,16 @@
 }
 
 .my-designs-card {
+  align-self: start;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: 0 10px 25px rgb(0 0 0 / 4%);
+}
+
+/* Family cards have different amounts of optional content. Keep shorter
+   private cards compact instead of stretching them to a taller sibling. */
+.my-designs-grid {
+  align-items: start;
 }
 
 .my-designs-card:hover {
