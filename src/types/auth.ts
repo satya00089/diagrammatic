@@ -55,12 +55,43 @@ export interface SavedDiagram {
   isPublic?: boolean;
   publishedAt?: string | null;
   viewCount?: number;
+  recordType?: "canonical" | "public_snapshot" | "remix";
+  familyId?: string | null;
+  sourceDiagramId?: string | null;
+  publicSnapshotId?: string | null;
   collaborators?: Collaborator[];
   // New fields from backend enhancement
   isOwner: boolean;
   permission: "owner" | "edit" | "read";
   owner: DiagramOwner;
   reasoningContext?: import("./systemDesign").DesignReasoningContext;
+}
+
+export interface SavedDiagramSummary {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  isPublic?: boolean;
+  publishedAt?: string | null;
+  viewCount?: number;
+  recordType?: "canonical" | "public_snapshot" | "remix";
+  familyId?: string | null;
+  sourceDiagramId?: string | null;
+  publicSnapshotId?: string | null;
+  nodeCount: number;
+  edgeCount: number;
+  isOwner: boolean;
+  permission: "owner" | "edit" | "read";
+  owner: DiagramOwner;
+}
+
+export interface SavedDiagramPage {
+  items: SavedDiagramSummary[];
+  next_cursor: string | null;
+  has_more: boolean;
 }
 
 export interface Collaborator {
@@ -76,4 +107,6 @@ export interface SaveDiagramPayload {
   nodes: unknown[];
   edges: unknown[];
   reasoningContext?: import("./systemDesign").DesignReasoningContext;
+  sourceDiagramId?: string;
+  familyId?: string;
 }

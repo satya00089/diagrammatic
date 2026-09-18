@@ -10,6 +10,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./SharedCanvasPage.css";
 
 import { apiService } from "../services/api";
 import CustomNode from "../components/Node";
@@ -972,16 +973,18 @@ const RightPanel: React.FC<{
 
   return (
     <aside
-      className={`flex flex-col overflow-hidden bg-[var(--surface)] ${
+      className={`shared-details-panel flex flex-col overflow-hidden bg-[var(--surface)] ${
         mobile
           ? "h-[82dvh] w-full rounded-t-2xl shadow-[0_-16px_48px_rgba(0,0,0,0.22)]"
           : "h-full w-[360px] flex-shrink-0 border-l border-[var(--border)] xl:w-[400px]"
       }`}
     >
       {/* Header band */}
-      <div className="relative flex-shrink-0 bg-[var(--share-bg)] px-5 py-4 text-[var(--share-text)]">
+      <div className="shared-details-heading relative flex-shrink-0 bg-[var(--share-bg)] px-5 py-5 text-[var(--share-text)]">
         <div className="flex items-start gap-3">
-          <MdPublic className="mt-0.5 flex-shrink-0" size={20} aria-hidden />
+          <span className="shared-details-heading__icon" aria-hidden="true">
+            <MdPublic size={16} />
+          </span>
           <h1 className="min-w-0 flex-1 break-words text-base font-bold leading-snug text-[color:var(--share-text)]">
             {data.title}
           </h1>
@@ -997,8 +1000,9 @@ const RightPanel: React.FC<{
             </button>
           )}
         </div>
+        <p className="shared-details-kicker">Published architecture</p>
         {data.kind === "attempt" && (data.difficulty || data.category) && (
-          <div className="ml-8 mt-2 flex flex-wrap items-center gap-2">
+          <div className="ml-8 mt-3 flex flex-wrap items-center gap-2">
             {data.difficulty && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[color:var(--share-text)]/80 font-medium">
                 {data.difficulty}
@@ -1019,7 +1023,7 @@ const RightPanel: React.FC<{
       </div>
 
       {/* Author row */}
-      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 border-b border-[var(--border)]">
+      <div className="shared-author-row flex items-center gap-3 px-5 py-4 flex-shrink-0 border-b border-[var(--border)]">
         {data.authorPicture ? (
           <img
             src={data.authorPicture}
@@ -1050,7 +1054,7 @@ const RightPanel: React.FC<{
       </div>
 
       <div
-        className="grid flex-shrink-0 grid-cols-2 gap-1 border-b border-[var(--border)] bg-[var(--surface)] p-2"
+        className="shared-tabs grid flex-shrink-0 grid-cols-2 gap-1 border-b border-[var(--border)] bg-[var(--surface)] p-3"
         role="tablist"
         aria-label="Public design details"
       >
@@ -1089,12 +1093,12 @@ const RightPanel: React.FC<{
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
+      <div className="shared-panel-body flex-1 overflow-y-auto px-5 py-5 min-h-0">
         {panelContent}
       </div>
 
       {/* CTA footer */}
-      <div className="flex-shrink-0 border-t border-[var(--border)] px-4 py-3">
+      <div className="shared-panel-footer flex-shrink-0 border-t border-[var(--border)] px-5 py-4">
         <Link
           to={ctaTo}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand,#6366f1)] py-2.5 text-center text-sm font-semibold text-white transition-[transform,filter] hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)]"
@@ -1322,28 +1326,26 @@ const SharedCanvasPage: React.FC = () => {
         imageAlt={pageTitle}
       />
 
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-[var(--bg)]">
+      <div className="shared-page flex h-[100dvh] flex-col overflow-hidden bg-[var(--bg)]">
         {/* Top bar */}
-        <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-3 sm:px-4">
+        <header className="shared-header flex h-16 flex-shrink-0 items-center gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 sm:px-7">
           <Link
             to="/"
-            className="flex flex-shrink-0 items-center gap-2 font-bold text-theme transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+            className="shared-brand flex flex-shrink-0 items-center gap-2.5 text-theme transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
           >
-            <img src="/logo-64.png" alt="" className="h-6 w-6 object-contain" />
-            <span className="hidden sm:inline">Diagramwise</span>
+            <img src="/logo-64.png" alt="" className="h-7 w-7 object-contain" />
+            <span>Diagramwise</span>
           </Link>
-          <span className="text-muted text-sm">/</span>
+          <span className="shared-header-divider" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-theme">
             {data.title}
           </span>
-          <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-            <span className="hidden rounded-full bg-[var(--bg)] px-2 py-1 text-xs text-muted sm:inline-flex">
-              Read-only
-            </span>
+          <div className="shared-header-actions ml-auto flex flex-shrink-0 items-center gap-3">
+            <span className="shared-readonly hidden sm:inline-flex">Read-only view</span>
             <button
               type="button"
               onClick={() => setShowDetails(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] lg:hidden"
+              className="shared-details-trigger inline-flex items-center gap-1.5 rounded-lg bg-[var(--brand)] px-3 py-2 text-xs font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface)] lg:hidden"
               aria-label="Open design details"
             >
               <MdMenu aria-hidden /> Details
@@ -1354,7 +1356,7 @@ const SharedCanvasPage: React.FC = () => {
         {/* Body: canvas + sidebar */}
         <div className="flex flex-1 min-h-0">
           {/* Canvas */}
-          <div className="flex-1 min-w-0 h-full">
+          <div className="shared-canvas-shell relative flex-1 min-w-0 h-full">
             <ReactFlowProvider>
               <ReadOnlyCanvas
                 nodes={canvasNodes}
@@ -1364,10 +1366,19 @@ const SharedCanvasPage: React.FC = () => {
                 onClearSelection={() => setSelection(null)}
               />
             </ReactFlowProvider>
+            <div className="shared-canvas-label" aria-hidden="true">
+              <span className="shared-canvas-label__title">Architecture canvas</span>
+              <span className="shared-canvas-label__meta">
+                {nodes.length} components <span>·</span> {edges.length} connections
+              </span>
+            </div>
+            <div className="shared-canvas-hint" aria-hidden="true">
+              Select an element to inspect
+            </div>
           </div>
 
           {/* Right panel */}
-          <div className="hidden h-full lg:block">
+          <div className="shared-panel-shell hidden h-full lg:block">
             <RightPanel
               data={data}
               nodes={nodes}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import { AuthModal } from "../components/AuthModal";
@@ -8,7 +8,7 @@ import { useOnboarding } from "../hooks/useOnboarding";
 import { useTour } from "../hooks/useTour";
 import SEO from "../components/SEO";
 import { apiService } from "../services/api";
-import type { SavedDiagram } from "../types/auth";
+import type { SavedDiagramSummary } from "../types/auth";
 import {
   MdContentCopy,
   MdDeleteOutline,
@@ -41,6 +41,19 @@ const copyValue = async (value: string) => {
 const CARD_DELAY_CLASSES = ["delay-0", "delay-100", "delay-200"] as const;
 
 type SortOption = "updated" | "created" | "title";
+
+type DesignFamily = {
+  primary: SavedDiagramSummary;
+  related: SavedDiagramSummary[];
+};
+
+const isRemix = (diagram: SavedDiagramSummary) =>
+  diagram.recordType === "remix" ||
+  Boolean(diagram.sourceDiagramId) ||
+  /\s[—-]\sRemix$/i.test(diagram.title);
+
+const remixBaseTitle = (title: string) =>
+  title.replace(/\s[—-]\sRemix$/i, "").trim();
 
 const sortOptions: Array<{ value: SortOption; label: string }> = [
   { value: "updated", label: "Last Updated" },
@@ -164,13 +177,103 @@ const MyDesignsSortSelect: React.FC<{
   );
 };
 
+const MyDesignsLoadingState: React.FC = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading your designs"
+    className="my-designs-loading"
+  >
+    <span className="sr-only">Loading your designs…</span>
+    <div
+      aria-hidden="true"
+      className="my-designs-tabs flex gap-2 mb-6"
+    >
+      {["w-28", "w-32", "w-40"].map((width) => (
+        <div
+          key={width}
+          className={`h-11 ${width} rounded-xl bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none`}
+        />
+      ))}
+    </div>
+    <div
+      aria-hidden="true"
+      className="my-designs-filters elevated-card-bg rounded-2xl p-6 mb-8"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {["w-24", "w-20"].map((width) => (
+          <div key={width}>
+            <div
+              className={`h-4 ${width} rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-3`}
+            />
+            <div className="h-12 w-full rounded-xl bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          </div>
+        ))}
+      </div>
+    </div>
+    <div
+      aria-hidden="true"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12"
+    >
+      {Array.from({ length: 6 }, (_, index) => (
+        <div
+          key={index}
+          className="my-designs-card elevated-card-bg rounded-2xl p-6 min-h-[360px]"
+        >
+          <div className="h-6 w-3/4 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+          <div className="h-4 w-1/2 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-3" />
+          <div className="space-y-2 mb-8">
+            <div className="h-3 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+            <div className="h-3 w-5/6 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          </div>
+          <div className="h-4 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+          <div className="h-3 w-2/3 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-8" />
+          <div className="h-12 w-full rounded-lg bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const MyDesignsLoadMoreSkeletons: React.FC = () => (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Loading more designs"
+    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
+  >
+    <span className="sr-only">Loading more designs…</span>
+    {Array.from({ length: 3 }, (_, index) => (
+      <div
+        key={index}
+        aria-hidden="true"
+        className="my-designs-card elevated-card-bg rounded-2xl p-6 min-h-[260px]"
+      >
+        <div className="h-6 w-3/4 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-4" />
+        <div className="h-4 w-1/2 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none mb-8" />
+        <div className="space-y-2 mb-10">
+          <div className="h-3 w-full rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+          <div className="h-3 w-5/6 rounded bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+        </div>
+        <div className="h-12 w-full rounded-lg bg-[var(--bg-hover)] animate-pulse motion-reduce:animate-none" />
+      </div>
+    ))}
+  </div>
+);
+
 const MyDesigns: React.FC = () => {
   useTheme();
   const navigate = useNavigate();
   const { isNewToPage, markPageVisited } = useOnboarding();
   const { startTour } = useTour("my_designs");
-  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagram[]>([]);
-  const [loadingDiagrams, setLoadingDiagrams] = useState(false);
+  const [savedDiagrams, setSavedDiagrams] = useState<SavedDiagramSummary[]>([]);
+  const [loadingDiagrams, setLoadingDiagrams] = useState(true);
+  const [loadingMoreDiagrams, setLoadingMoreDiagrams] = useState(false);
+  const [nextDiagramCursor, setNextDiagramCursor] = useState<string | null>(
+    null,
+  );
+  const [hasMoreDiagrams, setHasMoreDiagrams] = useState(false);
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"updated" | "created" | "title">(
     "updated",
@@ -179,14 +282,17 @@ const MyDesigns: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagram | null>(
+  const [diagramToDelete, setDiagramToDelete] = useState<SavedDiagramSummary | null>(
     null,
   );
   const [diagramToUnpublish, setDiagramToUnpublish] =
-    useState<SavedDiagram | null>(null);
+    useState<SavedDiagramSummary | null>(null);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [unpublishError, setUnpublishError] = useState<string | null>(null);
   const [copiedDiagramId, setCopiedDiagramId] = useState<string | null>(null);
+  const [expandedFamilyIds, setExpandedFamilyIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const {
     user,
     isAuthenticated: isAuth,
@@ -219,12 +325,16 @@ const MyDesigns: React.FC = () => {
     const loadDiagrams = async () => {
       if (!isAuth) {
         setSavedDiagrams([]);
+        setNextDiagramCursor(null);
+        setHasMoreDiagrams(false);
         return;
       }
       setLoadingDiagrams(true);
       try {
-        const diagrams = await apiService.getUserDiagrams();
-        setSavedDiagrams(diagrams);
+        const page = await apiService.getUserDiagramPage();
+        setSavedDiagrams(page.items);
+        setNextDiagramCursor(page.next_cursor);
+        setHasMoreDiagrams(page.has_more);
       } catch (error) {
         console.error("Failed to load diagrams:", error);
       } finally {
@@ -234,12 +344,57 @@ const MyDesigns: React.FC = () => {
     loadDiagrams();
   }, [isAuth]);
 
+  const loadMoreDiagrams = useCallback(async () => {
+    if (
+      !isAuth ||
+      !hasMoreDiagrams ||
+      !nextDiagramCursor ||
+      loadingMoreDiagrams
+    ) {
+      return;
+    }
+
+    setLoadingMoreDiagrams(true);
+    try {
+      const page = await apiService.getUserDiagramPage(nextDiagramCursor);
+      setSavedDiagrams((current) => {
+        const existingIds = new Set(current.map((diagram) => diagram.id));
+        return [
+          ...current,
+          ...page.items.filter((diagram) => !existingIds.has(diagram.id)),
+        ];
+      });
+      setNextDiagramCursor(page.next_cursor);
+      setHasMoreDiagrams(page.has_more);
+    } catch (error) {
+      console.error("Failed to load more diagrams:", error);
+    } finally {
+      setLoadingMoreDiagrams(false);
+    }
+  }, [hasMoreDiagrams, isAuth, loadingMoreDiagrams, nextDiagramCursor]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || !hasMoreDiagrams) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void loadMoreDiagrams();
+        }
+      },
+      { rootMargin: "480px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreDiagrams, loadMoreDiagrams]);
+
   const handleOpenDiagram = (diagramId: string) => {
     navigate(`/playground/free?diagramId=${diagramId}`);
   };
 
   const handleDeleteDiagram = async (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
@@ -278,12 +433,13 @@ const MyDesigns: React.FC = () => {
     `${window.location.origin}/public/${encodeURIComponent(diagramId)}`;
 
   const handleCopyPublicLink = async (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
     try {
-      await copyValue(publicUrlFor(diagram.id));
+      const publicUrl = publicUrlFor(diagram.publicSnapshotId ?? diagram.id);
+      await copyValue(publicUrl);
       setCopiedDiagramId(diagram.id);
       window.setTimeout(
         () =>
@@ -293,19 +449,26 @@ const MyDesigns: React.FC = () => {
         2200,
       );
     } catch {
-      window.prompt("Copy this public link:", publicUrlFor(diagram.id));
+      window.prompt("Copy this public link:", publicUrlFor(diagram.publicSnapshotId ?? diagram.id));
     }
   };
 
   const handleOpenPublicPage = (
-    diagram: SavedDiagram,
+    diagram: SavedDiagramSummary,
     event: React.MouseEvent,
   ) => {
     event.stopPropagation();
-    window.open(publicUrlFor(diagram.id), "_blank", "noopener,noreferrer");
+    window.open(
+      publicUrlFor(diagram.publicSnapshotId ?? diagram.id),
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
 
-  const requestUnpublish = (diagram: SavedDiagram, event: React.MouseEvent) => {
+  const requestUnpublish = (
+    diagram: SavedDiagramSummary,
+    event: React.MouseEvent,
+  ) => {
     event.stopPropagation();
     setUnpublishError(null);
     setDiagramToUnpublish(diagram);
@@ -320,7 +483,7 @@ const MyDesigns: React.FC = () => {
       setSavedDiagrams((current) =>
         current.map((diagram) =>
           diagram.id === diagramToUnpublish.id
-            ? { ...diagram, isPublic: false }
+            ? { ...diagram, isPublic: false, publicSnapshotId: null }
             : diagram,
         ),
       );
@@ -334,42 +497,80 @@ const MyDesigns: React.FC = () => {
     }
   };
 
-  // Filter and sort diagrams
-  const filteredDiagrams = savedDiagrams
-    .filter((diagram) => {
-      // Filter by ownership
-      if (filterBy === "owned" && !diagram.isOwner) return false;
-      if (filterBy === "shared" && diagram.isOwner) return false;
+  const { filteredFamilies, ownedCount, sharedCount } = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    const byId = new Map(savedDiagrams.map((diagram) => [diagram.id, diagram]));
+    const families = new Map<string, DesignFamily>();
 
-      // Filter by search term
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        diagram.title.toLowerCase().includes(searchLower) ||
-        diagram.description?.toLowerCase().includes(searchLower) ||
-        diagram.owner.name.toLowerCase().includes(searchLower) ||
-        diagram.owner.email.toLowerCase().includes(searchLower) ||
-        false
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "title":
-          return a.title.localeCompare(b.title);
-        case "created":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case "updated":
-        default:
-          return (
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          );
+    savedDiagrams.filter((diagram) => !isRemix(diagram)).forEach((diagram) => {
+      const key = diagram.familyId || diagram.id;
+      families.set(key, { primary: diagram, related: [] });
+    });
+
+    savedDiagrams.filter(isRemix).forEach((diagram) => {
+      const explicitParent = diagram.sourceDiagramId
+        ? byId.get(diagram.sourceDiagramId)
+        : undefined;
+      const legacyParent =
+        explicitParent ||
+        savedDiagrams.find(
+          (candidate) =>
+            !isRemix(candidate) &&
+            candidate.title.trim() === remixBaseTitle(diagram.title) &&
+            candidate.isPublic,
+        ) ||
+        savedDiagrams.find(
+          (candidate) =>
+            !isRemix(candidate) &&
+            candidate.title.trim() === remixBaseTitle(diagram.title),
+        );
+      const parent = explicitParent || legacyParent;
+      const key = parent?.familyId || parent?.id || diagram.familyId || diagram.id;
+      const family = families.get(key);
+      if (family) {
+        family.related.push(diagram);
+      } else {
+        families.set(key, { primary: parent || diagram, related: parent ? [diagram] : [] });
       }
     });
 
-  // Count owned and shared diagrams
-  const ownedCount = savedDiagrams.filter((d) => d.isOwner).length;
-  const sharedCount = savedDiagrams.filter((d) => !d.isOwner).length;
+    const filtered = Array.from(families.values())
+      .filter((family) => {
+        const members = [family.primary, ...family.related];
+        if (filterBy === "owned" && !members.some((diagram) => diagram.isOwner)) return false;
+        if (filterBy === "shared" && !members.some((diagram) => !diagram.isOwner)) return false;
+        return members.some((diagram) =>
+          diagram.title.toLowerCase().includes(searchLower) ||
+          diagram.description?.toLowerCase().includes(searchLower) ||
+          diagram.owner.name.toLowerCase().includes(searchLower) ||
+          diagram.owner.email.toLowerCase().includes(searchLower) ||
+          false,
+        );
+      })
+      .sort((a, b) => {
+        const first = a.primary;
+        const second = b.primary;
+        switch (sortBy) {
+          case "title":
+            return first.title.localeCompare(second.title);
+          case "created":
+            return (
+              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+            );
+          case "updated":
+          default:
+            return (
+              new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime()
+            );
+        }
+      });
+
+    return {
+      filteredFamilies: filtered,
+      ownedCount: savedDiagrams.filter((diagram) => diagram.isOwner).length,
+      sharedCount: savedDiagrams.filter((diagram) => !diagram.isOwner).length,
+    };
+  }, [filterBy, savedDiagrams, searchTerm, sortBy]);
 
   return (
     <>
@@ -531,8 +732,9 @@ const MyDesigns: React.FC = () => {
               </p>
             </div>
 
-            {/* Filters */}
-            {!loadingDiagrams && (
+            {loadingDiagrams ? (
+              <MyDesignsLoadingState />
+            ) : (
               <>
                 {/* Filter Tabs */}
                 <div
@@ -604,21 +806,8 @@ const MyDesigns: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Loading State */}
-                {loadingDiagrams && (
-                  <div className="my-designs-empty text-center py-20">
-                    <div className="inline-block w-16 h-16 border-4 border-[var(--brand)] border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <div className="text-theme text-xl mb-2">
-                      Loading designs...
-                    </div>
-                    <div className="text-muted text-sm">
-                      Fetching your designs…
-                    </div>
-                  </div>
-                )}
-
                 {/* Empty State */}
-                {!loadingDiagrams && filteredDiagrams.length === 0 && (
+                {filteredFamilies.length === 0 && (
                   <div className="text-center py-20">
                     <div className="flex justify-center mb-6 text-[var(--brand)]/40">
                       {searchTerm ? (
@@ -658,9 +847,9 @@ const MyDesigns: React.FC = () => {
                 )}
 
                 {/* Diagrams Grid */}
-                {!loadingDiagrams && filteredDiagrams.length > 0 && (
+                {filteredFamilies.length > 0 && (
                   <div className="my-designs-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-                    {filteredDiagrams.map((diagram, index) => (
+                    {filteredFamilies.map(({ primary: diagram, related }, index) => (
                       <div
                         key={diagram.id}
                         data-tour={index === 0 ? "design-card" : undefined}
@@ -786,8 +975,8 @@ const MyDesigns: React.FC = () => {
                                     d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                                   />
                                 </svg>
-                                {diagram.nodes.length} node
-                                {diagram.nodes.length === 1 ? "" : "s"}
+                                {diagram.nodeCount} node
+                                {diagram.nodeCount === 1 ? "" : "s"}
                               </span>
                               <span className="flex items-center gap-1">
                                 <svg
@@ -804,8 +993,8 @@ const MyDesigns: React.FC = () => {
                                     d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                                   />
                                 </svg>
-                                {diagram.edges.length} connection
-                                {diagram.edges.length === 1 ? "" : "s"}
+                                {diagram.edgeCount} connection
+                                {diagram.edgeCount === 1 ? "" : "s"}
                               </span>
                             </div>
 
@@ -868,6 +1057,62 @@ const MyDesigns: React.FC = () => {
                               </div>
                             )}
 
+                            {related.length > 0 && (
+                              <div className="my-designs-related">
+                                <button
+                                  type="button"
+                                  className="my-designs-related-toggle"
+                                  aria-expanded={expandedFamilyIds.has(diagram.id)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setExpandedFamilyIds((current) => {
+                                      const next = new Set(current);
+                                      if (next.has(diagram.id)) next.delete(diagram.id);
+                                      else next.add(diagram.id);
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  <span className="my-designs-related-heading">
+                                    <span className="my-designs-related-dot" aria-hidden="true" />
+                                    Related designs
+                                    <span className="my-designs-related-count">{related.length}</span>
+                                  </span>
+                                  <HiChevronDown
+                                    aria-hidden="true"
+                                    className={`my-designs-related-chevron ${expandedFamilyIds.has(diagram.id) ? "is-open" : ""}`}
+                                  />
+                                </button>
+                                {expandedFamilyIds.has(diagram.id) && (
+                                  <div className="my-designs-related-list">
+                                    {related.map((relatedDiagram) => (
+                                      <div className="my-designs-related-row" key={relatedDiagram.id}>
+                                        <div className="my-designs-related-copy">
+                                          <span className="my-designs-related-title">
+                                            {relatedDiagram.title}
+                                          </span>
+                                          <span className="my-designs-related-meta">
+                                            {relatedDiagram.isPublic ? "Public version" : "Independent copy"}
+                                            {relatedDiagram.isPublic ? " · snapshot" : " · changes stay separate"}
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          className="my-designs-related-action"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            handleOpenDiagram(relatedDiagram.id);
+                                          }}
+                                        >
+                                          Open
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             <div className="my-designs-card-actions">
                               <button
                                 type="button"
@@ -899,6 +1144,30 @@ const MyDesigns: React.FC = () => {
                     ))}
                   </div>
                 )}
+
+                {hasMoreDiagrams && (
+                  <div
+                    ref={loadMoreSentinelRef}
+                    aria-hidden="true"
+                    className="h-px w-full"
+                  />
+                )}
+
+                {loadingMoreDiagrams && <MyDesignsLoadMoreSkeletons />}
+
+                {!loadingMoreDiagrams &&
+                  hasMoreDiagrams &&
+                  savedDiagrams.length > 0 && (
+                    <div className="flex justify-center pb-12">
+                      <button
+                        type="button"
+                        onClick={() => void loadMoreDiagrams()}
+                        className="my-designs-tab px-6 py-2.5 rounded-xl font-semibold transition-all duration-300"
+                      >
+                        Load more designs
+                      </button>
+                    </div>
+                  )}
               </>
             )}
           </div>

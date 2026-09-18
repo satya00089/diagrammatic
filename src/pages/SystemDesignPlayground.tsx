@@ -654,6 +654,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
   const [currentDiagram, setCurrentDiagram] = useState<SavedDiagram | null>(
     null,
   );
+  const [remixOrigin, setRemixOrigin] = useState<{
+    sourceDiagramId: string;
+    familyId?: string | null;
+  } | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Persist the pre-assessment interview transcript with the current attempt.
@@ -1070,6 +1074,10 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           setEdges(restoredEdges);
           setCurrentDiagramId(null);
           setCurrentDiagram(null);
+          setRemixOrigin({
+            sourceDiagramId: remixIdFromUrl,
+            familyId: publicDiagram.familyId,
+          });
           setUserIntent({
             title: `${baseTitle.slice(0, 188)} — Remix`,
             description:
@@ -1118,6 +1126,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           setEdges(loadedEdges);
           setCurrentDiagramId(diagram.id);
           setCurrentDiagram(diagram);
+          setRemixOrigin(null);
 
           // Immediately update canvas state to prevent undo/redo from clearing the loaded data
           setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
@@ -1150,6 +1159,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
             setEdges(loadedEdges);
             setCurrentDiagramId(diagram.id);
             setCurrentDiagram(diagram);
+            setRemixOrigin(null);
 
             // Immediately update canvas state to prevent undo/redo from clearing the loaded data
             setCanvasState({ nodes: restoredNodes, edges: loadedEdges });
@@ -1333,9 +1343,12 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
               nodes,
               edges,
               reasoningContext,
+              sourceDiagramId: remixOrigin?.sourceDiagramId,
+              familyId: remixOrigin?.familyId ?? undefined,
             });
             setCurrentDiagramId(newDiagram.id);
             setCurrentDiagram(newDiagram);
+            setRemixOrigin(null);
 
             // Store the diagram ID for restoration
             const lastDiagramKey = `last-diagram-${user?.id || "anonymous"}`;
@@ -1419,6 +1432,7 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
     reasoningContext,
     interviewSession,
     addressedFindingIds,
+    remixOrigin,
   ]);
 
   // Apply undo/redo state to React Flow
@@ -5370,18 +5384,31 @@ const SystemDesignPlayground: React.FC<SystemDesignPlaygroundProps> = () => {
           diagramTitle={
             savedAttemptId ? undefined : (currentDiagram?.title ?? undefined)
           }
+          publicUrl={
+            savedAttemptId || !currentDiagram?.publicSnapshotId
+              ? null
+              : `${window.location.origin}/public/${encodeURIComponent(currentDiagram.publicSnapshotId)}`
+          }
           user={user}
           captureCanvasPng={captureCanvasPng}
           initiallyPublished={
             savedAttemptId ? isAttemptPublic : Boolean(currentDiagram?.isPublic)
           }
-          onVisibilityChange={(isPublic) => {
+          onVisibilityChange={(isPublic, publicDiagramId) => {
             if (savedAttemptId) {
               setIsAttemptPublic(isPublic);
               return;
             }
             setCurrentDiagram((diagram) =>
-              diagram ? { ...diagram, isPublic } : diagram,
+              diagram
+                ? {
+                    ...diagram,
+                    isPublic,
+                    publicSnapshotId: isPublic
+                      ? publicDiagramId || diagram.publicSnapshotId
+                      : null,
+                  }
+                : diagram,
             );
           }}
         />

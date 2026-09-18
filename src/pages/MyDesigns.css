@@ -322,6 +322,119 @@
   transform: translateY(-4px);
 }
 
+.my-designs-related {
+  margin: 0 0 0.85rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.my-designs-related-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.my-designs-related-toggle:hover,
+.my-designs-related-toggle:focus-visible {
+  color: var(--text);
+}
+
+.my-designs-related-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.my-designs-related-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.my-designs-related-count {
+  display: inline-grid;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  letter-spacing: 0;
+}
+
+.my-designs-related-chevron {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 180ms ease;
+}
+
+.my-designs-related-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.my-designs-related-list {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0 0 0.65rem;
+}
+
+.my-designs-related-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.6rem 0.65rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--bg-hover) 68%, transparent);
+}
+
+.my-designs-related-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.my-designs-related-title,
+.my-designs-related-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-designs-related-title {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.my-designs-related-meta {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.my-designs-related-action {
+  flex: none;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.my-designs-related-action:hover,
+.my-designs-related-action:focus-visible {
+  color: var(--brand);
+}
+
 .my-designs-card [class*="bg-emerald-"] {
   border: 1px solid var(--border);
   background: var(--bg-hover) !important;
@@ -467,7 +580,8 @@
   .my-designs-sign-in,
   .my-designs-card,
   .my-designs-primary,
-  .my-designs-delete-action {
+  .my-designs-delete-action,
+  .my-designs-related-chevron {
     transition: none;
   }
 }
