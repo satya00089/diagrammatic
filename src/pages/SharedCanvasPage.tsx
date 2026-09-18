@@ -19,6 +19,7 @@ import TableNode from "../components/TableNode";
 import GroupNode from "../components/GroupNode";
 import FreeformNode from "../components/FreeformNode";
 import StyledFlowControls from "../components/shared/StyledFlowControls";
+import ThemeSwitcher from "../components/ThemeSwitcher";
 import CustomEdge from "../components/CustomEdge";
 import ERRelationshipEdge from "../components/ERRelationshipEdge";
 import AssessmentFindings from "../components/AssessmentFindings";
@@ -1342,6 +1343,9 @@ const SharedCanvasPage: React.FC = () => {
           </span>
           <div className="shared-header-actions ml-auto flex flex-shrink-0 items-center gap-3">
             <span className="shared-readonly hidden sm:inline-flex">Read-only view</span>
+            <div className="shared-theme-control" aria-label="Theme preference">
+              <ThemeSwitcher />
+            </div>
             <button
               type="button"
               onClick={() => setShowDetails(true)}
